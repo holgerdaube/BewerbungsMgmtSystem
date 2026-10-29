@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  VORLAGE — NICHT AKTIV. Aktiviert täglich 07:00 den deterministischen Ansichten-Refresh
+  (Excel-View + Tages-Digest). Bewusst NUR der LLM-freie Teil (Jobsuche/Gmail brauchen eine
+  Claude-Session, siehe docs/AUTOMATION.md).
+
+  Aktivieren (zuerst [PFAD_ZUM_PROJEKT] unten durch den absoluten Projektpfad dieser
+  Installation ersetzen):
+    cp automation/com.bms.tageslauf.plist.template \
+       ~/Library/LaunchAgents/com.bms.tageslauf.plist
+    launchctl load ~/Library/LaunchAgents/com.bms.tageslauf.plist
+  Deaktivieren:
+    launchctl unload ~/Library/LaunchAgents/com.bms.tageslauf.plist
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.bms.tageslauf</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/zsh</string>
+    <string>[PFAD_ZUM_PROJEKT]/scripts/refresh_views.sh</string>
+  </array>
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Hour</key><integer>7</integer>
+    <key>Minute</key><integer>0</integer>
+  </dict>
+  <key>StandardOutPath</key>
+  <string>/tmp/bewerbung-tageslauf.log</string>
+  <key>StandardErrorPath</key>
+  <string>/tmp/bewerbung-tageslauf.err</string>
+</dict>
+</plist>

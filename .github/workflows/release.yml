@@ -1,0 +1,135 @@
+# Freigabe-Workflow -- Bewerbungs-Management-System (P2-51).
+#
+# Startet bei einem Tag-Push v*.*.* -- das setzt `pipeline.release freigeben`
+# (scripts/release.sh) NACH allen eigenen Pruefungen (Branch, sauberer Arbeitsbaum, Sync mit
+# origin, gruene CI, CHANGELOG, Paketpruefung), dieser Workflow baut dann nur noch das
+# Kundenpaket aus genau diesem Tag/Commit und veroeffentlicht es als GitHub Release. Per
+# workflow_dispatch mit einer Ref laesst sich derselbe Bau als Probe fahren (Artefakt statt
+# Release, kein Tag noetig) -- fuer einen Probebau VOR der ersten echten Freigabe.
+#
+# RELEASES GIBT ES NUR IM OEFFENTLICHEN REPO (P2-84, Leitentscheidung 2): Beide Jobs laufen bei
+# einem Tag-Push nur dort. Das Entwicklungs-Repo setzt bei `freigeben` ebenfalls ein Tag `vX.Y.Z`;
+# ohne die Bedingung entstuende dort ein zweites, nicht oeffentliches Release. Der Probebau per
+# workflow_dispatch laeuft in jedem Repo.
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Commit/Branch/Tag fuer den Probebau (leer = aktueller Stand von main)"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  tests:
+    # Nur im oeffentlichen Repo oder beim Probebau (s. Kopfkommentar). Ein uebersprungener Job
+    # ueberspringt auch `paket` (needs), das dieselbe Bedingung noch einmal traegt.
+    if: github.event_name == 'workflow_dispatch' || github.repository == 'holgerdaube/BewerbungsMgmtSystem'
+    # Voller CI-Lauf gegen genau den Stand, der veroeffentlicht wird -- derselbe Workflow als
+    # reusable workflow, keine zweite Job-Definition zum Pflegen. secret-scan darin laeuft bei
+    # einem Tag-Push bewusst nicht (s. Kommentar in ci.yml); der Commit ist beim Push auf main
+    # bereits gescannt.
+    uses: ./.github/workflows/ci.yml
+    # Ein aufgerufener Workflow darf höchstens die Rechte bekommen, die dieser Job weitergibt.
+    # `secret-scan` fordert job-lokal `pull-requests: read` an (s. ci.yml); fehlt das hier,
+    # verweigert GitHub den ganzen Lauf schon beim Start, auch wenn der Job übersprungen würde.
+    permissions:
+      contents: read
+      pull-requests: read
+    secrets: inherit
+
+  paket:
+    needs: tests
+    # Wie bei `tests`: Releases nur im oeffentlichen Repo, der Probebau ueberall.
+    if: github.event_name == 'workflow_dispatch' || github.repository == 'holgerdaube/BewerbungsMgmtSystem'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Volle Historie -- kundenpaket.py braucht git-Metadaten ueber den eingecheckten
+          # Stand hinaus (Commit-Datum, `git tag --points-at` fuer die freigabe-Erkennung,
+          # V3 in der Bau-Spec). Bei workflow_dispatch mit leerem `ref`-Input faellt der
+          # Ausdruck auf github.ref zurueck (per ||, "" ist falsy) -- das entspricht dann
+          # "aktueller Stand von main".
+          fetch-depth: 0
+          ref: ${{ (github.event_name == 'workflow_dispatch' && inputs.ref) || github.ref }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: VERSION gegen Tag pruefen
+        # Nur bei der echten Freigabe (Tag-Push) -- ein Probebau hat keinen Tag.
+        if: github.event_name == 'push'
+        run: |
+          tag="${GITHUB_REF#refs/tags/v}"
+          datei="$(cat VERSION)"
+          if [ "$tag" != "$datei" ]; then
+            echo "VERSION ($datei) passt nicht zum Tag (v$tag)." >&2
+            exit 1
+          fi
+
+      - name: Abhaengigkeiten installieren
+        run: pip install -r backend/requirements-lock.txt
+
+      - name: Kundenpaket bauen
+        # --ref HEAD statt eines symbolischen Refs: nach dem Checkout oben steht der Arbeitsbaum
+        # so oder so schon auf dem richtigen Commit, unabhaengig davon, ob er ueber den Tag,
+        # github.ref oder inputs.ref aufgeloest wurde.
+        working-directory: backend
+        run: |
+          python -m pipeline.kundenpaket --ref HEAD --ziel-ordner "${{ runner.temp }}/paket"
+
+      - name: Pruefsumme
+        working-directory: ${{ runner.temp }}/paket
+        run: |
+          for datei in *.zip; do
+            sha256sum "$datei" > "$datei.sha256"
+          done
+
+      - name: Release-Notizen
+        if: github.event_name == 'push'
+        working-directory: backend
+        run: |
+          tag="${GITHUB_REF#refs/tags/v}"
+          python -m pipeline.release notizen "$tag" > "${{ runner.temp }}/notizen.md"
+
+      - name: GitHub Release veroeffentlichen
+        # Neben ZIP und Pruefsumme haengen die beiden Installationsanleitungen aus dem Checkout am
+        # Release: README Schritt 1 verweist fuer den Download auf releases/latest. Fehlt eine der
+        # beiden Dateien, schlaegt der Schritt fehl, bevor ein Release entsteht.
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          tag="${GITHUB_REF#refs/tags/v}"
+          for anleitung in BMS_Install_MAC.md BMS_Install_Windows.md; do
+            if [ ! -f "$anleitung" ]; then
+              echo "$anleitung fehlt im Checkout." >&2
+              exit 1
+            fi
+          done
+          gh release create "v$tag" "${{ runner.temp }}"/paket/*.zip "${{ runner.temp }}"/paket/*.sha256 \
+            BMS_Install_MAC.md BMS_Install_Windows.md \
+            --title "BMS $tag" --notes-file "${{ runner.temp }}/notizen.md" --verify-tag
+
+      - name: Paket als Artefakt hochladen (Probebau)
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: kundenpaket
+          path: ${{ runner.temp }}/paket/*

@@ -1,0 +1,44 @@
+# ── Bereich 2: Persönliche Inhalte — NIE versionieren ──
+data/
+outputs/
+cv/
+config/profil.md
+# erzeugt die App selbst aus der Datenbank (main.py::_profil_struktur_schreiben), enthält den Lebenslauf
+config/profil_struktur.md
+config/zielfirmen.md
+config/suchprofile.yaml
+config/budgets.yaml
+config/*_backup_*.yaml
+# Phase 63A: die drei echten Secret-Dateien leben seit hier nicht mehr unter automation/,
+# sondern außerhalb von Projekt & iCloud (Default ~/.bewerbung_mgmt_secrets/, Override
+# BMS_SECRETS_DIR — s. pipeline/gmail_client.py, pipeline/apify_client.py, app/agent_runner.py).
+# Diese drei Zeilen bleiben trotzdem stehen: reines Sicherheitsnetz, falls eine dieser Dateien
+# je wieder versehentlich hier landet (z. B. manuell kopiert).
+automation/gmail_credentials.json
+automation/gmail_token.json
+automation/agent.env
+# ── Laufzeit & Build ──
+frontend/node_modules*/
+frontend/dist/
+__pycache__/
+*.pyc
+.env
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+nohup.out
+# ── System & Editor ──
+.DS_Store
+.claude/settings.local.json
+# ── Git-Interna (separate-git-dir, vom iCloud-Sync ausgenommen) ──
+.git.nosync/
+
+# Temp-Dateien, die Skill-Laeufe im Quellbaum hinterlassen (Fund 13.08.2026: der
+# headhunter-suche-Lauf legte backend/pipeline/_tmp_headhunter_suche_leer.json ab).
+_tmp_*
+
+# Phase 86: Ausweich-Ablage der Skill-Läufe, weil `/tmp` gesperrt ist (Altbestand) — der
+# reguläre Ort ist ab jetzt `data/tmp/` (per Zeile 2 oben bereits ignoriert). Diese beiden
+# Muster fangen nur noch die im Projekt-Root liegenden Alt-Dateien ab.
+.tmp_*
+.verify*

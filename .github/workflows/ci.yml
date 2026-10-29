@@ -1,0 +1,169 @@
+# CI — Bewerbungs-Management-System (Phase 57 Stufen E2 + E3; Windows-Job Phase 71D).
+#
+# Vier Jobs: backend (pytest, Python 3.12 — Pin folgt der lokalen venv-Realitaet; seit Phase 58
+# Python 3.12.13 aus Homebrew, siehe tasks/spec_phase58_python_upgrade.md), backend-windows
+# (derselbe Testlauf auf windows-latest, s. dortiger Job-Kommentar fuer den aktuellen
+# Kenntnisstand -- Phase 71D, "Windows-Grundlagen"), frontend (typecheck + build, Node 24) und
+# secret-scan (gitleaks ueber die volle Historie, Ersatz fuer das auf diesem Repo nicht
+# verfuegbare GitHub Secret Scanning, siehe .gitleaks.toml und Stufe E3 der Spec).
+#
+# Keine Secrets, keine LLM-/Netzwerk-Calls aus Tests (Invariante T4) -- reines Checkout+Install+Test.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+  # P2-51: release.yml ruft diesen Workflow per `uses: ./.github/workflows/ci.yml` auf (voller
+  # Testlauf vor jeder Freigabe). Kein workflow_call.inputs noetig -- s. Kommentar bei
+  # secret-scan fuer die einzige Stelle, die zwischen "normal getriggert" und "aus release.yml
+  # aufgerufen" unterscheidet.
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        # Primaerpfad laut Spec. Fallback (NUR falls dieser Install auf ubuntu an einem
+        # plattformspezifischen Pin scheitert): "pip install -e backend/ -r backend/requirements-dev.txt"
+        # (nutzt die losen pyproject.toml-Deps statt des macOS-venv-Freeze). Abweichung dann hier
+        # als Kommentar UND im Bau-Report der jeweiligen Phase-57-Stufe festhalten.
+        run: pip install -r backend/requirements-lock.txt -r backend/requirements-dev.txt
+
+      - name: Run backend tests
+        # working-directory statt "python -m pytest backend/tests" vom Repo-Root: lokal verifiziert
+        # (Phase 57 E2), dass der Root-Aufruf an der conftest-Import-Mechanik scheitert
+        # (ModuleNotFoundError: app/pipeline liegen unter backend/ und sind nur importierbar, wenn
+        # backend/ selbst das cwd ist -- "python -m" haengt das cwd vorn an sys.path). Gleicher
+        # Ansatz wie scripts/test.sh. PDF-Tests (soffice-abhaengig) skippen hier automatisch, falls
+        # vorhanden -- soffice ist auf diesem Runner nicht installiert.
+        working-directory: backend
+        run: python -m pytest tests -q
+        env:
+          BMS_DATA_DIR: ${{ runner.temp }}/bms-data
+
+  # Phase 71D ("Windows-Grundlagen"): erster Windows-CI-Lauf ueberhaupt fuer dieses Repo -- der
+  # eigentliche Beweis, ob die additiven os.name=="nt"-Zweige in backend/app/agent_runner.py
+  # (Prozess-Spawn/-Kill) und die soffice-Discovery in backend/pipeline/cv_export.py wirklich
+  # funktionieren (kein Windows-Testgeraet in dieser Phase verfuegbar, s. docs/SETUP-WINDOWS.md
+  # "Bekannte Grenzen"). Bewusst ALS EIGENER Job neben "backend" (nicht als Matrix-Achse dort):
+  # unabhaengiges Timeout/Ergebnis, bestehender Job bleibt unangetastet. Einige BESTEHENDE Tests
+  # ausserhalb der Phase-71D-Dateien sind POSIX-spezifisch (u. a. test_prozess_tracking.py,
+  # ein Test in test_cv_export.py, Rechte-Exaktheits-Asserts in test_log_pfade.py) und duerften
+  # hier fehlschlagen -- das ist ein bekannter, dokumentierter Befund (docs/SETUP-WINDOWS.md),
+  # kein durchgehend gruenes Ergebnis wird vorab behauptet.
+  backend-windows:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r backend/requirements-lock.txt -r backend/requirements-dev.txt
+
+      - name: Run backend tests
+        # Gleicher Grund fuer working-directory wie im "backend"-Job oben. PDF-Tests
+        # (soffice-abhaengig) skippen hier automatisch, falls vorhanden -- soffice ist auf
+        # diesem Runner nicht installiert.
+        # P2-65: TEMP/TMP auf runner.temp (Laufwerk D:). %TEMP% liegt sonst auf C:, der
+        # Systemplatte des Runners: fsync dort 4-10 ms je nach Runner, auf D: 0,5 ms. Unter TEMP
+        # landen pytest-tmp_path UND die Test-Datenbank (conftest.py legt Daten- und Log-Ordner per
+        # tempfile.mkdtemp an und ueberschreibt damit BMS_DATA_DIR unten). Jeder SQLite-Commit und
+        # jede CREATE-Anweisung wartet auf die Platte; die Suite brauchte so 5-14 min und riss am
+        # 01.10.2026 zweimal das 15-Minuten-Limit, mit TEMP auf D: knapp 2 min (Probelauf
+        # 36893114358). Waechter: backend/tests/test_testumgebung.py.
+        working-directory: backend
+        run: python -m pytest tests -q
+        env:
+          BMS_DATA_DIR: ${{ runner.temp }}/bms-data
+          TEMP: ${{ runner.temp }}
+          TMP: ${{ runner.temp }}
+
+  frontend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      # WICHTIG: CI nutzt npm DIREKT. frontend/build.sh ist NUR der lokale iCloud-Workaround
+      # (spiegelt die Quelle nach ~/.bewerbung_mgmt_node, weil iCloud node_modules-Symlinks
+      # zerstoert) -- das darf hier NIE "nachgeruestet" werden. Der ubuntu-Runner hat kein iCloud.
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build
+        run: npm run build
+
+  secret-scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # P2-51: laeuft NICHT, wenn dieser Workflow fuer einen Tag-Push aufgerufen wird (echte
+    # Freigabe ueber release.yml, s. dort Job "tests"). Grund: `github.event_name` wird bei
+    # einem per `uses:` aufgerufenen Workflow vom AUFRUFENDEN Lauf geerbt (er wird NIE zu
+    # "workflow_call" -- verifiziert gegen die GitHub-Doku, Stand 28.09.2026), ein Tag-Push
+    # meldet sich hier also weiterhin als "push". Genau dieser Fall liefert bei gitleaks-action
+    # (github.com/gitleaks/gitleaks-action, src/index.js) aber ein LEERES `eventJSON.commits`
+    # (ein Tag zeigt auf einen bereits vorher gepushten Commit, die Tag-Push-Payload traegt
+    # dafuer keine eigene Commit-Liste) -- die Action bricht dann NICHT ab, sondern druckt
+    # "No commits to scan" und beendet sich mit Exit 0: ein Schein-Erfolg ohne echten Scan.
+    # `github.ref_type` unterscheidet zuverlaessig (bei einem Tag-Push "tag", beim bestehenden
+    # push-auf-main-Trigger und bei einem normalen workflow_dispatch "branch") und ist -- anders
+    # als `github.event_name == 'workflow_call'` -- in einem aufgerufenen Workflow NICHT
+    # kaputt. Inhaltlich unbedenklich: Der Commit, den ein Tag markiert, ist beim Push auf main
+    # bereits ueber DIESEN Job gescannt worden (Voraussetzung fuer pipeline.release.freigeben).
+    if: github.ref_type != 'tag'
+    # Job-lokal statt global (die anderen Jobs brauchen es nicht): bei pull_request-Events listet
+    # die Action die PR-Commits ueber GET /repos/.../pulls/<n>/commits. Mit dem globalen
+    # `contents: read` allein antwortet die API 403 "Resource not accessible by integration" --
+    # erst mit PR #1 sichtbar geworden, weil die CI vorher nur auf push:main lief (dort nimmt
+    # gitleaks den Historien-Pfad). Nur Lesen; Schreibrechte vermeidet GITLEAKS_ENABLE_COMMENTS.
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Volle Historie noetig -- gitleaks scannt commit-weise, nicht nur den aktuellen
+          # Stand. Die Historie ist seit Phase 56 (I2-Pruefung) nachweislich sauber und soll
+          # es bleiben; ein flacher Checkout (Default depth=1) wuerde das nicht pruefen.
+          fetch-depth: 0
+
+      - name: gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Keine PR-Kommentare -- sonst braeuchte der Job `pull-requests: write`. Befunde stehen
+          # im Job-Log und faerben den Check rot; das genuegt als Signal.
+          GITLEAKS_ENABLE_COMMENTS: "false"
+          # Personal-Account-Repo (kein Organizations-Konto, verifiziert: owner_type "User") --
+          # laut gitleaks-action-Doku braucht nur die Mehrfach-Repo-Nutzung innerhalb einer
+          # Organization eine GITLEAKS_LICENSE. Verlangt die Action sie trotzdem (Fehlermeldung
+          # im Log), NICHT erfinden -- als Blocker im Phase-57-E3-Bau-Report festhalten.

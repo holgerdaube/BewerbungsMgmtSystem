@@ -1,0 +1,50 @@
+# Gitleaks-Konfiguration -- Phase 57 Stufe E3 (Secret-Guard, Ersatz fuer das auf diesem
+# Repo nicht verfuegbare GitHub Secret Scanning, siehe tasks/spec_phase57_tests_ci.md).
+#
+# WICHTIG -- Korrektur gegenueber dem urspruenglichen Bau-Auftrag:
+# Der Auftrag ging davon aus, dass ohne [extend] "die eingebauten Default-Regeln plus
+# Allowlist" gelten. Das ist nach Pruefung der aktuellen gitleaks-Dokumentation (README,
+# Abschnitt "Configuration", Stand heute live nachgelesen) NICHT der Fall: gitleaks kennt
+# genau zwei Modi fuer eine eigene .gitleaks.toml --
+#   1. eigene Konfiguration OHNE [extend] => Default-Regeln gelten NICHT (Zitat: "define
+#      your own configuration, default rules do not apply")
+#   2. [extend] (useDefault = true oder path = ...) => Default-Regeln + eigene Ergaenzungen
+# Eine .gitleaks.toml ohne [extend] und ohne eigene [[rules]] haette also schlicht KEINE
+# Erkennungsregeln -- der Scan waere immer "gruen", aber wirkungslos (stilles Loch statt
+# Sicherheitsnetz). Deshalb hier bewusst MIT [extend]/useDefault, das ist die einzige Art,
+# wie dieser Job tatsaechlich etwas prueft.
+#
+# Allowlist-Strategie (siehe Bau-Report Phase 57 E3): bewusst leer gestartet. Es werden nur
+# Eintraege ergaenzt, die ein ECHTER gitleaks-Fund in der CI belegt hat (nicht auf Verdacht,
+# auch wenn die Spec bestimmte Dateien als Kandidaten nennt) -- jeder Eintrag so eng wie
+# moeglich (Pfad/Regel-scoped) und mit Begruendungskommentar direkt daneben.
+
+title = "gitleaks config -- Bewerbungs-Management-System"
+
+[extend]
+useDefault = true
+
+# Erster echter Allowlist-Eintrag (Strategie s. oben): CI-Fund 07.08.2026, Run 31220328925,
+# Regel generic-api-key auf den synthetischen Platzhalter-Tokens der Phase-77-Tests
+# (backend/tests/test_beirat_auth.py Z. 38/57/226, Muster `CLAUDE_CODE_OAUTH_TOKEN=oat01-...`;
+# ab dem Fix-Commit auch conftest.py). Die Werte sind reine Kleinbuchstaben-Wortketten mit
+# festem `oat01-`-Präfix und ohne Ziffern/Großbuchstaben -- ein ECHTES Token (hohe Entropie,
+# gemischte Zeichenklassen) matcht dieses Muster nicht. Scope bewusst nur auf das erkannte
+# Secret (regexTarget), nicht auf Datei oder Regel -- so bleibt jeder andere Fund in denselben
+# Dateien weiterhin sichtbar. Der Eintrag muss die bereits gepushte Historie (d4b7d17) mit
+# abdecken, ein reiner Code-Umbau wuerde kuenftige Volltext-Scans nicht beruhigen.
+#
+# Zweiter und dritter Eintrag: CI-Fund 28.09.2026 (P2-51), Probebau von release.yml per
+# workflow_dispatch -- dort scannt gitleaks die GANZE Historie statt nur der gepushten Commits
+# und fand drei synthetische Testwerte aus Phase 66A/82: `TEST-PLATZHALTER-…-NIEMALS-ECHT-66A`
+# (backend/tests/test_child_env.py, Commit 66f63be; heute andere Werte) und `coach-passwort-123`
+# (test_coach_settings_api.py, Commit e2ffeb4; heute ohne Ziffern). Beide Muster sind feste
+# Wortketten ohne Entropie; ein echtes Token oder Passwort matcht sie nicht.
+[allowlist]
+description = "Synthetische Platzhalter aus Tests (oat01-Tokens Phase 77, TEST-PLATZHALTER-/coach-passwort-Werte Phase 66A/82)"
+regexTarget = "secret"
+regexes = [
+  '''^oat01-[a-z-]+$''',
+  '''^TEST-PLATZHALTER-[A-Z]+-NIEMALS-ECHT-66A$''',
+  '''^coach-passwort(-123)?$''',
+]

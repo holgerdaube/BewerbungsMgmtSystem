@@ -1,0 +1,29 @@
+# Coach-Site (Phase 81) — Basic-Auth NUR über HTTPS + noindex. Wird von
+# scripts/coach_deploy.sh aus diesem Template erzeugt ({{AUTH_USER_FILE}} <-
+# COACH_AUTHUSERFILE, {{SITE_URL}} <- COACH_SITE_URL aus den Einstellungen, Phase 82) und mit
+# hochgeladen; Server-Änderungen von Hand werden beim nächsten Deploy überschrieben. Ist
+# COACH_SITE_URL leer, entfernt coach_deploy.sh die ErrorDocument-Zeile ersatzlos (Require all
+# denied schützt weiter, nur ohne Komfort-Redirect) statt einen kaputten Platzhalter hochzuladen.
+#
+# Warum If/Else statt der IONOS-Standard-RewriteRule: mod_rewrite läuft im
+# .htaccess-Kontext NACH der Auth-Phase — ein reiner Rewrite-Redirect zeigte bei
+# http:// erst das Login-Popup (Passwort wäre unverschlüsselt gewandert, Live-Befund
+# 10.08.2026). Jetzt: HTTP bekommt NIE eine Auth-Abfrage (Require all denied), und der
+# 403-ErrorDocument-Trick leitet stattdessen auf die HTTPS-Startseite um.
+
+<If "%{HTTPS} == 'on'">
+  AuthType Basic
+  AuthName "Coaching-Bereich"
+  AuthUserFile {{AUTH_USER_FILE}}
+  Require valid-user
+</If>
+<Else>
+  Require all denied
+  ErrorDocument 403 {{SITE_URL}}/
+</Else>
+
+# Nie in Suchmaschinen, keine Verzeichnislisten; HSTS: Browser merken sich HTTPS-Pflicht
+# ("always": Header auch auf 401/403-Antworten).
+Header always set X-Robots-Tag "noindex, nofollow"
+Header always set Strict-Transport-Security "max-age=31536000"
+Options -Indexes

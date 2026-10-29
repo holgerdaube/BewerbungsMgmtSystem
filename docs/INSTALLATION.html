@@ -1,0 +1,607 @@
+<!doctype html><html lang="de"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><link rel="icon" type="image/png" href="data:image/png;base64,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">
+<title>Installation — Bewerbungs-Management-System</title>
+<style>
+:root{
+  --ink:#0B1F3A;
+  --paper:#F4F7FB;
+  --card:#FFFFFF;
+  --line:#DCE4EE;
+  --muted:#5F6F84;
+  --accent:#00B4D8;
+  --amber:#E4A11B;
+  --radius:14px;
+  --shadow:0 1px 2px rgba(16,26,40,.06),0 8px 24px rgba(16,26,40,.06);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--paper);
+  color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:880px;margin:0 auto;padding:32px 20px 72px}
+
+header.head{background:var(--ink);color:#fff;border-radius:var(--radius);padding:28px 30px;
+  box-shadow:var(--shadow);margin-bottom:22px}
+header.head h1{font-size:26px;line-height:1.3;margin:0;font-weight:700;letter-spacing:-.01em}
+header.head h1 code{background:rgba(255,255,255,.16);color:#fff}
+header.head .intro{margin-top:10px;font-size:14.5px;color:#BFC7D5;max-width:65ch}
+header.head .intro p{margin:0 0 6px}
+header.head .intro p:last-child{margin-bottom:0}
+header.head .intro a{color:#fff}
+header.head .intro code{background:rgba(255,255,255,.16);color:#fff}
+/* Ein Zitat (Hinweis-Box) KANN vor der ersten ##-Überschrift stehen und landet dann im Intro
+   des dunklen Banners -- seine eigene helle Cremefläche braucht dunkle Schrift, sonst macht die
+   helle ".intro code/a"-Regel (höhere Selektor-Spezifität wegen zweier Klassen) Inline-Code/
+   Links darin fast unsichtbar (weiß auf Creme). Deshalb hier gezielt zurückgesetzt. */
+header.head .intro blockquote{color:#5F4A1F}
+header.head .intro blockquote a{color:var(--accent)}
+header.head .intro blockquote code{background:rgba(11,31,58,.08);color:#5F4A1F}
+
+section.card{background:var(--card);border:1px solid var(--line);border-radius:12px;
+  padding:18px 22px 22px;box-shadow:var(--shadow);margin-bottom:16px}
+section.card:last-child{margin-bottom:0}
+section.card>h2:first-child{margin-top:0}
+section.card h2{font-size:18px;margin:0 0 14px;font-weight:700;letter-spacing:-.01em;
+  padding-bottom:10px;border-bottom:2px solid var(--accent)}
+section.card h3{font-size:15.5px;margin:20px 0 8px;font-weight:700}
+section.card h3:first-child{margin-top:0}
+section.card h4{font-size:13px;margin:16px 0 6px;font-weight:700;color:var(--muted);
+  text-transform:uppercase;letter-spacing:.05em}
+section.card p{margin:0 0 12px;font-size:14.5px}
+section.card p:last-child{margin-bottom:0}
+section.card ul,section.card ol{margin:0 0 12px;padding-left:22px;font-size:14.5px}
+section.card ul ul,section.card ol ol,section.card ul ol,section.card ol ul{margin:4px 0}
+section.card li{margin-bottom:5px}
+section.card li:last-child{margin-bottom:0}
+section.card a{color:var(--accent);text-decoration:none;font-weight:600}
+section.card a:hover{text-decoration:underline}
+section.card hr{border:none;border-top:1px solid var(--line);margin:18px 0}
+
+code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.92em}
+:not(pre)>code{background:#EAF0F6;border-radius:4px;padding:1px 6px;color:var(--ink)}
+pre{background:var(--ink);color:#EAF0F6;border-radius:10px;padding:14px 16px;overflow-x:auto;
+  font-size:13px;margin:0 0 14px;line-height:1.5}
+section.card pre:last-child{margin-bottom:0}
+pre code{background:none;padding:0;color:inherit;font-size:inherit}
+
+.tablewrap{overflow-x:auto;margin:0 0 14px}
+section.card .tablewrap:last-child{margin-bottom:0}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{text-align:left;background:#EAF0F6;color:var(--ink);font-weight:700;padding:8px 12px;
+  border:1px solid var(--line);white-space:nowrap}
+td{padding:8px 12px;border:1px solid var(--line);vertical-align:top}
+
+blockquote{background:#FBF3E6;border:1px solid #ECD9B3;border-left:4px solid var(--amber);
+  border-radius:10px;padding:10px 16px;margin:0 0 14px;color:#5F4A1F;font-size:14px}
+section.card blockquote:last-child{margin-bottom:0}
+blockquote p{margin:0 0 6px;color:inherit;font-size:inherit}
+blockquote p:last-child{margin-bottom:0}
+blockquote code{background:rgba(11,31,58,.08)}
+
+@media (max-width:640px){
+  .wrap{padding:20px 14px 48px}
+  header.head{padding:20px 22px}
+}
+@media print{
+  body{background:#fff}
+  .wrap{max-width:100%;padding:10px 6px}
+  header.head,section.card{box-shadow:none}
+  section.card{page-break-inside:avoid;border-color:#ccc}
+  pre{white-space:pre-wrap;word-break:break-word}
+  a{color:inherit;text-decoration:none}
+}
+</style></head><body><div class="wrap">
+<header class="head"><h1>Installation — Bewerbungs-Management-System</h1><div class="intro"><p>Diese Anleitung beschreibt eine <strong>Neuinstallation von Null</strong> auf einem eigenen Rechner: frisches
+Repository, leere Datenbank, eigene Person. Sie ist für jemanden geschrieben, der das System
+noch nie gesehen hat, und setzt keine Kenntnis des Projekts voraus — wohl aber die Bereitschaft,
+einmal ein Terminal (macOS) bzw. PowerShell (Windows) zu öffnen.</p>
+<p><strong>Keine Datenübernahme:</strong> Wer eine bestehende Installation auf einen anderen Rechner umziehen
+will, folgt zwar denselben technischen Schritten, überspringt aber Teil 3 und kopiert
+stattdessen <code>data/</code>, die persönlichen <code>config/</code>-Dateien und das Secrets-Verzeichnis vom alten
+Rechner. Diese Anleitung geht davon aus, dass nichts übernommen wird.</p>
+<p><strong>Für Anwender</strong> gibt es je System eine eigene Fassung ohne Projektinterna: <code>BMS_Install_MAC.md</code>
+(macOS) und <code>BMS_Install_Windows.md</code> (Windows) im Hauptordner. Sie führen aus Anwendersicht (mit
+Claude) durch dieselben Schritte, laden das Programmpaket aus dem GitHub-Release des öffentlichen
+Repos statt aus dem Repository und ergänzen die Aktualisierung. Eine Lizenzdatei braucht das BMS nicht
+(Open Source unter Apache-2.0).</p></div></header>
+<section class="card"><h2>Was das System ist — und was es dafür braucht</h2><p>Eine lokale Web-Anwendung für die eigene Jobsuche: Stellen erfassen und bewerten, Firmen
+prüfen, Lebensläufe und Anschreiben erzeugen, Bewerbungs-E-Mails verfolgen. Sie läuft
+vollständig auf dem eigenen Rechner (FastAPI + SQLite + React); es gibt keinen Server-Dienst im
+Netz, bei dem man sich anmeldet.</p>
+<p>Die inhaltliche Arbeit — Recherche, Textentwürfe, Matching — erledigt <strong>Claude Code</strong> als
+Unterprozess. Ohne ein aktives Claude-Konto laufen die Grundfunktionen (Erfassen, Verwalten,
+Auswerten, Exportieren), aber alle KI-gestützten Abläufe nicht. Eine Lizenzdatei ist nicht nötig: Alle
+Funktionen stehen ohne Lizenz zur Verfügung.</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Voraussetzung</th>
+<th>Version</th>
+<th>Wozu</th>
+<th>Pflicht?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Python</td>
+<td><strong>3.12</strong></td>
+<td>Backend/Server</td>
+<td>ja</td>
+</tr>
+<tr>
+<td>Node.js</td>
+<td><strong>24</strong></td>
+<td>Frontend bauen (einmalig)</td>
+<td>ja</td>
+</tr>
+<tr>
+<td>Git</td>
+<td>aktuell</td>
+<td>Repository holen</td>
+<td>ja</td>
+</tr>
+<tr>
+<td>Claude Code (CLI)</td>
+<td>aktuell</td>
+<td>alle KI-Funktionen</td>
+<td>faktisch ja</td>
+</tr>
+<tr>
+<td>LibreOffice</td>
+<td>aktuell</td>
+<td>Word-Dateien in PDF wandeln</td>
+<td>für PDF-Ausgabe</td>
+</tr>
+<tr>
+<td>Claude-Konto</td>
+<td>Abo oder API</td>
+<td>Betrieb der KI-Funktionen</td>
+<td>für KI-Funktionen</td>
+</tr>
+</tbody>
+</table></div>
+<p>Zeitbedarf: etwa 30–45 Minuten für die Technik (Teil 1 oder 2), danach ein bis zwei Stunden für
+die persönliche Einrichtung (Teil 3). Für den LinkedIn-Datenexport, den Teil 3 empfiehlt, sollte
+man <strong>einen Tag vorher</strong> den Download bei LinkedIn anstoßen — die Bereitstellung dauert dort bis
+zu 24 Stunden.</p>
+<p><strong>Zugang zum Repository:</strong> Das Projekt liegt im öffentlichen GitHub-Repository
+<code>holgerdaube/BewerbungsMgmtSystem</code>. Zum Klonen brauchen Sie kein GitHub-Konto; eines brauchen Sie erst,
+wenn Sie Änderungen einreichen wollen (s. <code>CONTRIBUTING.md</code>).</p>
+<hr>
+<h1>Teil 1 — Schritte unter Windows</h1>
+<p>Die Backend-Testsuite läuft in der Projekt-Automatik regelmäßig auf <code>windows-latest</code> durch. Auf
+einem echten Windows-Rechner ist die Installation bisher nicht erprobt, und einzelne Bereiche sind
+unter Windows eingeschränkt (siehe Teil 5).</p></section><section class="card"><h2>1.1 Voraussetzungen installieren</h2><p>In PowerShell, nacheinander:</p>
+<pre><code class="language-powershell">winget install Python.Python.3.12
+winget install OpenJS.NodeJS.LTS
+winget install Git.Git
+winget install TheDocumentFoundation.LibreOffice
+</code></pre>
+<p>Zwei Punkte entscheiden später über Erfolg oder Fehlersuche:</p>
+<ul>
+<li>Beim Python-Installer <strong>„Add python.exe to PATH"</strong> ankreuzen (bei <code>winget</code> geschieht das
+  automatisch). Prüfen mit <code>py -3.12 --version</code> — der <code>py</code>-Launcher trifft eindeutig die
+  3.12er-Version, auch wenn mehrere Pythons installiert sind.</li>
+<li>LibreOffice <strong>am Standardpfad</strong> lassen (<code>C:\Program Files\LibreOffice\</code>). Die App sucht
+  <code>soffice.exe</code> genau dort; bei abweichendem Installationsort findet sie es nicht und kann keine
+  PDFs erzeugen.</li>
+</ul>
+<p>Danach Claude Code:</p>
+<pre><code class="language-powershell">winget install -e --id Anthropic.ClaudeCode
+</code></pre>
+<p>Prüfen: <code>claude --version</code>. Anschließend einmal <code>claude</code> starten und sich anmelden — sonst
+schlagen später alle KI-Läufe mit einem Authentifizierungsfehler fehl.</p></section><section class="card"><h2>1.2 Repository holen</h2><pre><code class="language-powershell">git clone https://github.com/holgerdaube/BewerbungsMgmtSystem C:\BMS
+cd C:\BMS
+</code></pre>
+<p>Der Zielordner ist frei wählbar; <code>C:\BMS</code> hält die Pfade kurz. <strong>Nicht</strong> in einen
+live-synchronisierten Cloud-Ordner (OneDrive, Dropbox) legen — die Datenbank ist eine einzelne
+Datei, die dauernd geschrieben wird, und Cloud-Sync erzeugt dort Konflikte.</p></section><section class="card"><h2>1.3 Python-Umgebung anlegen</h2><p>Bewusst <strong>außerhalb</strong> des Projektordners, damit Tausende Paketdateien nicht im Projekt liegen:</p>
+<pre><code class="language-powershell">py -3.12 -m venv $env:USERPROFILE\.bewerbung_mgmt_venv
+&amp; &quot;$env:USERPROFILE\.bewerbung_mgmt_venv\Scripts\pip.exe&quot; install -r backend\requirements-lock.txt
+New-Item -ItemType Junction -Path &quot;$env:USERPROFILE\.bewerbung_mgmt_venv\bin&quot; -Target &quot;$env:USERPROFILE\.bewerbung_mgmt_venv\Scripts&quot;
+</code></pre>
+<p>Die <code>requirements-lock.txt</code> pinnt exakte Versionen. Wer die Testsuite laufen lassen möchte,
+installiert zusätzlich <code>backend\requirements-dev.txt</code>.</p>
+<p>Die dritte Zeile legt eine Verzeichnis-Verknüpfung <code>bin</code> → <code>Scripts</code> an. Die Skills rufen Python
+durchgängig als <code>~/.bewerbung_mgmt_venv/bin/python</code> auf (macOS-Form), ebenso der Pfad-Wächter in
+<code>automation/agent_settings.json</code>. Claude Code führt diese Befehle unter Windows in Git Bash aus,
+das die Verknüpfung auflöst und <code>python.exe</code> findet. Ohne sie scheitert in KI-Läufen jeder
+Datenbankzugriff. Deshalb ist Git für Windows (1.1) hier Pflicht: Ohne Git Bash weicht Claude Code
+auf PowerShell aus, in der die Heredoc-Befehle der Skills nicht laufen. Auf echter Windows-Hardware
+ist dieser Weg noch nicht erprobt.</p></section><section class="card"><h2>1.4 Oberfläche bauen</h2><pre><code class="language-powershell">cd frontend
+npm.cmd ci
+npm.cmd run build
+cd ..
+</code></pre>
+<p>Das erzeugt <code>frontend/dist/</code>. <strong>Ohne diesen Schritt startet der Server zwar, zeigt aber eine
+leere Seite</strong> — er liefert die Oberfläche nur aus, wenn dieses Verzeichnis existiert. Das
+Skript <code>frontend/build.sh</code> ist ein macOS-Workaround und wird unter Windows nicht verwendet.</p>
+<p><code>npm.cmd</code> statt <code>npm</code> ist Absicht: Windows PowerShell blockiert auf vielen Rechnern das Skript
+<code>npm.ps1</code> (Ausführungsrichtlinie), <code>npm.cmd</code> ist davon nicht betroffen.</p></section><section class="card"><h2>1.5 Starten</h2><p>Doppelklick auf <code>start_windows.bat</code> (oder in PowerShell <code>.\start_windows.bat</code>). Der Browser
+öffnet nach etwa zwei Sekunden <code>http://localhost:8000</code>, das Server-Fenster bleibt offen.</p>
+<p>Beim allerersten Start legt die Anwendung selbst an, was ihr fehlt: das Verzeichnis <code>data/</code>,
+die leere Datenbank und eine Startfassung von <code>config/suchprofile.yaml</code>.</p>
+<p><strong>Beenden:</strong> <code>Strg+C</code> im Server-Fenster. Ist das Fenster geschlossen oder reagiert nicht mehr,
+hilft <code>stop_windows.bat</code> — es beendet den Prozess auf Port 8000 und fragt vorher nach, falls
+gerade KI-Läufe aktiv sind.</p></section><section class="card"><h2>1.6 Weiter mit Teil 3</h2><p>Die Anwendung läuft jetzt, ist aber noch leer und kennt die eigene Person nicht. Weiter bei
+<strong>Teil 3 — Erste Einrichtung</strong>.</p>
+<hr>
+<h1>Teil 2 — Schritte unter macOS</h1>
+<p>macOS ist die Referenzplattform des Projekts: hier ist alles im Alltagsbetrieb erprobt.</p></section><section class="card"><h2>2.1 Voraussetzungen installieren</h2><p><a href="https://brew.sh">Homebrew</a> vorausgesetzt (falls nicht vorhanden, Installationsbefehl von dort
+übernehmen):</p>
+<pre><code class="language-sh">brew install python@3.12 node git
+brew install --cask libreoffice
+</code></pre>
+<p>Danach Claude Code:</p>
+<pre><code class="language-sh">npm install -g @anthropic-ai/claude-code
+</code></pre>
+<p>Prüfen mit <code>claude --version</code>, dann einmal <code>claude</code> starten und anmelden.</p></section><section class="card"><h2>2.2 Repository holen</h2><pre><code class="language-sh">git clone https://github.com/holgerdaube/BewerbungsMgmtSystem ~/Projekte/BewerbungsMgmtSystem
+cd ~/Projekte/BewerbungsMgmtSystem
+</code></pre>
+<p><strong>Zu iCloud Drive:</strong> Das Projekt <em>kann</em> in iCloud liegen (etwa als Backup der Arbeitskopie), aber das
+erfordert zwei Zusatzmaßnahmen: den Frontend-Build in Abschnitt 2.4 und ein ausgelagertes Git-Verzeichnis
+(<code>.git.nosync</code>, s. <code>docs/DOKUMENTATION.md</code>, Abschnitt „Projektstruktur und Ablageorte“). Wer das nicht
+braucht, legt das Projekt schlicht außerhalb ab — diese Anleitung geht davon aus.</p></section><section class="card"><h2>2.3 Python-Umgebung anlegen</h2><pre><code class="language-sh">/opt/homebrew/bin/python3.12 -m venv ~/.bewerbung_mgmt_venv
+~/.bewerbung_mgmt_venv/bin/pip install -r backend/requirements-lock.txt
+</code></pre>
+<p>Auf Intel-Macs liegt Homebrew unter <code>/usr/local/bin/python3.12</code>. Für die Testsuite zusätzlich
+<code>backend/requirements-dev.txt</code> installieren.</p></section><section class="card"><h2>2.4 Oberfläche bauen</h2><p>Liegt das Projekt <strong>außerhalb</strong> von iCloud (Normalfall):</p>
+<pre><code class="language-sh">cd frontend &amp;&amp; npm ci &amp;&amp; npm run build &amp;&amp; cd ..
+</code></pre>
+<p>Liegt das Projekt <strong>in iCloud Drive</strong>, stattdessen:</p>
+<pre><code class="language-sh">cd frontend &amp;&amp; ./build.sh &amp;&amp; cd ..
+</code></pre>
+<p>Der Unterschied hat einen konkreten Grund: iCloud materialisiert <code>node_modules</code> immer wieder neu
+und zerstört dabei die Symlinks, die der Build braucht. <code>build.sh</code> weicht deshalb nach
+<code>~/.bewerbung_mgmt_node/</code> aus und kopiert nur das fertige <code>dist/</code> zurück. Außerhalb von iCloud
+ist dieser Umweg unnötig.</p></section><section class="card"><h2>2.5 Starten</h2><p>Doppelklick auf <code>start.command</code> im Finder, oder im Terminal:</p>
+<pre><code class="language-sh">./start.command
+</code></pre>
+<p>Der Browser öffnet <code>http://localhost:8000</code>. Wie unter Windows legt der erste Start <code>data/</code>, die
+leere Datenbank und eine Startfassung von <code>config/suchprofile.yaml</code> selbst an.</p>
+<p>Für den Zugriff aus dem eigenen WLAN (etwa vom Tablet) gibt es <code>start_lan.command</code>.
+<strong>Beenden:</strong> <code>Ctrl+C</code> im Server-Fenster, sonst <code>stop.command</code>.</p>
+<hr>
+<h1>Teil 3 — Erste Einrichtung (beide Plattformen)</h1>
+<p>Die Anwendung läuft jetzt, weiß aber nichts über die Person, die sich bewirbt. Dieser Teil ist
+der eigentliche Kern der Neuinstallation. Die Reihenfolge ist bewusst gewählt: Schritt 3.1 und
+3.2 sind Handarbeit an Dateien, alles Weitere geht über die Oberfläche.</p>
+<blockquote>
+<p><strong>Windows-Pfade:</strong> Wo unten <code>data/cv_basis/</code> steht, ist unter Windows <code>data\cv_basis\</code>
+gemeint — relativ zum Projektordner, also z. B. <code>C:\BMS\data\cv_basis\</code>.</p>
+</blockquote></section><section class="card"><h2>3.1 Die Profil-Datei anlegen (Pflicht)</h2><p><code>config/profil.md</code> ist die persönliche Stammdatei: Name, Anschrift, Kontakt und die Suchstrategie.
+Sie liegt bewusst nicht im Repository. Seit P2-69 pflegt man sie am einfachsten in der Oberfläche:
+Seite <strong>Profil</strong>, erste Karte „Identität und Suchstrategie“. Speichern schreibt die Datei und lässt
+alles stehen, was die Karte nicht kennt. Der Weg mit dem Texteditor unten funktioniert weiterhin.</p>
+<p>Ohne diese Datei läuft das System zwar, aber jeder erzeugte Lebenslauf heißt dann
+<code>CV_Bewerber_…</code> statt mit dem eigenen Namen, und Anschreiben haben <strong>keinen Briefkopf</strong> (das
+System erfindet an dieser Stelle bewusst nichts).</p>
+<p>Neue Datei <code>config/profil.md</code> mit diesem Inhalt anlegen und die Werte ersetzen:</p>
+<pre><code class="language-markdown"># Kandidatenprofil — Max Mustermann
+
+## Identität
+- **Name:** Max Mustermann
+- **Positionierung:** Service Delivery Leader · DACH
+- **Standort:** Musterweg 3, 12345 Musterstadt
+- **Kontakt:** max.mustermann@example.com · +49 170 1234567
+- **LinkedIn:** https://www.linkedin.com/in/max-mustermann/
+- **Aktuell:** Manager Professional Services @ Beispiel GmbH, seit 2024
+
+## Kurzprofil
+Zwei bis vier Sätze zur eigenen Person — diese dienen als Tonvorlage für Anschreiben.
+
+## Zielrolle
+- **Ebene:** Director / Head
+- **Funktion Plan A:** Professional-Services- / Service-Delivery-Leitung
+- **Funktion Plan B:** Head of Customer Success
+- **Branche:** Enterprise Software, IT-Services
+- **Region:** DACH
+- **Zieltermin:** neue Rolle bis 31.12.2026
+
+## Harte Rahmenbedingungen
+- Kein Umzug, kein dauerhafter Zweitwohnsitz.
+- Mindestens 100 Mitarbeiter beim Zielunternehmen.
+- Reine Vertriebsrollen ohne Führungsverantwortung sind kein Fit.
+
+## Sprachen / CV-Fassungen
+- **Deutsch:** `data/cv_basis/base_de.docx`
+- **Englisch:** `data/cv_basis/base_en.docx`
+
+## Bekannte Skill-Gaps / Red Flags
+- (noch keine)
+
+## Empirie aus dem Bewerbungsverlauf
+- (wird automatisch gepflegt — Überschrift bitte unverändert stehen lassen)
+</code></pre>
+<p>Drei Formatregeln, die tatsächlich ausgewertet werden:</p>
+<ul>
+<li><strong>Standort</strong> im Format <code>Straße Nr, PLZ Ort</code>. Für die Ortszeile im Anschreiben wird das letzte
+  Komma-Segment genommen und die Postleitzahl abgetrennt — andere Schreibweisen ergeben eine
+  schiefe Zeile.</li>
+<li><strong>Kontakt</strong>: E-Mail und Telefon mit <code>·</code> trennen. Im Briefkopf wird daraus automatisch <code>|</code>.</li>
+<li>Die vier Felder <strong>Name, Standort, Kontakt, LinkedIn</strong> werden über ihre Fettschreibung erkannt
+  (<code>**Name:**</code>). Die Sternchen müssen stehen bleiben; die Reihenfolge ist egal.</li>
+</ul>
+<p>Der übrige Text (Kurzprofil, Zielrolle, Rahmenbedingungen) wird nicht maschinell geparst,
+sondern von den KI-Abläufen als Kontext gelesen — er darf also frei formuliert sein, sollte aber
+konkret sein.</p></section><section class="card"><h2>3.2 Basis-Lebenslauf hinterlegen (Pflicht für alle CV-Funktionen)</h2><p>Das System erfindet keinen Lebenslauf. Es nimmt einen vorhandenen als Grundlage und passt ihn je
+Stelle an. Erwartet werden <strong>genau zwei Dateien mit festen Namen</strong>:</p>
+<ul>
+<li><code>data/cv_basis/base_de.docx</code> — deutsche Fassung</li>
+<li><code>data/cv_basis/base_en.docx</code> — englische Fassung</li>
+</ul>
+<p>Beide sind Word-Dateien (<code>.docx</code>, kein PDF). Hochgeladen werden sie seit P2-27 über die
+Oberfläche: <strong>Profil → Basis-CVs</strong>, Sprache wählen, Datei wählen, „Hochladen". Der Upload zählt
+die erkannten Stationen und warnt, ohne abzulehnen, wenn der Aufbau nicht passt; vor dem
+Überschreiben fragt er nach, die alte Fassung wandert in den Papierkorb. Wer nur auf Deutsch sucht,
+lädt trotzdem beide hoch (die englische darf eine Kopie sein), sonst brechen englischsprachige
+Läufe ab.</p>
+<p><strong>Der Aufbau ist nicht beliebig.</strong> Die Anpassungslogik erkennt die Berufsstationen an einem
+festen Muster; hält sich die Datei nicht daran, werden Stationen nicht gefunden oder falsch
+zusammengeführt:</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Element</th>
+<th>Anforderung</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Abschnitts-Überschriften</td>
+<td>Absatzformat <strong>Überschrift 1</strong>, in Großbuchstaben</td>
+</tr>
+<tr>
+<td>Name des Erfahrungs-Abschnitts</td>
+<td><code>BERUFSERFAHRUNG</code> (deutsch) bzw. <code>PROFESSIONAL EXPERIENCE</code> (englisch)</td>
+</tr>
+<tr>
+<td>Beginn einer Station</td>
+<td>Absatzformat <strong>Standard</strong>, Aufbau <code>Firma</code> → <strong>Tabulator</strong> → <code>Zeitraum</code></td>
+</tr>
+<tr>
+<td>Zeile direkt darunter</td>
+<td>Positionsbezeichnung, Standard-Format, <strong>fett</strong>, 11 pt, ohne Tabulator</td>
+</tr>
+<tr>
+<td>Danach</td>
+<td>kursive Firmenbeschreibung (ein bis zwei Zeilen)</td>
+</tr>
+<tr>
+<td>Danach</td>
+<td>Erfolge als Aufzählung im Format <strong>Listenabsatz</strong></td>
+</tr>
+<tr>
+<td>Abstand vor jeder Station</td>
+<td>mindestens 20 pt „Abstand vor" auf der Tabulator-Zeile</td>
+</tr>
+</tbody>
+</table></div>
+<p>Der Tabulator zwischen Firma und Zeitraum ist das entscheidende Erkennungsmerkmal und darf
+<strong>nirgends sonst</strong> im Dokument vorkommen — in anderen Abschnitten (Ausbildung, Zertifikate) trennt
+man mit <code>•</code>, nicht mit Tabulator.</p>
+<p>Praktisch: einen vorhandenen Lebenslauf in Word öffnen, die Abschnittsüberschriften auf
+„Überschrift 1" setzen, je Station eine Zeile <code>Firma⇥Zeitraum</code> einziehen und die Aufzählungen
+als Listenabsatz formatieren.</p></section><section class="card"><h2>3.3 LinkedIn-Datenexport einlesen (empfohlen)</h2><p>Der schnellste Weg, Werdegang und Fähigkeiten zu befüllen, ohne alles abzutippen.</p>
+<p>Bei LinkedIn: <strong>Einstellungen → Datenschutz → „Eine Kopie Ihrer Daten erhalten"</strong> und dort die
+<strong>oberste</strong> Option („größeres Datenarchiv") wählen. Die Schnellauswahl „Profile" enthält nur die
+Kurzbeschreibung und reicht nicht. LinkedIn stellt das Archiv innerhalb von bis zu 24 Stunden
+bereit und schickt eine E-Mail.</p>
+<p>Das erhaltene ZIP dann in der Anwendung unter <strong>Profil</strong> hochladen. Übernommen werden
+Kurzbeschreibung, Standort, Fähigkeiten, Berufsstationen, Ausbildung und Zertifikate. Der Import
+arbeitet rein mechanisch, ergänzt nur und überschreibt nichts Vorhandenes. Im Anschluss sortiert
+ein Hintergrundlauf die importierten Fähigkeiten automatisch in Themenbereiche ein.</p>
+<p>Danach das Profil in der Oberfläche durchsehen und ergänzen: Positionierung schärfen,
+Berufsstationen vervollständigen, Zeugnisse und Zertifikate anhängen.</p>
+<blockquote>
+<p><strong>Hinweis:</strong> Die Datei <code>config/profil_struktur.md</code> gehört nicht zum Repository. Die Anwendung erzeugt sie
+selbst aus den Daten der Profil-Seite (beim Start, wenn sie fehlt, und bei jedem Speichern, auch durch
+den ZIP-Import). Sie ist die „Substanz", die das System bei Anschreiben und Lebenslauf heranzieht, und
+wird nicht von Hand bearbeitet.</p>
+</blockquote></section><section class="card"><h2>3.4 Einstellungen in der Oberfläche setzen</h2><p>Unter <strong>Einstellungen</strong>, in dieser Reihenfolge:</p>
+<ol>
+<li><strong>Suchbereich und Firmengröße</strong> — Remote, deutschlandweit und/oder Stadt mit Umkreis;
+   Mindest-Mitarbeiterzahl. Der Umkreis erzeugt intern eine Kategorie wie <code>Musterstadt +50km</code>,
+   die später an jeder Stelle auftaucht. Ändert man Stadt oder Radius später erneut, stellt die
+   Anwendung vorhandene Stellen automatisch auf die neue Bezeichnung um.</li>
+<li><strong>Pläne A/B/C</strong> — die Zielrollen: Titel, Ebene und Branche je Plan. Plan A ist das
+   eigentliche Ziel, Plan B die realistische Alternative, Plan C optional als Auffangebene.
+   <strong>Diese Felder sind nach der Installation leer</strong> und müssen ausgefüllt werden — vorher findet
+   die Jobsuche nichts, weil sie nicht weiß, wonach sie suchen soll.</li>
+<li><strong>Suchportale</strong> — sechs Portale sind vorbelegt und aktiv; bei Bedarf einzelne abschalten oder
+   zwei eigene ergänzen. Die Schaltfläche zum Prüfen zeigt, welche antworten.</li>
+<li><strong>KI-Modelle je Funktion</strong> — Voreinstellung ist überall Sonnet. Das kann so bleiben.</li>
+</ol>
+<p>Nach dem ersten Speichern schreibt die Anwendung <code>config/suchprofile.yaml</code> neu und trägt die
+Eingaben dort ein.</p></section><section class="card"><h2>3.5 Zielprofil anpassen</h2><p>Eine Datei im Repository enthält ein Beispiel-Zielprofil und wird von den Suchabläufen gelesen. Wer sie
+nicht anpasst, bekommt Bewertungen nach den Kriterien des Beispiels:</p>
+<p><strong><code>config/scoring_rubrik.md</code></strong>, Abschnitt <em>Dimension 2 — Funktion</em>: die Beschreibung von
+Plan A, B und C (im Beispiel „PS- oder Service-Delivery-Leitung" bzw. „Head of Customer
+Success"). Die Bewertungsskala 1–5 und die Situationscodes (BUILD, CARVE-OUT, POST-MERGER …)
+sind allgemeingültig und bleiben unverändert.</p>
+<p>Die Region selbst muss nirgends mehr von Hand angepasst werden: Sobald in Schritt 3.4 Stadt und
+Umkreis gesetzt sind, übernehmen Jobliste, Filter und die Suchabläufe (<code>jobsuche</code>,
+<code>mail-jobsuche</code>, <code>angebot-vergleich</code>) die Bezeichnung automatisch aus den Einstellungen.</p></section><section class="card"><h2>3.6 E-Mail-Konto verbinden (optional, aber empfohlen)</h2><p>Ohne E-Mail-Anbindung entfallen der tägliche Postfach-Abgleich und die Auswertung von
+Job-Benachrichtigungen. Unter <strong>Einstellungen → E-Mail-Konto</strong>; empfohlen ist der IMAP-Weg mit
+einem <strong>App-Passwort</strong> des Mail-Anbieters (nicht das normale Kennwort). Host und Port für die
+gängigen Anbieter sowie den alternativen Gmail-Weg beschreibt <code>docs/SETUP-EMAIL.md</code>.</p>
+<p>Das System <strong>versendet nie selbst E-Mails</strong>. Es legt ausschließlich Entwürfe an, die man selbst
+prüft und abschickt.</p></section><section class="card"><h2>3.7 Automatische Läufe freischalten (optional)</h2><p>Für Abläufe, die im Hintergrund starten (tägliche Jobsuche, Firmenprüfung, Postfach-Abgleich),
+braucht der Server ein eigenes Zugangstoken für Claude Code. Erzeugen mit:</p>
+<pre><code class="language-sh">claude setup-token
+</code></pre>
+<p>Das ausgegebene Token in eine Datei <code>agent.env</code> im Secrets-Verzeichnis schreiben, als eine Zeile
+<code>CLAUDE_CODE_OAUTH_TOKEN=…</code>. Das Verzeichnis liegt bewusst außerhalb des Projekts:</p>
+<ul>
+<li>macOS: <code>~/.bewerbung_mgmt_secrets/agent.env</code></li>
+<li>Windows: <code>%USERPROFILE%\.bewerbung_mgmt_secrets\agent.env</code></li>
+</ul>
+<p>Als Vorlage dient <code>automation/agent.env.example</code>. Achtung beim Kopieren: Bricht das Token über
+mehrere Zeilen um, gehören die Teile wieder in eine Zeile — eine Zeile ohne <code>=</code> ist die
+Fortsetzung der vorherigen. Nach dem Anlegen den Server neu starten.</p>
+<p>Zusätzlich muss die Freigabeliste <code>automation/agent_settings.json</code> den Pfad zum Python der virtuellen
+Umgebung treffen. Sie nennt ihn in der <code>~</code>-Form (<code>~/.bewerbung_mgmt_venv/bin/python</code>); liegt Ihre Umgebung
+woanders, tragen Sie den tatsächlichen Pfad ein. Ein Platzhalter genügt an dieser Stelle nicht — der
+Eintrag muss den Pfad exakt treffen. Weicht der venv-Pfad ab, den Hook-Befehl im <code>hooks</code>-Block derselben
+Datei (prüft Write/Edit-Ziele gegen die Projektwurzel, s. <code>docs/DOKUMENTATION.md</code> Abschnitt 8) ebenfalls
+anpassen — er ruft dieselbe venv-Python-Installation auf wie die Freigabeliste. Wer im Projekt selbst mit
+Claude Code entwickelt und die Vorschau nutzt, legt sich dafür eine eigene <code>.claude/launch.json</code> an; sie
+gehört nicht zum Repository.</p>
+<p>Die Secrets-Datei legen Sie unter macOS so an (Windows: entsprechend im Benutzerordner):</p>
+<pre><code class="language-sh">mkdir -p ~/.bewerbung_mgmt_secrets &amp;&amp; chmod 700 ~/.bewerbung_mgmt_secrets
+cp automation/agent.env.example ~/.bewerbung_mgmt_secrets/agent.env
+chmod 600 ~/.bewerbung_mgmt_secrets/agent.env
+</code></pre>
+<p>Die Gmail-Zugangsdaten (<code>gmail_credentials.json</code>, <code>gmail_token.json</code>, nur beim Gmail-API-Weg aus
+<code>docs/SETUP-EMAIL.md</code>) landen im selben Verzeichnis. Der Ort lässt sich über <code>BMS_SECRETS_DIR</code> ändern.</p></section><section class="card"><h2>3.8 Kosmetik</h2><p>Der Browser-Tab zeigt den Produktnamen, dahinter den Namen aus <code>config/profil.md</code>; die Seitenleiste liest
+den Namen ebenfalls dynamisch und stimmt nach Schritt 3.1 automatisch. Der Produktname kommt aus dem
+Design (<code>docs/DOKUMENTATION.md</code>, Abschnitt „Design aus einer Quelle“); der statische <code>&lt;title&gt;</code> in
+<code>frontend/index.html</code> ist nur der Anfangswert, bis das Design geladen ist.</p></section><section class="card"><h2>3.9 Optionale Umgebungsvariablen und Entwicklungswerkzeuge</h2><p><code>.env.example</code> listet die Einstellungen, die vom Standard abweichen dürfen: Server-Port und -Adresse,
+<code>BMS_DATA_DIR</code>, <code>BMS_SECRETS_DIR</code> und die Grenzen für KI-Läufe. Das Programm liest sie ausschließlich aus
+der Umgebung; eine Datei <code>.env</code> lädt es nicht selbst. Setzen Sie die Werte deshalb in der Shell, die den
+Server startet, zum Beispiel <code>PORT=8010 ./start.command</code>.</p>
+<p>Wer am Quellcode arbeitet, installiert einmalig <code>backend/requirements-dev.txt</code> und den Secret-Guard
+(<code>scripts/install_hooks.sh</code>, prüft vor jedem Commit auf Token). Die Tests laufen mit <code>scripts/test.sh</code>
+gegen eine Wegwerf-Datenbank. Einzelheiten und die Regeln für Beiträge stehen in
+<code>docs/DOKUMENTATION.md</code> (Abschnitt „Tests &amp; CI“) und in <code>CONTRIBUTING.md</code>.</p>
+<hr>
+<h1>Teil 4 — Prüfen, ob alles sitzt</h1>
+<p>Diese kurze Runde deckt die typischen Installationsfehler auf:</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Prüfung</th>
+<th>Erwartung</th>
+<th>Wenn nicht</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>http://localhost:8000</code> öffnen</td>
+<td>Oberfläche mit Menü erscheint</td>
+<td>Frontend nicht gebaut (Schritt 1.4 / 2.4)</td>
+</tr>
+<tr>
+<td>Seite <strong>Einstellungen</strong> öffnen</td>
+<td>Karten werden angezeigt, kein Fehler</td>
+<td>Server neu starten; Meldung im Server-Fenster lesen</td>
+</tr>
+<tr>
+<td>Karte <strong>Programmversion</strong>, Knopf „Nach Updates suchen“</td>
+<td>Der Knopf zeigt die neueste Version oder einen Fehlertext (gibt es noch kein veröffentlichtes Release: „Es ist noch keine Version veröffentlicht.“)</td>
+<td>Internetverbindung und Zugriff auf GitHub prüfen (Firmennetz, Proxy)</td>
+</tr>
+<tr>
+<td>Seite <strong>Profil</strong> öffnen</td>
+<td>eigener Name in der Kopfzeile</td>
+<td><code>config/profil.md</code> prüfen (Schreibweise <code>**Name:**</code>)</td>
+</tr>
+<tr>
+<td>Eine Stelle von Hand anlegen</td>
+<td>Eintrag erscheint in der Liste</td>
+<td>Server-Fenster auf Fehlermeldungen prüfen</td>
+</tr>
+<tr>
+<td>Seite <strong>Aufgaben</strong>, einen Lauf starten</td>
+<td>Lauf beginnt und endet mit Ergebnis</td>
+<td>Claude-Anmeldung und Token prüfen (Schritt 3.7)</td>
+</tr>
+<tr>
+<td>Lebenslauf für eine Stelle erzeugen</td>
+<td>Word- und PDF-Datei entstehen</td>
+<td>Basis-Lebenslauf (3.2) und LibreOffice-Pfad prüfen</td>
+</tr>
+</tbody>
+</table></div>
+<p>Wer die technische Basis vollständig absichern will, kann die Testsuite laufen lassen (setzt
+<code>requirements-dev.txt</code> voraus):</p>
+<pre><code class="language-sh">cd backend &amp;&amp; ~/.bewerbung_mgmt_venv/bin/python -m pytest tests -q
+</code></pre>
+<p>Unter Windows entsprechend mit <code>%USERPROFILE%\.bewerbung_mgmt_venv\Scripts\python.exe</code>. Einige
+Tests überspringen sich dort planmäßig, weil sie Unix-Eigenheiten prüfen — das ist kein Fehler.</p>
+<p>Auf einer eigenen Installation können außerdem einzelne Tests anders ausgehen als in der CI: Sobald
+<code>config/profil.md</code> und die Basis-CVs unter <code>data/cv_basis</code> existieren, prüfen manche Tests auch gegen
+diese lokalen Dateien. Das ist kein Installationsfehler; die CI läuft ohne diese Dateien und ist der
+Maßstab.</p>
+<hr>
+<h1>Teil 5 — Grenzen und häufige Stolpersteine</h1>
+<p><strong>Unter Windows nicht verfügbar</strong> (Details in <code>docs/SETUP-WINDOWS.md</code>):</p>
+<ul>
+<li><strong>Zeitgesteuerte Automatik.</strong> Der tägliche Lauf zu fester Uhrzeit ist macOS-spezifisch; unter
+  Windows startet man ihn über die Schaltfläche in der Oberfläche.</li>
+<li><strong>Drei Sammelfunktionen</strong> — „Ansichten aktualisieren" (Excel-Export, Tages-Digest,
+  Suchindex), „Anschreiben rendern" und der Coach-Site-Upload — rufen intern ein Unix-Skript auf
+  und melden unter Windows „Binary nicht gefunden". Die dahinterliegenden Python-Module lassen
+  sich direkt aufrufen.</li>
+<li><strong>Die Hilfsskripte in <code>scripts/</code></strong> setzen die Unix-Verzeichnisstruktur der virtuellen Umgebung
+  voraus und laufen auch in Git-Bash nicht unverändert.</li>
+</ul>
+<p><strong>Auf beiden Plattformen:</strong></p>
+<ul>
+<li><strong>Kein Auto-Reload.</strong> Nach Änderungen an Backend-Dateien muss der Server neu gestartet werden.</li>
+<li><strong>Die Datenbank ist eine einzelne Datei</strong> (<code>data/bewerbung.sqlite</code>). Das BMS sichert sie
+  automatisch: einmal täglich als ZIP nach <code>data/backups/auto</code>, mit fester Aufbewahrung
+  (Einstellungen in der Oberfläche unter „Datensicherung"). Vor besonders riskanten Aktionen
+  zusätzlich eine eigene Kopie anlegen; unter macOS gibt es dafür <code>scripts/backup_db.sh</code>.</li>
+<li><strong>Zwei Installationen gleichen sich nicht ab.</strong> Wer das System auf zwei Rechnern betreibt,
+  führt zwei getrennte Datenbestände — eine Zusammenführung ist Handarbeit.</li>
+<li><strong>Der Excel-Export der Kontaktliste</strong> greift auf eine Vorlagendatei zurück, die bei einer
+  Neuinstallation nicht existiert; diese eine Funktion meldet dann einen Fehler. Alle übrigen
+  Exporte sind davon nicht betroffen.</li>
+<li><strong>Kosten entstehen bei den KI-Läufen.</strong> Die Budget-Seite zeigt den Verbrauch und bremst bei
+  Überschreitung; Voreinstellungen werden beim ersten Aufruf automatisch angelegt.</li>
+</ul>
+<p><strong>Rechtliches:</strong> Das BMS steht unter der Apache License 2.0 (<code>LICENSE</code>, <code>NOTICE</code>) und braucht keine
+Lizenzdatei. Bis Version 1.7.0 gab es eine Lizenzpflicht; sie wurde in P2-82 ausgebaut (Hintergrund
+und Technik: <code>docs/DOKUMENTATION.md</code>, Abschnitt „Lizenz — ausgebaut“). Ältere Lizenzdateien im
+Secrets-Verzeichnis werden nicht mehr gelesen und dürfen gelöscht werden.</p>
+<hr>
+<h1>Teil 6 — Weiterführende Unterlagen</h1>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Datei</th>
+<th>Inhalt</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>docs/ANLEITUNG.md</code></td>
+<td>Bedienung im Alltag — der beste Einstieg nach der Installation</td>
+</tr>
+<tr>
+<td><code>docs/SETUP-EMAIL.md</code></td>
+<td>E-Mail-Anbindung im Detail (IMAP und Gmail)</td>
+</tr>
+<tr>
+<td><code>docs/SETUP-WINDOWS.md</code></td>
+<td>Windows-Besonderheiten, Grenzen, Support-Matrix</td>
+</tr>
+<tr>
+<td><code>docs/DOKUMENTATION.md</code></td>
+<td>Systemaufbau, Betrieb im Alltag (Starten, Beenden, Backup), Tests und Entwicklungsstand</td>
+</tr>
+<tr>
+<td><code>docs/RELEASE.md</code></td>
+<td>Versions- und Freigabeworkflow (nur relevant, wer selbst Pakete freigibt)</td>
+</tr>
+<tr>
+<td><code>CONTRIBUTING.md</code></td>
+<td>Regeln für Beiträge (Lizenz, Sprache, Tests)</td>
+</tr>
+<tr>
+<td><code>SECURITY.md</code></td>
+<td>Sicherheitslücken melden</td>
+</tr>
+<tr>
+<td><code>README.md</code></td>
+<td>Projektüberblick für Anwender: Installation, Updates, Datenschutz, Lizenz</td>
+</tr>
+</tbody>
+</table></div></section>
+</div></body></html>
+<!-- docs_render quelle=INSTALLATION.md sha256=50d8585136b5b153f7d32bfc3bf742a800e421cab4c56351807643912d0a89d8 -->

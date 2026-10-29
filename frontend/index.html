@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- P2-72: Icon und Farben kommen aus dem geltenden Design (Backend), nicht aus dem Bau.
+         Das Stylesheet steht vor dem eigenen CSS und blockiert das Zeichnen, bis die Farben da sind. -->
+    <link rel="stylesheet" href="/api/design.css" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/api/design/icon/32" />
+    <link rel="apple-touch-icon" href="/api/design/icon/180" />
+    <!-- Anfangswert; Layout.tsx ersetzt ihn durch den Produktnamen aus dem Design. -->
+    <title>Bewerbungs-Management-System</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

@@ -1,0 +1,32 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Phase 80 (§5.4): Headlines = Montserrat (fontFamily.heading, s. tailwind.config.js),
+   Body bleibt Inter über fontFamily.sans. */
+@layer base {
+  h1, h2, h3 {
+    @apply font-heading;
+  }
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  @apply bg-slate-100 text-slate-800 antialiased;
+}
+
+/* Styleguide v5 §7.2 (Design-Review 10.08.2026): Tastatur-Fokus = 2px Navy-Outline.
+   App-weit sitzt `focus:outline-none` an den Eingabefeldern (42 Stellen) — dessen
+   :focus-Regel hat höhere Spezifität als eine nackte :focus-visible-Regel, deshalb
+   !important. Greift NUR bei Tastaturnavigation (:focus-visible); der bestehende
+   Maus-Fokus-Stil (focus:border-brand-cyan) bleibt unverändert sichtbar.
+   P2-72: Die Farbe ist die Rolle `marke` des geltenden Designs (GET /api/design.css). */
+*:focus-visible {
+  outline: 2px solid var(--marke-farbe) !important;
+  outline-offset: 1px;
+}

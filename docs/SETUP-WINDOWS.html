@@ -1,0 +1,345 @@
+<!doctype html><html lang="de"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><link rel="icon" type="image/png" href="data:image/png;base64,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">
+<title>Windows-Setup</title>
+<style>
+:root{
+  --ink:#0B1F3A;
+  --paper:#F4F7FB;
+  --card:#FFFFFF;
+  --line:#DCE4EE;
+  --muted:#5F6F84;
+  --accent:#00B4D8;
+  --amber:#E4A11B;
+  --radius:14px;
+  --shadow:0 1px 2px rgba(16,26,40,.06),0 8px 24px rgba(16,26,40,.06);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--paper);
+  color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:880px;margin:0 auto;padding:32px 20px 72px}
+
+header.head{background:var(--ink);color:#fff;border-radius:var(--radius);padding:28px 30px;
+  box-shadow:var(--shadow);margin-bottom:22px}
+header.head h1{font-size:26px;line-height:1.3;margin:0;font-weight:700;letter-spacing:-.01em}
+header.head h1 code{background:rgba(255,255,255,.16);color:#fff}
+header.head .intro{margin-top:10px;font-size:14.5px;color:#BFC7D5;max-width:65ch}
+header.head .intro p{margin:0 0 6px}
+header.head .intro p:last-child{margin-bottom:0}
+header.head .intro a{color:#fff}
+header.head .intro code{background:rgba(255,255,255,.16);color:#fff}
+/* Ein Zitat (Hinweis-Box) KANN vor der ersten ##-Überschrift stehen und landet dann im Intro
+   des dunklen Banners -- seine eigene helle Cremefläche braucht dunkle Schrift, sonst macht die
+   helle ".intro code/a"-Regel (höhere Selektor-Spezifität wegen zweier Klassen) Inline-Code/
+   Links darin fast unsichtbar (weiß auf Creme). Deshalb hier gezielt zurückgesetzt. */
+header.head .intro blockquote{color:#5F4A1F}
+header.head .intro blockquote a{color:var(--accent)}
+header.head .intro blockquote code{background:rgba(11,31,58,.08);color:#5F4A1F}
+
+section.card{background:var(--card);border:1px solid var(--line);border-radius:12px;
+  padding:18px 22px 22px;box-shadow:var(--shadow);margin-bottom:16px}
+section.card:last-child{margin-bottom:0}
+section.card>h2:first-child{margin-top:0}
+section.card h2{font-size:18px;margin:0 0 14px;font-weight:700;letter-spacing:-.01em;
+  padding-bottom:10px;border-bottom:2px solid var(--accent)}
+section.card h3{font-size:15.5px;margin:20px 0 8px;font-weight:700}
+section.card h3:first-child{margin-top:0}
+section.card h4{font-size:13px;margin:16px 0 6px;font-weight:700;color:var(--muted);
+  text-transform:uppercase;letter-spacing:.05em}
+section.card p{margin:0 0 12px;font-size:14.5px}
+section.card p:last-child{margin-bottom:0}
+section.card ul,section.card ol{margin:0 0 12px;padding-left:22px;font-size:14.5px}
+section.card ul ul,section.card ol ol,section.card ul ol,section.card ol ul{margin:4px 0}
+section.card li{margin-bottom:5px}
+section.card li:last-child{margin-bottom:0}
+section.card a{color:var(--accent);text-decoration:none;font-weight:600}
+section.card a:hover{text-decoration:underline}
+section.card hr{border:none;border-top:1px solid var(--line);margin:18px 0}
+
+code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.92em}
+:not(pre)>code{background:#EAF0F6;border-radius:4px;padding:1px 6px;color:var(--ink)}
+pre{background:var(--ink);color:#EAF0F6;border-radius:10px;padding:14px 16px;overflow-x:auto;
+  font-size:13px;margin:0 0 14px;line-height:1.5}
+section.card pre:last-child{margin-bottom:0}
+pre code{background:none;padding:0;color:inherit;font-size:inherit}
+
+.tablewrap{overflow-x:auto;margin:0 0 14px}
+section.card .tablewrap:last-child{margin-bottom:0}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{text-align:left;background:#EAF0F6;color:var(--ink);font-weight:700;padding:8px 12px;
+  border:1px solid var(--line);white-space:nowrap}
+td{padding:8px 12px;border:1px solid var(--line);vertical-align:top}
+
+blockquote{background:#FBF3E6;border:1px solid #ECD9B3;border-left:4px solid var(--amber);
+  border-radius:10px;padding:10px 16px;margin:0 0 14px;color:#5F4A1F;font-size:14px}
+section.card blockquote:last-child{margin-bottom:0}
+blockquote p{margin:0 0 6px;color:inherit;font-size:inherit}
+blockquote p:last-child{margin-bottom:0}
+blockquote code{background:rgba(11,31,58,.08)}
+
+@media (max-width:640px){
+  .wrap{padding:20px 14px 48px}
+  header.head{padding:20px 22px}
+}
+@media print{
+  body{background:#fff}
+  .wrap{max-width:100%;padding:10px 6px}
+  header.head,section.card{box-shadow:none}
+  section.card{page-break-inside:avoid;border-color:#ccc}
+  pre{white-space:pre-wrap;word-break:break-word}
+  a{color:inherit;text-decoration:none}
+}
+</style></head><body><div class="wrap">
+<header class="head"><h1>Windows-Setup</h1><div class="intro"><blockquote>
+<p><strong>Neu installieren?</strong> Die Installation unter Windows steht Schritt für Schritt in
+<code>BMS_Install_Windows.md</code>. Claude führt Sie damit durch die Installation, auch durch das Laden
+des Programmpakets von GitHub. Eine ZIP-Datei brauchen Sie nur als Ersatzweg. Im BMS
+finden Sie die Anleitung unter „Dokumentation“, Reiter „Installation &amp; Updates“. Dieses
+Dokument vertieft, was unter Windows anders läuft als auf dem Mac, was nicht geht und warum.</p>
+</blockquote>
+<p>Das BMS wird auf dem Mac entwickelt und dort täglich eingesetzt. Unter Windows laufen Server und
+Oberfläche, und die Verwaltung von Stellen, Firmen, Kontakten und Terminen funktioniert vollständig.
+Einige Bereiche, vor allem die KI-Läufe, sind für Windows umgestellt, aber noch nicht erprobt. Auf
+einem echten Windows-Rechner ist das BMS bisher nicht getestet worden. Die Aussagen hier beruhen auf
+dem Programmcode und auf den automatischen Tests, die bei jeder Änderung zusätzlich auf einem
+Windows-System laufen. Was nicht oder nur eingeschränkt geht, steht unter „Bekannte Grenzen“.</p></div></header>
+<section class="card"><h2>Voraussetzungen</h2><p><code>BMS_Install_Windows.md</code>, Schritt „Programme installieren“, installiert die Programme per
+<code>winget</code>: Python 3.12, Node.js (LTS), Git für Windows, LibreOffice und Claude Code. Unter Windows
+kommt es auf drei Punkte an:</p>
+<ol>
+<li><strong>Python 3.12:</strong> Prüfen Sie die Version mit <code>py -3.12 --version</code>. Der <code>py</code>-Launcher trifft
+   eindeutig Python 3.12, auch wenn mehrere Versionen installiert sind. Ein bloßes
+   <code>python --version</code> kann je nach PATH-Reihenfolge eine andere Version treffen.</li>
+<li><strong>Git für Windows ist Pflicht:</strong> Die KI-Funktionen arbeiten mit Befehlen, die Claude Code unter
+   Windows nur in der mit Git installierten „Git Bash“ ausführen kann.</li>
+<li><strong>LibreOffice am Standardpfad:</strong> Das BMS sucht <code>soffice.exe</code> zuerst unter
+   <code>C:\Program Files\LibreOffice\program\</code>, dann unter <code>C:\Program Files (x86)\LibreOffice\program\</code>
+   und zuletzt im PATH. Liegt LibreOffice woanders und steht sein Ordner <code>program</code> nicht im PATH,
+   findet das BMS es nicht und erzeugt keine PDF-Dateien. Behalten Sie deshalb den vorgeschlagenen
+   Installationsort bei.</li>
+</ol>
+<p><strong>Ohne winget:</strong> Die Programme gibt es auch auf den Seiten der Hersteller:
+<a href="https://www.python.org/downloads/">python.org</a>, <a href="https://nodejs.org/">nodejs.org</a>,
+<a href="https://git-scm.com/download/win">git-scm.com</a> und
+<a href="https://www.libreoffice.org/download/">libreoffice.org</a>. Kreuzen Sie im Python-Installer
+„Add python.exe to PATH“ an, sonst findet Windows den Befehl <code>python</code> später nicht. Claude Code
+installieren Sie nach der Anleitung von Anthropic.</p>
+<p>Für Node.js nennt das BMS keine Mindestversion. Die automatischen Tests bauen die Oberfläche mit
+Node.js 24.</p></section><section class="card"><h2>Python-Umgebung einrichten</h2><p>Meldet <code>start_windows.bat</code>, <code>update_windows.bat</code> oder <code>wiederherstellen_windows.bat</code>, dass die
+Python-Umgebung fehlt, holen Sie diesen Schritt nach (<code>BMS_Install_Windows.md</code>, Schritt
+„Python-Umgebung einrichten“). In PowerShell im Programmordner, etwa <code>C:\Program Files\BMS</code>:</p>
+<pre><code class="language-powershell">py -3.12 -m venv &quot;$env:USERPROFILE\.bewerbung_mgmt_venv&quot;
+&amp; &quot;$env:USERPROFILE\.bewerbung_mgmt_venv\Scripts\pip.exe&quot; install -r backend\requirements-lock.txt
+New-Item -ItemType Junction -Path &quot;$env:USERPROFILE\.bewerbung_mgmt_venv\bin&quot; -Target &quot;$env:USERPROFILE\.bewerbung_mgmt_venv\Scripts&quot;
+</code></pre>
+<p>Die Umgebung liegt bewusst außerhalb des Programmordners, unter
+<code>%USERPROFILE%\.bewerbung_mgmt_venv</code>. Unter Windows liegt Python dort im Ordner <code>Scripts</code>, auf dem
+Mac in <code>bin</code>. Die KI-Funktionen und der Pfad-Wächter (s. u.) rufen Python immer als
+<code>~/.bewerbung_mgmt_venv/bin/python</code> auf. Die Verknüpfung <code>bin</code> → <code>Scripts</code> aus der dritten Zeile
+sorgt dafür, dass dieser Aufruf auch unter Windows ankommt. Fehlt sie, scheitert in KI-Läufen
+jeder Zugriff auf die Datenbank.</p></section><section class="card"><h2>Oberfläche bauen</h2><p>Unter Windows bauen Sie die Oberfläche direkt im Ordner <code>frontend</code> mit <code>npm.cmd ci</code> und
+<code>npm.cmd run build</code> (<code>BMS_Install_Windows.md</code>, Schritt „Oberfläche bauen“). Schreiben Sie
+<code>npm.cmd</code> und nicht nur <code>npm</code>: PowerShell blockiert auf vielen Rechnern das Skript <code>npm.ps1</code>,
+<code>npm.cmd</code> ist davon nicht betroffen. Das Skript <code>frontend/build.sh</code> gehört zu Mac-Installationen
+in iCloud Drive und wird unter Windows nicht gebraucht.</p></section><section class="card"><h2>Zugangsschlüssel und Secrets</h2><p>Den Zugangsschlüssel für die KI-Läufe im Hintergrund legt <code>BMS_Install_Windows.md</code>, Schritt
+„KI-Zugang einrichten“, in <code>%USERPROFILE%\.bewerbung_mgmt_secrets\agent.env</code> ab. Dort liegen auch
+die übrigen Zugangsdaten des BMS, etwa für das E-Mail-Konto. Einen anderen Ort legen Sie mit der
+Umgebungsvariablen <code>BMS_SECRETS_DIR</code> fest.</p>
+<p>Windows kennt keine Unix-Dateirechte. Auf dem Mac beschränkt das BMS seine Zugangs- und
+Protokolldateien auf Ihr Benutzerkonto (<code>chmod 600</code> bzw. <code>700</code>), unter Windows bleibt dieser
+Aufruf ohne Wirkung. Dort schützt allein Ihr Benutzerprofil diese Dateien. Beim Start kann der
+Server unter Windows deshalb die Warnung „agent.env: zu offene Rechte … 'chmod 600 …' ausführen“
+ausgeben. Unter Windows ist sie gegenstandslos.</p></section><section class="card"><h2>Starten</h2><p>Doppelklicken Sie im Programmordner auf <code>start_windows.bat</code>. Die Datei prüft, ob die
+Python-Umgebung da ist, startet den Server mit Port 8000 im Vordergrund und öffnet nach etwa zwei
+Sekunden <code>http://localhost:8000</code> im Standardbrowser. Lassen Sie das Fenster geöffnet, solange Sie
+mit dem BMS arbeiten. Strg+C beendet den Server.</p></section><section class="card"><h2>Beenden</h2><p>Strg+C im Server-Fenster. Ist das Fenster geschlossen oder reagiert der Server nicht mehr,
+doppelklicken Sie auf <code>stop_windows.bat</code>. Die Datei fragt per PowerShell beim Server nach, ob gerade
+KI-Läufe aktiv oder eingereiht sind. Wenn ja, fragt sie nach, ob Sie trotzdem beenden wollen,
+denn ein Stopp bricht diese Läufe ab. <code>stop_windows.bat --force</code> überspringt die Rückfrage.
+Antwortet der Server nicht mehr, beendet die Datei ihn ohne Rückfrage, sonst ließe sich ein
+hängender Server nie stoppen. Sie sucht den Prozess, der auf Port 8000 lauscht (<code>netstat</code>),
+beendet ihn samt Kindprozessen zunächst regulär und nach 10 Sekunden hart (<code>taskkill /F /T</code>).</p>
+<p>Der Ablauf entspricht der auf dem Mac erprobten Datei <code>stop.command</code>. Unter Windows ist er noch
+nicht erprobt.</p></section><section class="card"><h2>Aktualisieren</h2><p>Beenden Sie das BMS und doppelklicken Sie im Programmordner auf <code>update_windows.bat</code>. Den Ablauf
+beschreibt <code>BMS_Install_Windows.md</code>, Abschnitt „Aktualisierungen einspielen“. Die Datei gibt den
+Programmordner an <code>scripts\bms_update.py</code> weiter. Das Werkzeug sucht online bei GitHub nach einer
+neuen Version und lädt sie, prüft das neue Paket, legt eine Sicherung an, spielt das Update ein,
+installiert neue Bausteine und führt einen Selbsttest aus. Es nutzt dieselbe Python-Umgebung wie
+der Start (<code>%USERPROFILE%\.bewerbung_mgmt_venv\Scripts\python.exe</code>).</p>
+<p><strong>Online-Suche:</strong> Vor der Suche schreibt das Werkzeug: „Suche auf GitHub nach einer neuen Version.
+GitHub erhält dabei die IP-Adresse dieses Rechners.“ Übertragen wird die Anfrage selbst und sonst
+nichts, und nur, wenn Sie das Werkzeug selbst starten. Das geladene Paket vergleicht das Werkzeug mit
+der Prüfsumme, die GitHub zur Datei angibt. Mit <code>--offline</code> sucht es nicht online. Erreicht es GitHub
+nicht, oder lehnt GitHub die Anfrage ab, zeigt es den Grund und nimmt eine ZIP-Datei
+<code>BMS_&lt;Version&gt;.zip</code> aus Ihrem Ordner „Downloads“. Die höchste Version gewinnt, egal woher sie kommt.
+Ob es eine neue Version gibt, zeigt Ihnen auch der Knopf „Nach Updates suchen“ in den Einstellungen,
+Karte „Programmversion“. Er spielt nichts ein.</p>
+<p><code>update_windows.bat</code> läuft vollständig in einem Block in runden Klammern, der mit <code>exit /b</code>
+endet. Der Grund: cmd.exe liest eine Batch-Datei Zeile für Zeile nach, während sie läuft, und das
+Update kann genau diese Datei ersetzen. Einen Block in runden Klammern liest cmd.exe vollständig
+ein, bevor die erste Zeile darin läuft.</p>
+<p><strong>Zeilenenden:</strong> Die <code>.bat</code>-Dateien werden mit Windows-Zeilenenden (CRLF) ausgeliefert, sonst
+findet cmd.exe Sprungmarken wie <code>:label</code> und <code>goto</code> darin nicht zuverlässig. Jedes Programmpaket
+wird vor der Auslieferung darauf geprüft. Bearbeiten Sie eine <code>.bat</code>-Datei, speichern Sie sie
+wieder mit CRLF.</p></section><section class="card"><h2>Sicherung zurückspielen</h2><p>Beenden Sie das BMS und doppelklicken Sie im Programmordner auf <code>wiederherstellen_windows.bat</code>.
+Das Werkzeug zeigt die vorhandenen Sicherungen, spielt die gewählte in die Datenbank ein und
+sichert vorher Ihren aktuellen Stand. Nur die Datenbank wird ersetzt, Ihre Dokumente bleiben.
+Den Ablauf beschreibt <code>BMS_Install_Windows.md</code>, Abschnitt „Ihre Daten“. Die Datei nutzt dieselbe
+Python-Umgebung wie der Start und ist wie <code>update_windows.bat</code> ein Block in runden Klammern mit
+Windows-Zeilenenden.</p></section><section class="card"><h2>KI-Läufe: Freigabeliste und Pfad-Wächter</h2><p>Die KI-Läufe im Hintergrund dürfen nur Befehle ausführen, die <code>automation/agent_settings.json</code>
+freigibt. Die Liste vergleicht den Anfang jedes Befehls Zeichen für Zeichen, ein Platzhalter gäbe
+dort nichts frei. Sie nennt das Python der Umgebung in der Mac-Form
+<code>~/.bewerbung_mgmt_venv/bin/python</code> und <code>$HOME/.bewerbung_mgmt_venv/bin/python</code>, eine eigene
+Windows-Form (<code>Scripts\python.exe</code>) enthält sie nicht. Unter Windows führt Claude Code diese Befehle
+in Git Bash aus, und die Verknüpfung <code>bin</code> → <code>Scripts</code> leitet sie an <code>python.exe</code> weiter.</p>
+<p>Über dieselbe Datei läuft vor jedem Schreibzugriff eines Laufs der Pfad-Wächter
+(<code>automation/pfad_waechter.py</code>). Er lässt Schreibzugriffe nur innerhalb des Programmordners und der
+Temp-Ordner zu. Sein Befehl ruft Python ebenfalls als <code>$HOME/.bewerbung_mgmt_venv/bin/python</code> auf.
+Startet dieser Befehl nicht, blockiert er nach den Regeln von Claude Code nichts. Der Wächter fällt
+dann aus, statt Schreibzugriffe zu verhindern. Freigabeliste und Wächter sind unter Windows noch
+nicht erprobt.</p>
+<p>Ändern Sie <code>automation/agent_settings.json</code> nicht von Hand. Das nächste Update ersetzt die Datei
+durch die ausgelieferte Fassung und legt Ihre Fassung vorher in der Update-Sicherung unter
+<code>data/updates/…</code> ab.</p></section><section class="card"><h2>Bekannte Grenzen</h2><ul>
+<li><strong>Zeitgesteuerte Automatik:</strong> Die Vorlage für einen täglichen Lauf zu fester Uhrzeit
+  (<code>automation/com.bms.tageslauf.plist.template</code>) gibt es nur für den Mac (<code>launchd</code>). Eine
+  Entsprechung für die Windows-Aufgabenplanung gibt es nicht. Den Tageslauf starten Sie per
+  Schaltfläche.</li>
+<li><strong>Hilfsskripte im Ordner <code>scripts</code>:</strong> Die <code>.sh</code>-Skripte laufen unter Windows nicht unverändert,
+  auch nicht in Git Bash. <code>coach_deploy.sh</code>, <code>coach_passwort.sh</code>, <code>coach_site.sh</code>,
+  <code>cover_letter_render.sh</code> und <code>refresh_views.sh</code> sind zsh-Skripte, und zsh gehört nicht zu Git für
+  Windows. <code>backup_db.sh</code> braucht das Kommandozeilenwerkzeug <code>sqlite3</code>. Für den normalen Betrieb
+  brauchen Sie keines dieser Skripte.</li>
+<li><strong>Drei Aufgaben ohne KI</strong> rufen intern ein solches zsh-Skript auf: „Ansichten aktualisieren“
+  (<code>views-refresh</code>: Excel-Export, Tages-Digest, Suchindex, Symbole der Berichte), „Anschreiben
+  Word + PDF erzeugen“ (<code>cover-letter-render</code>, der Knopf im Anschreiben-Fenster) und „Coach-Site
+  aktualisieren“ (<code>coach-site</code>). Unter Windows enden sie im Task-Center als fehlgeschlagen mit
+  „Binary '/bin/zsh' nicht gefunden“, ohne dass sonst etwas abstürzt. „Ansichten aktualisieren“
+  ist der vorletzte Schritt des Tageslaufs. Unter Windows endet der Tageslauf deshalb mit diesem
+  fehlgeschlagenen Schritt, und der letzte Schritt (Coach-Site) wird abgebrochen. Die Ergebnisse
+  der Schritte davor (Jobsuche, Sweeps, Beworben-Check, Postfach) bleiben erhalten. Excel-Export
+  und Tages-Digest holen Sie unter Windows über die Knöpfe im
+  Dashboard, den Suchindex über „↻ Index aktualisieren“ auf der Seite Suche. Anschreiben entstehen
+  trotzdem als Word- und PDF-Datei, wenn Sie sie über „Anschreiben erstellen“ anlegen. Die
+  Python-Module hinter den Aufgaben lassen sich auch in einer Eingabeaufforderung im Ordner
+  <code>backend</code> aufrufen, etwa der Excel-Export:
+  <code>"%USERPROFILE%\.bewerbung_mgmt_venv\Scripts\python.exe" -m pipeline.export_excel</code></li>
+<li><strong>Datensicherung:</strong> Die automatische tägliche Sicherung läuft unter Windows genauso wie auf dem
+  Mac, sie ist reines Python im Server-Prozess. Nur das zusätzliche Hilfsskript
+  <code>scripts/backup_db.sh</code> für eine manuelle Sicherung läuft ausschließlich auf dem Mac. Unter
+  Windows sichern Sie von Hand über „Jetzt sichern“ in den Einstellungen.</li>
+<li><strong>KI-Läufe über das Task-Center</strong> (<code>backend/app/agent_runner.py</code>): Start und Abbruch der
+  Hintergrundprozesse sind für Windows umgestellt (<code>CREATE_NEW_PROCESS_GROUP</code>, <code>taskkill /T /F</code>),
+  aber noch nicht erprobt. Beobachten Sie die ersten Läufe genau. Nach einem Neustart des Servers
+  prüft das BMS auf dem Mac, ob ein noch als „läuft“ eingetragener Prozess wirklich der eigene ist
+  (Kommandozeile und Startzeit über <code>ps</code>), bevor es ihn beendet. Windows hat kein <code>ps</code>. Lebt der
+  Prozess eines solchen Laufs nach dem Neustart noch, beendet das BMS ihn deshalb nicht. Es markiert
+  den Lauf im Task-Center als fehlgeschlagen („Identität NICHT bestätigt (Fremdprozess-Schutz),
+  absichtlich NICHT beendet“) und schreibt eine Warnung ins Server-Fenster. Prüfen Sie den Prozess
+  dann selbst im Task-Manager.</li>
+<li><strong>Claude Code finden:</strong> Das Task-Center startet Claude Code über die Umgebungsvariable
+  <code>CLAUDE_BIN</code> oder sonst als <code>claude</code> aus dem PATH. Der Beirat sucht in dieser Reihenfolge:
+  <code>CLAUDE_BIN</code>, dann der PATH (unter Windows auch <code>claude.cmd</code> und <code>claude.exe</code>), zuletzt
+  <code>~/.local/bin/claude</code>. Liegt Claude Code nicht im PATH, setzen Sie in einer Eingabeaufforderung
+  <code>set "CLAUDE_BIN=C:\Pfad\zu\claude.exe"</code> und starten das BMS aus demselben Fenster mit
+  <code>start_windows.bat</code>.</li>
+<li><strong>PDF-Erzeugung bei Zeitüberschreitung:</strong> Hängt eine Umwandlung länger als 180 Sekunden, beendet
+  das BMS LibreOffice über <code>os.killpg</code>, und das gibt es unter Windows nicht. In diesem seltenen Fall
+  bricht die Umwandlung unter Windows mit einem internen Fehler (<code>AttributeError</code>) ab statt mit der
+  gewohnten Meldung. Normale Umwandlungen betrifft das nicht.</li>
+<li><strong>Datei-Rechte:</strong> s. „Zugangsschlüssel und Secrets“ oben.</li>
+<li><strong>WLAN-Modus:</strong> Für den Zugriff vom Handy oder Tablet gibt es auf dem Mac <code>start_lan.command</code>,
+  unter Windows keine eigene Datei. Von Hand geht es, ebenfalls unerprobt, in einer
+  Eingabeaufforderung im Ordner <code>backend</code>:
+  <code>set "HOST=0.0.0.0" &amp;&amp; set "PORT=8000" &amp;&amp; "%USERPROFILE%\.bewerbung_mgmt_venv\Scripts\python.exe" run_server.py</code>
+  Die Anführungszeichen bei <code>set</code> verhindern, dass das Leerzeichen vor <code>&amp;&amp;</code> im Wert landet. Beim
+  ersten Start fragt womöglich die Windows-Firewall nach einer Freigabe. Andere Geräte öffnen das
+  BMS unter der IP-Adresse des PCs (<code>ipconfig</code>, etwa <code>http://192.168.1.20:8000</code>) oder unter seinem
+  Rechnernamen ohne Punkt. Andere Namen, etwa einen vom Router (<code>pc.fritz.box</code>), weist das BMS mit
+  „Adresse nicht freigegeben“ ab. Freigeben lassen sie sich mit <code>set "BMS_HOSTS=pc.fritz.box"</code> in
+  derselben Eingabeaufforderung vor dem Start, mehrere Namen mit Komma getrennt. Das BMS hat keinen
+  Anmeldeschutz: Nutzen Sie den WLAN-Modus nur im eigenen, vertrauten Netz.</li>
+<li><strong>Automatische Tests:</strong> Die Testsuite des BMS läuft bei jeder Änderung und vor jeder Freigabe auch
+  auf einem Windows-System mit Python 3.12. Ein freigegebenes Programmpaket entsteht nur, wenn sie
+  dort grün ist. Tests, die Mac-Eigenheiten prüfen (Unix-Dateirechte, Prozessgruppen, Symlinks,
+  direkt ausführbare Skripte), überspringt sie dort. Die PDF-Umwandlung deckt sie unter Windows
+  nicht ab, weil auf dem Testsystem kein LibreOffice installiert ist.</li>
+</ul></section><section class="card"><h2>Support-Matrix (Kurzfassung)</h2><div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Bereich</th>
+<th>Windows</th>
+<th>Anmerkung</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Server starten, Oberfläche bedienen</td>
+<td>Ja</td>
+<td><code>start_windows.bat</code></td>
+</tr>
+<tr>
+<td>Server beenden</td>
+<td>Ja, unerprobt</td>
+<td><code>stop_windows.bat</code> (netstat und taskkill, Ablauf wie in der erprobten Mac-Fassung)</td>
+</tr>
+<tr>
+<td>Stellen, Firmen, Dashboard, Excel-Export, Tages-Digest, Suchindex</td>
+<td>Ja</td>
+<td>läuft im Server-Prozess ohne Mac-Werkzeuge</td>
+</tr>
+<tr>
+<td>Automatische Datensicherung</td>
+<td>Ja</td>
+<td>reines Python im Server-Prozess</td>
+</tr>
+<tr>
+<td>PDF-Erzeugung (Lebenslauf, Anschreiben)</td>
+<td>Ja, unerprobt</td>
+<td>LibreOffice am Standardpfad oder im PATH; Zeitüberschreitung (über 180 s) s. oben</td>
+</tr>
+<tr>
+<td>KI-Läufe über das Task-Center</td>
+<td>Umgestellt, unerprobt</td>
+<td>braucht Git Bash und die Verknüpfung <code>bin</code> → <code>Scripts</code></td>
+</tr>
+<tr>
+<td>Beirat</td>
+<td>Ja, unerprobt</td>
+<td>Claude Code über <code>CLAUDE_BIN</code> oder den PATH</td>
+</tr>
+<tr>
+<td>Verwaiste Prozesse nach einem Neustart erkennen und beenden</td>
+<td>Eingeschränkt</td>
+<td>kein <code>ps</code>: nichts wird automatisch beendet</td>
+</tr>
+<tr>
+<td>Aufgaben „Ansichten aktualisieren“, „Anschreiben Word + PDF erzeugen“, „Coach-Site aktualisieren“</td>
+<td>Nein</td>
+<td>„Binary '/bin/zsh' nicht gefunden“, Ersatz s. oben</td>
+</tr>
+<tr>
+<td>Zeitgesteuerte Automatik</td>
+<td>Nein</td>
+<td>Vorlage nur für den Mac (<code>launchd</code>)</td>
+</tr>
+<tr>
+<td>Hilfsskripte <code>scripts/*.sh</code></td>
+<td>Nein</td>
+<td>zsh bzw. <code>sqlite3</code> nötig</td>
+</tr>
+</tbody>
+</table></div></section><section class="card"><h2>Weiterführend</h2><ul>
+<li><strong><code>BMS_Install_Windows.md</code></strong>: die geführte Installation unter Windows, dann Einrichten,
+  Aktualisierungen einspielen, „Wenn etwas nicht klappt“ und die Windows-Grenzen in Kurzform
+  („Was unter Windows eingeschränkt ist“).</li>
+<li><strong><code>docs/ANLEITUNG.md</code></strong>: die tägliche Arbeit mit dem BMS.</li>
+<li>Im BMS öffnet „📖 Dokumentation“ in der Seitenleiste alle Anleitungen in Reitern.</li>
+</ul></section>
+</div></body></html>
+<!-- docs_render quelle=SETUP-WINDOWS.md sha256=0c3180a15de6f5c15f829f8563ab23e41b95d8f06af2459b762eb6965a9f4730 -->

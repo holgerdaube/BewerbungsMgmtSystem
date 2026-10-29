@@ -1,0 +1,28 @@
+{
+  "format": 1,
+  "name": "Standard",
+  "farben": {
+    "marke": "#0B1F3A",
+    "auf_marke": "#DCE4EE",
+    "aktion": "#00B4D8",
+    "aktion_hover": "#0096C7",
+    "auf_aktion": "#FFFFFF",
+    "stahl": "#BFC7D5",
+    "flaeche": "#F4F7FB",
+    "karte": "#FFFFFF",
+    "rahmen": "#DCE4EE",
+    "spur": "#EAF0F6",
+    "text": "#0B1F3A",
+    "text_gedaempft": "#5F6F84",
+    "trenner": "#2A3F5F"
+  },
+  "schriften": {
+    "ueberschrift": "Montserrat",
+    "text": "Inter"
+  },
+  "produktname": "Bewerbungs-Management-System",
+  "icon": {
+    "32": "icon-32.png",
+    "180": "icon-180.png"
+  }
+}

@@ -1,0 +1,120 @@
+{
+  "$comment": [
+    "Guardrails NUR fuer headless Agent-Laeufe (Phase 8). Wird vom Agent-Runner via",
+    "`claude --settings automation/agent_settings.json` geladen und beruehrt",
+    "interaktive Sitzungen NICHT. Wenn ein Lauf an einer Permission scheitert, steht der",
+    "genaue Befehl im Task-Log (data/agent_logs/task_<id>.jsonl) -> hier ergaenzen.",
+    "WICHTIG: Ist 'allow' gesetzt, sind NICHT gelistete Tools automatisch verboten.",
+    "Belegt im echten Lauf vom 10.07.: 'Artifact' (Veroeffentlichung nach aussen) wurde",
+    "korrekt geblockt. 'deny' listet Gefaehrliches zusaetzlich explizit.",
+    "Bash-Matching prueft jeden Teil einer &&/;-Kette einzeln -> jedes Kommando braucht",
+    "einen eigenen Eintrag (auch 'echo', 'find'). Der venv-Python-Pfad muss in allen",
+    "Schreibweisen erlaubt sein, sonst weicht der Lauf auf rohe sqlite3-Writes aus.",
+    "",
+    "RESTRISIKO (Phase 66, S4 -- keine Sicherheits-Behauptung ohne Deckung):",
+    "WAS DIESE LISTE LEISTET: Schutz gegen UNFAELLE. Ein Skill, der versehentlich 'rm',",
+    "'git push', 'chmod' o.ae. ausloest, wird gestoppt, bevor etwas passiert -- belegt im",
+    "echten Lauf vom 10.07. (s.o., 'Artifact' korrekt geblockt).",
+    "WAS SIE NICHT LEISTET: keine Grenze gegen eine GEZIELTE Prompt-Injection. 'Bash(python:*)'",
+    "ist bewusst uneingeschraenkt erlaubt (die Skills brauchen es, ihr dokumentiertes Muster",
+    "fuer DB-Schreibzugriffe ist ein Python-Heredoc) -- ein Python-Einzeiler kann alles, was",
+    "'curl' kann, und mehr (u.a. agent.env selbst von der Platte lesen, s. Kommentar bei",
+    "agent_runner._child_env()/SECRET_KEYS_BY_KIND). Nur 'curl' zu sperren waere Theater:",
+    "dieselbe Exfiltration ginge zwei Zeilen spaeter ueber Python. Diese Liste verkleinert",
+    "also NUR den Schaden bei einem FEHLER -- sie ist keine Schranke gegen fremden Text, der",
+    "wie eine Anweisung formuliert ist (Stellenanzeigen, Mails, Firmenwebsites; dagegen hilft",
+    "nur Kennzeichnung + Erkennung, s. agent_runner.HEADLESS_SUFFIX und scripts/outbound_check.py).",
+    "Details: tasks/spec_phase66_sandbox.md ('Die ehrliche Ausgangslage'), docs/DOKUMENTATION.md",
+    "Abschnitt 8 ('Was die Skill-Freigabeliste leistet -- und was nicht').",
+    "",
+    "P2-38 (11.09.2026) -- PFAD-WAECHTER: Anlass war ein Fund vom 11.09.: ein headless",
+    "cv-match-Lauf liess beim Pfad-Zusammenbau '10_aktive_Projekte/' weg und machte",
+    "aus '/' ein '_' -- Ergebnis: eine Datei ausserhalb des Projekts unter iCloud Drive/40_Claude/.",
+    "Kein BMS-Code nutzt diesen falschen Pfad, die KI erzeugt ihn selbst: gemessen 109 von rund 880",
+    "geloggten Laeufen seit 13.08. quer durch acht Skills, meist harmlos, aber 18 Write/Edit-Aufrufe",
+    "landeten tatsaechlich ausserhalb des Projekts -- 'permissions' oben erlaubte Write/Edit bislang",
+    "ohne jede Pfadbeschraenkung. Der Hook unten (automation/pfad_waechter.py) prueft bei jedem",
+    "Write/Edit/MultiEdit/NotebookEdit das Schreibziel gegen die Projektwurzel und bekannte",
+    "Temp-Ordner und sperrt (Exit 2) alles andere. WAS ER LEISTET: Schutz gegen genau diese Art",
+    "Fehlgriff bei Write/Edit. WAS ER NICHT LEISTET: Schreibwege ueber Bash (z. B. ein",
+    "Python-Heredoc mit open(...), Shell-Redirect '>') deckt er nicht ab -- alle 18 Fehlgriffe",
+    "liefen aber ueber Write/Edit. Fail-open: ein Fehler im Waechter selbst (kaputtes JSON,",
+    "unerwartete Struktur) fuehrt zu Exit 0 und blockiert nie den Lauf. Details: tasks/spec_p2-38_pfad_waechter.md.",
+    "",
+    "P2-53 (28.09.2026) -- ZWEITER EINTRAG MIT MATCHER 'Bash': Ein 'cd backend' gilt in Claude Code",
+    "fuer alle FOLGENDEN Befehle eines Laufs; ein relatives data/tmp/... landete danach in",
+    "backend/data/tmp/, und der Lauf suchte acht Schritte lang nach seiner eigenen Datei. Der Waechter",
+    "sperrt genau dieses Muster (Arbeitsordner unter backend/, relatives data/tmp im Befehl) und nennt",
+    "den richtigen Ort. Alle anderen Bash-Befehle laesst er unveraendert durch. Zusaetzlich sperrt er",
+    "Write/Edit nach backend/data/."
+  ],
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$HOME/.bewerbung_mgmt_venv/bin/python\" \"$CLAUDE_PROJECT_DIR/automation/pfad_waechter.py\""
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$HOME/.bewerbung_mgmt_venv/bin/python\" \"$CLAUDE_PROJECT_DIR/automation/pfad_waechter.py\""
+          }
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "allow": [
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep",
+      "WebSearch",
+      "WebFetch",
+      "TodoWrite",
+      "Task",
+      "Skill",
+      "Bash(curl:*)",
+      "Bash(cd:*)",
+      "Bash(ls:*)",
+      "Bash(cat:*)",
+      "Bash(head:*)",
+      "Bash(tail:*)",
+      "Bash(grep:*)",
+      "Bash(find:*)",
+      "Bash(echo:*)",
+      "Bash(wc:*)",
+      "Bash(sed:*)",
+      "Bash(awk:*)",
+      "Bash(mkdir:*)",
+      "Bash(python:*)",
+      "Bash(python3:*)",
+      "Bash(~/.bewerbung_mgmt_venv/bin/python:*)",
+      "Bash($HOME/.bewerbung_mgmt_venv/bin/python:*)",
+      "Bash(~/.bewerbung_mgmt_venv/bin/python3:*)",
+      "Bash($HOME/.bewerbung_mgmt_venv/bin/python3:*)",
+      "Bash(soffice:*)"
+    ],
+    "deny": [
+      "Artifact",
+      "Bash(git push:*)",
+      "Bash(git commit:*)",
+      "Bash(git reset:*)",
+      "Bash(rm:*)",
+      "Bash(mv:*)",
+      "Bash(sudo:*)",
+      "Bash(chmod:*)",
+      "Bash(launchctl:*)",
+      "Bash(kill:*)",
+      "Bash(pkill:*)"
+    ]
+  }
+}

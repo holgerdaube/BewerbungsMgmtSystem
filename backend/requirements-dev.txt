@@ -1,0 +1,12 @@
+# Dev-/Test-Werkzeuge, ZUSÄTZLICH zu requirements-lock.txt (Phase 57 Stufe E1; Pins aktualisiert
+# Phase 59 Stufe A, s. tasks/spec_phase59_dependency_update.md). Exakte, von pip AUFGELÖSTE
+# Version, kompatibel mit Python 3.12 (Projekt-Minimum seit Phase 58) — pytest-cov weiterhin
+# bewusst weggelassen (Coverage-Reporting ist optional, keine Gates/Schwellen vorgesehen, s.
+# tasks/spec_phase57_tests_ci.md "Ausdrücklich NICHT in Phase 57"). Ab pytest 9 zieht der Freeze
+# 4 transitive Pakete, die vorher nicht einzeln gepinnt waren: iniconfig, packaging, pluggy,
+# Pygments — hier zur vollen Reproduzierbarkeit ergänzt.
+iniconfig==2.3.0
+packaging==26.2
+pluggy==1.6.0
+Pygments==2.20.0
+pytest==9.1.1

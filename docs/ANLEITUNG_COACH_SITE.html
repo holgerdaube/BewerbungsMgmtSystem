@@ -1,0 +1,356 @@
+<!doctype html><html lang="de"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><link rel="icon" type="image/png" href="data:image/png;base64,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">
+<title>Coach-Site einrichten — Schritt für Schritt</title>
+<style>
+:root{
+  --ink:#0B1F3A;
+  --paper:#F4F7FB;
+  --card:#FFFFFF;
+  --line:#DCE4EE;
+  --muted:#5F6F84;
+  --accent:#00B4D8;
+  --amber:#E4A11B;
+  --radius:14px;
+  --shadow:0 1px 2px rgba(16,26,40,.06),0 8px 24px rgba(16,26,40,.06);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--paper);
+  color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:880px;margin:0 auto;padding:32px 20px 72px}
+
+header.head{background:var(--ink);color:#fff;border-radius:var(--radius);padding:28px 30px;
+  box-shadow:var(--shadow);margin-bottom:22px}
+header.head h1{font-size:26px;line-height:1.3;margin:0;font-weight:700;letter-spacing:-.01em}
+header.head h1 code{background:rgba(255,255,255,.16);color:#fff}
+header.head .intro{margin-top:10px;font-size:14.5px;color:#BFC7D5;max-width:65ch}
+header.head .intro p{margin:0 0 6px}
+header.head .intro p:last-child{margin-bottom:0}
+header.head .intro a{color:#fff}
+header.head .intro code{background:rgba(255,255,255,.16);color:#fff}
+/* Ein Zitat (Hinweis-Box) KANN vor der ersten ##-Überschrift stehen und landet dann im Intro
+   des dunklen Banners -- seine eigene helle Cremefläche braucht dunkle Schrift, sonst macht die
+   helle ".intro code/a"-Regel (höhere Selektor-Spezifität wegen zweier Klassen) Inline-Code/
+   Links darin fast unsichtbar (weiß auf Creme). Deshalb hier gezielt zurückgesetzt. */
+header.head .intro blockquote{color:#5F4A1F}
+header.head .intro blockquote a{color:var(--accent)}
+header.head .intro blockquote code{background:rgba(11,31,58,.08);color:#5F4A1F}
+
+section.card{background:var(--card);border:1px solid var(--line);border-radius:12px;
+  padding:18px 22px 22px;box-shadow:var(--shadow);margin-bottom:16px}
+section.card:last-child{margin-bottom:0}
+section.card>h2:first-child{margin-top:0}
+section.card h2{font-size:18px;margin:0 0 14px;font-weight:700;letter-spacing:-.01em;
+  padding-bottom:10px;border-bottom:2px solid var(--accent)}
+section.card h3{font-size:15.5px;margin:20px 0 8px;font-weight:700}
+section.card h3:first-child{margin-top:0}
+section.card h4{font-size:13px;margin:16px 0 6px;font-weight:700;color:var(--muted);
+  text-transform:uppercase;letter-spacing:.05em}
+section.card p{margin:0 0 12px;font-size:14.5px}
+section.card p:last-child{margin-bottom:0}
+section.card ul,section.card ol{margin:0 0 12px;padding-left:22px;font-size:14.5px}
+section.card ul ul,section.card ol ol,section.card ul ol,section.card ol ul{margin:4px 0}
+section.card li{margin-bottom:5px}
+section.card li:last-child{margin-bottom:0}
+section.card a{color:var(--accent);text-decoration:none;font-weight:600}
+section.card a:hover{text-decoration:underline}
+section.card hr{border:none;border-top:1px solid var(--line);margin:18px 0}
+
+code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.92em}
+:not(pre)>code{background:#EAF0F6;border-radius:4px;padding:1px 6px;color:var(--ink)}
+pre{background:var(--ink);color:#EAF0F6;border-radius:10px;padding:14px 16px;overflow-x:auto;
+  font-size:13px;margin:0 0 14px;line-height:1.5}
+section.card pre:last-child{margin-bottom:0}
+pre code{background:none;padding:0;color:inherit;font-size:inherit}
+
+.tablewrap{overflow-x:auto;margin:0 0 14px}
+section.card .tablewrap:last-child{margin-bottom:0}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{text-align:left;background:#EAF0F6;color:var(--ink);font-weight:700;padding:8px 12px;
+  border:1px solid var(--line);white-space:nowrap}
+td{padding:8px 12px;border:1px solid var(--line);vertical-align:top}
+
+blockquote{background:#FBF3E6;border:1px solid #ECD9B3;border-left:4px solid var(--amber);
+  border-radius:10px;padding:10px 16px;margin:0 0 14px;color:#5F4A1F;font-size:14px}
+section.card blockquote:last-child{margin-bottom:0}
+blockquote p{margin:0 0 6px;color:inherit;font-size:inherit}
+blockquote p:last-child{margin-bottom:0}
+blockquote code{background:rgba(11,31,58,.08)}
+
+@media (max-width:640px){
+  .wrap{padding:20px 14px 48px}
+  header.head{padding:20px 22px}
+}
+@media print{
+  body{background:#fff}
+  .wrap{max-width:100%;padding:10px 6px}
+  header.head,section.card{box-shadow:none}
+  section.card{page-break-inside:avoid;border-color:#ccc}
+  pre{white-space:pre-wrap;word-break:break-word}
+  a{color:inherit;text-decoration:none}
+}
+</style></head><body><div class="wrap">
+<header class="head"><h1>Coach-Site einrichten — Schritt für Schritt</h1><div class="intro"><p>Diese Anleitung richtet sich an alle, die noch nie eine Subdomain angelegt oder Dateien per
+SFTP (dazu gleich mehr) hochgeladen haben. Du brauchst keine Programmierkenntnisse. Fast alles
+passiert in der App, in den <strong>Einstellungen</strong>; nur ganz am Ende gibt es einen einzigen
+Terminal-Befehl für den Notfall.</p>
+<p>Alle Bildschirmtexte in dieser Anleitung sind die echten Beschriftungen aus der App. Adressen,
+Benutzernamen und Passwörter sind überall <strong>Platzhalter</strong> (z. B. <code>access-xyz.webspace-host.com</code>)
+— trag dort deine eigenen Werte ein.</p></div></header>
+<section class="card"><h2>Was ist die Coach-Site?</h2><p>Die Coach-Site ist eine eigene, passwortgeschützte Webseite, auf der dein Coach deinen
+Bewerbungsstand einsehen kann — ohne Zugriff auf die App selbst zu bekommen. Die Seite wird
+automatisch aus deinen Daten erzeugt und ist eine reine Momentaufnahme: dein Coach kann nichts
+verändern, nur lesen.</p>
+<p><strong>Was dein Coach sieht:</strong></p>
+<ul>
+<li>Eine Übersicht mit Kennzahlen (wie viele Stellen, wie viele laufende Bewerbungen usw.)</li>
+<li>Den Tages-Digest: neue Treffer, Absagen und Bewerbungen der letzten vier Tage und was sich
+  am Tag des Laufs geändert hat. Er wird mit jedem Tageslauf neu erzeugt. Anders als dein eigener
+  Digest in der App enthält er weder die Mails, die auf Antwort warten, noch deine offenen
+  Aktionen; bei Änderungen nennt er nur Statuswechsel, nie den Text deiner Notizen.</li>
+<li>Die Liste deiner Stellen und Bewerbungen — aktive Bewerbungen (Beworben/Interview/Angebot)
+  und die Stellen, die du noch prüfst — je Stelle mit Company-Fit-Analyse, CV-Match und der
+  Stellenausschreibung selbst</li>
+<li>Deine Absagen mit den erfassten Absagegründen und den neuesten Muster-Bericht der
+  Absagen-Analyse mit seinem Datum (er wird einmal je Woche im Tageslauf erneuert)</li>
+</ul>
+<p><strong>Was dein Coach garantiert NIE sieht:</strong> deine E-Mails, deine privaten Notizen und den
+Bewerbungsverlauf, Beirats-Auswertungen, Gehaltsangaben, interne Prüfvermerke, Interview-
+Transkripte/Debriefs/Briefings, deine CVs und Anschreiben als Dateien, ATS-Scans, dein Netzwerk
+und deine Kontakte. Diese Sperrliste ist fest im Code verankert und automatisiert getestet —
+sie lässt sich nicht versehentlich aufweichen.</p></section><section class="card"><h2>Sicherheit auf einen Blick</h2><ul>
+<li>Deine Zugangsdaten (SFTP-Passwort, Coach-Zugang) landen <strong>ausschließlich lokal</strong> auf deinem
+  Rechner unter <code>~/.bewerbung_mgmt_secrets/</code> — nie im Projektordner, nie in einem Git-Repository.</li>
+<li>Das Coach-Passwort wird <strong>nur als Hash</strong> gespeichert (eine Art digitaler Fingerabdruck, aus
+  dem sich das Passwort nicht zurückrechnen lässt). Selbst du kannst es dir hinterher nicht
+  wieder anzeigen lassen — hast du es vergessen, vergib einfach ein neues (siehe unten
+  „Passwort ändern").</li>
+<li>Die Seite ist für Suchmaschinen gesperrt (kein Google-Fund). Das schützt aber nicht vor
+  Weitergabe: <strong>Wer Adresse und Passwort kennt, sieht den Inhalt.</strong> Gib beides nur direkt und
+  vertraulich an deinen Coach weiter — nicht in einer öffentlichen Nachricht, einem Forum oder
+  Social-Media-Post.</li>
+</ul></section><section class="card"><h2>Voraussetzungen</h2><p>Bevor es losgeht, brauchst du:</p>
+<ol>
+<li><strong>Ein eigenes Webhosting-Paket mit eigener Domain</strong>, bei dem du selbst Subdomains anlegen
+   kannst (dazu gleich mehr). Fast jedes Hosting-Paket (IONOS, Strato, All-Inkl, …) kann das.</li>
+<li><strong>Einen SFTP-Zugang</strong> zu diesem Hosting. SFTP ist ein sicherer, verschlüsselter Kanal, über
+   den Dateien auf deinen Webspace hochgeladen werden — vergleichbar mit einer verschlüsselten
+   Kopierverbindung. Jedes Hosting-Paket bringt das mit.</li>
+<li><strong>Das Programm <code>lftp</code> lokal installiert</strong> — es erledigt im Hintergrund den eigentlichen
+   Upload. Ohne <code>lftp</code> funktionieren weder „Verbindung testen" noch das spätere Hochladen. Auf
+   dem Mac installierst du es im Terminal mit:
+   <code>brew install lftp</code>
+   (Fehlt der Befehl <code>brew</code> selbst, ist zuerst Homebrew nötig — Installationsanleitung auf
+   https://brew.sh. Auf einem bereits eingerichteten BMS-Rechner ist Homebrew in aller Regel
+   schon vorhanden.)</li>
+<li>Einen Browser mit einem privaten Fenster/Inkognito-Fenster (für den Abnahme-Schritt am
+   Ende).</li>
+</ol>
+<hr></section><section class="card"><h2>Schritt 1 — Subdomain anlegen und SSL aktivieren</h2><p>Eine <strong>Subdomain</strong> ist ein zusätzlicher Adressteil vor deiner Domain, z. B. <code>coach.</code> vor
+<code>meine-domain.de</code> — ein eigener, abgetrennter Bereich innerhalb deiner Webseite, mit eigenem
+Verzeichnis auf dem Server.</p>
+<p>Das folgende Beispiel zeigt IONOS; bei anderen Hostern heißen die Menüpunkte leicht anders,
+der Ablauf ist aber praktisch überall gleich: Subdomain anlegen → Zielverzeichnis festlegen →
+SSL aktivieren.</p>
+<p><strong>Was du tust (IONOS-Beispiel):</strong></p>
+<ol>
+<li>Im IONOS-Kundencenter einloggen → Menü „Domains &amp; SSL" → deine Domain auswählen.</li>
+<li>„Subdomain anlegen" wählen, z. B. <code>coach</code> eingeben → ergibt <code>coach.meine-domain.de</code>.</li>
+<li>Als Verwendung/Ziel „Webspace" wählen und ein Zielverzeichnis eintragen, z. B. <code>/coach</code>.
+   <strong>Diesen Ordnernamen dir merken</strong> — er kommt in Schritt 3 wieder als „Zielverzeichnis" vor.</li>
+<li>In der Zeile der neuen Subdomain SSL aktivieren (Button/Toggle „SSL aktivieren", meist im
+   Paket kostenlos enthalten). SSL sorgt dafür, dass die Seite verschlüsselt über <code>https://</code>
+   erreichbar ist — Pflicht, weil sonst das Passwort deines Coaches beim Einloggen unverschlüsselt
+   übertragen würde.</li>
+<li>Etwas warten (meist wenige Minuten, selten bis zu einer Stunde), bis Zertifikat und
+   Adressauflösung (DNS) greifen.</li>
+</ol>
+<p>Ergebnis: Du hast jetzt eine Adresse wie <code>https://coach.meine-domain.de</code> und ein leeres
+Zielverzeichnis dafür auf deinem Webspace.</p></section><section class="card"><h2>Schritt 2 — SFTP-Zugangsdaten beim Hoster finden</h2><p><strong>Was du tust (IONOS-Beispiel):</strong></p>
+<ol>
+<li>Im Kundencenter → Menü „Hosting" → „SFTP &amp; SSH" (oder „FTP-Zugänge").</li>
+<li>Dort findest du den <strong>Host</strong> (z. B. <code>access-xyz.webspace-host.com</code>) und deinen
+   <strong>Benutzernamen</strong> (oft <code>uNNNNNNN</code> oder dein Hauptbenutzer).</li>
+<li>Falls dein Paket es anbietet, kannst du optional einen eigenen Benutzer nur für das
+   Coach-Verzeichnis anlegen (etwas mehr Sicherheit, aber kein Muss).</li>
+<li>Das zugehörige <strong>Passwort</strong> kennst du entweder schon, oder du vergibst/setzt es dort neu
+   zurück.</li>
+</ol>
+<p>Notiere dir Host, Benutzer und Passwort kurz — du trägst sie im nächsten Schritt in die App
+ein (danach kannst du diese Notiz löschen, die App speichert sie sicher lokal für dich).</p></section><section class="card"><h2>Schritt 3 — Adresse und Zugangsdaten in der App eintragen</h2><p><strong>Was du siehst:</strong> In der App unter <strong>Einstellungen</strong>, ganz unten, die Karte <strong>„Coach-Site"</strong>
+mit einem Erklärtext und dem Hinweis „Schritt für Schritt: docs/ANLEITUNG_COACH_SITE.md" —
+also genau dieser Anleitung.</p>
+<p><strong>Was du tust:</strong></p>
+<ol>
+<li>Den Haken <strong>„Coach-Site aktiv"</strong> noch <strong>nicht</strong> setzen — das kommt erst ganz am Ende
+   (Schritt 7), wenn alles ausgefüllt ist.</li>
+<li>Feld <strong>„Adresse der Seite"</strong>: die Subdomain-Adresse aus Schritt 1 eintragen, z. B.
+   <code>https://coach.meine-domain.de</code>. Wichtig: <strong>muss mit <code>https://</code> beginnen</strong> — mit <code>http://</code>
+   lehnt die App den Eintrag ab (Begründung: sonst würde das Passwort deines Coaches
+   unverschlüsselt übertragen).</li>
+<li>Im Bereich <strong>„Upload-Ziel (SFTP)"</strong> vier Felder ausfüllen:
+   - <strong>Host</strong> — aus Schritt 2, z. B. <code>access-xyz.webspace-host.com</code>
+   - <strong>Benutzer</strong> — aus Schritt 2
+   - <strong>Passwort</strong> — aus Schritt 2 (Eingabefeld zeigt nur Punkte, wie jedes Passwortfeld)
+   - <strong>Zielverzeichnis</strong> — der Ordner aus Schritt 1, z. B. <code>/coach</code> (muss mit <code>/</code> beginnen)</li>
+</ol>
+<p>Noch nicht auf „Speichern" klicken — erst testen (nächster Schritt).</p></section><section class="card"><h2>Schritt 4 — Verbindung testen</h2><p><strong>Was du siehst:</strong> Button <strong>„Verbindung testen"</strong> unterhalb der Formularfelder.</p>
+<p><strong>Was du tust:</strong> Klicken. Der Button zeigt kurz „Testet…", dann eine Ergebniszeile:</p>
+<ul>
+<li>Erfolg (grün): z. B. „✓ Verbunden. Zielverzeichnis /coach erreichbar (leer)."</li>
+<li>Fehler (rot): eine Klartext-Fehlermeldung, z. B. wenn Host/Benutzer/Passwort nicht
+  zusammenpassen. Passwörter erscheinen darin <strong>nie</strong> — das ist Absicht.</li>
+</ul>
+<p>Der Test prüft direkt die Felder, die gerade im Formular stehen — du musst dafür nicht erst
+speichern. Klappt der Test nicht, Host/Benutzer/Passwort/Zielverzeichnis noch einmal mit
+Schritt 2 abgleichen.</p></section><section class="card"><h2>Schritt 5 — Serverpfad zur Zugangsdatei ermitteln</h2><p>Damit die Passwortabfrage auf dem Server funktioniert, braucht Apache (die Server-Software)
+den <strong>absoluten Pfad</strong> zur Zugangsdatei auf dem Server — ein technisches Detail, das du dir
+normalerweise nicht selbst merken musst: Die App kann es automatisch herausfinden.</p>
+<p><strong>Was du siehst:</strong> Feld „Serverpfad zur Zugangsdatei" mit Platzhalter
+<code>/serverpfad/zum/verzeichnis/.htpasswd</code> und daneben der Button <strong>„automatisch ermitteln"</strong>.</p>
+<p><strong>Was du tust:</strong> Auf „automatisch ermitteln" klicken. Der Button zeigt kurz „Ermittelt…", dann:</p>
+<ul>
+<li><strong>Erfolg:</strong> das Feld füllt sich von selbst mit dem passenden Pfad.</li>
+<li><strong>Fehler „Im Zielverzeichnis liegen bereits Dateien…" (409):</strong> Die Automatik funktioniert nur
+  in einem <strong>leeren</strong> Zielverzeichnis (aus Sicherheitsgründen, s. u.). Liegt dort schon etwas —
+  z. B. weil du es zuvor schon einmal befüllt hast — trage den Pfad <strong>manuell</strong> ein (weiter
+  unten steht, wie).</li>
+<li><strong>Fehler „Die Datei war nicht erreichbar oder PHP ist nicht aktiv…" (400):</strong> Ebenfalls von
+  Hand eintragen.</li>
+</ul>
+<p><strong>Pfad manuell finden</strong>, falls die Automatik nicht klappt:</p>
+<ul>
+<li><strong>Variante A — Datei-Manager des Hosters:</strong> Im Kundencenter gibt es meist einen
+  browserbasierten Datei-Manager für den Webspace. Navigiere dort in dein Zielverzeichnis
+  (z. B. <code>/coach</code>) — der volle Pfad wird häufig in der Adresszeile/Brotkrumen-Navigation oder
+  in den Dateieigenschaften angezeigt.</li>
+<li><strong>Variante B — grafisches SFTP-Programm</strong> (z. B. FileZilla oder Cyberduck, kostenlos): mit
+  denselben Zugangsdaten wie in Schritt 2 verbinden, in den Zielordner wechseln — der
+  angezeigte Pfad in der Adressleiste ist der gesuchte absolute Pfad.</li>
+<li>Bei IONOS sieht dieser Pfad häufig so aus (nur als Beispiel für die Form, deine Kennung ist
+  natürlich eine andere): <code>/homepages/12/dNNNNNNNNN/htdocs/coach</code>.</li>
+<li>In das Feld trägst du den Pfad <strong>plus</strong> <code>/.htpasswd</code> ein, z. B.
+  <code>/homepages/12/dNNNNNNNNN/htdocs/coach/.htpasswd</code>.</li>
+</ul></section><section class="card"><h2>Schritt 6 — Coach-Login vergeben</h2><p><strong>Was du siehst:</strong> Bereich <strong>„Coach-Login"</strong> mit dem Hinweis „Damit meldet sich dein Coach auf
+der Seite an." und zwei Feldern.</p>
+<p><strong>Was du tust:</strong></p>
+<ol>
+<li><strong>Benutzer</strong> — ein Login-Name für deinen Coach, frei wählbar, z. B. <code>coach</code>.</li>
+<li><strong>Passwort</strong> — ein Passwort für deinen Coach. Tipp: ein eigenes, nicht wiederverwendetes
+   Passwort vergeben, das du separat (z. B. mündlich oder per Messenger) an deinen Coach
+   weitergibst. Sobald du speicherst, wird nur der Hash abgelegt (s. „Sicherheit auf einen
+   Blick") — das Passwort selbst siehst danach niemand mehr, auch du nicht.</li>
+</ol></section><section class="card"><h2>Schritt 7 — Aktivieren und Coach-Site aktualisieren</h2><p><strong>Was du tust:</strong></p>
+<ol>
+<li>Jetzt den Haken <strong>„Coach-Site aktiv"</strong> setzen.</li>
+<li>Auf <strong>„Speichern"</strong> klicken.
+   - Fehlt noch etwas, meldet die App das in Klartext, z. B. „Zum Aktivieren fehlen noch:
+     site_url, Coach-Passwort" — kein Grund zur Sorge, einfach die genannten Felder ergänzen
+     und erneut speichern.
+   - Erfolg: „✓ Gespeichert" erscheint neben den Buttons.</li>
+<li><strong>Erst nach erfolgreichem Speichern</strong> erscheint darunter ein neuer Button:
+   <strong>„Coach-Site jetzt aktualisieren"</strong>. (Vorher steht dort nur der graue Hinweis „Erst
+   aktivieren und speichern, dann kann die Seite hochgeladen werden.")</li>
+<li>Diesen Button klicken. Er baut die Seite aus deinen aktuellen Daten und lädt sie per SFTP
+   hoch. Während der Lauf arbeitet, zeigt der Button „⏳ Läuft…" und daneben ein
+   „Abbrechen"-Button; ein kleiner Status-Chip zeigt „läuft…". Am Ende steht dort „✓ fertig"
+   (oder „✗ fehlgeschlagen" mit einer Fehlermeldung darunter — dann hilft der Abschnitt „Wenn
+   etwas nicht klappt").</li>
+</ol></section><section class="card"><h2>Schritt 8 — Abnahme im privaten Browserfenster</h2><p>Jetzt prüfst du, ob wirklich alles wie gewünscht funktioniert — am besten in einem privaten
+Fenster (Safari: „Neues privates Fenster", Chrome: „Neues Inkognito-Fenster"), damit keine
+gespeicherten Zugangsdaten den Test verfälschen.</p>
+<p><strong>Was du tust:</strong></p>
+<ol>
+<li>Die konfigurierte Adresse aufrufen, z. B. <code>https://coach.meine-domain.de</code>.</li>
+<li><strong>Es muss sofort eine Login-Abfrage des Browsers erscheinen</strong> (ein natives Popup nach
+   Benutzername/Passwort — keine hübsche Anmeldeseite, sondern der Browser selbst fragt). Kommt
+   diese Abfrage nicht, ist etwas nicht korrekt eingerichtet (siehe unten).</li>
+<li>Mit dem Coach-Login aus Schritt 6 einloggen. Danach solltest du die Übersicht, den
+   Tages-Digest, deine Stellen und deine Absagen sehen.</li>
+<li>Im Browser-Tab prüfen, ob das kleine <strong>Favicon</strong> (Icon neben dem Seitentitel im Tab)
+   erscheint — das ist dasselbe Symbol wie in der App.</li>
+<li>Suchmaschinen sind automatisch ausgesperrt, dafür musst du nichts tun. Wer es technisch
+   nachprüfen möchte: <code>curl -sI https://coach.meine-domain.de</code> zeigt den Header
+   <code>x-robots-tag: noindex</code> und ohne Login-Angabe den Status <code>401</code> — das ist optional und nur
+   für technisch Interessierte.</li>
+</ol>
+<hr></section><section class="card"><h2>Täglicher Betrieb</h2><p>Einmal eingerichtet, musst du dich um nichts mehr kümmern: Die Coach-Site aktualisiert sich
+<strong>automatisch am Ende jedes Tageslaufs</strong> mit deinem aktuellen Stand. Willst du sie sofort
+aktualisieren (z. B. nach einer wichtigen Änderung), klicke jederzeit erneut auf
+„Coach-Site jetzt aktualisieren" in den Einstellungen.</p></section><section class="card"><h2>Passwort ändern</h2><p>Das Coach-Passwort lässt sich jederzeit ändern, ohne sonst etwas anzufassen:</p>
+<ol>
+<li>Einstellungen → Karte „Coach-Site" → Bereich „Coach-Login".</li>
+<li>Neues Passwort in das Feld „Passwort" eintragen (der Benutzername kann unverändert bleiben).</li>
+<li>„Speichern" klicken — danach gilt sofort das neue Passwort, das alte funktioniert nicht mehr.</li>
+<li>Optional danach „Coach-Site jetzt aktualisieren" klicken, damit die neue Zugangsdatei sofort
+   auf dem Server liegt (sonst passiert das spätestens beim nächsten Tageslauf).</li>
+</ol></section><section class="card"><h2>Vorübergehend abschalten</h2><p>Haken <strong>„Coach-Site aktiv"</strong> entfernen und „Speichern" klicken. Damit werden <strong>künftige</strong>
+Aktualisierungen (Button wie Tageslauf) übersprungen — die App meldet das jeweils ehrlich mit
+„Coach-Site ist in den Einstellungen abgeschaltet — übersprungen." Wichtig zu wissen: Der
+zuletzt hochgeladene Stand <strong>bleibt dabei auf dem Server liegen</strong> und ist weiterhin (passwort-
+geschützt) erreichbar, bis du entweder wieder aktivierst oder den Not-Aus unten benutzt.</p></section><section class="card"><h2>Not-Aus: Seite komplett vom Server entfernen</h2><p>Für den Fall, dass du die Coach-Site sofort und vollständig vom Server entfernen willst (nicht
+nur pausieren), gibt es einen einzigen Terminal-Befehl. Das ist der einzige Schritt in dieser
+ganzen Anleitung, der ein Terminal braucht:</p>
+<ol>
+<li>Terminal-App öffnen.</li>
+<li>In den Projektordner wechseln (Pfad wie auf deinem Rechner eingerichtet), z. B.:
+   <code>cd Pfad/zu/deinem/Bewerbung_Mgmt_System</code></li>
+<li>Ausführen:
+   <code>scripts/coach_deploy.sh --wipe</code></li>
+<li>Das leert das Zielverzeichnis auf dem Server vollständig (Inhalte <strong>und</strong> die
+   Zugangsschutz-Dateien) — die Seite ist danach nicht mehr aufrufbar. Das funktioniert auch,
+   wenn „Coach-Site aktiv" bereits ausgeschaltet ist. Nur wenn noch <strong>nie</strong> SFTP-Zugangsdaten
+   eingetragen wurden, kann der Befehl naturgemäß nichts löschen und meldet das.</li>
+</ol>
+<hr></section><section class="card"><h2>Wenn etwas nicht klappt</h2><p><strong>„Internal Server Error" direkt nach der Passwort-Eingabe</strong></p>
+<ul>
+<li><em>Ursache:</em> Der Server kann die Zugangsdatei nicht lesen — meist, weil der eingetragene
+  Serverpfad nicht exakt auf die tatsächliche Datei zeigt, oder weil deren Dateirechte auf dem
+  Server nicht passen (die App setzt beim Hochladen automatisch die richtigen Rechte, manche
+  Hoster überschreiben das aber in Ausnahmefällen).</li>
+<li><em>Was zu tun ist:</em> In der Karte „Coach-Site" den Serverpfad prüfen bzw. neu ermitteln (Schritt
+  5), dann „Coach-Site jetzt aktualisieren" erneut klicken. Bleibt der Fehler bestehen, beim
+  Hoster nachfragen, ob sich die Dateirechte der <code>.htpasswd</code> im Zielverzeichnis ändern lassen.</li>
+</ul>
+<p><strong>Login-Popup erscheint bereits bei <code>http://</code> (ohne „s")</strong></p>
+<ul>
+<li><em>Ursache:</em> Die Weiterleitung von unverschlüsseltem <code>http://</code> auf das sichere <code>https://</code>
+  müsste greifen, <strong>bevor</strong> überhaupt eine Passwortabfrage erscheint. Erscheint sie trotzdem
+  schon bei <code>http://</code>, wurde entweder eine ältere Schutz-Datei nicht überschrieben, oder dein
+  Hoster unterstützt die dafür nötige Serverfunktion nicht.</li>
+<li><em>Was zu tun ist:</em> Einmal „Coach-Site jetzt aktualisieren" klicken, damit sicher die aktuelle
+  Schutz-Konfiguration hochgeladen wird. Tritt das Problem danach weiter auf, beim Hoster
+  nachfragen, ob „SSL erzwingen" oder eine vergleichbare Einstellung pauschal für die Subdomain
+  aktivierbar ist.</li>
+</ul>
+<p><strong>„Upload wurde übersprungen"</strong></p>
+<ul>
+<li><em>Ursache:</em> Entweder ist „Coach-Site aktiv" ausgeschaltet, oder es fehlt noch mindestens ein
+  Pflichtfeld (Adresse, SFTP-Zugang, Serverpfad oder Coach-Login).</li>
+<li><em>Was zu tun ist:</em> Die genaue Meldung zeigt, was fehlt. In den Einstellungen den Haken bzw.
+  das genannte Feld ergänzen und erneut speichern.</li>
+</ul>
+<p><strong>„lftp fehlt"</strong></p>
+<ul>
+<li><em>Ursache:</em> Das Programm, das den Datei-Upload erledigt, ist auf diesem Rechner nicht
+  installiert. Diese Meldung kann schon bei „Verbindung testen" oder „automatisch ermitteln"
+  erscheinen, nicht erst beim Hochladen.</li>
+<li><em>Was zu tun ist:</em> Terminal öffnen, <code>brew install lftp</code> ausführen (s. „Voraussetzungen"),
+  danach den Schritt einfach erneut anklicken.</li>
+</ul>
+<p><strong>Die Seite zeigt eine falsche/leere Seite oder 404, obwohl alles gespeichert ist</strong></p>
+<ul>
+<li><em>Ursache:</em> Die Subdomain aus Schritt 1 zeigt auf ein <strong>anderes</strong> Verzeichnis auf dem Server
+  als das, was du als „Zielverzeichnis" in der Coach-Karte eingetragen hast — die beiden
+  müssen exakt übereinstimmen.</li>
+<li><em>Was zu tun ist:</em> Beim Hoster nachsehen, welches Verzeichnis der Subdomain zugewiesen ist
+  (bei IONOS: „Domains &amp; SSL" → Subdomain → Einstellungen zeigt das Verzeichnis), und in der
+  Coach-Karte unter „Zielverzeichnis" exakt denselben Pfad eintragen.</li>
+</ul></section>
+</div></body></html>
+<!-- docs_render quelle=ANLEITUNG_COACH_SITE.md sha256=8599318aa9d3983f5168a6cf3728134ef6505806a4094ca7d0e6ffdbd913a634 -->

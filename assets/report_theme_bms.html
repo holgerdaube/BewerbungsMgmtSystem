@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Favicon: Der Bericht traegt das App-Icon als Data-URI — so bleibt die Datei eigenstaendig, auch beim
+     Verschicken oder Oeffnen aus dem Finder. Das Icon kommt aus dem Design (pipeline/design.py), nicht aus
+     dieser Vorlage. Die link-Zeile wird NICHT in den Bericht uebernommen (abgetippt wird sie verstuemmelt):
+     Der Bericht entsteht OHNE sie, `bericht_stil einsetzen` (s. u.) setzt das richtige Icon. Das System
+     ersetzt ein falsches beim Ausliefern und beim naechsten Tageslauf (app/favicon.py). Ein fehlendes Icon
+     repariert sich, ein erfundenes waere frueher fuer immer geblieben. -->
+<link rel="icon" type="image/png" href="data:image/png;base64,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">
+<!-- REPORT_TITEL: "<Report-Art> · <Firma>", z. B. "Match-Dashboard · Beispiel GmbH" -->
+<title>Report · Beispiel</title>
+<!-- VORLAGE FUER AUFBAU UND KLASSEN. Der Style-Block darunter wird NICHT abgeschrieben, und der Bericht
+     entsteht OHNE eigenen Style-Block: Er wird aus pipeline/bericht_stil.py (bericht_css, mit den Werten des
+     geltenden Designs; hier die Vorgabe) erzeugt und zeigt nur, welche Klassen es gibt. Jede Klasse, die in
+     diesem Dokument vorkommt, hat dort ihre Regel. Skills schreiben HTML mit diesen Klassen (kein CSS, keine
+     Farben, keine Inline-Farben) und rufen danach
+         cd backend && ~/.bewerbung_mgmt_venv/bin/python -m pipeline.bericht_stil einsetzen <bericht.html>
+     auf: Der Befehl setzt das geltende CSS und das Icon ein, sonst aendert er nichts. Danach
+     `python -m pipeline.report_check <bericht.html>`. Meldet einer der beiden eine Klasse ohne Regel, wird
+     die Klasse durch eine ersetzt, die hier vorkommt, und der Befehl wiederholt.
+     Ein Test haelt den Style-Block und bericht_css() gleich; neu erzeugen: `python -m pipeline.bericht_stil vorlage`.
+     Inhalt = STATISCHES HTML (kein script mit const DATA=… in ein leeres div#root): Der FTS-Index
+     (pipeline/search_index.py) liest statisches HTML direkt, und die Berichte bleiben ohne JS les- und
+     druckbar. Nur die Bausteine nutzen, die inhaltlich passen; leere Abschnitte weglassen statt mit
+     "nicht belegbar" aufzufuellen (Ausnahme: eine Quelle fehlt explizit und das soll dokumentiert werden). -->
+<style>
+/* Bericht-Stil (P2-72): erzeugt aus pipeline/bericht_stil.py */
+:root{
+  --ink:#0B1F3A;--line:#2A3F5F;--paper:#F4F7FB;--paper-2:#FFFFFF;--muted:#5F6F84;--text:#0B1F3A;--accent:#00B4D8;
+  --rahmen:#DCE4EE;--spur:#EAF0F6;--stahl:#BFC7D5;--auf-ink:#FFFFFF;
+  --green:#18A957;--amber:#E4A11B;--red:#E5484D;--pos:#18A957;--neu:#94A3B8;--neg:#E5484D;
+  --radius:14px;--shadow:0 1px 2px rgba(16,26,40,.06),0 8px 24px rgba(16,26,40,.06)
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--paper);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;line-height:1.5;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1040px;margin:0 auto;padding:32px 20px 72px}
+header.head{background:var(--ink);color:var(--auf-ink);border-radius:var(--radius);padding:28px 30px;box-shadow:var(--shadow)}
+.head .eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--stahl);font-weight:700;margin:0 0 8px}
+.head h1{font-size:26px;line-height:1.2;margin:0 0 4px;font-weight:700;letter-spacing:-.01em}
+.head h1 a{color:inherit;text-decoration:none;border-bottom:1px solid var(--line)}
+.head .sub{font-size:15px;color:var(--stahl);margin:0 0 16px;font-weight:600}
+.head .meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px 22px;border-top:1px solid rgba(255,255,255,.14);padding-top:16px}
+.head .meta .k{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--stahl);margin:0 0 2px}
+.head .meta .v{font-size:14px;color:var(--auf-ink)}
+.head .badges{margin-top:14px;display:flex;flex-wrap:wrap;gap:8px}
+.head .badges .pill{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.04em;padding:4px 10px;border-radius:999px;background:var(--line);color:var(--stahl);border:1px solid var(--line)}
+.gauge{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:150px;padding:14px 18px;border-radius:12px;background:#0a121e;border:1px solid #22344c}
+.lamp{width:54px;height:54px;border-radius:50%;position:relative;margin-bottom:10px}
+.lamp::after{content:"";position:absolute;inset:0;border-radius:50%;box-shadow:0 0 0 6px rgba(255,255,255,.04)}
+.lamp.green{background:radial-gradient(circle at 35% 30%,#4fd48a,var(--green));box-shadow:0 0 22px rgba(24,169,87,.6)}
+.lamp.amber{background:radial-gradient(circle at 35% 30%,#f2b752,var(--amber));box-shadow:0 0 22px rgba(228,161,27,.6)}
+.lamp.red{background:radial-gradient(circle at 35% 30%,#e57366,var(--red));box-shadow:0 0 22px rgba(229,72,77,.6)}
+.gauge .verdict{font-size:13px;letter-spacing:.12em;text-transform:uppercase;font-weight:700}
+.gauge .verdict.green{color:#5fe0a0}
+.gauge .verdict.amber{color:#f2c069}
+.gauge .verdict.red{color:#ef8577}
+.dot{display:inline-block;width:14px;height:14px;border-radius:50%;vertical-align:middle;margin-right:6px}
+.dot.green{background:#18A957} .dot.amber{background:#E4A11B} .dot.red{background:#E5484D} .dot.grau{background:#94A3B8}
+.bluf{margin-top:16px;background:var(--paper-2);border:1px solid var(--rahmen);border-left:4px solid var(--accent);border-radius:12px;padding:18px 20px;box-shadow:var(--shadow)}
+.bluf .fitlabel{font-size:13px;font-weight:600;color:var(--muted);margin:0 0 6px}
+.bluf p{margin:0;font-size:15.5px}
+h2.sec{font-size:13px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);margin:34px 0 12px;font-weight:700;display:flex;align-items:center;gap:10px}
+h2.sec::before{content:"";width:22px;height:2px;background:var(--accent);display:inline-block}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+.card{background:var(--paper-2);border:1px solid var(--rahmen);border-radius:12px;padding:16px 18px;box-shadow:var(--shadow)}
+.card h3{margin:0 0 8px;font-size:15px;font-weight:700}
+.card p{margin:0 0 10px;font-size:14px;color:var(--text)}
+.card p:last-child{margin-bottom:0}
+.card .kv{font-size:13px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin:0 0 2px}
+.card .flag{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;margin-bottom:8px}
+.card .flag.na{background:#EAF0F6;color:#94A3B8}
+ul.clean{margin:6px 0 0;padding-left:18px}
+ul.clean li{font-size:14px;margin-bottom:6px}
+table.score{width:100%;border-collapse:collapse;background:var(--paper-2);border:1px solid var(--rahmen);border-radius:12px;overflow:hidden;box-shadow:var(--shadow);font-size:14px}
+table.score th{text-align:left;background:var(--spur);color:var(--muted);font-size:11px;letter-spacing:.08em;text-transform:uppercase;padding:11px 14px;border-bottom:1px solid var(--rahmen)}
+table.score td{padding:12px 14px;border-bottom:1px solid var(--spur);vertical-align:top}
+table.score tr:last-child td{border-bottom:none}
+tr.redflag td{background:#fdeceb}
+.badge{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:7px;font-weight:800;font-size:15px;color:#fff}
+.badge.pos{background:var(--pos)} .badge.neu{background:var(--neu)} .badge.neg{background:var(--neg)}
+td.factor{font-weight:600;width:210px}
+td.rel{color:var(--muted)}
+.comp{display:flex;flex-wrap:wrap;gap:10px}
+.chip{background:var(--paper-2);border:1px solid var(--rahmen);border-radius:10px;padding:10px 13px;font-size:13.5px;box-shadow:var(--shadow);max-width:320px}
+.chip .tag{display:inline-block;font-size:10px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;padding:2px 7px;border-radius:5px;margin-bottom:5px}
+.chip .tag.direkt{background:#BFECF5;color:#0B1F3A}
+.chip .tag.indirekt{background:#EAF0F6;color:#5F6F84}
+.chip b{display:block;font-size:14px;margin-bottom:2px}
+.chip span{color:var(--muted)}
+.chip.pos{background:#e5f6ec;border-color:#bfe4cd}
+.chip.neg{background:#fbe9e7;border-color:#f0c4bc}
+.chip.warn{background:#fdf3e0;border-color:#eed9a8}
+ol.iq{counter-reset:q;list-style:none;margin:0;padding:0}
+ol.iq li{background:var(--paper-2);border:1px solid var(--rahmen);border-radius:10px;padding:12px 14px 12px 46px;position:relative;margin-bottom:10px;font-size:14.5px;box-shadow:var(--shadow)}
+ol.iq li::before{counter-increment:q;content:counter(q);position:absolute;left:12px;top:11px;width:24px;height:24px;border-radius:6px;background:var(--ink);color:var(--auf-ink);font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.cmp{border:1px solid #e6e9e4;border-radius:12px;background:var(--paper-2);box-shadow:var(--shadow);padding:16px 18px;margin-bottom:14px}
+.cmp h3{margin:0 0 10px;font-size:14px;color:var(--ink)}
+.cmp .pair{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.cmp .before{background:#fbeceb;border-radius:8px;padding:10px 12px;font-size:13.5px;color:#5f2c28}
+.cmp .after{background:#e9f6ef;border-radius:8px;padding:10px 12px;font-size:13.5px;color:#1e4a34}
+.cmp .lbl{font-size:11px;text-transform:uppercase;letter-spacing:.06em;font-weight:700;margin:0 0 6px;color:var(--muted)}
+.cmp mark{background:#ffe9a8;padding:0 2px;border-radius:2px}
+.cmp .pills{margin-top:10px;display:flex;flex-wrap:wrap;gap:6px}
+.cmp .pill2{font-size:11px;font-weight:700;background:#e5eefb;color:#255fb0;padding:3px 9px;border-radius:999px}
+@media (max-width:720px){.cmp .pair{grid-template-columns:1fr}}
+details.volltext{margin-top:14px;background:var(--paper-2);border:1px solid var(--rahmen);border-radius:12px;box-shadow:var(--shadow)}
+details.volltext summary{cursor:pointer;padding:14px 18px;font-weight:700;font-size:14px;list-style:none}
+details.volltext summary::-webkit-details-marker{display:none}
+details.volltext summary::before{content:"▸ ";color:var(--accent)}
+details.volltext[open] summary::before{content:"▾ "}
+details.volltext pre{margin:0;padding:0 18px 18px;white-space:pre-wrap;word-break:break-word;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.5px;color:var(--text)}
+.sources{margin-top:28px;font-size:12.5px;color:var(--muted)}
+.sources h2{font-size:12px;letter-spacing:.13em;text-transform:uppercase;margin:0 0 8px}
+.sources a{color:var(--accent);text-decoration:none}
+.sources a:hover{text-decoration:underline}
+.caveat{margin-top:18px;background:#fbf3e6;border:1px solid #ecd9b3;border-left:4px solid var(--amber);border-radius:12px;padding:14px 18px;font-size:13.5px;color:#5f4a1f}
+.caveat b{color:#8a5b0c}
+.foot{margin-top:22px;padding-top:16px;border-top:1px solid var(--rahmen);font-size:12px;color:var(--muted);display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+a:focus-visible,li:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media (max-width:720px){.grid{grid-template-columns:1fr} td.factor{width:auto}}
+@media print{body{background:#fff} .card,table.score,.chip,ol.iq li,.bluf,details.volltext{box-shadow:none} header.head{box-shadow:none}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- REPORT-KOPF (Phase 35, EIN Muster für ALLE Reports) — eyebrow (Report-Typ) → h1
+       (Hauptgegenstand, NICHT pauschal die Firma — s. Typ-Tabelle) → optionale sub-Zeile
+       (Kontext: Firma · Job <id> · weitere Einordnung) → BESCHRIFTETES Meta-Grid (2–4 k/v-Paare,
+       leere Spalten weglassen) → optionale Badge-Zeile als Zusatz (Sprache/Quelle o. ä., nur wenn
+       nicht schon im Meta-Grid). Ampel-Werte (Fit/Score) NICHT als große Gauge im Kopf, sondern
+       als Meta-Wert mit kleinem Punkt: <span class="dot amber"></span>Gelb · Vorbehalt.
+
+       Typ-Tabelle (eyebrow | h1 | sub | Meta-Spalten k→v):
+       TranskriptReport/Debrief | Gesprächs-Debrief (Basis: Transkript-Report) | Rolle | Firma · Job <id> · Runde (Art) | Kontakt · Art · Datum · Status danach
+       Briefing                 | Interview-Briefing                          | Rolle | Firma · Job <id> · Runde       | Termin · Art/Runde · Interviewer · Fit-Ampel
+       Match                    | CV-Match                                    | Rolle | Firma · Job <id>              | Match gewichtet · cv-job-match-Score · CV-Sprache · Datum
+       ATSscan                  | ATS-Scan                                    | Rolle | Firma · Job <id> · geprüfte CV-Datei | ATS-Score · Keywords abgedeckt (x/y) · Sprache · Datum
+       CompanyFit                | Company-Fit                                | Firma | Branche · Situation-Code      | Fit-Ampel · Markt/Segment · Datum · Quellen
+       Stellenausschreibung      | Anzeigen-Snapshot                          | Rolle | Firma · Portal                | Abgerufen am · Quelle · URL-Status
+       Analyse                   | Analyse                                    | Thema | Datenbasis kurz               | Zeitraum · Datensätze · Datum
+  -->
+  <header class="head">
+    <p class="eyebrow"><!-- REPORT_TYP aus der Tabelle -->Beispiel-Report</p>
+    <h1><!-- HAUPTGEGENSTAND (Rolle bei den meisten Typen, Firma bei CompanyFit, Thema bei Analyse) -->Head of Customer Success (m/w/d)</h1>
+    <p class="sub"><!-- KONTEXT-ZEILE, z. B. "Musterfirma GmbH · Job 1 · Runde 1 (HR-Screen)" -->Musterfirma GmbH · Job 1</p>
+    <div class="meta">
+      <!-- 2–4 beschriftete Spalten aus der Typ-Tabelle, leere weglassen -->
+      <div><p class="k">Stand</p><p class="v">2026-07-16</p></div>
+      <div><p class="k">Sprache</p><p class="v">DE</p></div>
+    </div>
+    <div class="badges">
+      <!-- Optionaler Zusatz — nur was NICHT schon im Meta-Grid steht -->
+      <span class="pill">Text eingefügt</span>
+    </div>
+  </header>
+
+  <!-- BLUF (Bottom Line Up Front) — ein bis zwei Sätze Kernaussage, direkt unter der Headline -->
+  <div class="bluf">
+    <p class="fitlabel">Kernaussage in einem Satz</p>
+    <p>Fließtext mit der wichtigsten Einordnung des Reports — was muss man als Erstes wissen.</p>
+  </div>
+
+  <!-- SEKTIONSKARTEN: h2.sec als Zwischenüberschrift, darunter .grid mit .card-Kacheln.
+       .card > .kv ist ein kleines Label über einem Absatz (z. B. "Was & für wen"). -->
+  <h2 class="sec">Beispiel-Sektion (zwei Karten)</h2>
+  <div class="grid">
+    <div class="card">
+      <h3>Kartentitel A</h3>
+      <p class="kv">Label</p><p>Inhalt als Fließtext.</p>
+      <p class="kv">Zweites Label</p><p>Weiterer Inhalt.</p>
+    </div>
+    <div class="card">
+      <h3>Kartentitel B</h3>
+      <ul class="clean">
+        <li>Listenpunkt eins</li>
+        <li>Listenpunkt zwei</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- SCORE-/BEWERTUNGSTABELLE: .badge.pos (grün "+") / .badge.neu (grau "0") / .badge.neg (rot "−").
+       tr.redflag hebt eine Zeile hervor (Red Flag: Muss-Kriterium ohne Beleg). -->
+  <h2 class="sec">Beispiel-Tabelle</h2>
+  <table class="score">
+    <thead><tr><th>Faktor</th><th>Wert</th><th>Warum</th><th>Relevanz</th></tr></thead>
+    <tbody>
+      <tr>
+        <td class="factor">Fachlicher Rollen-Fit</td>
+        <td><span class="badge pos">+</span></td>
+        <td>Kurzbegründung mit Beleg/Zitat aus der Quelle.</td>
+        <td class="rel">Warum das für die Rolle zählt.</td>
+      </tr>
+      <tr>
+        <td class="factor">Offener Punkt</td>
+        <td><span class="badge neu">0</span></td>
+        <td>Noch ungeklärt — im Gespräch adressieren.</td>
+        <td class="rel">–</td>
+      </tr>
+      <tr class="redflag">
+        <td class="factor">Muss-Kriterium ohne Beleg</td>
+        <td><span class="badge neg">−</span></td>
+        <td><b>Red Flag:</b> ehrliche Begründung, kein Schönreden.</td>
+        <td class="rel">Warum das für die Rolle zählt.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- CHIPS (Keyword-Abgleich, Wettbewerber): .comp > .chip in einer Reihe. .chip.pos = abgedeckt, .chip.neg =
+       nicht abgedeckt, .chip.warn = abdeckbar, aber nicht eingearbeitet. .tag.direkt / .tag.indirekt vor dem
+       Titel: wörtlich bzw. sinngleich belegt. Feste Klassen statt Inline-Styles, damit die Farbgebung nicht bei
+       jedem Lauf neu erfunden wird. -->
+  <h2 class="sec">Beispiel-Chips</h2>
+  <div class="comp">
+    <div class="chip pos"><span class="tag direkt">Fachdomäne</span><b>Begriff aus der Anzeige</b><span>Beleg mit Station/Zitat aus dem CV.</span></div>
+    <div class="chip pos"><span class="tag indirekt">Führung/Scope</span><b>Begriff</b><span>Sinngleich belegt (übertragbar, nicht wortgleich).</span></div>
+    <div class="chip neg"><span class="tag direkt">Tools/Methoden</span><b>Nicht gedeckter Begriff</b><span>Ehrlicher Grund der Lücke, kein Schönreden.</span></div>
+    <div class="chip warn"><b>Abdeckbar, nicht eingearbeitet</b><span>Beleg vorhanden, noch nicht im Text.</span></div>
+  </div>
+
+  <!-- VORHER/NACHHER (Match-Dashboard): je geändertem Bullet eine .cmp-Karte. .pair = zwei Spalten (.before /
+       .after), .lbl = kleines Label, mark = eingebautes Keyword (nur hier sichtbar, nie im CV-Dokument),
+       .pills > .pill2 = Chip-Zeile mit den eingebauten Keywords. -->
+  <h2 class="sec">Beispiel Vorher/Nachher</h2>
+  <div class="cmp">
+    <h3>Musterfirma GmbH — Teamleiter Kundenservice (2019–2023)</h3>
+    <div class="pair">
+      <div class="before"><p class="lbl">Vorher · Basis</p>Zitat aus dem Basis-CV, unverändert.</div>
+      <div class="after"><p class="lbl">Nachher · Angepasst</p>Zitat aus dem angepassten CV, neue Stellen mit <mark>eingebautem Keyword</mark> markiert.</div>
+    </div>
+    <div class="pills"><span class="pill2">+ Keyword A</span><span class="pill2">XYZ: Ergebnis zuerst</span></div>
+  </div>
+
+  <!-- HINWEIS-KASTEN (Caveat) — amber, für Einschränkungen/Limitationen/fehlende Belege -->
+  <div class="caveat"><b>Wichtige Einschränkung:</b> Hinweistext, z. B. "Debrief ausstehend — Skill noch nicht gelaufen"
+    oder "Kleine Stichprobe, statistisch wenig belastbar".</div>
+
+  <!-- VOLLTEXT-BLOCK am Ende (Transkript-Report: kompletter Original-Transkript-Text;
+       Stellenausschreibungs-Snapshot: Original-Anzeigentext). IMMER als LETZTER Inhaltsblock vor
+       Quellen/Footer, damit die strukturierte Auswertung oben zuerst gelesen wird. -->
+  <h2 class="sec">Volltext</h2>
+  <details class="volltext" open>
+    <summary>Original-Text anzeigen/verbergen</summary>
+    <pre>Hier steht der komplette Rohtext unverändert (Konservierung) — kein Redigieren, keine Kürzung.</pre>
+  </details>
+
+  <!-- QUELLEN (nur wenn der Report welche hat, z. B. Company-Fit/Analyse — Transkript-Report/
+       Briefing brauchen das i. d. R. nicht) -->
+  <div class="sources">
+    <h2>Quellen</h2>
+    <p><a href="https://example.com" target="_blank" rel="noopener">Quelle A</a> · Quelle B (ohne Link)</p>
+  </div>
+
+  <!-- WEITERE BAUSTEINE OHNE BEISPIEL (alle im Style-Block oben definiert, nur bei Bedarf nutzen):
+       ol.iq                nummerierte Frageliste (Interview-Briefing): <ol class="iq"><li>…</li></ol>
+       .card .flag(.na)     kleines Etikett in einer Karte, .na = nicht anwendbar
+       td.factor / td.rel   erste / letzte Spalte der Score-Tabelle (Faktor fett, Relevanz gedaempft)
+       .gauge .lamp .verdict  grosse Ampel mit Urteilswort — im Kopf stattdessen den kleinen Punkt .dot nutzen
+       .dot.green|amber|red|grau  Ampelpunkt im Fliesstext oder Meta-Wert
+       details.volltext     aufklappbarer Volltext (siehe Beispiel oben) -->
+
+  <!-- FOOTER — Pflicht auf JEDEM Report, exakter Wortlaut des ersten Felds, zweites Feld frei je
+       nach Reportart (z. B. "Fakten mit Quelle · Einschätzungen als Annahme markiert" oder
+       "Automatisch erzeugt — Debrief ausstehend"). NIE Marken-/Firmierungszusätze wie "Daube.Tech"
+       im Footer — exakter Wortlaut des ersten Felds ist Pflicht, keine Ergänzungen (Phase 35). -->
+  <div class="foot">
+    <span>Bewerbungs-Mgmt · erzeugt am <!-- ISO-ZEITSTEMPEL -->2026-07-16 09:00</span>
+    <span><!-- Kurzhinweis zur Verlässlichkeit/Herkunft -->Fakten mit Quelle · Einschätzungen als Annahme markiert</span>
+  </div>
+
+</div>
+</body>
+</html>

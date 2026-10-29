@@ -1,0 +1,32 @@
+# Coach-Site-Export (Phase 81) — WHITELIST-Prinzip: Nur was hier steht, geht raus.
+# Spec: tasks/spec_phase81_coach_export.md · Sperrliste ist zusätzlich testbewehrt
+# (tests/test_coach_export_sperrliste.py) — Änderungen hier ändern NIE die Sperrliste
+# (E-Mails, Notizen, Beirat, Gehälter, verify_note, Transkripte bleiben immer draußen).
+
+# Stellen-Seite, Sektion 1 „Aktive Bewerbungen" (Reihenfolge = Anzeige-Reihenfolge)
+status_aktiv: ["Angebot", "Interview", "Beworben"]
+
+# Stellen-Seite, Sektion 2 „Sichtung & Prüfung" (Erweiterung 10.08.: Coach sieht auch
+# die Vorstufe — Neu aus der täglichen Suche + in Prüfung befindliche Stellen)
+status_vorstufe: ["Prüfen", "Neu"]
+
+# Absagen-Seite: diese Status mit application.rejection_reason
+status_absagen: ["Absage"]
+
+# Artefakt-Typen je Stelle (CompanyFit über company.fit_analysis_path, Match über die
+# neueste CVVersion.match_dashboard_path, Anzeige über job.posting_snapshot_path)
+artefakte: ["CompanyFit", "Match", "Anzeige"]
+
+# Anzeigen-Snapshots: JA (Erweiterung 10.08.) — aber IMMER ohne den internen
+# „Erfassungs-Kontext"-Block (source_note/verify_note-Interna): der Exporter entfernt
+# ihn deterministisch und ÜBERSPRINGT Dateien, bei denen das nicht sicher gelingt
+# (Laufzeit-Guard, Ehrlichkeit vor Vollständigkeit).
+snapshots: true
+
+# Lost-Order-Analyse: neuesten data/analysen/*Analyse_Absagen*.html-Report verlinken
+absagen_analyse_report: true
+
+# Reiter „Tages-Digest“ (P2-79): der Digest des Tages als vierte Seite (digest.html) neben der Übersicht,
+# erneuert mit jedem Tageslauf. Die Sperrliste gilt auch hier: ohne „Zu beantworten“ (E-Mails) und ohne
+# „Offene Aktionen“ (Freitext), „Heute geändert“ nur mit Statuswechseln. false: weder Seite noch Reiter.
+tages_digest: true

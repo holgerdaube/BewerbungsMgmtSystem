@@ -1,0 +1,41 @@
+[project]
+name = "bewerbung-mgmt-backend"
+version = "0.1.0"
+description = "Bewerbungs-Management-System — Backend (FastAPI + SQLite, lokal, keine Multi-Tenant-Nutzung)"
+requires-python = ">=3.12"
+# Untergrenzen = in Phase 59 Stufe A frisch aufgeloeste und getestete Versionen (36/36 Tests
+# gruen im Wegwerf-venv, s. tasks/spec_phase59_dependency_update.md). Keine Obergrenzen noetig --
+# kein V2-Zurueckpin dieser Runde (0 Testfehlschlaege).
+dependencies = [
+    "fastapi>=0.140.0",
+    "uvicorn>=0.51.0",
+    "sqlmodel>=0.0.39",
+    "python-docx>=1.2.0",
+    "openpyxl>=3.1.5",
+    "python-multipart>=0.0.32",
+    "httpx>=0.28.1",
+    "PyYAML>=6.0.3",
+    "google-auth>=2.56.2",
+    "google-auth-oauthlib>=1.4.0",
+    "bcrypt>=5.0.0",
+    "markdown>=3.10",
+]
+
+[project.optional-dependencies]
+# Test-Werkzeuge (Phase 57 Stufe E1; Pin angehoben Phase 59A) — exakte Pins stehen in
+# requirements-dev.txt.
+dev = [
+    "pytest>=9.1.1",
+]
+
+# Exakte, reproduzierbare Versionen (inkl. transitiver Deps) stehen in requirements-lock.txt
+# (aus `pip freeze` der ~/.bewerbung_mgmt_venv, s. tasks/spec_phase56_repo_struktur.md Stufe A).
+# Setup: siehe README.md (venv anlegen, dann `pip install -e backend` ODER
+# `pip install -r backend/requirements-lock.txt`).
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["app*", "pipeline*", "scripts*"]

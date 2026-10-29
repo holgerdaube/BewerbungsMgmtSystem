@@ -1,0 +1,32 @@
+# Zeilenenden festnageln (Phase 83, CI-Fund 12.08.2026 im Job `backend-windows`).
+#
+# Git checkt auf Windows-Runnern standardmäßig mit CRLF aus (`core.autocrlf=true`). Für die
+# generierten Doku-Seiten ist das fatal: `tests/test_docs_html.py` prüft byte-genau, ob eine
+# `docs/*.html` dem entspricht, was der Renderer aus der `.md` erzeugen würde — eine mit CRLF
+# ausgecheckte Datei schlägt gegen frisch gerendertes LF immer fehl, obwohl inhaltlich alles
+# stimmt. Deshalb: Textdateien immer mit LF im Arbeitsverzeichnis.
+#
+# Der Renderer selbst schreibt ebenfalls explizit mit `newline="\n"`
+# (`pipeline/docs_render.py::render_und_schreiben`) — beide Seiten zusammen halten die Dateien
+# auf macOS, Linux und Windows byte-gleich.
+
+* text=auto eol=lf
+
+# P2-51 Paket U2a: Ausnahme von der LF-Regel oben, deshalb NACH ihr (git wertet für eine Datei
+# das zuletzt passende Muster). `.bat`/`.cmd` sind Windows-Batch-Dateien — cmd.exe findet
+# Sprungmarken (`:label`, `goto`) in rein LF-kodierten Skripten nicht zuverlässig (Ausgangslage
+# der Bau-Spec). `update_windows.bat`/`start_windows.bat`/`stop_windows.bat` brauchen deshalb
+# CRLF, alle anderen Textdateien (inkl. `.command`/`.sh`/`.py`) bleiben bei LF.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Binärdateien: nie anfassen (sonst zerstört eine Zeilenenden-Übersetzung den Inhalt).
+*.png binary
+*.jpg binary
+*.pdf binary
+*.docx binary
+*.xlsx binary
+*.sqlite binary
+*.ico binary
+*.woff binary
+*.woff2 binary
