@@ -44,7 +44,7 @@ Node.js 24.
 
 Meldet `start_windows.bat`, `update_windows.bat` oder `wiederherstellen_windows.bat`, dass die
 Python-Umgebung fehlt, holen Sie diesen Schritt nach (`BMS_Install_Windows.md`, Schritt
-„Python-Umgebung einrichten“). In PowerShell im Programmordner, etwa `C:\Program Files\BMS`:
+„Python-Umgebung einrichten“). In PowerShell im Programmordner, etwa `C:\Users\Name\BMS`:
 
 ```powershell
 py -3.12 -m venv "$env:USERPROFILE\.bewerbung_mgmt_venv"

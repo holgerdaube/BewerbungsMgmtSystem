@@ -8,9 +8,9 @@ import drittlizenzenMd from '../rechtliches/drittlizenzen.md?raw'
 // ── Mini-Markdown-Renderer (Phase 71E) ──────────────────────────────────────────────
 // Bewusst von Hand statt einer npm-Dependency (Spec-Vorgabe: kein neues Paket nur für
 // wenige statische Rechtstexte). Deckt genau das ab, was diese Texte brauchen: h1/h2/h3,
-// Absätze, Listen, **fett**, Blockquote, Trennlinie. Rendert React-Elemente (kein
-// dangerouslySetInnerHTML) — die Texte kommen zwar aus eigenen Dateien, nicht aus
-// Nutzereingaben, aber echte Elemente sind ohnehin die sauberere Lösung.
+// Absätze, Listen, **fett**, https-Adressen als Link, Blockquote, Trennlinie. Rendert
+// React-Elemente (kein dangerouslySetInnerHTML) — die Texte kommen zwar aus eigenen Dateien,
+// nicht aus Nutzereingaben, aber echte Elemente sind ohnehin die sauberere Lösung.
 type MdBlock =
   | { kind: 'h1' | 'h2' | 'h3'; text: string }
   | { kind: 'p'; text: string }
@@ -107,15 +107,25 @@ function parseMarkdown(src: string): MdBlock[] {
   return blocks
 }
 
-/** **fett** innerhalb eines Textblocks in <strong> umwandeln — der einzige Inline-Stil,
- *  den diese Texte brauchen. */
+/** Inline-Stile innerhalb eines Textblocks: **fett** wird <strong>, eine nackte https-Adresse
+ *  (ueber.md: Repo, datenschutz.md: GitHub-Datenschutzerklärung) ein Link in einem neuen Tab.
+ *  Ein Satzzeichen direkt hinter der Adresse gehört nicht mehr zu ihr. Mehr brauchen diese
+ *  Texte nicht, Markdown-Links `[…](…)` kennt der Renderer bewusst nicht. */
+const INLINE_RE = /(\*\*[^*]+\*\*|https:\/\/[^\s)]*[^\s).,;:!?])/g
+
 function renderInline(text: string, keyPrefix: string) {
-  const parts = text.split(/(\*\*[^*]+\*\*)/g).filter((p) => p.length > 0)
-  return parts.map((part, idx) =>
-    part.startsWith('**') && part.endsWith('**')
-      ? <strong key={`${keyPrefix}-${idx}`}>{part.slice(2, -2)}</strong>
-      : part
-  )
+  const parts = text.split(INLINE_RE).filter((p) => p.length > 0)
+  return parts.map((part, idx) => {
+    const key = `${keyPrefix}-${idx}`
+    if (part.startsWith('**') && part.endsWith('**')) return <strong key={key}>{part.slice(2, -2)}</strong>
+    if (part.startsWith('https://')) {
+      return (
+        <a key={key} href={part} target="_blank" rel="noopener noreferrer"
+           className="break-words text-brand-cyan hover:underline">{part}</a>
+      )
+    }
+    return part
+  })
 }
 
 function renderMarkdown(src: string) {

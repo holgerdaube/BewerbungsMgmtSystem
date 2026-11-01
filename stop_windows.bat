@@ -20,10 +20,12 @@ set "FORCE=0"
 if /i "%~1"=="--force" set "FORCE=1"
 
 rem ── Lauschenden Prozess finden ──────────────────────────────────────────────────────────
-rem "netstat -ano" listet auch Verbindungen im Zustand TIME_WAIT o. ae. -- nur LISTENING zaehlt,
-rem sonst wuerde eine gerade geschlossene Browser-Verbindung als "laeuft noch" gelten.
+rem "netstat -ano" listet auch Verbindungen im Zustand TIME_WAIT o. ae. -- nur der lauschende
+rem Socket zaehlt, sonst wuerde eine gerade geschlossene Browser-Verbindung als "laeuft noch"
+rem gelten. Erkannt wird er an der Gegenadresse 0.0.0.0:0, nicht am Wort LISTENING: Deutsches
+rem Windows schreibt dort ABHOEREN, die Statusspalte ist uebersetzt.
 set "SERVERPID="
-for /f "tokens=5" %%P in ('netstat -ano ^| findstr /r /c:"TCP.*:%PORT% .*LISTENING"') do (
+for /f "tokens=5" %%P in ('netstat -ano -p TCP ^| findstr /r /c:":%PORT% *0\.0\.0\.0:0 "') do (
   if not defined SERVERPID set "SERVERPID=%%P"
 )
 
@@ -46,8 +48,10 @@ rem .ps1-Dateien) -- gleiche Ueberlegung wie im Browser-Aufruf von start_windows
 rem Gezaehlt werden BEIDE Zustaende: "running" ist der Lauf, der gerade stirbt -- "queued" sind
 rem die Schritte einer Kette, die danach nie mehr an die Reihe kaemen (ein Tageslauf hat sieben
 rem davon, waehrend Schritt eins laeuft).
+rem Das & in den Adressen steht innerhalb der Anfuehrungszeichen und bekommt KEIN ^: Dort ist ^
+rem ein gewoehnliches Zeichen und landete in der Adresse (Status "running^", Anzahl immer 0).
 set "ANZAHL=?"
-for /f %%C in ('powershell -NoProfile -Command "try { $u='http://127.0.0.1:%PORT%/api/tasks?status='; @((Invoke-RestMethod -Uri ($u+'running^&limit=50') -TimeoutSec 3)).Count + @((Invoke-RestMethod -Uri ($u+'queued^&limit=50') -TimeoutSec 3)).Count } catch { '?' }" 2^>nul') do set "ANZAHL=%%C"
+for /f %%C in ('powershell -NoProfile -Command "try { $u='http://127.0.0.1:%PORT%/api/tasks?status='; @((Invoke-RestMethod -Uri ($u+'running&limit=50') -TimeoutSec 3)).Count + @((Invoke-RestMethod -Uri ($u+'queued&limit=50') -TimeoutSec 3)).Count } catch { '?' }" 2^>nul') do set "ANZAHL=%%C"
 
 if not "%ANZAHL%"=="?" if not "%ANZAHL%"=="0" (
   echo.
@@ -78,7 +82,7 @@ set "WARTEN=0"
 :warteschleife
 timeout /t 1 >nul
 set "NOCHDA="
-for /f "tokens=5" %%P in ('netstat -ano ^| findstr /r /c:"TCP.*:%PORT% .*LISTENING"') do set "NOCHDA=%%P"
+for /f "tokens=5" %%P in ('netstat -ano -p TCP ^| findstr /r /c:":%PORT% *0\.0\.0\.0:0 "') do set "NOCHDA=%%P"
 if not defined NOCHDA goto beendet
 set /a WARTEN+=1
 if %WARTEN% lss 10 goto warteschleife
@@ -89,7 +93,7 @@ taskkill /F /PID %SERVERPID% /T >nul 2>&1
 timeout /t 2 >nul
 
 set "NOCHDA="
-for /f "tokens=5" %%P in ('netstat -ano ^| findstr /r /c:"TCP.*:%PORT% .*LISTENING"') do set "NOCHDA=%%P"
+for /f "tokens=5" %%P in ('netstat -ano -p TCP ^| findstr /r /c:":%PORT% *0\.0\.0\.0:0 "') do set "NOCHDA=%%P"
 if defined NOCHDA (
   echo FEHLER: Port %PORT% ist weiterhin belegt ^(Prozess %NOCHDA%^).
   echo Pruefen mit: netstat -ano ^| findstr :%PORT%

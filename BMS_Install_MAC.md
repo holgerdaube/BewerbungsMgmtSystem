@@ -498,17 +498,18 @@ wenn der Schlüssel noch gilt).
 
 Anleitung für das Textfenster: „Suchen Sie die Zeile, die mit `# CLAUDE_CODE_OAUTH_TOKEN=` beginnt.
 Entfernen Sie das `#` und das Leerzeichen am Zeilenanfang und ersetzen Sie alles nach dem `=` durch
-Ihren Schlüssel. Der Schlüssel muss in einer einzigen Zeile stehen. Speichern Sie mit ⌘ + S und
-schließen Sie das Fenster.“ Die Datei liegt bewusst außerhalb des Programmordners und ist nur für
-das Benutzerkonto des Anwenders lesbar.
+Ihren Schlüssel, auch das Beispiel `sk-ant-oat01-...`. Der Schlüssel muss in einer einzigen Zeile
+stehen. Speichern Sie mit ⌘ + S und schließen Sie das Fenster.“ Die Datei liegt bewusst außerhalb des
+Programmordners und ist nur für das Benutzerkonto des Anwenders lesbar.
 
 7d. Prüfen, ohne den Schlüssel zu zeigen:
 
 ```sh
-grep -Eq '^CLAUDE_CODE_OAUTH_TOKEN=.{20,}' ~/.bewerbung_mgmt_secrets/agent.env && echo "vorhanden" || echo "fehlt"
+grep -Eq '^CLAUDE_CODE_OAUTH_TOKEN=sk-ant-oat01-[A-Za-z0-9_-]{40,}[[:space:]]*$' ~/.bewerbung_mgmt_secrets/agent.env && echo "vorhanden" || echo "fehlt"
 ```
 
-Erwartung: `vorhanden`. Bei `fehlt`: Zeile prüfen (kein `#`, Wert nach dem `=`, eine Zeile).
+Erwartung: `vorhanden`. Bei `fehlt`: Zeile prüfen (kein `#`, Wert nach dem `=`, eine Zeile). Das Beispiel
+`sk-ant-oat01-...` darf nicht mehr in der Zeile stehen.
 
 ## Schritt 8: Erster Start und Selbsttest
 
@@ -868,7 +869,7 @@ laden Sie die neue Datei `BMS_<Version>.zip` im Browser von der Release-Seite
 sie in Ihrem Ordner „Downloads“. Starten Sie das Werkzeug dann wie oben. Es findet die ZIP-Datei von
 selbst, prüft sie und zeigt den Plan. Liegt eine ZIP-Datei in „Downloads“ und findet das Werkzeug
 auch online eine Version, nimmt es die höchste Version, egal woher. Haben Sie eine Version bis 1.7.0
-installiert, nehmen Sie für das erste Update auf Version 2.0.0 diesen Weg.
+installiert, nehmen Sie für das erste Update auf eine Version ab 1.9.0 diesen Weg.
 
 Meldet das Werkzeug „Online-Suche nicht möglich: …“, bricht es nicht ab. Es nennt den Grund, etwa
 „Es besteht keine Verbindung zu GitHub.“ oder „GitHub begrenzt gerade die Anfragen. Bitte versuchen

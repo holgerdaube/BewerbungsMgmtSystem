@@ -450,7 +450,8 @@ def test_wache_dateien_sind_utf8_nur_lf_und_enden_mit_einem_zeilenumbruch():
 
 def test_wache_uebersicht_nutzt_nur_die_mittel_des_mini_renderers():
     """Keine Backticks, Links, Tabellen oder Zitate (Rechtliches.tsx kann nur ##/###, Absätze, - Listen,
-    **fett** und ---). Dazu: Der Bestand ist so vollständig, wie die Abnahme es verlangt."""
+    **fett**, nackte https-Adressen und ---). Dazu: Der Bestand ist so vollständig, wie die Abnahme es
+    verlangt."""
     m = _mod()
     md, txt = _echt()
     assert "`" not in md and "](" not in md

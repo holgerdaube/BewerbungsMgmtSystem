@@ -23,10 +23,19 @@ rem Browser mit kurzer Verzoegerung oeffnen (laeuft im Hintergrund weiter, block
 rem Server-Start nicht) -- PowerShell-Einzeiler statt eines verschachtelten "start"-Aufrufs,
 rem um Batch-Anfuehrungszeichen-Fallstricke zu vermeiden. -Command ist NICHT von der
 rem PowerShell-Ausfuehrungsrichtlinie betroffen (die gilt nur fuer .ps1-Skriptdateien).
-start /b "" powershell -NoProfile -WindowStyle Hidden -Command "Start-Sleep -Seconds 2; Start-Process 'http://localhost:8000'"
+rem Kein -WindowStyle Hidden: Mit /b teilt PowerShell das Konsolenfenster dieser Datei und
+rem wuerde damit das Serverfenster verstecken. Ein eigenes Fenster entsteht mit /b ohnehin nicht.
+start /b "" powershell -NoProfile -Command "Start-Sleep -Seconds 2; Start-Process 'http://localhost:8000'"
 
 echo Starte Bewerbungs-Management auf http://localhost:8000  (Beenden: Strg+C)
 set "PORT=8000"
 "%VENV%" run_server.py
+rem pause wie oben: Endet der Server mit einem Fehler (Port belegt, Importfehler), schliesst sich
+rem das Fenster sonst sofort, und die Meldung waere nie lesbar.
+if errorlevel 1 (
+  echo.
+  echo Der Server wurde mit einem Fehler beendet. Die Meldung steht oben.
+  pause
+)
 
 endlocal

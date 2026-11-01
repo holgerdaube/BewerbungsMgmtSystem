@@ -4,6 +4,14 @@ Hier steht zu jeder Version, was sich für Sie ändert. Welche Version installie
 
 ## Unveröffentlicht
 
+## 2.0.0 (01.11.2026)
+
+- Unter „Rechtliches“ lassen sich Internetadressen jetzt anklicken, etwa der Link zum Quelltext bei GitHub in „Über dieses Programm“ und der zur Datenschutzerklärung von GitHub. Sie öffnen sich in einem neuen Tab.
+- Windows: Die Installationsanleitung schlägt jetzt den Ordner `BMS` in Ihrem Benutzerordner vor (`%USERPROFILE%\BMS`, wie beim Mac) statt im Programme-Ordner. Dort können andere Benutzerkonten des Rechners Ihre Daten und Lebensläufe nicht lesen, und das Anlegen braucht keine Administrator-Rechte mehr. Eine bestehende Installation bleibt, wo sie ist.
+- Windows: Das Fenster des BMS bleibt nach dem Start sichtbar. Bisher konnte es nach einer Sekunde verschwinden, dann ließ sich das BMS nur noch über den Task-Manager beenden. Endet der Server mit einem Fehler, bleibt das Fenster mit der Meldung offen.
+- Windows: `stop_windows.bat` findet das laufende BMS jetzt auch auf einem deutschen Windows und fragt wieder nach, bevor es laufende Agent-Läufe abbricht.
+- Die Installationsanleitungen prüfen den Zugangsschlüssel genauer: Bleibt das Beispiel `sk-ant-oat01-...` in der Zeile stehen, meldet die Prüfung jetzt „fehlt“ statt „vorhanden“. Unter Windows ermittelt die Anleitung den echten Ordner „Downloads“, auch wenn OneDrive ihn umleitet, prüft Windows-Version und Bauart und erklärt die Rückfrage „Batchvorgang abbrechen (J/N)?“ beim Beenden.
+
 ## 1.9.0 (29.10.2026)
 
 - Das BMS wird nicht mehr verkauft, sondern ist Open Source unter der Apache License 2.0 (Dateien `LICENSE` und `NOTICE` im Programmordner). Unter „Rechtliches“ stehen jetzt „Über dieses Programm“ mit Herausgeber und Haftungshinweis, der Wortlaut der Lizenz, Datenschutz und die Drittanbieter-Lizenzen. Nutzungsbedingungen (AGB/EULA), Widerrufsbelehrung, Vertriebs-Checkliste und das Impressum in der App sind entfallen; das Impressum steht auf daube.tech.

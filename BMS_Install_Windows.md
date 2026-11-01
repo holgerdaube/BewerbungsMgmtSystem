@@ -26,8 +26,9 @@ Aktualisieren, Hilfe bei Problemen und Ihre Daten. Haben Sie einen Mac, nutzen S
    GitHub. Eine BMS-ZIP-Datei (`BMS_<Version>.zip`) brauchen Sie nur als Ersatzweg, wenn das Laden nicht
    klappt.
 5. Überlegen Sie, in welchem Ordner das BMS liegen soll. Claude fragt Sie gleich zu Beginn danach
-   und schlägt den Ordner `BMS` im Programme-Ordner vor, in der Regel `C:\Program Files\BMS`. Im Rest
-   dieser Anleitung heißt dieser Ordner „Ihr BMS-Ordner“. Zwei Regeln für die Wahl:
+   und schlägt den Ordner `BMS` in Ihrem Benutzerordner vor (`%USERPROFILE%\BMS`, in der Regel
+   `C:\Users\<Ihr Benutzername>\BMS`). Im Rest dieser Anleitung heißt dieser Ordner „Ihr BMS-Ordner“.
+   Zwei Regeln für die Wahl:
    - **Kein synchronisierter Ordner.** Das BMS speichert Ihre Daten in einer einzigen
      Datenbankdatei, die während der Arbeit ständig beschrieben wird. Cloud-Speicher wie iCloud
      Drive, OneDrive oder Dropbox synchronisieren solche Dateien nicht zuverlässig und können sie
@@ -36,9 +37,10 @@ Aktualisieren, Hilfe bei Problemen und Ihre Daten. Haben Sie einen Mac, nutzen S
    - **Ein neuer oder leerer Ordner.** Liegt dort schon ein BMS, installieren Sie nicht darüber,
      sondern aktualisieren es (Abschnitt „Aktualisierungen einspielen“).
 
-   Windows schützt den Programme-Ordner vor Änderungen. Die Installation richtet deshalb einmalig
-   Schreibrechte für Ihr Benutzerkonto ein, und zwar nur für Ihren BMS-Ordner (Schritt 2). Das BMS
-   selbst läuft danach ohne Administrator-Rechte.
+   Ihr Benutzerordner gehört Ihrem Konto. Andere Benutzerkonten des Rechners ohne
+   Administrator-Rechte können Ihre Daten dort nicht lesen, und das Anlegen des Ordners braucht
+   keine Administrator-Rechte. In einem Ordner außerhalb davon (etwa `D:\BMS`) können andere
+   Benutzerkonten in der Regel mitlesen.
 
 Diese Anleitung geht von einem PC aus, auf dem unter Ihrem Benutzerkonto noch kein BMS installiert
 ist. Claude prüft das in Schritt 1. Gibt es schon eins, aktualisieren Sie es (Abschnitt
@@ -100,11 +102,12 @@ Befehle ausführen könntest.
    mit den zugehörigen Befehlen vor. Springe nicht voraus, auch wenn der Anwender es eilig hat.
 2. **Befehle in eigenen Codeblöcken** (` ```powershell `), vollständig, zum Kopieren und
    Einfügen, mit allen Pfaden bereits eingesetzt. Verwende nie Platzhalter wie `<Verzeichnis>`
-   in dem, was der Anwender kopiert. Setze die Angaben aus Schritt 0 selbst ein. Die Befehle in
-   dieser Anleitung tragen Platzhalter in Großbuchstaben, die du vor der Ausgabe ersetzt:
-   `INSTALLVERZ` (das Installationsverzeichnis), `ZIP-PFAD`, `VERSION` (aus der Auskunft in
-   Schritt 4), `LAUFWERK` und `UNTERORDNER`. Mehrere Zeilen in einem Block sind in Ordnung, wenn sie
-   zusammengehören.
+   in dem, was der Anwender kopiert. Setze die Angaben aus Schritt 0 selbst ein. Nennt der Anwender
+   einen Pfad in Anführungszeichen (so liefert ihn „Als Pfad kopieren“), setze ihn ohne diese
+   Anführungszeichen ein, denn die Vorlagen setzen eigene. Die Befehle in dieser Anleitung tragen
+   Platzhalter in Großbuchstaben, die du vor der Ausgabe ersetzt: `INSTALLVERZ` (das
+   Installationsverzeichnis), `ZIP-PFAD`, `VERSION` (aus der Auskunft in Schritt 4), `LAUFWERK` und
+   `UNTERORDNER`. Mehrere Zeilen in einem Block sind in Ordnung, wenn sie zusammengehören.
 3. **Nach jedem Befehlsblock fragen**, in dieser Form: „Ist der Befehl durchgelaufen? Bitte kopieren
    Sie die Ausgabe hier herein.“ Sage dazu, woran der Anwender Erfolg erkennt, damit er nicht raten
    muss („Es soll `Python 3.12.x` erscheinen.“).
@@ -135,8 +138,12 @@ Begrüße den Anwender kurz und frage die folgenden Dinge **in einer einzigen Na
 die Antworten.
 
 1. **Installationsverzeichnis.** „In welchem Verzeichnis soll das BMS installiert werden? Vorschlag:
-   der Ordner `BMS` im Programme-Ordner, in der Regel `C:\Program Files\BMS`.“ Prüfe die Antwort:
+   der Ordner `BMS` in Ihrem Benutzerordner, in der Regel `C:\Users\<Ihr Benutzername>\BMS`.“ Prüfe
+   die Antwort:
    - Es muss ein vollständiger Laufwerkspfad sein (z. B. `D:\BMS`).
+   - Liegt der Pfad außerhalb des Benutzerordners, sage in einem Satz, dass andere Benutzerkonten
+     des Rechners dort in der Regel mitlesen können, und nenne den Vorschlag. Bleibt der Anwender
+     dabei, gilt sein Pfad.
    - **Nicht** in einem Ordner, den OneDrive, iCloud oder Dropbox synchronisiert, und nicht auf dem
      Desktop oder in „Dokumente“ (oft von OneDrive gesichert). Grund: Die Datenbank wird laufend
      beschrieben und kann beim Synchronisieren beschädigt werden. Erkläre das in einem Satz und
@@ -145,9 +152,7 @@ die Antworten.
      den Vorlagen unten.
    Diesen Pfad nennen wir im Folgenden **das Installationsverzeichnis**. Setze ihn in alle späteren
    Befehle ein. Nennt der Anwender keinen Pfad oder schreibt nur „ja“ oder „Vorschlag“, gilt der
-   Vorschlag. Den tatsächlichen Pfad des Programme-Ordners klärt Schritt 1 (auf fast allen Rechnern
-   `C:\Program Files`). Sage dem Anwender, dass Windows diesen Ordner schützt und Schritt 2 deshalb
-   einmal nach Administrator-Rechten fragt.
+   Vorschlag. Den tatsächlichen Pfad des Benutzerordners klärt Schritt 1.
 2. **Vorhandene ZIP-Datei (optional).** „Haben Sie schon eine BMS-ZIP-Datei (`BMS_<Version>.zip`), zum
    Beispiel aus dem Browser heruntergeladen? Dann nennen Sie mir bitte den vollständigen Pfad (meist
    `C:\Users\Name\Downloads\BMS_2.0.0.zip`). Sonst holen wir das Programmpaket in Schritt 4 gemeinsam
@@ -170,21 +175,24 @@ des Installationsverzeichnisses, z. B. `C`):
 
 ```powershell
 winget --version
-[System.Environment]::OSVersion.VersionString
-$env:ProgramFiles
+(Get-CimInstance Win32_OperatingSystem).Caption; [Environment]::OSVersion.Version.Build; $env:PROCESSOR_ARCHITECTURE
+$env:USERPROFILE
 (Get-PSDrive LAUFWERK).Free / 1GB
 Test-Path "$env:USERPROFILE\.bewerbung_mgmt_venv", "$env:USERPROFILE\.bewerbung_mgmt_secrets"
 curl.exe --version
 ```
 
-Erwartung: eine winget-Version; eine Windows-Version (Windows 10 oder 11); der Pfad des
-Programme-Ordners (meist `C:\Program Files`; gilt der Vorschlag aus Schritt 0, ist das
+Erwartung: eine winget-Version; drei Zeilen zum System: „Microsoft Windows 10 …“ oder „Microsoft
+Windows 11 …“, eine Build-Nummer von mindestens 17763 und `AMD64` oder `ARM64`; der Pfad des
+Benutzerordners (etwa `C:\Users\Name`; gilt der Vorschlag aus Schritt 0, ist das
 Installationsverzeichnis dieser Pfad plus `\BMS`); freier Platz **mindestens 2** (GB); zweimal `False`
 für die beiden Ordner im Benutzerverzeichnis; zum Schluss einige Zeilen, die mit `curl` und einer
 Versionsnummer beginnen. Fehlt `winget`: Der Anwender soll im Microsoft Store den „App-Installer“
 aktualisieren und es noch einmal versuchen. Meldet PowerShell bei `curl.exe --version`, den Befehl gebe
 es nicht, ist Windows zu alt (vor Windows 10, Version 1803): Dann geht nur der Ersatzweg mit einer
-ZIP-Datei.
+ZIP-Datei. Ist die Build-Nummer kleiner als 17763 und soll die KI eingerichtet werden (Schritt 0),
+halte an und verweise auf ein Windows-Update (Claude Code braucht Windows 10 ab Version 1809). Steht
+dort `ARM64`, mache weiter und vermerke im Protokoll, dass diese Bauart nicht getestet ist.
 
 Hat der Anwender in Schritt 0 eine ZIP-Datei genannt (Ersatzweg), prüfst du statt `curl` diese Datei:
 Ersetze im Block die Zeile `curl.exe --version` durch `Test-Path "ZIP-PFAD"` (der genannte Pfad).
@@ -213,7 +221,7 @@ neu herunterladen lassen.
 Prüft zugleich, dass das Verzeichnis nicht schon belegt ist:
 
 ```powershell
-if (Test-Path "INSTALLVERZ") { Get-ChildItem "INSTALLVERZ" | Measure-Object | Select-Object -ExpandProperty Count } else { "neu" }
+if (Test-Path "INSTALLVERZ") { Get-ChildItem "INSTALLVERZ" -Force | Measure-Object | Select-Object -ExpandProperty Count } else { "neu" }
 ```
 
 - Ausgabe `neu` oder `0`: weiter.
@@ -222,23 +230,18 @@ if (Test-Path "INSTALLVERZ") { Get-ChildItem "INSTALLVERZ" | Measure-Object | Se
   „Aktualisierungen einspielen“, nicht diese Anleitung) oder ein anderes Verzeichnis gewählt werden
   soll.
 
-Dann anlegen. Windows schützt den Programme-Ordner, deshalb legt der folgende Befehl das Verzeichnis
-mit Administrator-Rechten an und gibt dem Benutzerkonto des Anwenders Schreibrechte, und zwar nur
-für dieses eine Verzeichnis. Kündige an: „Windows fragt gleich ‚Möchten Sie zulassen, dass durch
-diese App Änderungen vorgenommen werden?‘. Bitte mit ‚Ja‘ bestätigen.“ (Der Befehl gilt unverändert
-auch für ein Verzeichnis außerhalb des Programme-Ordners.)
+Dann anlegen und prüfen, dass das Benutzerkonto darin schreiben darf. Das braucht keine
+Administrator-Rechte:
 
 ```powershell
-$SID = [System.Security.Principal.WindowsIdentity]::GetCurrent().User.Value
-Start-Process powershell -Verb RunAs -Wait -ArgumentList "-NoProfile -Command `"New-Item -ItemType Directory -Force 'INSTALLVERZ' | Out-Null; icacls 'INSTALLVERZ' /grant '*${SID}:(OI)(CI)M' | Out-Null`""
+New-Item -ItemType Directory -Force "INSTALLVERZ" | Out-Null
 try { [IO.File]::WriteAllText("INSTALLVERZ\schreibtest.txt", "ok"); Remove-Item "INSTALLVERZ\schreibtest.txt"; "Schreibrecht: ja" } catch { "Schreibrecht: NEIN" }
 ```
 
-Erwartung: `Schreibrecht: ja`. Bei `Schreibrecht: NEIN` hat der Anwender die Rückfrage von Windows
-abgelehnt oder hat kein Administrator-Konto: einmal wiederholen lassen. Bleibt es dabei, schlage ein
-Verzeichnis außerhalb des Programme-Ordners vor (z. B. `D:\BMS` oder `C:\BMS`), lass es bestätigen
-und beginne Schritt 2 mit dem neuen Pfad von vorn. Das BMS selbst läuft später ohne
-Administrator-Rechte.
+Erwartung: `Schreibrecht: ja`. Bei einer Fehlermeldung oder `Schreibrecht: NEIN` ist das gewählte
+Verzeichnis geschützt (etwa unter `C:\Program Files`). Schlage den Ordner `BMS` im Benutzerordner vor
+(Pfad aus Schritt 1 plus `\BMS`), lass ihn bestätigen und beginne Schritt 2 mit dem neuen Pfad von
+vorn.
 
 Dann das Protokoll beginnen:
 
@@ -315,9 +318,18 @@ Befehl.
 Hat er stattdessen eine **ZIP-Datei** genannt (Ersatzweg), entfallen 4a bis 4c, und es geht mit 4d
 weiter. `ZIP-PFAD` ist dann der genannte Pfad.
 
-In 4b bis 4d ist `ZIP-PFAD` der Ordner „Downloads“ des Anwenders plus `BMS_VERSION.zip`, also zum
-Beispiel `C:\Users\Name\Downloads\BMS_2.0.0.zip`, mit der Version aus 4a. Ist unklar, wo „Downloads“
-liegt, frage nach.
+Hat der Anwender keine ZIP-Datei genannt, ist `ZIP-PFAD` in 4b bis 4d der Ordner „Downloads“ des
+Anwenders plus `\BMS_VERSION.zip`, mit der Version aus 4a. Den Kontonamen kennst du nicht, und OneDrive
+kann „Downloads“ umleiten. Erfinde den Pfad deshalb nicht, sondern gib vor 4b diesen Befehl vor, der den
+echten Ordner ausgibt:
+
+```powershell
+(New-Object -ComObject Shell.Application).NameSpace('shell:Downloads').Self.Path
+```
+
+Erwartung: eine Zeile mit einem Ordnerpfad. Daraus setzt du `ZIP-PFAD` zusammen. Lautet die Ausgabe zum
+Beispiel `D:\Downloads`, ist `ZIP-PFAD` gleich `D:\Downloads\BMS_VERSION.zip`, mit eingesetzter
+Version. Bleibt die Ausgabe leer oder meldet der Befehl einen Fehler, frage nach dem Ordner.
 
 4a. Auskunft holen:
 
@@ -415,7 +427,9 @@ py -3.12 -m venv "$env:USERPROFILE\.bewerbung_mgmt_venv"
 New-Item -ItemType Junction -Path "$env:USERPROFILE\.bewerbung_mgmt_venv\bin" -Target "$env:USERPROFILE\.bewerbung_mgmt_venv\Scripts"
 ```
 
-Existiert die Umgebung schon (Fehler „Junction existiert bereits“ ist harmlos), prüfe mit:
+Meldet `New-Item`, dass bereits ein Element mit diesem Namen vorhanden ist (englisch: „An item with
+the specified name … already exists“), ist das harmlos: Die Umgebung gab es schon. Prüfe in jedem Fall
+mit:
 
 ```powershell
 Test-Path "$env:USERPROFILE\.bewerbung_mgmt_venv\bin\python.exe"
@@ -451,11 +465,14 @@ Chat einfügt**.
 7a. Anmelden:
 
 ```powershell
+Set-Location "INSTALLVERZ"
 claude
 ```
 
-Der Browser öffnet sich, der Anwender meldet sich mit seinem Claude-Konto an. Fragt Claude Code
-nach einem Farbschema oder nach Vertrauen für den Ordner, bestätigt er. Danach beendet er mit `/exit`.
+Beim ersten Start fragt Claude Code nach einem Farbschema und nach der Anmeldeart. Der Anwender wählt
+die Anmeldung mit seinem Claude-Konto. Claude Code öffnet dann den Browser, dort meldet er sich an und
+bestätigt den Zugriff. Fragt Claude Code anschließend, ob er den Dateien in diesem Ordner vertraut,
+bestätigt er. Zurück in PowerShell beendet er Claude Code mit `/exit`.
 
 7b. Zugangsschlüssel erzeugen:
 
@@ -479,16 +496,18 @@ gab es schon ein BMS: Steht in der Datei bereits ein Schlüssel, bleibt er, und 
 den Editor ohne Änderung (dann kann 7b entfallen, wenn der Schlüssel noch gilt).
 
 Anleitung für den Editor: „Suchen Sie die Zeile, die mit `# CLAUDE_CODE_OAUTH_TOKEN=` beginnt. Löschen
-Sie das `#` und das Leerzeichen am Zeilenanfang. Fügen Sie nach dem `=` den Schlüssel ein, alles in
-einer Zeile, ohne Leerzeichen. Speichern Sie und schließen Sie den Editor.“
+Sie das `#` und das Leerzeichen am Zeilenanfang und ersetzen Sie alles nach dem `=` durch Ihren
+Schlüssel, auch das Beispiel `sk-ant-oat01-...`. Der Schlüssel steht in einer einzigen Zeile, ohne
+Leerzeichen. Speichern Sie mit Strg + S und schließen Sie den Editor.“
 
 7d. Prüfen, ohne den Schlüssel zu zeigen:
 
 ```powershell
-if (Select-String -Path "$env:USERPROFILE\.bewerbung_mgmt_secrets\agent.env" -Pattern '^CLAUDE_CODE_OAUTH_TOKEN=.{20,}') { "vorhanden" } else { "fehlt" }
+if (Select-String -Path "$env:USERPROFILE\.bewerbung_mgmt_secrets\agent.env" -Pattern '^CLAUDE_CODE_OAUTH_TOKEN=sk-ant-oat01-[A-Za-z0-9_-]{40,}\s*$') { "vorhanden" } else { "fehlt" }
 ```
 
-Erwartung: `vorhanden`. Bei `fehlt`: Zeile prüfen (kein `#`, Wert nach dem `=`, eine Zeile).
+Erwartung: `vorhanden`. Bei `fehlt`: Zeile prüfen (kein `#`, Wert nach dem `=`, eine Zeile). Das Beispiel
+`sk-ant-oat01-...` darf nicht mehr in der Zeile stehen.
 
 ## Schritt 8: Erster Start und Selbsttest
 
@@ -521,8 +540,9 @@ Hinweise, die der Anwender nicht als Fehler werten soll:
   Schritt 4 nicht entfernt wurde.
 
 Bricht der Start ab: Der Anwender soll die letzten Zeilen des schwarzen Fensters einfügen. Meldet
-„venv nicht gefunden“, gehe zurück zu Schritt 5. Meldet „address already in use“, läuft das BMS
-schon. Prüfe in diesem Fall die Versionsabfrage oben.
+„venv nicht gefunden“, gehe zurück zu Schritt 5. Meldet „address already in use“ oder, wie unter
+Windows üblich, etwa `[Errno 10048] … nur jeweils einmal verwendet werden`, läuft das BMS schon. Prüfe
+in diesem Fall die Versionsabfrage oben.
 
 ## Schritt 9: Abnahme
 
@@ -537,7 +557,8 @@ protokolliere OK oder PROBLEM mit Wortlaut.
    am wenigsten erprobte Teil.** Frage nach dem Status und lass dir bei einem Fehler die Meldung
    aus dem Task-Center vollständig nennen.
 5. Dashboard: Excel-Export auslösen. Eine Datei wird erzeugt.
-6. Beenden und neu starten: Im schwarzen Fenster Strg + C, danach
+6. Beenden und neu starten: Im schwarzen Fenster Strg + C drücken. Windows fragt dann „Batchvorgang
+   abbrechen (J/N)?“, der Anwender antwortet mit `J`. Danach
 
    ```powershell
    Start-Process "INSTALLVERZ\start_windows.bat" -WorkingDirectory "INSTALLVERZ"
@@ -585,7 +606,8 @@ Fasse zum Schluss in höchstens zehn Zeilen zusammen:
 - was installiert wurde (mit Versionen aus den Prüfungen),
 - was funktioniert und was nicht (auch ehrlich, was nicht geprüft werden konnte),
 - wie das BMS künftig gestartet wird (`INSTALLVERZ\start_windows.bat` per Doppelklick) und beendet
-  (Strg + C im schwarzen Fenster, sonst `INSTALLVERZ\stop_windows.bat`),
+  (Strg + C im schwarzen Fenster und die Rückfrage „Batchvorgang abbrechen (J/N)?“ mit `J` beantworten,
+  sonst `INSTALLVERZ\stop_windows.bat`),
 - wo das Protokoll liegt.
 
 Biete danach an, mit dem Einrichten weiterzumachen: „Möchten Sie jetzt das BMS auf Ihre Person
@@ -848,7 +870,7 @@ laden Sie die neue Datei `BMS_<Version>.zip` im Browser von der Release-Seite
 sie in Ihrem Ordner „Downloads“. Starten Sie das Werkzeug dann wie oben. Es findet die ZIP-Datei von
 selbst, prüft sie und zeigt den Plan. Liegt eine ZIP-Datei in „Downloads“ und findet das Werkzeug
 auch online eine Version, nimmt es die höchste Version, egal woher. Haben Sie eine Version bis 1.7.0
-installiert, nehmen Sie für das erste Update auf Version 2.0.0 diesen Weg.
+installiert, nehmen Sie für das erste Update auf eine Version ab 1.9.0 diesen Weg.
 
 Meldet das Werkzeug „Online-Suche nicht möglich: …“, bricht es nicht ab. Es nennt den Grund, etwa
 „Es besteht keine Verbindung zu GitHub.“ oder „GitHub begrenzt gerade die Anfragen. Bitte versuchen
@@ -879,20 +901,20 @@ Plan, ohne etwas einzuspielen. Ein dafür geladenes Paket bleibt im Ordner `data
 liegen:
 
 ```powershell
-& "$env:ProgramFiles\BMS\update_windows.bat" --pruefen
+& "$env:USERPROFILE\BMS\update_windows.bat" --pruefen
 ```
 
 `--offline` verhindert jeden Kontakt zu GitHub. Das Werkzeug sucht dann nicht online nach einer
 neuen Version und nimmt nur eine ZIP-Datei aus „Downloads“:
 
 ```powershell
-& "$env:ProgramFiles\BMS\update_windows.bat" --offline
+& "$env:USERPROFILE\BMS\update_windows.bat" --offline
 ```
 
 `--zurueck` nimmt das letzte Update zurück und spielt die vorherige Fassung wieder ein:
 
 ```powershell
-& "$env:ProgramFiles\BMS\update_windows.bat" --zurueck
+& "$env:USERPROFILE\BMS\update_windows.bat" --zurueck
 ```
 
 Dabei fragt das Werkzeug getrennt nach, ob auch die Datenbank auf den Stand vor dem Update
@@ -912,10 +934,10 @@ der Seitenleiste. Was sich in einer Version geändert hat, lesen Sie unter „Do
 | Der Browser zeigt eine leere Seite | Die Oberfläche wurde nicht gebaut: Schritt 6 |
 | Ein Befehl wird nicht gefunden, obwohl das Programm installiert ist | PowerShell schließen und neu öffnen, damit Windows neu installierte Programme findet. Hilft das nicht, den Rechner neu starten |
 | „npm.ps1 kann nicht geladen werden“ | `npm.cmd` statt `npm` schreiben, wie in Schritt 6 |
-| `Get-FileHash` wird nicht erkannt | PowerShell wurde aus einem anderen Programm heraus gestartet (etwa aus PowerShell 7). Das Fenster schließen und „Windows PowerShell“ über das Startmenü neu öffnen |
+| `Get-FileHash` (Schritt 4c) oder `Expand-Archive` (Schritt 4d) wird nicht erkannt, oder es erscheint eine Meldung wie „…psm1 kann nicht geladen werden“ | PowerShell wurde aus einem anderen Programm heraus gestartet (etwa aus PowerShell 7). Das Fenster schließen und „Windows PowerShell“ über das Startmenü neu öffnen |
 | `pip install` bricht mit einem Kompilierfehler ab | `py -3.12` benutzen, nicht Python 3.13 oder neuer |
 | „Der Computer wurde durch Windows geschützt“ | „Weitere Informationen“, dann „Trotzdem ausführen“. Das passiert, wenn die Download-Markierung in Schritt 4 nicht entfernt wurde |
-| „address already in use“ oder Port 8000 belegt | Das BMS läuft bereits. Browser auf `http://localhost:8000` richten oder erst mit `stop_windows.bat` beenden |
+| „address already in use“ (unter Windows etwa `[Errno 10048] … nur jeweils einmal verwendet werden`) oder Port 8000 belegt | Das BMS läuft bereits. Browser auf `http://localhost:8000` richten oder erst mit `stop_windows.bat` beenden |
 | KI-Läufe enden mit einem Anmeldefehler | Zugangsschlüssel prüfen (Schritt 7): eine Zeile, kein `#` davor, vollständig kopiert. Danach das BMS neu starten |
 | Es entsteht keine PDF-Datei | LibreOffice fehlt oder liegt nicht unter `C:\Program Files\LibreOffice` |
 | Lebensläufe heißen `CV_Bewerber_…` | Im Profil steht noch kein Name. Tragen Sie ihn in der Karte „Identität und Suchstrategie“ ein und speichern Sie (Abschnitt „Ihr Profil: Identität und Suchstrategie“). Bearbeiten Sie `config/profil.md` von Hand, prüfen Sie, ob die Zeile `**Name:**` genau so geschrieben ist |

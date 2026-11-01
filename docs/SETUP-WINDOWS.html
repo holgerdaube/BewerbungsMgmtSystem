@@ -132,7 +132,7 @@ installieren Sie nach der Anleitung von Anthropic.</p>
 <p>Für Node.js nennt das BMS keine Mindestversion. Die automatischen Tests bauen die Oberfläche mit
 Node.js 24.</p></section><section class="card"><h2>Python-Umgebung einrichten</h2><p>Meldet <code>start_windows.bat</code>, <code>update_windows.bat</code> oder <code>wiederherstellen_windows.bat</code>, dass die
 Python-Umgebung fehlt, holen Sie diesen Schritt nach (<code>BMS_Install_Windows.md</code>, Schritt
-„Python-Umgebung einrichten“). In PowerShell im Programmordner, etwa <code>C:\Program Files\BMS</code>:</p>
+„Python-Umgebung einrichten“). In PowerShell im Programmordner, etwa <code>C:\Users\Name\BMS</code>:</p>
 <pre><code class="language-powershell">py -3.12 -m venv &quot;$env:USERPROFILE\.bewerbung_mgmt_venv&quot;
 &amp; &quot;$env:USERPROFILE\.bewerbung_mgmt_venv\Scripts\pip.exe&quot; install -r backend\requirements-lock.txt
 New-Item -ItemType Junction -Path &quot;$env:USERPROFILE\.bewerbung_mgmt_venv\bin&quot; -Target &quot;$env:USERPROFILE\.bewerbung_mgmt_venv\Scripts&quot;
@@ -342,4 +342,4 @@ durch die ausgelieferte Fassung und legt Ihre Fassung vorher in der Update-Siche
 <li>Im BMS öffnet „📖 Dokumentation“ in der Seitenleiste alle Anleitungen in Reitern.</li>
 </ul></section>
 </div></body></html>
-<!-- docs_render quelle=SETUP-WINDOWS.md sha256=0c3180a15de6f5c15f829f8563ab23e41b95d8f06af2459b762eb6965a9f4730 -->
+<!-- docs_render quelle=SETUP-WINDOWS.md sha256=d20993d386b48f0a7734adc31f79b0054412373ccaa933895138895a9700a40f -->
