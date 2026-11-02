@@ -23,12 +23,17 @@ dann über Firma+Titel.
 ## Ablauf
 
 ### 1. Kontext laden
-- `config/profil.md` — Zielprofil, harte Grenzen, Skill-Gaps.
+- `config/profil.md` — Kurzprofil, harte Grenzen, Skill-Gaps. Zielrollen stehen in den Plänen (`plaene` in
+  `config/suchprofile.yaml`); weicht ein älterer Abschnitt „Zielrolle“ in der Datei davon ab, gelten die Pläne.
 - `config/scoring_rubrik.md` — Zielstellen-Fit 1–5, Situation-Codes, Plan A/B/C, harte
   Regionsgrenze und der Abschnitt „Harte Grenzen und Score“ (wann aussortiert, wann bewertet wird).
 - `config/suchprofile.yaml` — Pläne A/B/C aus `plaene` (Phase 49, Stand aus `/einstellungen`),
   Ausschlüsse (`ausschluss_titel`/`ausschluss_bedingungen`), `max_alter_tage`, `buckets` (die
   aktiven Suchbereiche — ihr Schlüssel ist der Wert für `tab`).
+- **Nicht immer vorhanden:** `config/profil.md` (fehlt sie oder ist leer, gelten die harten Grenzen aus
+  `suchprofile.yaml` und `scoring_rubrik.md`) und einzelne technische Schlüssel in `suchprofile.yaml`
+  (`ausschluss_bedingungen`, `skill_gaps_pruefen`) — eine frisch angelegte Datei hat sie zum Teil nicht.
+  Fehlt etwas, ohne es weiter und im Bericht nennen.
 
 ### 2. Alert-Mails einsammeln
 ```sh
@@ -55,7 +60,7 @@ Nicht-Stellen-Inhalte ignorieren: Newsletter-Artikel, „X hat dich erwähnt", �
 geteilt", Footer-/Hilfe-/Abmelde-Links.
 
 ### 4. Harte Grenzen anwenden (aus `suchprofile.yaml`) — nur mit Beleg
-Die Grenzen: Ausschluss-Titel (reine Sales-/IC-Rollen), Umzugspflicht, die Kriterien aus
+Die Grenzen: Ausschluss-Titel (`ausschluss_titel`), Umzugspflicht, die Kriterien aus
 `ausschluss_bedingungen` und `skill_gaps_pruefen`, Mindest-Firmengröße `min_mitarbeiter`
 (Beleg-Regel s. Schritt 5b — hier noch keine Ablehnung ohne Beleg), `max_alter_tage` (bei
 Mail-Alerts ist die Veröffentlichung meist frisch — im Zweifel Empfangsdatum als Näherung). Was
@@ -72,10 +77,13 @@ und Dimension 3) und gilt hier ohne Abstriche:
   Arbeitsmodell an einem Ort in Deutschland → `tab: "Deutschlandweit"`,
   `relocation_needed: "Nein"`, Abstrich bei der Region im Score. Nur wenn der Bucket
   „Deutschlandweit“ in `buckets` fehlt oder der Ort im Ausland liegt, fällt die Stelle raus.
+  Lässt sich Ort oder Entfernung nicht sicher prüfen (unbekannter Ortsname, Radius unklar), ist das keine
+  belegte Grenze: Die Stelle bleibt, bekommt einen Hinweis im `source_note`, und der Bericht nennt den
+  Fall — kein Abbruch.
 - **Schwache Passung ist kein Ausschlussgrund.** Passen Funktion, Branche oder Situation nicht,
   bekommt die Stelle Score 1 oder 2 mit Begründung und wird angelegt. Weggelassen wird sie nur,
-  wenn eine ausdrückliche Ausschlussregel belegt zutrifft (reine Vertriebsrolle, Rolle ohne
-  Führung).
+  wenn eine ausdrückliche Ausschlussregel belegt zutrifft (eine Regel aus `ausschluss_titel` oder
+  `ausschluss_bedingungen`).
 - Ein Posting, das in mehreren Digests steht, zählt einmal.
 
 Je aussortiertem Posting Grenze und Beleg notieren — beides gehört in den Bericht (Schritt 8).
@@ -132,10 +140,11 @@ erzwingt es technisch: Records ohne belegten `verifikation`-Block werden verworf
    > Feld `konflikte` des Records ein, Format
    > `KONFLIKT <Feld>: <Quelle A sagt X> vs. <Quelle B sagt Y> — im Gespräch klären (geprüft <ISO>)`.
    > **Firmengröße (Phase 34, Beleg-Regel):** Lies beim Live-Check die Firmengröße mit
-   > (LinkedIn-Größen-Chip/Anzeigentext o. ä.); belegt < 100 Mitarbeiter → ablehnen mit Beleg (Grund
-   > ZU_KLEIN); Bracket 51–200 oder unbekannt/nicht genannt → durchlassen, aber `source_note` um
+   > (LinkedIn-Größen-Chip/Anzeigentext o. ä.); belegt < <min_mitarbeiter> Mitarbeiter → ablehnen mit Beleg (Grund
+   > ZU_KLEIN); ein Bracket, das die Grenze einschließt (z. B. 51–200 bei 100), oder unbekannt/nicht genannt → durchlassen, aber `source_note` um
    > „Firmengröße unklar (<Beleg, z. B. LinkedIn 51–200>)" ergänzen — kein erfundener Punktabzug,
    > keine eigene Zusatzrecherche nur für die Größe."
+   (`<min_mitarbeiter>` im Auftrag durch den Wert aus `suchprofile.yaml` ersetzen, Standard 100.)
 3. **Ergebnis mergen:** je durchgelassenem Record den Block
    `verifikation: {status: BESTÄTIGT|KORRIGIERT|QUELLE_VERTRAUT, beleg, geprueft_am: <ISO>, herkunft: "mail-alert"}`
    setzen (herkunft nur bei QUELLE_VERTRAUT; bei KORRIGIERT ist `url` bereits die korrigierte)
@@ -203,7 +212,7 @@ Firmenschreibweise, 12.09.2026, s. P2-39).
   "portal": "LinkedIn|Xing|Jobgether",
   "work_model": "Remote|Hybrid|Onsite", "relocation_needed": "Nein",
   "tab": "<Bucket-Schlüssel aus buckets: Remote | Deutschlandweit | Umkreis-Bucket>", "plan_ab": "A|B",
-  "seniority": "Director|VP|Head|Senior Manager|Manager",
+  "seniority": "<Ebene wie in der Anzeige, z. B. Director|VP|Head|Manager|Experte|Berufseinsteiger>",
   "salary": null, "published_date": "…",
   "situation": "BUILD|SCALE-UP|POST-MERGER|PE|CARVE-OUT|RESTRUCT|RUN|UNKLAR",
   "match_score": 1, "match_rationale": "… mit Beleg …",

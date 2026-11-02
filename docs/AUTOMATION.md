@@ -8,7 +8,8 @@ Das ist eine bewusste Entscheidung, keine offene Baustelle. Dieses Dokument sagt
 ## Wie es heute läuft
 
 **Die App startet die Skills selbst.** Der Agent-Runner (`backend/app/agent_runner.py`) spawnt pro Task
-einen headless `claude -p`-Prozess mit den bestehenden Skills (rein lokale Schritte wie
+einen headless `claude -p`-Prozess mit den bestehenden Skills (unter ChatGPT stattdessen `codex exec`,
+s. `docs/DOKUMENTATION.md`, „Zwei KI“; rein lokale Schritte wie
 `views-refresh`/`coach-site` brauchen nicht mal ein Sprachmodell, s. u.). 24 Task-Arten laufen so
 headless (`PROMPTS`), dazu 3 Ketten (`RECIPES`: `deepdive`, `bewerbungspaket`, `tageslauf`) — die
 meisten zusätzlich mit eigenem Button irgendwo in der App (Review, Job-Detail, Einstellungen,

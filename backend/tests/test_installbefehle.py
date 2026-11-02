@@ -1,6 +1,6 @@
-"""Tests für die beiden Installationsanleitungen (P2-71, überarbeitet in P2-82, Paket I).
+"""Tests für die beiden Installationsanleitungen (P2-71, überarbeitet in P2-82, Paket I; P2-86: Wahl der KI).
 
-`BMS_Install_MAC.md` und `BMS_Install_Windows.md` sind Anweisungen an Claude. Sie enthalten fertige
+`BMS_Install_MAC.md` und `BMS_Install_Windows.md` sind Anweisungen an die KI im Chat (Claude oder ChatGPT). Sie enthalten fertige
 Befehle, die das Programmpaket aus den GitHub-Releases des BMS laden (Auskunft über die GitHub-API,
 Download des Release-Assets, Prüfsumme). Ein Tippfehler darin fällt erst beim Anwender auf. Dieses
 Modul prüft deshalb vier Dinge:
@@ -156,7 +156,7 @@ def _soll_ueberschriften(system: str) -> list[tuple[str, bool]]:
     soll = [(f"# BMS: Installation und Einrichtung unter {'Windows' if windows else 'macOS'}", False),
             ("## So starten Sie", False),
             ("## Was Sie brauchen", False),
-            ("# Anweisung an Claude: geführte Installation", False),
+            ("# Anweisung an die KI: geführte Installation", False),
             ("## Gesprächsregeln", False)]
     soll += [(f"## Schritt {n}:", True) for n in range(SCHRITTE)]
     soll += [("# Nach der Installation", False),
@@ -267,11 +267,70 @@ def test_anleitungen_kennen_weder_paketdienst_noch_lizenzdatei(projekt_root, sys
 
 
 # ═══════════════════════════════════════════════════════════════════════════════════════════
+# 3b — Die Wahl der KI (P2-86)
+# ═══════════════════════════════════════════════════════════════════════════════════════════
+# Schritt 0 fragt, ob Claude oder ChatGPT die KI-Funktionen ausführt. Schritt 3, 7 und 8 haben je einen Zweig für
+# ChatGPT (Codex CLI, Anmeldung im Browser, kein Schlüssel), der Zweig für Claude bleibt, wie er war. Geprüft wird,
+# dass die Befehle als Codeblock-Zeilen vorkommen (nicht nur im Fließtext) und die Auswahl-Frage dasteht.
+_CLAUDE_BEFEHLE = ("claude setup-token", "CLAUDE_CODE_OAUTH_TOKEN=sk-" "ant-oat01-")
+_CHATGPT_BEFEHLE = {
+    "mac": ("codex login", "codex login status", "brew install --cask codex", "npm install -g @openai/codex",
+            "curl -s -X PATCH http://localhost:8000/api/einstellungen -H 'Content-Type: application/json' "
+            "-d '{\"ki_anbieter\":\"chatgpt\"}'",
+            "curl -s http://localhost:8000/api/ki-status"),
+    "windows": ("codex.cmd login", "codex.cmd login status", "npm.cmd install -g @openai/codex",
+                "Invoke-RestMethod -Method Patch -Uri http://localhost:8000/api/einstellungen "
+                "-ContentType 'application/json' -Body '{\"ki_anbieter\":\"chatgpt\"}'",
+                "Invoke-RestMethod http://localhost:8000/api/ki-status"),
+}
+_KI_TEXTE = ("**Welche KI**", "Logged in using ChatGPT", "Claude** (Anthropic", "**ChatGPT** (OpenAI",
+             "Vorschau", "Budgetgrenze", "Gemini")
+
+
+def _ki_probleme(text: str, system: str) -> list[str]:
+    """Was an der Wahl der KI fehlt, leer wenn alles da ist."""
+    _, bloecke = _zerlegen(text)
+    befehle = "\n".join(b.text for b in bloecke)
+    probleme = [f"Befehl fehlt in den Codeblöcken: {b}" for b in _CHATGPT_BEFEHLE[system] + _CLAUDE_BEFEHLE
+                if b not in befehle]
+    prosa = _fliesstext(text)
+    probleme += [f"Text fehlt: {t}" for t in _KI_TEXTE if t not in prosa]
+    if "Anweisung an Claude" in text:
+        probleme.append("Die Anweisung heißt noch „Anweisung an Claude“")
+    return probleme
+
+
+@pytest.mark.parametrize("system", ["mac", "windows"])
+def test_anleitung_fragt_nach_der_ki_und_hat_beide_zweige(projekt_root, system):
+    probleme = _ki_probleme(_anleitung(projekt_root, system), system)
+
+    assert not probleme, f"{DATEIEN[system]}:\n" + "\n".join(probleme)
+
+
+@pytest.mark.parametrize("system", ["mac", "windows"])
+@pytest.mark.parametrize("name, aendern", [
+    ("ChatGPT-Zweig ohne Anmeldung", lambda t: t.replace("login status", "status")),
+    ("keine Auswahlfrage", lambda t: t.replace("**Welche KI**", "**Welche Funktion**")),
+    ("Claude-Zweig ohne Schlüssel", lambda t: t.replace("claude setup-token", "claude")),
+    ("Umstellung fehlt", lambda t: t.replace("ki_anbieter", "anbieter")),
+    ("alte Anrede", lambda t: t.replace("# Anweisung an die KI:", "# Anweisung an Claude:")),
+])
+def test_ki_pruefung_schlaegt_bei_fehlendem_zweig_an(projekt_root, system, name, aendern):
+    original = _anleitung(projekt_root, system)
+    assert _ki_probleme(original, system) == []
+
+    verfaelscht = aendern(original)
+
+    assert verfaelscht != original, f"Die Verfälschung {name!r} hat nichts geändert"
+    assert _ki_probleme(verfaelscht, system), name
+
+
+# ═══════════════════════════════════════════════════════════════════════════════════════════
 # 4 — Die Befehlsblöcke
 # ═══════════════════════════════════════════════════════════════════════════════════════════
 @dataclass(frozen=True)
 class Befehle:
-    """Die drei Blöcke, die Claude dem Anwender vorgibt: Auskunft holen, Paket laden, Prüfsumme."""
+    """Die drei Blöcke, die der Assistent dem Anwender vorgibt: Auskunft holen, Paket laden, Prüfsumme."""
     auskunft: str
     laden: str
     pruefsumme: str

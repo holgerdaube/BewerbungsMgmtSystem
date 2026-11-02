@@ -108,6 +108,7 @@ _ADD_COLUMNS = {
         ("cover_letter_text", "TEXT"),
     ],
     "agenttask": [
+        ("tokens", "INTEGER"),  # P2-86
         ("chain_id", "TEXT"),
         ("chain_label", "TEXT"),
         ("chain_pos", "INTEGER"),
@@ -132,6 +133,8 @@ _ADD_COLUMNS = {
         ("deleted_at", "TEXT"),         # Phase 28 A — Soft-Delete-Tombstone
     ],
     "sucheinstellung": [
+        # P2-86 — bestehende Installationen bleiben bei Claude.
+        ("ki_anbieter", "TEXT DEFAULT 'claude'"),
         # Phase 50 — SQL-DEFAULT, damit die bestehende Singleton-Zeile (id=1, seit Phase 49)
         # beim ALTER TABLE automatisch mit '{}' befüllt wird statt NULL zu bleiben.
         ("modelle_json", "TEXT DEFAULT '{}'"),

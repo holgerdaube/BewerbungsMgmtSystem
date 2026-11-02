@@ -1,11 +1,13 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useId, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
-import { api, type BeiratMitglied, type Einstellungen as EinstellungenT, type NeuesteVersion, type Umkreisumbenennung, type VersionInfo,
-  type Plan, type Portal, type SicherungStatus } from '../api'
+import { api, type BeiratMitglied, type Einstellungen as EinstellungenT, type KiAnbieterStatus, type KiStatus, type NeuesteVersion,
+  type Umkreisumbenennung, type VersionInfo, type Plan, type Portal, type SicherungStatus } from '../api'
 import AgentTaskButton from '../components/AgentTaskButton'
+import { kiAnbieterUebernehmen } from '../components/ui'
 import { suchTabsNeuLaden } from '../suchbereich'
 import { PROFIL_GEAENDERT } from '../profil'
 import { deDatum } from '../zeit'
+import { SENIORITAETEN } from '../senioritaet'
 
 const INPUT = 'rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm focus:border-brand-cyan focus:outline-none'
 
@@ -28,8 +30,9 @@ const FUNKTIONEN: { key: string; label: string }[] = [
 // ── Chip-Liste: rein lokale State-Mutation (add/remove ohne eigenen API-Call) — erst der
 // Karten-„Speichern"-Button persistiert den ganzen Plan in einem PATCH. Anders als
 // Profil.tsx::Skills (dort sind Skills eigene DB-Zeilen mit sofortigem Add/Remove). ──────
-function ChipListe({ label, werte, onChange }: { label: string; werte: string[]; onChange: (werte: string[]) => void }) {
+function ChipListe({ label, werte, onChange, vorschlaege }: { label: string; werte: string[]; onChange: (werte: string[]) => void; vorschlaege?: string[] }) {
   const [neu, setNeu] = useState('')
+  const listenId = useId()
   const add = () => {
     const t = neu.trim()
     if (!t || werte.includes(t)) return
@@ -49,10 +52,11 @@ function ChipListe({ label, werte, onChange }: { label: string; werte: string[];
         {werte.length === 0 && <span className="text-xs text-slate-400">–</span>}
       </div>
       <div className="flex gap-1.5">
-        <input className={`${INPUT} flex-1 text-xs`} placeholder={`${label} hinzufügen…`} value={neu}
+        <input className={`${INPUT} flex-1 text-xs`} placeholder={`${label} hinzufügen…`} value={neu} list={vorschlaege ? listenId : undefined}
           onChange={(e) => setNeu(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); add() } }} />
         <button onClick={add} className="rounded-lg border border-slate-300 px-2.5 text-xs text-slate-600 hover:bg-slate-50">+</button>
+        {vorschlaege && <datalist id={listenId}>{vorschlaege.map((v) => <option key={v} value={v} />)}</datalist>}
       </div>
     </div>
   )
@@ -95,7 +99,7 @@ function PlanKarte({ plan, onSaved }: { plan: Plan; onSaved: () => void }) {
       </div>
       <div className="space-y-3">
         <ChipListe label="Titel" werte={f.titel} onChange={(titel) => setF({ ...f, titel })} />
-        <ChipListe label="Seniorität" werte={f.senioritaet} onChange={(senioritaet) => setF({ ...f, senioritaet })} />
+        <ChipListe label="Seniorität" werte={f.senioritaet} onChange={(senioritaet) => setF({ ...f, senioritaet })} vorschlaege={SENIORITAETEN} />
         <ChipListe label="Branche" werte={f.branche} onChange={(branche) => setF({ ...f, branche })} />
       </div>
       <div className="mt-3 flex items-center gap-2 border-t border-slate-100 pt-3">
@@ -208,6 +212,103 @@ function SuchbereichKarte({ suchbereich, minMitarbeiter, umkreisLabel, onSaved }
   )
 }
 
+// ── KI: Claude oder ChatGPT (P2-86) ─────────────────────────────────────────────────────────────
+// Die Wahl liegt in den Einstellungen (PATCH ki_anbieter). Ob das Programm da und angemeldet ist, kommt
+// getrennt aus /api/ki-status, weil das Backend dafür ein Programm startet. `angemeldet: null` heißt
+// „nicht bekannt“ und wird nicht als „nein“ gezeigt. Nach dem Speichern lädt die Seite neu: `modell_optionen`
+// der Karte „KI-Modell je Funktion“ gehören zum Anbieter.
+function KiStatusZeile({ s }: { s: KiAnbieterStatus | undefined }) {
+  if (!s) return <div className="mt-1.5 text-xs text-slate-400">Prüfe…</div>
+  const chip = 'rounded-full px-2 py-0.5 text-xs font-medium'
+  const gut = 'bg-emerald-100 text-emerald-800'
+  return (
+    <div className="mt-1.5 flex flex-wrap gap-1.5">
+      <span className={`${chip} ${s.installiert ? gut : 'bg-rose-100 text-rose-700'}`}>
+        {s.installiert ? 'installiert' : 'nicht installiert'}
+      </span>
+      {s.installiert && (
+        <span className={`${chip} ${s.angemeldet === true ? gut : s.angemeldet === false ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-500'}`}>
+          {s.angemeldet === true ? 'angemeldet' : s.angemeldet === false ? 'nicht angemeldet' : 'Anmeldung nicht bekannt'}
+        </span>
+      )}
+    </div>
+  )
+}
+
+function KiKarte({ ki, optionen, onSaved }: {
+  ki: EinstellungenT['ki_anbieter']
+  optionen: EinstellungenT['ki_anbieter_optionen']
+  onSaved: () => void
+}) {
+  const [wert, setWert] = useState(ki)
+  const [original, setOriginal] = useState(ki)
+  const [status, setStatus] = useState<KiStatus | null>(null)
+  const [statusFehler, setStatusFehler] = useState(false)
+  const [pruefen, setPruefen] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+  const [err, setErr] = useState<string | null>(null)
+  const dirty = wert !== original
+
+  const statusLaden = () => {
+    setPruefen(true); setStatusFehler(false)
+    api<KiStatus>('/ki-status').then(setStatus).catch(() => setStatusFehler(true)).finally(() => setPruefen(false))
+  }
+  useEffect(() => { statusLaden() }, [])
+
+  const save = async () => {
+    setSaving(true); setErr(null)
+    try {
+      const out = await api<EinstellungenT>('/einstellungen', { method: 'PATCH', body: JSON.stringify({ ki_anbieter: wert }) })
+      setOriginal(wert)
+      kiAnbieterUebernehmen(out)   // Texte wie „in der Claude-Session starten“ schalten sofort um
+      setSaved(true); setTimeout(() => setSaved(false), 2000)
+      onSaved()
+    } catch (e: any) { setErr(e?.message || 'Speichern fehlgeschlagen') }
+    finally { setSaving(false) }
+  }
+
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="mb-1 text-sm font-semibold text-brand-navy">KI</div>
+      <p className="mb-3 text-xs text-slate-500">
+        Welche KI die per Button oder Task-Center gestarteten Läufe ausführt. Unter ChatGPT läuft das BMS über Ihr
+        ChatGPT-Abo; die Anmeldung erfolgt im Terminal mit <code className="rounded bg-slate-100 px-1">codex login</code>.
+        Die Daten der KI-Läufe gehen dann an OpenAI statt an Anthropic. ChatGPT ist eine Vorschau. Nach dem Wechsel
+        zeigt „KI-Modell je Funktion“ die Modelle des gewählten Anbieters.
+      </p>
+      <div className="grid gap-2 md:grid-cols-2">
+        {optionen.map((o) => (
+          <label key={o.wert}
+            className={`cursor-pointer rounded-lg border p-3 ${wert === o.wert ? 'border-brand-cyan bg-brand-cyan/5' : 'border-slate-200 hover:bg-slate-50'}`}>
+            <span className="flex items-center gap-2 text-sm font-medium text-brand-navy">
+              <input type="radio" name="ki-anbieter" checked={wert === o.wert} onChange={() => setWert(o.wert)} />
+              {o.label}
+              {o.wert === 'chatgpt' && (
+                <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-medium text-indigo-800">Vorschau</span>
+              )}
+            </span>
+            <KiStatusZeile s={statusFehler ? undefined : status?.[o.wert]} />
+          </label>
+        ))}
+      </div>
+      {statusFehler && <div className="mt-2 text-sm text-rose-600">Status der KI-Programme konnte nicht geladen werden.</div>}
+      <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3">
+        <button onClick={save} disabled={saving || !dirty}
+          className="rounded-lg bg-brand-cyan px-3 py-1.5 text-sm font-medium text-brand-aufAktion hover:bg-brand-cyanHover disabled:cursor-not-allowed disabled:opacity-40">
+          {saving ? 'Speichern…' : 'Speichern'}
+        </button>
+        <button onClick={statusLaden} disabled={pruefen}
+          className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40">
+          {pruefen ? 'Prüft…' : 'Status erneut prüfen'}
+        </button>
+        {saved && <span className="text-sm text-emerald-600">✓ Gespeichert</span>}
+        {err && <span className="text-sm text-rose-600">{err}</span>}
+      </div>
+    </div>
+  )
+}
+
 // ── KI-Modell je Funktion (Phase 50, ab P2-51 mit Optionen/Standard vom Backend) ─────────────
 function ModelleKarte({ modelle, modellOptionen, modellStandard, onSaved }: {
   modelle: EinstellungenT['modelle']
@@ -222,6 +323,8 @@ function ModelleKarte({ modelle, modellOptionen, modellStandard, onSaved }: {
   const [err, setErr] = useState<string | null>(null)
   const dirty = JSON.stringify(f) !== JSON.stringify(original)
   const standardLabel = modellOptionen.find((m) => m.alias === modellStandard)?.label || modellStandard
+  // P2-86: Die Beschriftungen unter ChatGPT sind länger als die Claude-Namen und würden im schmalen Feld abgeschnitten.
+  const breit = modellOptionen.some((m) => m.label.length > 20)
 
   const save = async () => {
     setSaving(true); setErr(null)
@@ -244,7 +347,7 @@ function ModelleKarte({ modelle, modellOptionen, modellStandard, onSaved }: {
         {FUNKTIONEN.map(({ key, label }) => (
           <div key={key} className="flex items-center justify-between gap-2">
             <span className="text-sm text-slate-700">{label}</span>
-            <select className={`${INPUT} w-40`} value={f[key] || modellStandard}
+            <select className={`${INPUT} ${breit ? 'w-72' : 'w-40'}`} value={f[key] || modellStandard}
               onChange={(e) => setF({ ...f, [key]: e.target.value })}>
               {modellOptionen.map((m) => <option key={m.alias} value={m.alias}>{m.label}</option>)}
             </select>
@@ -902,10 +1005,11 @@ export default function Einstellungen() {
       </div>
       <BeispieldatenKarte />
       <MailKontoKarte />
+      <KiKarte ki={data.ki_anbieter} optionen={data.ki_anbieter_optionen} onSaved={load} />
       <div className="grid gap-4 md:grid-cols-2">
         <SuchbereichKarte suchbereich={data.suchbereich} minMitarbeiter={data.min_mitarbeiter}
           umkreisLabel={data.umkreis_label} onSaved={load} />
-        <ModelleKarte modelle={data.modelle} modellOptionen={data.modell_optionen} modellStandard={data.modell_standard} onSaved={load} />
+        <ModelleKarte key={data.ki_anbieter} modelle={data.modelle} modellOptionen={data.modell_optionen} modellStandard={data.modell_standard} onSaved={load} />
       </div>
       <div>
         <div className="mb-2 text-xs text-slate-500">Reihenfolge der Jobsuche: Plan A → B → C</div>

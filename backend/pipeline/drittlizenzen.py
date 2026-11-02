@@ -93,6 +93,7 @@ ZWECK: dict[str, str] = {
     "python-docx": "Word-Dateien (Lebenslauf, Anschreiben)",
     "openpyxl": "Excel-Import (Netzwerk, Listen)",
     "python-multipart": "Datei-Uploads",
+    "pypdf": "Text aus dem PDF des LinkedIn-Profils lesen",
     "httpx": "Abrufe bei Apify, Arbeitsagentur, OpenAI",
     "pyyaml": "Konfiguration (Suchprofile, Budgets)",
     "google-auth": "Gmail-Anbindung",
@@ -113,7 +114,8 @@ PROGRAMME: list[tuple[str, str, str]] = [
     ("Python", "PSF-2.0", "Laufzeit des Backends"),
     ("SQLite", "Public Domain", "Datenbank (in Python enthalten)"),
     ("Node.js", "MIT", "baut die Oberfläche bei Installation und Update"),
-    ("Claude Code", "proprietär (Anthropic)", "führt die KI-Funktionen aus"),
+    ("Claude Code", "proprietär (Anthropic)", "führt die KI-Funktionen aus, wenn Claude gewählt ist"),
+    ("Codex CLI", "Apache-2.0", "führt die KI-Funktionen aus, wenn ChatGPT gewählt ist"),
     ("LibreOffice", "MPL-2.0", "wandelt Lebensläufe in PDF um"),
     ("Homebrew", "BSD-2-Clause", "installiert die Programme (macOS)"),
     ("winget", "MIT", "installiert die Programme (Windows)"),
@@ -125,8 +127,9 @@ PROGRAMME: list[tuple[str, str, str]] = [
 # Von Nutzern angebundene Drittdienste (Wortlaut und Reihenfolge laut Spec P2-77). Kommt ein Dienst
 # dazu oder fällt einer weg, hier und in frontend/src/rechtliches/datenschutz.md nachziehen.
 DIENSTE: list[str] = [
-    "**Anthropic (Claude, Claude Code)**: KI-Funktionen, mit eigenem Konto oder eigenem API-Schlüssel",
-    "**OpenAI** (optional): zweiter Motor für den Beirat, mit eigenem API-Schlüssel",
+    "**Anthropic (Claude, Claude Code)**: KI-Funktionen, wenn Claude gewählt ist, mit eigenem Konto oder eigenem API-Schlüssel",
+    "**OpenAI (ChatGPT, Codex CLI)**: KI-Funktionen, wenn ChatGPT gewählt ist, mit eigenem ChatGPT-Konto; "
+    "außerdem optional zweiter Motor für den Beirat, mit eigenem API-Schlüssel",
     "**Apify** (optional): Portal-Suche mit Scrapern von Drittentwicklern, mit eigenem Konto",
     "**Jobsuche der Bundesagentur für Arbeit**: Abruf der öffentlichen Suchseite, ohne Konto",
     "**E-Mail-Anbieter des Nutzers** (IMAP) oder **Google Gmail**: Antworten und Job-Alerts lesen",

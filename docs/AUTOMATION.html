@@ -100,7 +100,8 @@ Postfach-Check → Absagen-Analyse (einmal je Woche) → Ansichten-Refresh → C
 Knopfdruck</strong>, nicht zeitgesteuert.
 Das ist eine bewusste Entscheidung, keine offene Baustelle. Dieses Dokument sagt, was gilt und warum.</p></div></header>
 <section class="card"><h2>Wie es heute läuft</h2><p><strong>Die App startet die Skills selbst.</strong> Der Agent-Runner (<code>backend/app/agent_runner.py</code>) spawnt pro Task
-einen headless <code>claude -p</code>-Prozess mit den bestehenden Skills (rein lokale Schritte wie
+einen headless <code>claude -p</code>-Prozess mit den bestehenden Skills (unter ChatGPT stattdessen <code>codex exec</code>,
+s. <code>docs/DOKUMENTATION.md</code>, „Zwei KI“; rein lokale Schritte wie
 <code>views-refresh</code>/<code>coach-site</code> brauchen nicht mal ein Sprachmodell, s. u.). 24 Task-Arten laufen so
 headless (<code>PROMPTS</code>), dazu 3 Ketten (<code>RECIPES</code>: <code>deepdive</code>, <code>bewerbungspaket</code>, <code>tageslauf</code>) — die
 meisten zusätzlich mit eigenem Button irgendwo in der App (Review, Job-Detail, Einstellungen,
@@ -256,4 +257,4 @@ launchctl load ~/Library/LaunchAgents/com.bms.tageslauf.plist
 Auch hier gilt der iCloud/FDA-Vorbehalt — vor dem Verlassen auf den Job einmal prüfen, ob er wirklich lief.</p></section><section class="card"><h2>Unverändert: kein Auto-Bewerben</h2><p>In keiner Stufe. Das System sucht, bewertet, recherchiert und bereitet vor. Mails bleiben <strong>Entwürfe</strong>
 (<code>gmail_client</code> kennt keinen Sende-Befehl). Status-Entscheidungen und der Versand bleiben beim Nutzer.</p></section>
 </div></body></html>
-<!-- docs_render quelle=AUTOMATION.md sha256=c7ec81c94b58d8c62dc6215d837078e5817b3d16be39f80436c7cba530a5ec43 -->
+<!-- docs_render quelle=AUTOMATION.md sha256=385afb267a36b9d0be2c7648f967c9d31b9a8ab96b922f69a9dfb6d42d29eeb7 -->

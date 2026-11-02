@@ -54,9 +54,10 @@ Das BMS ist kostenlos und steht als Open Source unter der Apache License 2.0. Es
 ## Überblick und Kosten
 
 - **Dashboard**: Es zeigt Kennzahlen zu Stellen, Bewerbungen, Antwortzeit und Antwortquote, dazu einen Trichter vom Sichten bis zum Interview. „Excel-Export“ und „Tages-Digest“ geben den Stand als Tabelle und als Bericht aus.
-- **Task-Center**: Es protokolliert jeden KI-Lauf mit Status, Dauer und Kostenschätzung. Sie sehen einem Lauf live zu, brechen ihn ab oder starten ihn neu. Die Läufe gehen über Ihr eigenes Claude-Konto.
+- **Task-Center**: Es protokolliert jeden KI-Lauf mit Status, Dauer und Kostenschätzung. Sie sehen einem Lauf live zu, brechen ihn ab oder starten ihn neu. Die Läufe gehen über Ihr eigenes Konto bei Claude oder ChatGPT.
 - **Budget**: Es zeigt, was kostenpflichtige Dienste verbrauchen, und begrenzt sie mit Tages- und Monatslimits. Ein hartes Limit blockiert weitere Aufrufe, ein weiches warnt nur.
-- In den **Einstellungen** wählen Sie je Funktion das KI-Modell: Opus 5.5, Sonnet 5.5 oder Haiku 4.5. Voreingestellt ist Sonnet 5.5.
+- In den **Einstellungen**, Karte „KI“, wählen Sie, ob die KI-Läufe mit Claude (Standard) oder mit ChatGPT laufen. ChatGPT ist eine Vorschau: Die Läufe ohne Mail sind erprobt, die Mail-Läufe und der Tageslauf noch nicht. Die Inhalte der Läufe gehen dann an OpenAI statt an Anthropic, und es gibt keine Budgetgrenze je Lauf, es gelten die Grenzen Ihres Abos.
+- In den **Einstellungen** wählen Sie je Funktion das KI-Modell: Opus 5.5, Sonnet 5.5 oder Haiku 4.5 (mit ChatGPT die Modelle von ChatGPT). Voreingestellt ist Sonnet 5.5.
 - Die **Coach-Site** (Einstellungen, Karte „Coach-Site“) zeigt Ihrem Coach den Stand auf einer passwortgeschützten Webseite, nur lesend und ohne E-Mails, Notizen, Gehälter und Kontakte. Dafür brauchen Sie eigenen Webspace. Unter Windows ist sie nicht verfügbar.
 
 ## Datensicherung und Updates
@@ -69,7 +70,7 @@ Das BMS ist kostenlos und steht als Open Source unter der Apache License 2.0. Es
 
 ## Beispieldaten und Dokumentation
 
-- Eine neue Installation startet mit Beispieldaten von Birne Helene, einer fiktiven Person mit fünf Jahren Erfahrung in der Paketzustellung: Stellen, Firmen, Mails, Profil und Basis-Lebenslauf.
+- Eine neue Installation startet mit Beispieldaten von Benno Bewerbaer, einer fiktiven Person mit fünf Jahren Erfahrung in der Paketzustellung: Stellen, Firmen, Mails, Profil und Basis-Lebenslauf.
 - Entfernen Sie die Beispieldaten in den **Einstellungen** mit „Beispieldaten entfernen“, bevor Sie eigene Daten eintragen. Vorher legt das BMS automatisch eine Sicherung an. Eigene Einträge bleiben erhalten.
 - Alle Anleitungen stehen unter **Dokumentation** in der Seitenleiste.
 

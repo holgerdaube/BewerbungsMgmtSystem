@@ -23,7 +23,7 @@ const CAREER_FIELDS = ['art', 'firma', 'rolle', 'ort', 'von', 'bis', 'beschreibu
   'referenzgeber', 'referenzdatum', 'notiz']
 const FILE_KINDS = ['Zeugnis', 'Zertifikat', 'Sonstiges']
 
-// ── LinkedIn-Zeile: URL-Button (best effort) + ZIP-Upload (robuster Weg) ────────────────
+// ── LinkedIn-Zeile: URL, Profiltext oder PDF (KI, Vorschau), ZIP-Upload (vollständigster Weg) ────────────────
 const TASK_ACTIVE = ['queued', 'running']
 const TASK_CHIP: Record<string, string> = {
   queued: 'bg-slate-100 text-slate-600', running: 'bg-indigo-100 text-indigo-800',
@@ -33,54 +33,127 @@ const TASK_CHIP_TEXT: Record<string, string> = {
   queued: 'wartet…', running: 'läuft…', done: '✓ fertig', failed: '✗ fehlgeschlagen', cancelled: 'abgebrochen',
 }
 
-/** Schlanke Live-Status-Anzeige für den „Profil einlesen"-Button — bewusst NICHT AgentTaskButton
- *  wiederverwendet (das startet immer gegen POST /tasks; hier braucht es den dedizierten
- *  Endpunkt POST /api/profil/einlesen, der zusätzlich die URL am Profil speichert — s. Spec
- *  Design-Entscheidung 5. AgentTaskButton.tsx steht nicht auf der Phase-45-Datei-Whitelist). */
-function LinkedinEinlesenButton({ url, onFinished }: { url: string; onFinished: () => void }) {
+/** Profil aus eingefügtem Text oder PDF: Die KI strukturiert, gespeichert wird erst nach der Vorschau. */
+function LinkedinText({ onSaved }: { onSaved: () => void }) {
+  const [text, setText] = useState('')
+  const [pdf, setPdf] = useState<File | null>(null)
   const [task, setTask] = useState<any>(null)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
+  const [vorschau, setVorschau] = useState<any>(null)
+  const [ergebnis, setErgebnis] = useState<any>(null)
+
+  const vorschauLaden = () => api<any>('/profil/linkedin-vorschlag').then((v) => setVorschau(v.vorhanden ? v : null)).catch(() => {})
+  useEffect(() => { vorschauLaden() }, [])
 
   useEffect(() => {
     if (!task || !TASK_ACTIVE.includes(task.status)) return
     const iv = setInterval(() => {
       api<any>(`/tasks/${task.id}`).then((t) => {
         setTask(t)
-        if (!TASK_ACTIVE.includes(t.status)) onFinished()
+        // Der eingefügte Text bleibt stehen, bis der Lauf durch ist: Scheitert er, geht nichts verloren.
+        if (t.status === 'done') { vorschauLaden(); setText(''); setPdf(null) }
       }).catch(() => {})
     }, 3000)
     return () => clearInterval(iv)
   }, [task?.id, task?.status])
 
   const start = async () => {
-    if (!url.trim()) { setErr('LinkedIn-URL fehlt'); return }
+    setBusy(true); setErr(null); setVorschau(null); setErgebnis(null)
+    try {
+      const fd = new FormData()
+      if (pdf) fd.append('file', pdf)
+      else fd.append('text', text)
+      // NICHT über api(), Muster uploadZip unten.
+      const { res, body } = await apiUpload('/api/profil/linkedin-einlesen', fd)
+      if (!res.ok) throw new Error(body.detail || `${res.status} ${res.statusText}`)
+      setTask(body.task)
+    } catch (e: any) { setErr(e?.message || 'Start fehlgeschlagen') }
+    finally { setBusy(false) }
+  }
+
+  const uebernehmen = async () => {
     setBusy(true); setErr(null)
     try {
-      const r = await api<any>('/profil/einlesen', { method: 'POST', body: JSON.stringify({ linkedin_url: url }) })
-      setTask(r.task)
-    } catch (e: any) { setErr(e?.message || 'Start fehlgeschlagen') }
+      setErgebnis(await api<any>('/profil/linkedin-vorschlag/uebernehmen', { method: 'POST' }))
+      setVorschau(null); setTask(null)
+      onSaved()
+    } catch (e: any) { setErr(e?.message || 'Übernehmen fehlgeschlagen') }
+    finally { setBusy(false) }
+  }
+
+  const verwerfen = async () => {
+    setBusy(true); setErr(null)
+    try {
+      await api('/profil/linkedin-vorschlag', { method: 'DELETE' })
+      setVorschau(null); setTask(null)
+    } catch (e: any) { setErr(e?.message || 'Verwerfen fehlgeschlagen') }
     finally { setBusy(false) }
   }
 
   const active = task && TASK_ACTIVE.includes(task.status)
   return (
-    <div className="space-y-1.5">
-      <button onClick={start} disabled={busy || !!active}
-        className="whitespace-nowrap rounded-lg bg-brand-cyan px-3 py-1.5 text-sm font-medium text-brand-aufAktion hover:bg-brand-cyanHover disabled:cursor-not-allowed disabled:opacity-50">
-        {active ? '⏳ Läuft…' : busy ? 'Starte…' : '▶ Profil einlesen'}
-      </button>
-      {task && (
-        <div className="flex flex-wrap items-center gap-2 text-xs">
-          <span className={`rounded-full px-2 py-0.5 font-medium ${TASK_CHIP[task.status]}`}>{TASK_CHIP_TEXT[task.status]}</span>
-          {task.duration_s != null && <span className="text-slate-400">{task.duration_s}s</span>}
+    <div className="mt-3 border-t border-slate-100 pt-3">
+      <div className="mb-1 text-xs font-medium text-slate-500">Profil auslesen lassen</div>
+      <p className="mb-2 text-xs text-slate-400">
+        Öffnen Sie Ihr Profil bei LinkedIn im Browser, markieren Sie alles (Cmd/Strg + A), kopieren Sie es und fügen
+        Sie es hier ein. Oder laden Sie das PDF hoch, das LinkedIn über „Als PDF speichern“ erzeugt. Der Text geht an
+        Ihre KI, Sie prüfen das Ergebnis, bevor etwas gespeichert wird.
+      </p>
+      <textarea className={`${INPUT} w-full`} rows={4} value={text} disabled={!!pdf}
+        placeholder="Profiltext hier einfügen…" onChange={(e) => setText(e.target.value)} />
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <input type="file" accept=".pdf" onChange={(e) => setPdf(e.target.files?.[0] || null)}
+          className="text-xs text-slate-600 file:mr-2 file:rounded-lg file:border file:border-slate-300 file:bg-white file:px-2.5 file:py-1 file:text-xs file:font-medium file:text-slate-600 hover:file:bg-slate-50" />
+        <button onClick={start} disabled={busy || !!active || (!pdf && !text.trim())}
+          className="whitespace-nowrap rounded-lg bg-brand-cyan px-3 py-1.5 text-sm font-medium text-brand-aufAktion hover:bg-brand-cyanHover disabled:cursor-not-allowed disabled:opacity-40">
+          {active ? '⏳ Läuft…' : busy ? 'Starte…' : '▶ Profil auslesen'}
+        </button>
+        {task && (
+          <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${TASK_CHIP[task.status]}`}>{TASK_CHIP_TEXT[task.status]}</span>
+        )}
+      </div>
+      {task?.status === 'failed' && task.error && <div className="mt-2 rounded-lg bg-rose-50 p-2 text-xs text-rose-700">{task.error}</div>}
+      {err && <div className="mt-1 text-xs text-rose-600">{err}</div>}
+      {ergebnis && (
+        <div className="mt-2 text-xs text-emerald-700">
+          ✓ Übernommen: {ergebnis.skills_neu} neue Skills · {ergebnis.werdegang_neu} neue Werdegang-Einträge
+          {ergebnis.profil_aktualisiert?.length ? ` · Profil ergänzt (${ergebnis.profil_aktualisiert.join(', ')})` : ''}
+          {ergebnis.task_id != null && (
+            <> · Skills werden automatisch einsortiert (<Link to="/tasks" className="text-brand-cyan hover:underline">Task-Center</Link>)</>
+          )}
         </div>
       )}
-      {task?.status === 'failed' && task.error && <div className="rounded-lg bg-rose-50 p-2 text-xs text-rose-700">{task.error}</div>}
-      {task?.status === 'done' && task.result && (
-        <div className="max-w-xl rounded-lg border border-slate-200 bg-slate-50 p-2 text-xs text-slate-600 whitespace-pre-wrap">{task.result}</div>
+      {vorschau && (
+        <div className="mt-3 space-y-2 rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-700">
+          <div className="font-semibold text-brand-navy">Vorschlag prüfen</div>
+          {vorschau.felder.map((f: any) => (
+            <div key={f.label}><b>{f.label}:</b> <span className="whitespace-pre-wrap">{f.wert}</span></div>
+          ))}
+          {vorschau.felder_behalten.length > 0 && (
+            <div className="text-slate-400">Bleibt, wie es ist, weil schon ausgefüllt: {vorschau.felder_behalten.join(', ')}</div>
+          )}
+          <div>
+            <b>Neue Skills ({vorschau.skills_neu.length}):</b> {vorschau.skills_neu.join(', ') || '–'}
+            {vorschau.skills_vorhanden > 0 && <span className="text-slate-400"> · {vorschau.skills_vorhanden} schon vorhanden</span>}
+          </div>
+          <div>
+            <b>Neue Einträge im Werdegang ({vorschau.werdegang_neu.length}):</b>
+            {vorschau.werdegang_vorhanden > 0 && <span className="text-slate-400"> {vorschau.werdegang_vorhanden} schon vorhanden</span>}
+            <ul className="mt-1 list-disc pl-4">
+              {vorschau.werdegang_neu.map((e: any, n: number) => (
+                <li key={n}>{[e.rolle, e.firma].filter(Boolean).join(' · ')} ({e.art}{e.von || e.bis ? `, ${[e.von, e.bis].filter(Boolean).join(' – ')}` : ''})</li>
+              ))}
+            </ul>
+          </div>
+          <div className="flex gap-2 pt-1">
+            <button onClick={uebernehmen} disabled={busy}
+              className="rounded-lg bg-brand-cyan px-3 py-1.5 text-xs font-medium text-brand-aufAktion hover:bg-brand-cyanHover disabled:opacity-40">Alles Neue übernehmen</button>
+            <button onClick={verwerfen} disabled={busy}
+              className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100 disabled:opacity-40">Verwerfen</button>
+          </div>
+        </div>
       )}
-      {err && <div className="text-xs text-rose-600">{err}</div>}
     </div>
   )
 }
@@ -117,15 +190,13 @@ function LinkedinZeile({ profile, onSaved }: { profile: any; onSaved: () => void
 
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      <div className="flex flex-wrap items-end gap-2">
-        <label className="flex min-w-[16rem] flex-1 flex-col text-xs text-slate-500">
-          LinkedIn-Profil-URL
-          <input className={`${INPUT} mt-1`} placeholder="https://www.linkedin.com/in/…"
-            value={url} onChange={(e) => setUrl(e.target.value)} onBlur={() => url !== (profile.linkedin_url || '') && saveUrl()} />
-        </label>
-        <LinkedinEinlesenButton url={url} onFinished={onSaved} />
-      </div>
+      <label className="flex flex-col text-xs text-slate-500">
+        LinkedIn-Profil-URL
+        <input className={`${INPUT} mt-1`} placeholder="https://www.linkedin.com/in/…"
+          value={url} onChange={(e) => setUrl(e.target.value)} onBlur={() => url !== (profile.linkedin_url || '') && saveUrl()} />
+      </label>
       {saving && <div className="mt-1 text-xs text-slate-400">Speichert URL…</div>}
+      <LinkedinText onSaved={onSaved} />
       <div className="mt-3 border-t border-slate-100 pt-3">
         <div className="flex flex-wrap items-center gap-2">
           <input type="file" accept=".zip" onChange={(e) => setZipFile(e.target.files?.[0] || null)}
@@ -473,7 +544,7 @@ const CV_LABELS: Record<string, string> = {
   de: 'Deutsch', en: 'Englisch', fr: 'Französisch', es: 'Spanisch', it: 'Italienisch',
   nl: 'Niederländisch', pt: 'Portugiesisch', pl: 'Polnisch', da: 'Dänisch', sv: 'Schwedisch',
 }
-const CV_SPRACH_OPTIONEN = ['de', 'en', 'fr', 'es', 'it', 'nl']
+const CV_SPRACH_OPTIONEN = ['de', 'en', 'fr', 'es', 'it', 'nl', 'pt']
 const CV_SPRACH_RE = /^[a-z]{2}$/
 
 // `tagVon` liefert `YYYY-MM-DD` (Vorbild aus zeit.ts); die Rückfrage in §2.4 der Spec braucht
@@ -589,7 +660,7 @@ function BasisCVs() {
           <option value="andere">Andere…</option>
         </select>
         {sprache === 'andere' && (
-          <input type="text" maxLength={2} placeholder="z. B. pt" value={andereCode}
+          <input type="text" maxLength={2} placeholder="z. B. pl" value={andereCode}
             onChange={(e) => setAndereCode(e.target.value)} className={`${INPUT} w-20`} />
         )}
         <button onClick={upload} disabled={!file || uploading}

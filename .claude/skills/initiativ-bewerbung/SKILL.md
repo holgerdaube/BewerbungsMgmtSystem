@@ -6,9 +6,9 @@ description: Startet den Initiativbewerbungs-Workflow für eine Zielfirma OHNE a
 # Initiativbewerbung (Hidden Job Market)
 
 Verwandelt eine Zielfirma ohne Ausschreibung in einen trackbaren Bewerbungsvorgang — mit Netzwerk-Check
-zuerst (warme Pfade schlagen kalte Bewerbungen: Outreach-Response 70,5 % vs. 44 %, siehe Empirie in
-`config/profil.md`). Datenbasis existiert bereits: 69 Zielfirmen (`/api/target-companies`, mit Tier/
-Wachstumssignal/Key-Contact), 82 Radar-Firmen (`/api/companies?radar=true`), Netzwerk & Outreach.
+zuerst (warme Pfade schlagen kalte Bewerbungen; Zahlen dazu, falls vorhanden, in der Empirie in
+`config/profil.md`). Datenbasis, soweit der Nutzer sie gepflegt hat: Zielfirmen (`/api/target-companies`,
+mit Tier/Wachstumssignal/Key-Contact), Radar-Firmen (`/api/companies?radar=true`), Netzwerk & Outreach.
 
 ## Ablauf
 
@@ -16,7 +16,8 @@ Wachstumssignal/Key-Contact), 82 Radar-Firmen (`/api/companies?radar=true`), Net
 Wenn der Auslöser keine Firma nennt („welche Zielfirmen initiativ angehen?"):
 alle Zielfirmen laden, je Firma `GET /api/network-check?company=<name>` — priorisieren nach
 **warm (Netzwerk-Pfad vorhanden) > Tier > Wachstumssignal**; Radar-Firmen mit „Rebuild"-Signal ergänzen.
-Top 5–8 mit Begründung präsentieren, der Nutzer wählt. Dann ab Schritt 1.
+Top 5–8 mit Begründung präsentieren, der Nutzer wählt. Dann ab Schritt 1. Ist die Liste leer, ist das kein
+Fehler: mit dem Hinweis enden, dass noch keine Zielfirmen erfasst sind.
 
 ### 1. Netzwerk-Check (immer zuerst)
 ```sh
@@ -32,15 +33,17 @@ Dann dort andocken statt parallel kalt anzuschreiben.**
 curl -s -X POST http://localhost:8000/api/initiativ -H 'Content-Type: application/json' \
   -d '{"company":"<Firma>","title":"<Wunschrolle>","notes":"<optional>"}'
 ```
-- **Wunschrolle** aus dem Zielprofil (`config/profil.md`): PS-/Service-Delivery-Leitung auf
-  Director/VP/Head-Ebene — konkret auf die Firma zugeschnitten (z. B. „Head of Professional Services DACH").
+- **Wunschrolle** aus dem ersten aktiven Plan (`plaene` in `config/suchprofile.yaml`, Felder `titel` und
+  `senioritaet`), konkret auf die Firma zugeschnitten. Ist kein Plan ausgefüllt: abbrechen und darauf hinweisen,
+  dass die Zielrollen unter „Einstellungen“ fehlen. Keine Rolle erfinden.
 - Legt Firma an, falls unbekannt (mit Branche/HQ aus der Zielfirmen-Liste), Job mit `portal='Initiativ'`,
   `status='Prüfen'`, Wachstumssignal in `source_note`. `{"existing": true}` → vorhandenen Job weiterverwenden.
 - Der Job läuft ab jetzt im normalen Board (Pipeline/Stellen/Follow-ups).
 
 ### 3. Entscheider recherchieren (WebSearch — öffentliche Quellen, kein Scraping)
-Wer verantwortet Professional Services / Customer Success / Delivery? Gesucht: **Fachentscheider**
-(VP/C-Level/Head), nicht HR — Name, Rolle, LinkedIn-URL, ggf. 1–2 Kontextpunkte (Posts, Vorträge).
+Wer verantwortet den Bereich der Wunschrolle (Funktion aus Titel und Plan)? Gesucht: **Fachentscheider**
+(die Ebene, an die die Rolle berichten würde), nicht HR — Name, Rolle, LinkedIn-URL, ggf. 1–2 Kontextpunkte
+(Posts, Vorträge).
 Als Kontakt anlegen (Dedupe-Muster wie `gespraech-debrief` Schritt 4, role z. B. „Entscheider (recherchiert)").
 Ehrlich bleiben: nur öffentlich Belegbares, Unsicherheiten kennzeichnen.
 

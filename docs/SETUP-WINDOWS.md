@@ -16,8 +16,8 @@ Windows-System laufen. Was nicht oder nur eingeschränkt geht, steht unter „Be
 ## Voraussetzungen
 
 `BMS_Install_Windows.md`, Schritt „Programme installieren“, installiert die Programme per
-`winget`: Python 3.12, Node.js (LTS), Git für Windows, LibreOffice und Claude Code. Unter Windows
-kommt es auf drei Punkte an:
+`winget`: Python 3.12, Node.js (LTS), Git für Windows, LibreOffice und Claude Code (bei ChatGPT statt
+Claude Code die Codex CLI, per `npm.cmd`). Unter Windows kommt es auf drei Punkte an:
 
 1. **Python 3.12:** Prüfen Sie die Version mit `py -3.12 --version`. Der `py`-Launcher trifft
    eindeutig Python 3.12, auch wenn mehrere Versionen installiert sind. Ein bloßes
@@ -195,6 +195,9 @@ durch die ausgelieferte Fassung und legt Ihre Fassung vorher in der Update-Siche
   den Lauf im Task-Center als fehlgeschlagen („Identität NICHT bestätigt (Fremdprozess-Schutz),
   absichtlich NICHT beendet“) und schreibt eine Warnung ins Server-Fenster. Prüfen Sie den Prozess
   dann selbst im Task-Manager.
+- **Codex finden (ChatGPT):** Hat das BMS die KI ChatGPT gewählt, startet das Task-Center die Codex CLI
+  über die Umgebungsvariable `CODEX_BIN` oder sonst als `codex` aus dem PATH. Schreiben Sie in
+  PowerShell `codex.cmd` statt `codex` (PowerShell blockiert sonst oft das Skript, wie bei `npm.cmd`).
 - **Claude Code finden:** Das Task-Center startet Claude Code über die Umgebungsvariable
   `CLAUDE_BIN` oder sonst als `claude` aus dem PATH. Der Beirat sucht in dieser Reihenfolge:
   `CLAUDE_BIN`, dann der PATH (unter Windows auch `claude.cmd` und `claude.exe`), zuletzt
@@ -233,6 +236,7 @@ durch die ausgelieferte Fassung und legt Ihre Fassung vorher in der Update-Siche
 | Automatische Datensicherung | Ja | reines Python im Server-Prozess |
 | PDF-Erzeugung (Lebenslauf, Anschreiben) | Ja, unerprobt | LibreOffice am Standardpfad oder im PATH; Zeitüberschreitung (über 180 s) s. oben |
 | KI-Läufe über das Task-Center | Umgestellt, unerprobt | braucht Git Bash und die Verknüpfung `bin` → `Scripts` |
+| KI-Läufe mit ChatGPT (Codex CLI) | Vorschau, unter Windows nicht erprobt | `npm.cmd install -g @openai/codex`, `codex.cmd login`; OpenAI empfiehlt Windows 11, die bevorzugte Sandbox braucht einmalig Administrator-Rechte |
 | Beirat | Ja, unerprobt | Claude Code über `CLAUDE_BIN` oder den PATH |
 | Verwaiste Prozesse nach einem Neustart erkennen und beenden | Eingeschränkt | kein `ps`: nichts wird automatisch beendet |
 | Aufgaben „Ansichten aktualisieren“, „Anschreiben Word + PDF erzeugen“, „Coach-Site aktualisieren“ | Nein | „Binary '/bin/zsh' nicht gefunden“, Ersatz s. oben |

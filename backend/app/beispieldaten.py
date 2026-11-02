@@ -2,7 +2,7 @@
 
 WARUM: Wer das BMS zum ersten Mal startet, sieht leere Seiten und kann nichts ausprobieren. Eine
 frische Paket-Installation bekommt deshalb beim allerersten Start die erfundene Bewerbungsgeschichte
-von „Birne Helene“ (Postbote, fünf Jahre Paketzustellung): Profil, Skills, Werdegang, Firmen,
+von „Benno Bewerbaer“ (Postbote, fünf Jahre Paketzustellung): Profil, Skills, Werdegang, Firmen,
 Stellen in allen wichtigen Stufen, Bewerbungen, einen Gesprächstermin, Mails, einen Netzwerk-
 Kontakt, die Profil-Datei `config/profil.md` und einen Basis-Lebenslauf. Die Daten werden beim
 ersten Start ERZEUGT statt mitgeliefert: Das Update-Werkzeug schreibt nie nach `data/` und lehnt
@@ -51,7 +51,7 @@ import threading
 from datetime import date, datetime, time, timedelta, timezone
 from pathlib import Path
 
-NAME = "Birne Helene"
+NAME = "Benno Bewerbaer"
 MARKIERUNG = "beispieldaten.json"
 ENV_VARIABLE = "BMS_BEISPIELDATEN"
 
@@ -71,7 +71,7 @@ _LOCK = threading.Lock()
 
 # ── Erfundene Angaben ────────────────────────────────────────────────────────────────────────
 _NETZWERK_NAME = "Paul Paket"
-_MAIL = "birne.helene@beispiel.de"
+_MAIL = "benno.bewerbaer@beispiel.de"
 _TELEFON = "+49 170 1234567"
 _ANSCHRIFT = "Musterweg 7, 12345 Musterstadt"
 _ORT = "Musterstadt"
@@ -340,12 +340,6 @@ def _profil_md_text() -> str:
         "und möchte mittelfristig in die Disposition wechseln.",
         "",
         "## Zielrolle",
-        "- **Ebene:** Zusteller oder Fahrer, später Disposition",
-        "- **Funktion Plan A:** Zustellung von Briefen und Paketen",
-        "- **Funktion Plan B:** Kurierfahrer im Nahverkehr",
-        "- **Funktion Plan C:** Disposition und Tourenplanung, mittelfristig",
-        "- **Branche:** Logistik, Zustellung, Kurierdienste",
-        "- **Region:** Musterstadt und Umgebung",
         "- **Zieltermin:** neue Stelle bis zum Jahresende",
         "",
         "## Harte Rahmenbedingungen",

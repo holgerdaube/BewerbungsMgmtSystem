@@ -42,7 +42,7 @@ class Job(UtcZeit, SQLModel, table=True):
     company_id: Optional[int] = Field(default=None, foreign_key="company.id", index=True)
     company_name: Optional[str] = None       # denormalized for quick display
     title: str
-    seniority: Optional[str] = None          # normalized: VP/Senior Director/Director/Head/Senior Manager/Manager/...
+    seniority: Optional[str] = None          # normalized: normalize.SENIORITAETEN oder Sonstige, z. B. Director/...
     seniority_raw: Optional[str] = None
     location: Optional[str] = None
     work_model: Optional[str] = None         # Remote/Hybrid/Onsite/Unbekannt
@@ -345,6 +345,7 @@ class AgentTask(UtcZeit, SQLModel, table=True):
     duration_s: Optional[float] = None
     num_turns: Optional[int] = None
     cost_usd: Optional[float] = None
+    tokens: Optional[int] = None                  # P2-86: neu verbrauchte Token eines ChatGPT-Laufs (Codex meldet kein USD)
     # Wiederholungen (Phase 8.4). Nur für idempotente Task-Arten, s. PROMPTS[...]["retryable"].
     retry_count: int = Field(default=0)
     # Phase 65 (P1-6): PID des laufenden Subprozesses — NUR gültig, solange status="running".
@@ -597,6 +598,7 @@ class SuchEinstellung(UtcZeit, SQLModel, table=True):
     # über die 6 Kern-Funktionen (Jobsuche, Company Fit, Beirat, CV Match, ATS Scan,
     # Anschreiben); fehlende Funktion ⇒ Default agent_runner.MODELL_STANDARD.
     modelle_json: str = Field(default="{}")
+    ki_anbieter: str = Field(default="claude")                         # P2-86: claude | chatgpt (app/ki_anbieter.py)
     # Phase 87 — Liste der Suchportale (Name/URL/Zugriffsart/aktiv), editierbar über
     # /einstellungen. Leerer Default: der erste GET seedet aus suchprofil.PORTALE_DEFAULT.
     portale_json: str = Field(default="[]")

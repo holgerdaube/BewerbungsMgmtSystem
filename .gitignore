@@ -42,3 +42,6 @@ _tmp_*
 # Muster fangen nur noch die im Projekt-Root liegenden Alt-Dateien ab.
 .tmp_*
 .verify*
+
+# Spiegel der Skills für Codex, entsteht zur Laufzeit (app/ki_anbieter.py)
+.agents/

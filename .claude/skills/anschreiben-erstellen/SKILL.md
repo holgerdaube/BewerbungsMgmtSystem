@@ -5,8 +5,9 @@ description: Erzeugt für eine Stelle aus dem Bewerbungs-Management-System ein w
 
 # Anschreiben erstellen (Direktansprache)
 
-Adressiert die drei belegten Absage-Muster (siehe `config/profil.md` → Empirie): es scheitert im
-**Papier-Screening**, bei **kalten Bewerbungen**, besonders auf **VP/Sr-Director-Level**. Darum: konkrete
+Adressiert die typischen Absage-Muster (die belegten des Nutzers stehen, falls vorhanden, in `config/profil.md`
+→ Empirie): es scheitert im **Papier-Screening**, bei **kalten Bewerbungen**, besonders beim **Sprung auf eine
+höhere Ebene**. Darum: konkrete
 Ansprechperson, firmenspezifischer Hook, **Scope statt Titel** — und ausschließlich echte Belege.
 
 ## Ablauf
@@ -22,9 +23,9 @@ Liefert `job` (Titel, URL, Sprache der Anzeige ableitbar), `company` (inkl. `fit
 - **Company-Fit** (`fit_analysis_path`): Hook-Material — Situation, erklärte Lücke/Chancen, News. Fehlt er:
   `firma-pruefen` empfehlen, aber nicht blockieren (dann Stellenanzeige + kurze Web-Recherche).
 - **CV**: aktuellster tailored CV (`cv_versions[].file_path`), sonst `data/cv_basis/base_de.docx`/`base_en.docx` — die Belege.
-- **`config/profil.md`**: Kernpositionierung, harte Grenzen und den **Empirie-Abschnitt** (Scope-Zahlen führen:
-  ~2 Mio. USD/Quartal, 30 Mio. Backlog, 45 Ressourcen, +30 % Bookings, Auslastung 45→69 %).
-- Zusätzlich **`config/profil_struktur.md`** heranziehen (strukturierte Kandidaten-Substanz —
+- **`config/profil.md`**: Kernpositionierung, harte Grenzen und, falls vorhanden, den **Empirie-Abschnitt**
+  (Scope-Zahlen führen, die CV oder Profil belegen, etwa Umsatz, Backlog, Teamgröße, Zielerreichung).
+- Zusätzlich **`config/profil_struktur.md`** heranziehen, falls vorhanden (strukturierte Kandidaten-Substanz —
   ergänzt profil.md; Positionierung/Skills/Werdegang/Zertifikate aus der Profil-Seite, Phase 45).
 - **Stellenanzeige** (Snapshot zuerst: `job.posting_snapshot_path`, Karte „Anzeigentext …" oder Block
   „Volltext (unbereinigt)"; fehlt der Text, einmal
@@ -56,11 +57,11 @@ Sprache = Sprache der Ausschreibung. Aufbau:
 2. **Hook** (2–3 Sätze): firmenspezifischer Bezug aus Company-Fit/News — warum diese Firma, warum jetzt.
    Kein generisches „mit großem Interesse habe ich gelesen".
 3. **Scope-Absatz**: Zahlen zuerst (Umsatzverantwortung, Backlog, Teamgröße, Zielerreichung) — adressiert
-   den Manager→VP-Titel-Gap im Screening.
+   einen Titel-Gap zur Zielebene im Screening.
 4. **Top-3-Mehrwerte für DIESE Firma** als Bullets — aus dem Schnitt CV-Stärken × Firmen-Lücke (Company-Fit).
 5. **Kultur-/Motiv-Satz** (ehrlich, kurz) + **CTA** (Gespräch anbieten).
 **Wahrheitstreue:** nur Belege, die im CV stehen; bekannte Lücken (`skill_gaps_pruefen` in `config/suchprofile.yaml`) nicht überschminken;
-harte Grenzen (kein Umzug) nicht verstecken, aber nur thematisieren, wenn die Anzeige es aufwirft.
+harte Grenzen (z. B. kein Umzug) nicht verstecken, aber nur thematisieren, wenn die Anzeige es aufwirft.
 
 ### 5. Registrieren + deterministisch rendern (Text → docx + PDF, EIN Weg)
 

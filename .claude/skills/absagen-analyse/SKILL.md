@@ -48,7 +48,7 @@ cd backend && ~/.bewerbung_mgmt_venv/bin/python  # sqlite3 auf data/bewerbung.sq
 - Dimensionen: match_score, seniority, portal, work_model/tab, plan_ab, company.situation,
   response_time_hours (Zeit bis Absage), applied_date.
 - **Basisraten mitziehen** (Pflicht!): jede Verteilung der Absagen gegen die Verteilung ALLER beworbenen
-  Vorgänge stellen — sonst Scheinkorrelationen (Beispiel 09.07.: Scale-up 43 % ≈ Gesamt 39 % → kein Muster).
+  Vorgänge stellen — sonst Scheinkorrelationen (Beispiel: Scale-up-Anteil bei den Absagen ≈ Anteil bei allen Bewerbungen → kein Muster).
 - **„Beirat abgelehnt" ist KEINE Absage** (Phase 41): explizit aus der Absagen-Basisrate ausschließen —
   das ist die eigene Entscheidung des Nutzers nach dem Beirats-Stellen-Check, keine Firmen-Ablehnung, würde die
   Absagequote sonst künstlich verzerren. Optional als eigene, getrennte Zeile im Bericht nennen: „Selbst
@@ -66,7 +66,7 @@ Wird im Job-Detail unter Bewerbung → „Absagegrund" angezeigt.
 ### 4. Muster prüfen (mit Evidenz, gegen Basisraten)
 Mindestens: Score↔Outcome (schützt der Zielstellen-Fit?) · Screening vs. Gespräch (Zeit bis Absage; kam
 irgendeine Absage NACH einem Interview?) · Kanal (kalte Portal-Bewerbung vs. Netzwerk — Outreach-Response-Rate
-als Vergleich) · Seniorität (VP/Director vs. Head/Manager) · Funkstille-Alter (wie lange unbeantwortet,
+als Vergleich) · Seniorität (die Ebenen aus `seniority` im Vergleich) · Funkstille-Alter (wie lange unbeantwortet,
 follow_up_date gesetzt?) · CV-Version (Basis-CV vs. getailort — `cvversion` je Job).
 
 ### 5. Bericht erzeugen

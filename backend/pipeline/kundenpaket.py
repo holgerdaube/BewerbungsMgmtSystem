@@ -383,7 +383,7 @@ def _readme_kundenpaket(version: str, commit_datum: str) -> bytes:
         f"Version {version} (Stand {_tt_mm_jjjj(commit_datum)}).\n\n"
         "## Installation und Einrichtung\n\n"
         "Schritt für Schritt in `BMS_Install_MAC.md` (macOS) bzw. `BMS_Install_Windows.md` "
-        "(Windows) in diesem Ordner. Claude führt Sie mit der Datei durch die Installation.\n\n"
+        "(Windows) in diesem Ordner. Claude oder ChatGPT führt Sie mit der Datei durch die Installation.\n\n"
         "## Bedienung\n\n"
         "Wie Sie mit der laufenden Anwendung arbeiten, erklärt `docs/ANLEITUNG.md`.\n\n"
         "## Änderungen\n\n"

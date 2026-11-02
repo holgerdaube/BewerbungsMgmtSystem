@@ -26,19 +26,19 @@ Begründung immer kurz in `match_rationale` festhalten — mit Beleg (Zitat/Quel
 | **CARVE-OUT** | Herauslösung aus Konzern, eigene Struktur entsteht | Plan-A-Kern |
 | **POST-MERGER** | Integration nach Fusion/Übernahme | Plan-A-Kern |
 | **PE** | PE-finanziert, Professionalisierungsphase | Plan-A-Kern |
-| **SCALE-UP** | Wachstum, Serviceorga im Entstehen | Plan-A-Kern |
+| **SCALE-UP** | Wachstum, die Organisation der Zielfunktion entsteht | Plan-A-Kern |
 | **RESTRUCT** | Umbau/Restrukturierung | prüfen: Rebuild oder Abbau? |
 | **RUN** | Eingeschwungene, reife Orga | niedrige Priorität |
 | **UNKLAR** | Signal nicht erkennbar | recherchieren |
 
 ## Dimension 2 — Funktion / Plan A vs. B vs. C
-- **Plan A** = PS- oder Service-Delivery-Leitung. Es zählt die Führung eines PS- oder
-  Delivery-Teams, nicht der Titel: Welche Ebenen dazugehören, steht im Feld `senioritaet` des
-  Plans. Nennt es Manager oder Senior Manager, ist eine Manager-Rolle mit Teamführung Plan A,
-  nicht Plan C.
-- **Plan B** = Head of Customer Success oder Presales-/SE-Leitung — **nur wenn die Situation stimmt**.
-- **Plan C** = Auffang-Plan unterhalb der Leitungsebene aus A/B: Service-/Delivery-Rollen, die
-  einzelne Kunden oder Verträge verantworten statt eine PS- oder Delivery-Organisation (z. B.
+- **Plan A** = die Hauptzielrolle laut Plan A (Titel in `titel`, Ebenen in `senioritaet` des
+  Plans). Es zählt die Verantwortung der Rolle, nicht der Titel: bei Leitungsrollen die Führung
+  eines Teams oder einer Organisation der Zielfunktion. Nennt `senioritaet` Manager oder Senior
+  Manager, ist eine Manager-Rolle mit Teamführung Plan A, nicht Plan C.
+- **Plan B** = die zweite Zielfunktion laut Plan B (`titel`) — **nur wenn die Situation stimmt**.
+- **Plan C** = Auffang-Plan unterhalb der Leitungsebene aus A/B: Rollen aus dem Umfeld der
+  Zielfunktion, die einzelne Kunden oder Verträge verantworten statt eine Organisation (z. B.
   Service Delivery Manager).
 - Konkrete Titel, Ebenen (`senioritaet`) und Branchen je Plan sind KEINE festen Zeilen hier,
   sondern werden auf `/einstellungen` gepflegt (Quelle der Wahrheit:
@@ -76,17 +76,20 @@ wie sie angewendet werden.
 - **Reicht die Mail oder das Suchergebnis für einen Beleg nicht, die Anzeige laden.** Ist sie
   nicht abrufbar (Login-Wall, Fehler), gilt die Grenze als nicht belegt: Die Stelle bleibt drin,
   wird konservativ bewertet und bekommt den Hinweis im `source_note`.
+- **Lässt sich eine Region oder Grenze nicht sicher prüfen** (Ortsname unbekannt, Entfernung unklar),
+  ist das kein Abbruchgrund: Sie gilt als nicht belegt, die Stelle bleibt mit Hinweis im `source_note`,
+  und der Abschlussbericht nennt den Fall.
 - **Der Score sortiert, er sortiert nicht aus.** Was ein Suchlauf als Kandidaten aufgenommen hat
   (Treffer der Titelsuche, Posting aus einer Alert-Mail) und was die harten Grenzen besteht, wird
   mit seinem Score angelegt, auch mit 1 oder 2. Funktion, Branche oder Situation passen nicht:
   Das ist ein niedriger Score mit Begründung, kein Grund zum Weglassen — es sei denn, eine
-  ausdrückliche Ausschlussregel trifft belegt zu (zum Beispiel reine Vertriebsrolle, Rolle ohne
-  Führung). Gesichtet wird in der Review-Ansicht; dort ist ein niedriger Score eine
-  Sortierhilfe.
+  ausdrückliche Ausschlussregel trifft belegt zu (eine Regel aus `ausschluss_titel` oder
+  `ausschluss_bedingungen`, zum Beispiel reine Vertriebsrolle). Gesichtet wird in der
+  Review-Ansicht; dort ist ein niedriger Score eine Sortierhilfe.
 - **Im Abschlussbericht steht je aussortierter Stelle die Grenze und der Beleg.** „Passt nicht“
   ohne Grenze und Beleg ist kein zulässiger Ausschlussgrund.
 
 ## Layoff zweischneidig (Restructuring Radar)
 Stellenabbau heißt zweierlei — in `rebuild_or_cut` einschätzen:
 - **Gut (Rebuild):** Firma baut um und sucht jemanden zum Neuaufstellen.
-- **Schlecht (Abbau):** Firma entkernt die Serviceorga, kein Budget für Leitung.
+- **Schlecht (Abbau):** Firma entkernt den Bereich der Zielfunktion, kein Budget für die Rolle.

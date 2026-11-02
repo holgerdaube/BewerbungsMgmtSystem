@@ -332,7 +332,7 @@ function BeispieldatenBanner() {
   const [name, setName] = useState<string | null>(null)
   useEffect(() => {
     api<{ status: string; name: string | null }>('/beispieldaten')
-      .then((d) => setName(d.status === 'vorhanden' ? (d.name ?? 'Birne Helene') : null))
+      .then((d) => setName(d.status === 'vorhanden' ? (d.name ?? 'Benno Bewerbaer') : null))
       .catch(() => setName(null))
   }, [])
   if (!name) return null

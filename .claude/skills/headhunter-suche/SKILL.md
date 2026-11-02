@@ -16,8 +16,11 @@ als **Status „Neu"** in die zentrale DB schreiben. Läuft als **eigenständige
 ## Ablauf
 
 ### 1. Kontext laden
-`config/profil.md`, `config/scoring_rubrik.md` (Plan A/B/C), `config/suchprofile.yaml` (Pläne
+`config/profil.md` (weicht ein älterer Abschnitt „Zielrolle“ von den Plänen ab, gelten die Pläne), `config/scoring_rubrik.md` (Plan A/B/C), `config/suchprofile.yaml` (Pläne
 A/B/C aus `plaene` — Stand aus `/einstellungen`).
+Nicht immer vorhanden: `config/profil.md` (fehlt sie oder ist leer, gelten die harten Grenzen aus
+`suchprofile.yaml` und `scoring_rubrik.md`) und einzelne technische Schlüssel der `suchprofile.yaml` — ohne sie
+weiter, im Bericht nennen.
 
 ### 2. Auswahl (Rotation)
 ```sh
@@ -26,6 +29,8 @@ curl -s http://localhost:8000/api/headhunters
 Nur Zeilen mit `source: "Blatt"` UND `webseite` gesetzt (Outreach-Zeilen haben keine eigene Website
 in dieser Tabelle); sortiere nach `last_career_check` (NULL zuerst, dann aufsteigend) → **die ersten
 15**. Im Bericht ausweisen: „geprüft 15 von <n>, ältester Rest-Check: <Datum>".
+Gibt es keine solche Zeile, ist das kein Fehler: im Bericht „keine Headhunter mit Webseite erfasst“ nennen,
+nichts prüfen und mit dem leeren Ingest aus Schritt 6 und dem Bericht (Schritt 8) enden.
 
 ### 3. Webseite/Mandate prüfen — in zwei Wellen, nicht Headhunter für Headhunter
 Die 15 Headhunter sind unabhängig voneinander — bearbeite sie gebündelt statt einzeln nacheinander.
@@ -40,7 +45,8 @@ Die 15 Headhunter sind unabhängig voneinander — bearbeite sie gebündelt stat
   WebFetch laden (wieder in Gruppen von 3–5). Mandatsliste je Headhunter gegen Titel-Profile/harte
   Grenzen filtern (inkl. Mindest-Firmengröße `min_mitarbeiter`, Beleg-Regel s. Schritt 5b — bei
   vertraulichen Mandaten meist ohnehin unbekannt, dann durchlassen wie in der Beleg-Regel
-  vorgesehen). **Headhunter-Seiten listen Mandate oft OHNE Klientennamen** — das ist normal, kein
+  vorgesehen). Lässt sich eine Region oder Grenze nicht sicher prüfen, bleibt das Mandat mit Hinweis im
+  `source_note` und im Bericht — kein Abbruch (`scoring_rubrik.md`, „Harte Grenzen und Score“). **Headhunter-Seiten listen Mandate oft OHNE Klientennamen** — das ist normal, kein
   Fehler.
 - Alle neu gefundenen `karriere_url`-Werte **gesammelt in EINEM Python-Heredoc** zurückschreiben
   (nicht je Headhunter ein `curl`):

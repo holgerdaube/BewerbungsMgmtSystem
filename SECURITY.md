@@ -37,4 +37,4 @@ Problem dort noch auftritt. Wie Sie aktualisieren, steht in der [README](README.
 
 Fehler ohne Sicherheitsbezug melden Sie bitte als normales Issue:
 https://github.com/holgerdaube/BewerbungsMgmtSystem/issues. Probleme in Diensten, die das BMS nur anbindet
-(Claude, Gmail, Apify, GitHub), melden Sie bitte dem jeweiligen Anbieter.
+(Claude, ChatGPT, Gmail, Apify, GitHub), melden Sie bitte dem jeweiligen Anbieter.

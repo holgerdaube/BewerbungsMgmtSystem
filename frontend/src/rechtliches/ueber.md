@@ -12,7 +12,7 @@ Quelltext, neue Versionen und Fehlermeldungen: https://github.com/holgerdaube/Be
 
 Welche Daten das Programm wohin schickt, steht im Reiter „Datenschutz“.
 
-Texte, Bewertungen und Entwürfe erzeugt das BMS mit KI (Claude). Sie sind Vorschläge und müssen vor dem Versand geprüft werden.
+Texte, Bewertungen und Entwürfe erzeugt das BMS mit KI (Claude oder ChatGPT, je nach Auswahl). Sie sind Vorschläge und müssen vor dem Versand geprüft werden.
 
 ### Haftung
 

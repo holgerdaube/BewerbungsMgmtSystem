@@ -48,6 +48,7 @@ import signal
 import subprocess
 import sys
 import tempfile
+import urllib.request
 from pathlib import Path
 from typing import Optional
 
@@ -207,7 +208,23 @@ def to_pdf(docx_path, pdf_path):
     Rückgabe: (ok: bool, fehler: str|None)."""
     docx_abs = str(Path(docx_path).resolve())
     pdf_abs = str(Path(pdf_path).resolve())
+    if os.environ.get("BMS_PDF_UEBER_SERVER"):
+        return _pdf_ueber_server(docx_abs, pdf_abs)
     return _to_pdf_soffice(docx_abs, pdf_abs)
+
+
+def _pdf_ueber_server(docx_abs: str, pdf_abs: str):
+    """Unter ChatGPT läuft der Skill in der Sandbox von Codex, dort bricht LibreOffice mit Abort trap ab (rc 134, auf
+    macOS geprüft). Der BMS-Server läuft außerhalb der Sandbox und wandelt deshalb um (`POST /api/intern/pdf`)."""
+    url = f"http://127.0.0.1:{os.environ.get('PORT') or '8000'}/api/intern/pdf"
+    daten = json.dumps({"docx": docx_abs, "pdf": pdf_abs}).encode("utf-8")
+    anfrage = urllib.request.Request(url, data=daten, headers={"Content-Type": "application/json"}, method="POST")
+    try:
+        with urllib.request.urlopen(anfrage, timeout=240) as antwort:
+            ergebnis = json.load(antwort)
+    except (OSError, ValueError) as exc:
+        return False, f"PDF über den BMS-Server nicht möglich: {exc}"
+    return bool(ergebnis.get("ok")), ergebnis.get("fehler")
 
 
 def _ist_eigener_zielname(stem: str, wunsch: str) -> bool:

@@ -5,6 +5,7 @@ rather than guessing, and callers always keep the original raw text alongside.
 """
 import re
 from typing import Optional, Tuple
+from urllib.parse import parse_qsl, urlencode, urlsplit
 
 # ── Situation ────────────────────────────────────────────────────────────────
 # Priority reflects the user's strategy (Anleitung-Tab): Plan-A-core signals win over RUN.
@@ -47,6 +48,25 @@ def norm_plan(raw) -> Optional[str]:
 
 
 # ── Seniority ────────────────────────────────────────────────────────────────
+# Stufen von oben nach unten. Die Auswahl im Formular steht in frontend/src/senioritaet.ts,
+# test_seniority.py hält beide gleich. Unterhalb von Teamlead angelehnt an die LinkedIn-Stufen
+# (Internship, Entry level, Associate, Mid-Senior level) und die üblichen deutschen Karrierestufen.
+SENIORITAETEN = ("C-Level", "VP", "Senior Director", "Director", "Head", "Senior Manager", "Manager", "Teamlead",
+                 "Experte", "Erfahrener Mitarbeiter", "Angestellter", "Berufseinsteiger", "Trainee",
+                 "Auszubildender", "Werkstudent", "Praktikant")
+
+_C_LEVEL_RE = re.compile(r"\bC-LEVEL\b|\bC[A-Z]O\b|\bCHIEF\b|GESCHÄFTSFÜHR|\bVORSTAND|^EXECUTIVE( LEVEL)?$")
+_HEAD_DE_RE = re.compile(r"BEREICHSLEIT|ABTEILUNGSLEIT")
+_EXPERTE_RE = re.compile(r"\bEXPERT|SPEZIALIST|SPECIALIST|\bPRINCIPAL\b|\bLEAD\b|\bSTAFF\b")
+_ERFAHREN_RE = re.compile(r"\bSENIOR\b|\bSR\b|ERFAHREN|MIT BERUFSERFAHRUNG")
+_EINSTEIG_RE = re.compile(r"\bJUNIOR\b|\bJR\b|EINSTEIG|\bENTRY\b|ABSOLVENT|OHNE BERUFSERFAHRUNG")
+_ANGESTELLT_RE = re.compile(r"ANGESTELLT|MITARBEITER|FACHKRAFT|SACHBEARBEIT|\bASSOCIATE\b|^PROFESSIONAL$")
+_TRAINEE_RE = re.compile(r"\bTRAINEE\b|VOLONT")
+_AZUBI_RE = re.compile(r"AUSZUBILD|\bAZUBI\b|AUSBILDUNG|APPRENTICE")
+_WERKSTUDENT_RE = re.compile(r"WERKSTUDENT|WORKING STUDENT")
+_PRAKTIKANT_RE = re.compile(r"PRAKTIK|\bINTERN(SHIP)?\b")
+
+
 def norm_seniority(raw) -> Tuple[Optional[str], Optional[str]]:
     if raw is None:
         return None, None
@@ -56,11 +76,13 @@ def norm_seniority(raw) -> Tuple[Optional[str], Optional[str]]:
     up = s.upper()
     if "VP" in up or "VICE PRESIDENT" in up:
         return "VP", s
+    if _C_LEVEL_RE.search(up):
+        return "C-Level", s
     if "SENIOR DIRECTOR" in up or "SR DIRECTOR" in up or "SR. DIRECTOR" in up:
         return "Senior Director", s
     if "DIRECTOR" in up:
         return "Director", s
-    if "HEAD" in up:
+    if "HEAD" in up or _HEAD_DE_RE.search(up):
         return "Head", s
     if "SENIOR MANAGER" in up or "SR MANAGER" in up:
         return "Senior Manager", s
@@ -68,6 +90,13 @@ def norm_seniority(raw) -> Tuple[Optional[str], Optional[str]]:
         return "Manager", s
     if "TEAMLEIT" in up or "TEAM LEAD" in up or "TEAMLEAD" in up:
         return "Teamlead", s
+    # Reihenfolge wichtig: „Senior Intern“ ist ein Praktikum, „Ohne Berufserfahrung“ kein „Erfahren“.
+    for muster, stufe in ((_PRAKTIKANT_RE, "Praktikant"), (_WERKSTUDENT_RE, "Werkstudent"),
+                          (_AZUBI_RE, "Auszubildender"), (_TRAINEE_RE, "Trainee"),
+                          (_EINSTEIG_RE, "Berufseinsteiger"), (_EXPERTE_RE, "Experte"),
+                          (_ERFAHREN_RE, "Erfahrener Mitarbeiter"), (_ANGESTELLT_RE, "Angestellter")):
+        if muster.search(up):
+            return stufe, s
     return "Sonstige", s
 
 
@@ -181,6 +210,26 @@ def slug_parts(*parts) -> str:
     import_lists (Firmen/Headhunter/Netzwerk-Kontakte) UND main.py (Netzwerk-Kontakt-CRUD,
     Phase 22) — identisch zur früheren import_lists._slug, nicht dupliziert."""
     return re.sub(r"[^a-z0-9]+", "", "".join(str(p or "") for p in parts).lower())
+
+
+_URL_TRACKING = ("utm_", "trk", "refid", "trackingid", "position", "pagenum", "originalsubdomain")
+
+
+def url_vergleich(url) -> Optional[str]:
+    """Vergleichsform einer Stellen-URL, nur für den Dublettenabgleich: ohne Schema, `www.`, Fragment,
+    Tracking-Parameter und Schrägstrich am Ende. LinkedIn-Stellen werden auf die Stellennummer reduziert
+    (`/jobs/view/titel-bei-firma-123456` und `/jobs/view/123456/?trk=…` sind dieselbe Stelle)."""
+    s = str(url or "").strip()
+    if not s:
+        return None
+    teile = urlsplit(s if "://" in s else f"https://{s}")
+    host = teile.netloc.lower().removeprefix("www.")
+    if host.endswith("linkedin.com"):
+        nummer = re.search(r"/jobs/view/(?:[^/]*-)?(\d{6,})", teile.path) or re.search(r"\bcurrentJobId=(\d+)", teile.query)
+        if nummer:
+            return f"linkedin.com/jobs/view/{nummer.group(1)}"
+    parameter = sorted((k, v) for k, v in parse_qsl(teile.query) if not k.lower().startswith(_URL_TRACKING))
+    return host + teile.path.rstrip("/") + (f"?{urlencode(parameter)}" if parameter else "")
 
 
 def dedup_key(company, title, location=None) -> str:

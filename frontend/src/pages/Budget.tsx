@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api, type BudgetProvider, type BudgetReport } from '../api'
-import { Section, Stat, BarList } from '../components/ui'
+import { Section, Stat, BarList, useKiAnbieter } from '../components/ui'
 
 const STATUS_STIL: Record<string, string> = {
   ok: 'bg-emerald-100 text-emerald-800',
@@ -40,7 +40,7 @@ function Balken({ label, verbraucht, limit, rest, status }: {
 }
 
 /** Eine Steuerungs-Karte je Verbrauchs-Dienst. Speichern nur wenn geändert (Muster: JobDetail). */
-function SteuerKarte({ p, onSaved }: { p: BudgetProvider; onSaved: () => void }) {
+function SteuerKarte({ p, label, ohneUsd, onSaved }: { p: BudgetProvider; label: string; ohneUsd: boolean; onSaved: () => void }) {
   const l = p.limit!
   const istClaude = p.provider === 'claude-runs'
   const [tag, setTag] = useState<string>(l.daily_limit_usd?.toString() ?? '')
@@ -79,7 +79,7 @@ function SteuerKarte({ p, onSaved }: { p: BudgetProvider; onSaved: () => void })
   return (
     <div className={`rounded-xl border border-slate-200 p-4 ${aktiv ? '' : 'bg-slate-50 opacity-70'}`}>
       <div className="flex items-center justify-between">
-        <div className="font-medium text-brand-navy">{p.label}</div>
+        <div className="font-medium text-brand-navy">{label}</div>
         <label className="flex cursor-pointer items-center gap-2 text-xs text-slate-600">
           <input type="checkbox" checked={aktiv} onChange={(e) => setAktiv(e.target.checked)}
             className="h-4 w-4 rounded border-slate-300 accent-brand-cyan" />
@@ -89,18 +89,22 @@ function SteuerKarte({ p, onSaved }: { p: BudgetProvider; onSaved: () => void })
       {p.hinweis && <p className="mt-0.5 text-xs text-slate-400">{p.hinweis}</p>}
 
       <div className="mt-3 flex flex-wrap items-end gap-3">
-        <label className="text-xs text-slate-500">
-          Tageslimit ($)
-          <input type="number" min="0" step="0.5" value={tag} onChange={(e) => setTag(e.target.value)}
-            placeholder="kein Limit"
-            className="mt-1 block w-28 rounded-lg border border-slate-300 px-2 py-1 text-sm text-brand-navy" />
-        </label>
-        <label className="text-xs text-slate-500">
-          Monatslimit ($)
-          <input type="number" min="0" step="0.5" value={monat} onChange={(e) => setMonat(e.target.value)}
-            placeholder="kein Limit"
-            className="mt-1 block w-28 rounded-lg border border-slate-300 px-2 py-1 text-sm text-brand-navy" />
-        </label>
+        {!ohneUsd && (
+          <>
+            <label className="text-xs text-slate-500">
+              Tageslimit ($)
+              <input type="number" min="0" step="0.5" value={tag} onChange={(e) => setTag(e.target.value)}
+                placeholder="kein Limit"
+                className="mt-1 block w-28 rounded-lg border border-slate-300 px-2 py-1 text-sm text-brand-navy" />
+            </label>
+            <label className="text-xs text-slate-500">
+              Monatslimit ($)
+              <input type="number" min="0" step="0.5" value={monat} onChange={(e) => setMonat(e.target.value)}
+                placeholder="kein Limit"
+                className="mt-1 block w-28 rounded-lg border border-slate-300 px-2 py-1 text-sm text-brand-navy" />
+            </label>
+          </>
+        )}
         {istClaude && (
           <label className="text-xs text-slate-500">
             Max. Läufe/Tag
@@ -122,8 +126,18 @@ function SteuerKarte({ p, onSaved }: { p: BudgetProvider; onSaved: () => void })
       <p className="mt-1 text-xs text-slate-400">hart = Aufrufe werden blockiert · weich = nur Warnung</p>
 
       <div className="mt-3 space-y-2">
-        <Balken label="Heute" verbraucht={p.heute_usd} limit={l.daily_limit_usd} rest={l.rest_heute_usd} status={l.status} />
-        <Balken label="Monat" verbraucht={p.monat_usd} limit={l.monthly_limit_usd} rest={l.rest_monat_usd} status={l.status} />
+        {ohneUsd ? (
+          // ChatGPT (P2-86): ohne Kosten in USD sagen Tages- und Monatslimit nichts, Balken wären immer leer.
+          <p className="text-xs text-slate-500">
+            Unter ChatGPT gibt es keine Kosten in USD und keine Budgetgrenze je Lauf. Es gelten das Zeitlimit je
+            Lauf und die Grenzen Ihres ChatGPT-Abos; die Grenze für Läufe pro Tag wirkt weiter.
+          </p>
+        ) : (
+          <>
+            <Balken label="Heute" verbraucht={p.heute_usd} limit={l.daily_limit_usd} rest={l.rest_heute_usd} status={l.status} />
+            <Balken label="Monat" verbraucht={p.monat_usd} limit={l.monthly_limit_usd} rest={l.rest_monat_usd} status={l.status} />
+          </>
+        )}
         {istClaude && p.runs_heute != null && (
           <p className="text-xs text-slate-400">{p.runs_heute} Läufe heute</p>
         )}
@@ -142,6 +156,8 @@ function SteuerKarte({ p, onSaved }: { p: BudgetProvider; onSaved: () => void })
 }
 
 export default function Budget() {
+  const { anbieter, name } = useKiAnbieter()
+  const chatgpt = anbieter === 'chatgpt'
   const [d, setD] = useState<BudgetReport | null>(null)
   const [syncing, setSyncing] = useState(false)
   const [syncMsg, setSyncMsg] = useState<string | null>(null)
@@ -163,6 +179,12 @@ export default function Budget() {
   if (!d) return <div className="text-slate-400">Lade…</div>
 
   const verbrauch = d.providers.filter((p) => p.art === 'verbrauch' && p.limit)
+  // ChatGPT (P2-86): Die Zeile der Agent-Läufe trägt im Backend den Namen „Claude (Agent-Läufe)“ und rechnet
+  // in USD. ChatGPT meldet keine Kosten: Nullen wären keine Aussage und werden nicht als 0 € gezeigt.
+  // Beträge aus früheren Läufen unter Claude bleiben stehen, darum heißt die Zeile dann neutral „KI“.
+  const ohneUsd = (p: BudgetProvider) => chatgpt && p.provider === 'claude-runs'
+  const labelVon = (p: BudgetProvider) => ohneUsd(p) ? 'KI (Agent-Läufe)' : p.label
+  const eurVon = (p: BudgetProvider, n: number) => ohneUsd(p) && n === 0 ? '–' : eur(n)
   const monatsverlauf: Record<string, number> = {}
   d.providers.forEach((p) => { if (p.monat_eur > 0) monatsverlauf[p.label] = p.monat_eur })
 
@@ -181,6 +203,18 @@ export default function Budget() {
           {syncing ? 'Synct…' : '🔄 Verbrauch syncen'}
         </button>
       </div>
+
+      {chatgpt && (
+        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+          <div className="font-medium text-brand-navy">KI-Läufe über Ihr ChatGPT-Abo</div>
+          <p className="mt-1 text-xs">
+            Die Läufe der App laufen über Ihr ChatGPT-Abo. ChatGPT meldet keine Kosten in USD, darum zeigt die Zeile
+            „KI (Agent-Läufe)“ nur Beträge aus früheren Läufen unter Claude. Eine Budgetgrenze je Lauf gibt es nicht:
+            Es gelten das Zeitlimit je Lauf, die Grenzen Ihres Abos und die Grenze für Läufe pro Tag. Den Verbrauch
+            in Token zeigt das Task-Center.
+          </p>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         <Stat label="Heute" value={eur(d.totals.heute_eur)} sub={usd(d.totals.heute_usd)} />
@@ -202,19 +236,19 @@ export default function Budget() {
             <tbody className="divide-y divide-slate-100">
               {d.providers.map((p) => (
                 <tr key={p.provider} className="hover:bg-brand-cyan/5">
-                  <td className="px-4 py-2 font-medium text-brand-navy" title={p.hinweis || undefined}>{p.label}</td>
+                  <td className="px-4 py-2 font-medium text-brand-navy" title={p.hinweis || undefined}>{labelVon(p)}</td>
                   <td className="px-4 py-2">
                     <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${p.art === 'abo' ? 'bg-indigo-100 text-indigo-800' : 'bg-slate-100 text-slate-600'}`}>
                       {p.art === 'abo' ? 'Abo' : 'Verbrauch'}
                     </span>
                   </td>
-                  <td className="px-4 py-2 text-right tabular-nums text-slate-600">{eur(p.heute_eur)}</td>
-                  <td className="px-4 py-2 text-right tabular-nums text-slate-600">{eur(p.monat_eur)}</td>
+                  <td className="px-4 py-2 text-right tabular-nums text-slate-600">{eurVon(p, p.heute_eur)}</td>
+                  <td className="px-4 py-2 text-right tabular-nums text-slate-600">{eurVon(p, p.monat_eur)}</td>
                   <td className="px-4 py-2 text-right tabular-nums text-slate-600">
-                    {eur(p.jahr_prognose_eur)}{p.geschaetzt && <span className="text-slate-400"> ~</span>}
+                    {eurVon(p, p.jahr_prognose_eur)}{p.geschaetzt && !(ohneUsd(p) && p.jahr_prognose_eur === 0) && <span className="text-slate-400"> ~</span>}
                   </td>
                   <td className="px-4 py-2">
-                    {p.limit
+                    {p.limit && !ohneUsd(p)
                       ? <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STIL[p.limit.status]}`}>{STATUS_TEXT[p.limit.status]}</span>
                       : <span className="text-slate-400">–</span>}
                   </td>
@@ -229,7 +263,7 @@ export default function Budget() {
         <div className="grid gap-4 p-4 md:grid-cols-2">
           {verbrauch.length === 0
             ? <div className="text-sm text-slate-400">Keine steuerbaren Dienste.</div>
-            : verbrauch.map((p) => <SteuerKarte key={p.provider} p={p} onSaved={load} />)}
+            : verbrauch.map((p) => <SteuerKarte key={p.provider} p={p} label={labelVon(p)} ohneUsd={ohneUsd(p)} onSaved={load} />)}
         </div>
       </Section>
 
@@ -240,7 +274,7 @@ export default function Budget() {
       <p className="text-xs text-slate-400">
         Verbrauch: Apify per API-Sync; Abos aus config/budgets.yaml.
         Limits wirken sofort auf alle kostenpflichtigen Aufrufe dieser App (hart = blockiert).
-        Ausgaben außerhalb der App (Apify-Konsole, interaktive Claude-Sessions) sieht sie erst nach dem
+        Ausgaben außerhalb der App (Apify-Konsole, interaktive {name}-Sessions) sieht sie erst nach dem
         nächsten Sync und kann sie nicht verhindern. Kurs USD→EUR: {d.usd_eur_rate}.
       </p>
     </div>

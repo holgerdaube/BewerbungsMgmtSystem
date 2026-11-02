@@ -34,17 +34,17 @@ Bereichsnamen für dieselbe Kategorie (z. B. „Kundenmanagement" vs. „Custome
 Je Skill:
 - **Bestehenden Bereich bevorzugen**, wenn er inhaltlich passt (Skill-Name gegen die Namen der
   bestehenden Bereiche und deren bereits enthaltene Skills abgleichen).
-- Sonst einen neuen, sinnvollen Bereich aus dem Kontext bilden — bezogen auf die
-  Professional-Services-/Customer-Success-Domäne des Nutzers (Positionierung/Werdegang aus Schritt 1).
-  Nicht die „Susanne"-Beispielnamen aus der Spec („Strategie & Führung" etc.) wörtlich
-  übernehmen — die stammen aus einer fremden Demo-Instanz, nicht aus dem Feld des Nutzers.
+- Sonst einen neuen, sinnvollen Bereich aus dem Kontext bilden — bezogen auf das
+  Berufsfeld des Nutzers (Positionierung/Werdegang aus Schritt 1).
+  Nicht Beispielnamen aus der Spec oder einer Demo-Instanz (z. B. „Strategie & Führung") wörtlich
+  übernehmen — Bereichsnamen kommen aus dem Feld des Nutzers.
 - Kann ein Skill ehrlich keinem sinnvollen Bereich zugeordnet werden: in der Zuordnungstabelle
   weglassen (bleibt in „LinkedIn (unsortiert)") und in der Abschlussmeldung namentlich nennen —
   nicht raten, nur um die Liste leer zu bekommen.
 
 ### 3. Schreiben — Python-Einzeiler, NICHT roher curl `-d`
 `bereich` ist LLM-generierter Freitext und kann Anführungszeichen/Sonderzeichen enthalten, die
-ein einfach gequotetes `curl -d '...'` bricht (dieselbe Begründung, aus der `profil-einlesen`,
+ein einfach gequotetes `curl -d '...'` bricht (dieselbe Begründung, aus der
 `gespraech-debrief` und `job-frage` für JEDE Freitext-Schreiboperation einen Python-Block statt
 curl nutzen — Muster hier 1:1 übernommen, nur mit `urllib.request` statt direktem DB-Zugriff,
 weil der PATCH-Endpunkt gebraucht wird, s. u.).

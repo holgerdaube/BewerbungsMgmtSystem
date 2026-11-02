@@ -4,6 +4,20 @@ Hier steht zu jeder Version, was sich für Sie ändert. Welche Version installie
 
 ## Unveröffentlicht
 
+## 2.1.0 (02.11.2026)
+
+- Das BMS läuft jetzt wahlweise mit Claude oder als Vorschau mit ChatGPT. Die Wahl treffen Sie bei der Installation oder unter „Einstellungen“ auf der Karte „KI“. Unter ChatGPT nutzt das BMS Ihr ChatGPT-Abo über die Codex-Kommandozeile (`codex login`), und die Inhalte der KI-Läufe gehen an OpenAI statt an Anthropic. Kosten in USD und eine Budgetgrenze je Lauf gibt es dort nicht, es gelten die Grenzen Ihres Abos. Wer Claude nutzt, muss nichts tun.
+- Skills sind von Annahmen zu einem bestimmten Beruf befreit und überspringen optionale Dateien, statt abzubrechen.
+- LinkedIn-Profil übernehmen geht jetzt sofort: Unter „Profil“ fügen Sie den Text Ihres Profils ein oder laden das PDF hoch, das LinkedIn über „Als PDF speichern“ erzeugt. Ihre KI strukturiert den Text, Sie prüfen das Ergebnis in einer Vorschau, und erst dann ergänzt das BMS Ihr Profil. Der bisherige Knopf „Profil einlesen“ über die Adresse entfällt, weil LinkedIn solche Abrufe sperrt. Der Datenexport bleibt der vollständigste Weg.
+- Der Block „Zielrolle“ auf der Profil-Seite ist entfallen, er doppelte sich mit den Suchplänen. Titel, Ebene und Branche tragen Sie unter „Einstellungen“ ein, auf der Profil-Seite bleibt der Zieltermin. Vorhandene Angaben in Ihrer Profil-Datei bleiben stehen. Weichen sie ab, gelten die Suchpläne.
+- Sicherheit: Mitgelieferte Bausteine sind aktualisiert, darunter `certifi` (Stammzertifikate), `urllib3`, `cryptography`, `oauthlib` und `pyasn1` sowie React Router und Vite in der Oberfläche. Das Update installiert sie automatisch, es kann deshalb etwas länger dauern.
+- Beim manuellen Anlegen einer Stelle warnt das BMS jetzt schon beim Ausfüllen: „URL bereits erfasst in Stelle …“ oder „Stelle bereits erfasst“, mit Link zur vorhandenen Stelle. Die URL wird dabei ohne Tracking-Zusätze verglichen, Firma und Titel auch in anderer Schreibweise, etwa ohne Rechtsform oder „(m/w/d)“.
+- Gelöschte Stellen zählen beim manuellen Anlegen nicht mehr als vorhanden: Eine gelöschte Stelle lässt sich von Hand neu erfassen. Die automatische Suche holt sie weiterhin nicht von selbst zurück.
+- Die Seniorität kennt jetzt alle üblichen Stufen, von Praktikant, Werkstudent, Auszubildender und Trainee über Berufseinsteiger, Angestellter, Erfahrener Mitarbeiter und Experte bis C-Level. Das gilt für das Formular „Neue Stelle“, die Eckdaten einer Stelle und als Vorschläge in den Suchplänen.
+- Beim Basis-Lebenslauf steht Portugiesisch jetzt direkt in der Sprachauswahl.
+- Die Beispieldaten einer neuen Installation gehören jetzt Benno Bewerbaer. Vorhandene Beispieldaten bleiben, wie sie sind, und lassen sich weiter entfernen.
+- Die Installationsanleitungen nennen den Knopf „Company-Fit prüfen“ so, wie er im Programm heißt.
+
 ## 2.0.0 (01.11.2026)
 
 - Unter „Rechtliches“ lassen sich Internetadressen jetzt anklicken, etwa der Link zum Quelltext bei GitHub in „Über dieses Programm“ und der zur Datenschutzerklärung von GitHub. Sie öffnen sich in einem neuen Tab.

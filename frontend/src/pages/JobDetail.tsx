@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { api, apiUpload, type Einstellungen } from '../api'
-import { ScoreBadge, StatusBadge, VerifyBadge, DubletteBadge, NeuausschreibungBadge, Section, CopyChip } from '../components/ui'
+import { ScoreBadge, StatusBadge, VerifyBadge, DubletteBadge, NeuausschreibungBadge, Section, CopyChip, laufKosten, useKiAnbieter } from '../components/ui'
 import CopyTrigger from '../components/CopyTrigger'
 import AgentTaskButton from '../components/AgentTaskButton'
 import EmailDetail from '../components/EmailDetail'
@@ -10,6 +10,7 @@ import { useReviewCount } from '../context/ReviewCount'
 import { isoTag, tagVon } from '../zeit'
 import { useProfilAdresse, mapsRouteUrl } from '../profil'
 import { useSuchTabs } from '../suchbereich'
+import { SENIORITAETEN } from '../senioritaet'
 
 const STATUSES = ['Neu', 'Prüfen', 'Beworben', 'Interview', 'Angebot', 'Absage', 'Keine Rückmeldung', 'Kein Match', 'Beirat abgelehnt', 'Nicht verfügbar', 'Geparkt']
 
@@ -535,6 +536,7 @@ export default function JobDetail() {
   const [chat, setChat] = useState<any[]>([])
   const [chatInput, setChatInput] = useState('')
   const [chatTask, setChatTask] = useState<any>(null)   // laufende Frage (Poll-Ziel)
+  const { anbieter, name: kiName, modellLabel } = useKiAnbieter()   // P2-86: Claude oder ChatGPT
   const [chatErr, setChatErr] = useState<string | null>(null)
   const fileInput = useRef<HTMLInputElement>(null)
   const { refresh } = useReviewCount()
@@ -612,6 +614,7 @@ export default function JobDetail() {
   // Aktiver Lauf = wirklich queued/running — ein `failed`-Task blieb bisher als chatTask stehen
   // (der Poll-Fehlerpfad unten setzt ihn nicht zurück auf null) und sperrte das Eingabefeld dauerhaft.
   const chatAktiv = !!chatTask && ['queued', 'running'].includes(chatTask.status)
+  const chatKosten = chatTask ? laufKosten(chatTask, anbieter) : null
 
   const cancelChat = async () => {
     if (!chatTask) return
@@ -1120,7 +1123,10 @@ export default function JobDetail() {
               </>
             ) : (
               <>
-                {eckRow('Seniorität', eckTxt('seniority'))}
+                {eckRow('Seniorität', <>
+                  {eckTxt('seniority', { list: 'senioritaeten-vorschlaege' })}
+                  <datalist id="senioritaeten-vorschlaege">{SENIORITAETEN.map((s) => <option key={s} value={s} />)}</datalist>
+                </>)}
                 {eckRow('Arbeitsmodell', eckSel('work_model', ['Remote', 'Hybrid', 'Onsite', 'Unbekannt']))}
                 {eckRow('Umzug nötig?', eckSel('relocation_needed', ['Ja', 'Nein', 'Unklar']))}
                 {eckRow('Plan A/B/C', eckSel('plan_ab', ['A', 'B', 'C']))}
@@ -1259,8 +1265,11 @@ export default function JobDetail() {
             {chat.length > 0 && (
               <div className="mt-2 text-[11px] text-slate-400">
                 {/* P2-59: nur der Kurzname. Die Frage läuft über den Alias `sonnet` (agent_runner.PROMPTS),
-                    also mit dem Sonnet, das die CLI gerade bereitstellt; eine feste Modellnummer würde hier veralten. */}
-                Modell: Sonnet{chatTask?.cost_usd != null ? ` · $${chatTask.cost_usd.toFixed(3)}` : ''}
+                    also mit dem Sonnet, das die CLI gerade bereitstellt; eine feste Modellnummer würde hier veralten.
+                    P2-86: Unter ChatGPT steht die Beschriftung, die der Server für diese Stufe liefert. Kosten in
+                    USD gibt es dort nicht, statt „$0.000“ stehen die Token. */}
+                Modell: {anbieter === 'chatgpt' ? (modellLabel('sonnet') || 'ChatGPT') : 'Sonnet'}
+                {chatKosten ? ` · ${chatKosten}` : ''}
               </div>
             )}
           </Section>
@@ -1614,7 +1623,7 @@ export default function JobDetail() {
             </div>
 
             <details className="mt-2 text-xs text-slate-400">
-              <summary className="cursor-pointer hover:text-slate-600">Alternativ: in Claude-Session ausführen</summary>
+              <summary className="cursor-pointer hover:text-slate-600">Alternativ: in {kiName}-Session ausführen</summary>
               <div className="mt-2">
                 <CopyTrigger phrase={`Firma prüfen für Job ${job.id}`} label="📋 Auslöser kopieren" />
               </div>

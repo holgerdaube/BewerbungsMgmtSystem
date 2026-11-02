@@ -685,6 +685,84 @@ def test_oeffentliches_repo_ausnahme_gilt_nur_fuer_kontakt_und_namensregel(pd):
         assert "Private Kontaktdaten" not in regeln
 
 
+# ── Spendenlinks: zweite erlaubte Form des Kontonamens, nur in README und FUNDING.yml ───────────
+
+FUNDING = ".github/FUNDING.yml"
+
+
+def test_spendenpfade_konstante(pd):
+    assert pd.SPENDEN_PFADE == ("README.md", FUNDING)
+
+
+@pytest.mark.parametrize("umfang", UMFAENGE)
+def test_spendenlinks_sind_kein_fund(pd, umfang):
+    _repo, konto, _name = _repo_teile(pd)
+    m = pd.Muster(konten=(konto,))
+    erlaubt = [
+        ("README.md", f"- **Buy Me a Coffee:** https://buymeacoffee.com/{konto}"),
+        ("README.md", f"- **PayPal:** https://paypal.me/{konto}"),
+        ("README.md", f"[PayPal](https://paypal.me/{konto}) oder <https://buymeacoffee.com/{konto}>."),
+        (FUNDING, f"buy_me_a_coffee: {konto}"),
+        (FUNDING, f'custom: ["https://paypal.me/{konto}"]'),
+        (FUNDING, f'custom: ["https://buymeacoffee.com/{konto}", "https://paypal.me/{konto}"]'),
+    ]
+    for pfad, text in erlaubt:
+        assert pd.pruefen([pd.Eintrag(pfad, 0o644, text.encode())], m, umfang=umfang) == [], text
+
+
+@pytest.mark.parametrize("umfang", UMFAENGE)
+def test_spendenlinks_ausnahme_ist_eng_alles_andere_bleibt_fund(pd, umfang):
+    _repo, konto, _name = _repo_teile(pd)
+    m = pd.Muster(konten=(konto,))
+    fund = [
+        # dieselben Adressen in jeder anderen Datei
+        ("docs/ANLEITUNG.md", f"https://paypal.me/{konto}"),
+        ("docs/ANLEITUNG.md", f"https://buymeacoffee.com/{konto}"),
+        ("frontend/src/pages/Einstellungen.tsx", f"const SPENDE = 'https://paypal.me/{konto}'"),
+        (".github/workflows/ci.yml", f"buy_me_a_coffee: {konto}"),
+        # andere Schreibweise, anderer Host, mehr dahinter
+        ("README.md", f"http://paypal.me/{konto}"),
+        ("README.md", f"https://www.paypal.me/{konto}"),
+        ("README.md", f"https://paypal.me/{konto}2"),
+        ("README.md", f"https://paypal.me/{konto}-alt"),
+        ("README.md", f"https://paypal.me/{konto}.alt"),
+        ("README.md", f"https://paypal.me/{konto}/5"),
+        ("README.md", f"https://paypal.me/{konto}?betrag=5"),
+        ("README.md", f"https://evilpaypal.me/{konto}"),
+        ("README.md", f"https://paypal.me.example.com/{konto}"),
+        ("README.md", f"xhttps://paypal.me/{konto}"),
+        ("README.md", f"https://ko-fi.com/{konto}"),
+        ("README.md", f"https://github.com/{konto}/bewerbung-mgmt-system"),
+        ("README.md", f"https://paypal.me/{konto} und /Users/{konto}/x"),
+        # die Schlüsselzeile gilt nur in FUNDING.yml und nur genau so
+        ("README.md", f"buy_me_a_coffee: {konto}"),
+        (FUNDING, f"buy_me_a_coffee: {konto}2"),
+        (FUNDING, f"buy_me_a_coffee: {konto} # {konto}"),
+        (FUNDING, f"ko_fi: {konto}"),
+        (FUNDING, f"github: {konto}"),
+        (FUNDING, f'custom: ["https://paypal.me/{konto}", "https://example.com/{konto}"]'),
+    ]
+    for pfad, text in fund:
+        funde = pd.pruefen([pd.Eintrag(pfad, 0o644, text.encode())], m, umfang=umfang)
+        assert any(f.regel == "Private Kontaktdaten" for f in funde), (pfad, text)
+
+
+def test_spendenlinks_ausnahme_gilt_nur_fuer_den_kontonamen(pd):
+    """Neben dem Spendenlink bleiben Anschrift, fremde Adresse und Dritte in README und FUNDING.yml ein
+    Fund; der Name des Nutzers zählt in der README außerhalb der Abschnitte zu Autor und Lizenz."""
+    _repo, konto, _name = _repo_teile(pd)
+    m = pd.Muster(konten=(konto,), anschrift=("Musterweg",), dritte=("Anna Beispiel",),
+                  namen=("Beispielname",))
+    zeile = (f"https://paypal.me/{konto}, Musterweg 1, {_mail('jemand', 'fremde-firma.de')}, "
+             "Anna Beispiel, Beispielname")
+    for pfad in ("README.md", FUNDING):
+        for umfang in UMFAENGE:
+            regeln = _regeln(pd, m, pfad, zeile, umfang)
+            assert {"Anschrift", "E-Mail-Adressen", "Dritte Personen"} <= regeln, (pfad, umfang)
+            assert "Private Kontaktdaten" not in regeln, (pfad, umfang)
+    assert "Name des Nutzers" in _regeln(pd, m, "README.md", zeile, "oeffentlich")
+
+
 # ── Pfadgebundene Ausnahme: fremder Wortlaut ────────────────────────────────────────────────────
 
 TEXTE = "frontend/src/rechtliches/drittlizenzen_texte.txt"

@@ -326,6 +326,9 @@ def report() -> dict:
                 runs_heute = sum(1 for d, _ in tage if d == heute_iso)
                 hinweis = ("Virtuelle Kosten (Claude-Abo) — Kostenschätzung der CLI, "
                           "verbraucht Abo-Kontingent, keine echte Rechnung")
+                from app import ki_anbieter     # P2-86: Unter ChatGPT gibt es keine Kostenschätzung
+                if ki_anbieter.aktiv() == ki_anbieter.CHATGPT:
+                    hinweis = "Läufe über das ChatGPT-Abo: keine Kosten in USD, es gelten die Grenzen des Abos"
             else:
                 rows = [r for r in alle if r.provider == p]
                 heute = round(sum(r.cost_usd or 0 for r in rows if r.date == heute_iso), 4)

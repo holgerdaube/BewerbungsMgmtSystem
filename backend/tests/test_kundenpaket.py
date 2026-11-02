@@ -471,7 +471,7 @@ def test_ersetzen_readme_und_als_rueckfall_profil_struktur_und_agent_settings():
     # dass Claude mit der Datei durch die Installation führt, und kennt die alten Namen nicht mehr.
     assert "`BMS_Install_MAC.md` (macOS)" in readme
     assert "`BMS_Install_Windows.md` (Windows)" in readme
-    assert "Claude führt Sie mit der Datei durch die Installation." in readme
+    assert "Claude oder ChatGPT führt Sie mit der Datei durch die Installation." in readme
     assert "BMS_Install.md" not in readme and "BMS_Install_Auto" not in readme
     assert "CHANGELOG.md" in readme
     assert "update.command" in readme and "update_windows.bat" in readme

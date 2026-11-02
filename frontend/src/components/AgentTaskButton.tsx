@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { api, type AgentTaskRow } from '../api'
+import { codexZeile, laufKosten, useKiAnbieter } from './ui'
 
 const ACTIVE = ['queued', 'running']
 
@@ -15,7 +16,7 @@ const CHIP_TEXT: Record<string, string> = {
   queued: 'wartet…', running: 'läuft…', done: '✓ fertig', failed: '✗ fehlgeschlagen', cancelled: 'abgebrochen',
 }
 
-/** Eine Zeile des stream-json-Logs lesbar machen. */
+/** Eine Zeile des Logs lesbar machen: stream-json von Claude, daneben das JSONL von Codex (ChatGPT, `codexZeile`). */
 function pretty(line: string): string | null {
   try {
     const ev = JSON.parse(line)
@@ -35,7 +36,7 @@ function pretty(line: string): string | null {
       return text ? `💬 ${text.slice(0, 160)}` : null
     }
     if (ev.type === 'result') return `${ev.is_error ? '✗' : '✓'} ${String(ev.result || '').slice(0, 200)}`
-    return null
+    return codexZeile(ev) ?? null
   } catch {
     return line.trim() ? line.slice(0, 160) : null
   }
@@ -75,6 +76,7 @@ export default function AgentTaskButton({ kind, jobId, label, onFinished, watchK
    *  beginnen auf derselben Höhe. Opt-in wie `statusTarget`. */
   zweizeilig?: boolean
 }) {
+  const { anbieter } = useKiAnbieter()
   const [task, setTask] = useState<AgentTaskRow | null>(null)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
@@ -221,11 +223,12 @@ export default function AgentTaskButton({ kind, jobId, label, onFinished, watchK
       )}
     </>
   )
+  const kosten = task && laufKosten(task, anbieter)
   const laufWerte = task && (
     <>
       {task.duration_s != null && <span className="text-slate-400">{task.duration_s}s</span>}
       {task.num_turns != null && <span className="text-slate-400">· {task.num_turns} Turns</span>}
-      {task.cost_usd != null && <span className="text-slate-400">· ${task.cost_usd.toFixed(3)}</span>}
+      {kosten && <span className="text-slate-400">· {kosten}</span>}
       {(task.log?.length || active) && (
         <button onClick={() => setShowLog((v) => !v)} className="ml-auto text-brand-cyan hover:underline">
           {showLog ? 'Log ausblenden' : 'Log anzeigen'}

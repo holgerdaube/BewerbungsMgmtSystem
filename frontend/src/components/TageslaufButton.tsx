@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { api } from '../api'
 import AgentTaskButton from './AgentTaskButton'
 import CopyTrigger from './CopyTrigger'
+import { useKiAnbieter } from './ui'
 
 /** Die Schritte der Kette `tageslauf` (RECIPES in backend/app/agent_runner.py).
  *  Dient zugleich als Beobachtungsliste (watchKinds) — fehlt hier ein Schritt, meldet der
@@ -14,6 +15,7 @@ export default function TageslaufButton() {
   const [open, setOpen] = useState(false)
   const [lastRun, setLastRun] = useState<any>(null)
   const [fallback, setFallback] = useState(false)
+  const { name } = useKiAnbieter()
 
   const openModal = () => {
     setOpen(true)
@@ -61,7 +63,7 @@ export default function TageslaufButton() {
 
             <div className="mt-4 border-t border-slate-100 pt-3">
               <button onClick={() => setFallback((v) => !v)} className="text-xs text-slate-400 hover:text-slate-600">
-                {fallback ? '▾' : '▸'} Lieber in der Claude-Session starten
+                {fallback ? '▾' : '▸'} Lieber in der {name}-Session starten
               </button>
               {fallback && (
                 <div className="mt-2">

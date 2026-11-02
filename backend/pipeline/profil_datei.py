@@ -44,7 +44,9 @@ from typing import Optional
 from pipeline import user_profile
 
 # ── Konstanten ───────────────────────────────────────────────────────────────────────────────────
-STANDARD_ZIELROLLE = ("Ebene", "Funktion Plan A", "Funktion Plan B", "Branche", "Region", "Zieltermin")
+# Titel, Ebene und Branche der Zielrollen kommen aus den Suchplänen (`suchprofile.yaml`). Ältere Zeilen wie
+# „Ebene“ bleiben in vorhandenen Dateien unberührt stehen, die Maske zeigt sie nur nicht mehr.
+STANDARD_ZIELROLLE = ("Zieltermin",)
 MAX_EINZEILIG = 300      # Zeichen je einzeiligem Feld
 MAX_FREITEXT = 5000      # Zeichen je Freitext-Abschnitt
 
@@ -335,7 +337,9 @@ def lesen_aus_text(text: Optional[str]) -> dict:
     ziel = dok.finde(_ZIELROLLE)
     if ziel is not None:
         behandelt.add(id(ziel))
-        liste = [{"schluessel": m.group(2).strip(), "wert": m.group(3).strip()} for _, m in _felder(ziel)]
+        standard = {_kf(k) for k in STANDARD_ZIELROLLE}
+        liste = [{"schluessel": m.group(2).strip(), "wert": m.group(3).strip()}
+                 for _, m in _felder(ziel) if _kf(m.group(2)) in standard]
         vorhanden = {_kf(e["schluessel"]) for e in liste}
         liste += [{"schluessel": k, "wert": ""} for k in STANDARD_ZIELROLLE if _kf(k) not in vorhanden]
         daten["zielrolle"] = liste

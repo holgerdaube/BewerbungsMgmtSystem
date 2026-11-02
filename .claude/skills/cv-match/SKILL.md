@@ -160,7 +160,7 @@ gibt es zurück; hier wird es gegen die gespeicherte `.docx` geprüft und ins Da
   eingebaut wurde — nie Bestandstext. Die Markierung existiert AUSSCHLIESSLICH im Dashboard, nie in
   der `.docx` (dort normale Textstärke, Grundprinzip 6 von `cv-job-match`).
 - Versions-Label aus dem Basis-CV ableiten (Dateiname/Kommentar/config/profil.md prüfen —
-  aktuell „v9 ATS" (Phase 76, Workday-optimiert) → „VORHER · V9" / „NACHHER · V10"). Ist die
+  z. B. „v9 ATS" → „VORHER · V9" / „NACHHER · V10"). Ist die
   Version nicht feststellbar: neutral „VORHER · Basis" / „NACHHER · Angepasst" — NICHT raten.
 
 **Aufbau der Sektion im Match-Dashboard-HTML:** Intro-Zeile → je Station eine Überschrift

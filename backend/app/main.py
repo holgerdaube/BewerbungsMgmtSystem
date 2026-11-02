@@ -23,7 +23,7 @@ from sqlmodel import Session, or_, select
 
 from app.db import engine, flush_or_duplicate, get_session, init_db
 
-from app import agent_runner, favicon, zeit
+from app import agent_runner, favicon, ki_anbieter, zeit
 from app.models import (AgentTask, ApiCost, Application, BudgetLimit, CareerEntry, Company, Contact,
                         CVVersion, Email, Headhunter, Interview, Job, JobChat, JobFile, JobLog,
                         NetworkContact, NetzwerkGespraech, Outreach, OutreachLog, Profile, ProfileFile,
@@ -596,21 +596,48 @@ def list_jobs(
     ]
 
 
+def _manuelle_dublette(session, url, name, title):
+    """Aktive Stelle zu einem manuellen Eintrag: `("url" | "firma_titel", Job)` oder None. Die URL geht vor,
+    Firma+Titel nutzt die bereinigten Schlüssel des Ingests (Rechtsform und Gender-Zusatz zählen nicht).
+    Gelöschte Stellen zählen nicht: Wer eine Stelle von Hand wieder anlegt, will sie zurück. Der Ingest
+    behandelt sie weiter als Tombstone, damit die Suche sie nicht von selbst wieder hereinholt."""
+    from app import normalize as N
+    aktive = session.exec(select(Job).where(Job.deleted_at.is_(None))).all()
+    url_wert = N.url_vergleich(url)
+    if url_wert:
+        for j in aktive:
+            if N.url_vergleich(j.url) == url_wert:
+                return "url", j
+    if name and title:
+        schluessel = (N.firma_key(name), N.rollen_schluessel(title))
+        for j in aktive:
+            if (N.firma_key(j.company_name), N.rollen_schluessel(j.title)) == schluessel:
+                return "firma_titel", j
+    return None
+
+
+@app.get("/api/jobs/dublette")
+def job_dublette(url: str = "", company_name: str = "", title: str = "", session: Session = Depends(get_session)):
+    """Vorab-Warnung im Formular „Neue Stelle“, sobald URL, Firma oder Titel ausgefüllt sind."""
+    treffer = _manuelle_dublette(session, url.strip(), company_name.strip(), title.strip())
+    if not treffer:
+        return {"art": None, "job": None}
+    art, j = treffer
+    return {"art": art, "job": {"id": j.id, "company_name": j.company_name, "title": j.title, "status": j.status}}
+
+
 @app.post("/api/jobs")
 def create_job(payload: dict, session: Session = Depends(get_session)):
     """Stelle manuell anlegen (Formular „+ Stelle anlegen" auf /jobs).
-    Dedup wie die Ingest-Pipeline: exakte URL oder Firma+Titel (case-insensitive) → vorhandenen Job melden."""
+    Gibt es schon eine aktive Stelle mit dieser URL oder Firma+Titel, wird sie gemeldet statt angelegt."""
     name = (payload.get("company_name") or "").strip()
     title = (payload.get("title") or "").strip()
     if not name or not title:
         raise HTTPException(422, "company_name und title sind Pflicht")
-    url = (payload.get("url") or "").strip() or None
 
-    for j in session.exec(select(Job)).all():
-        if url and j.url and j.url.strip() == url:
-            return {"existing": True, "job": j}
-        if (j.company_name or "").strip().lower() == name.lower() and (j.title or "").strip().lower() == title.lower():
-            return {"existing": True, "job": j}
+    treffer = _manuelle_dublette(session, payload.get("url"), name, title)
+    if treffer:
+        return {"existing": True, "art": treffer[0], "job": treffer[1]}
 
     comp = next((c for c in session.exec(select(Company)).all() if _norm_name(c.name) == name.lower()), None)
     if not comp:
@@ -638,7 +665,20 @@ def create_job(payload: dict, session: Session = Depends(get_session)):
         else:
             data["tab"] = normalisiert
     status = payload.get("status") or "Prüfen"
-    dedup_key = f"manuell|{name.lower()}|{title.lower()}"
+    # Eine gelöschte Stelle behält ihren Schlüssel und ihre URL als Tombstone, beide Indizes sind UNIQUE.
+    # Der Schlüssel bekommt eine laufende Nummer (nur Tombstones zählen, damit ein Doppelklick weiter
+    # kollidiert). Die URL wandert auf die neue Stelle, so bleibt sie für den Ingest bekannt.
+    basis_key = f"manuell|{name.lower()}|{title.lower()}"
+    belegt = set(session.exec(select(Job.dedup_key).where(
+        Job.dedup_key.startswith(basis_key, autoescape=True), Job.deleted_at.is_not(None))).all())
+    if data.get("url"):
+        data["url"] = data["url"].strip()
+        for tombstone in session.exec(select(Job).where(Job.url == data["url"], Job.deleted_at.is_not(None))).all():
+            tombstone.url = None
+    dedup_key, nummer = basis_key, 1
+    while dedup_key in belegt:
+        nummer += 1
+        dedup_key = f"{basis_key}|{nummer}"
     job = Job(
         company_id=comp.id if comp else None,
         company_name=comp.name if comp else name,
@@ -655,7 +695,7 @@ def create_job(payload: dict, session: Session = Depends(get_session)):
         # Job melden statt 500.
         vorhanden = session.exec(select(Job).where(Job.dedup_key == dedup_key)).first()
         if vorhanden:
-            return {"existing": True, "job": vorhanden}
+            return {"existing": True, "art": "firma_titel", "job": vorhanden}
         raise HTTPException(409, "Job konnte wegen einer Dublette nicht angelegt werden")
     # Schon beworben? Dann die Bewerbung gleich mit anlegen (wie beim Gmail-Ingest).
     if status == "Beworben":
@@ -1156,7 +1196,7 @@ def _task_dto(t: AgentTask, log: Optional[list] = None, job: Optional[Job] = Non
         "company_name": job.company_name if job else None,
         "job_title": job.title if job else None,
         "prompt": t.prompt, "error": t.error, "exit_code": t.exit_code,
-        "duration_s": t.duration_s, "num_turns": t.num_turns, "cost_usd": t.cost_usd,
+        "duration_s": t.duration_s, "num_turns": t.num_turns, "cost_usd": t.cost_usd, "tokens": t.tokens,
         "chain_id": t.chain_id, "chain_label": t.chain_label, "chain_pos": t.chain_pos,
         "depends_on": t.depends_on,
         "retry_count": t.retry_count or 0,
@@ -1680,8 +1720,35 @@ def _einstellungen_out(e: SuchEinstellung) -> dict:
             # P2-51 (V6/V7): aktuelle Umkreis-Bezeichnung bzw. verfügbare Modelle — künftig NUR
             # noch hier gepflegt, die Oberfläche hält dazu keine eigene Kopie mehr.
             "umkreis_label": suchprofil.umkreis_label(suchbereich.get("umkreis") or {}),
-            "modell_optionen": agent_runner.MODELLE,
+            # P2-86: Stufen-Namen bleiben gespeichert, die Beschriftung kommt vom gewählten Anbieter.
+            "ki_anbieter": e.ki_anbieter if e.ki_anbieter in ki_anbieter.LABEL else ki_anbieter.STANDARD,
+            "ki_anbieter_optionen": [{"wert": k, "label": v} for k, v in ki_anbieter.LABEL.items()],
+            "modell_optionen": ki_anbieter.modell_optionen(e.ki_anbieter, agent_runner.MODELLE),
             "modell_standard": agent_runner.MODELL_STANDARD}
+
+
+@app.post("/api/intern/pdf")
+def intern_pdf(payload: dict):
+    """Word nach PDF für Läufe in der Sandbox von Codex, in der LibreOffice nicht startet (`cv_export._pdf_ueber_server`).
+    Nur Word-Dateien aus Programm- und Datenordner, das PDF landet ebenfalls nur dort."""
+    from app.db import DATA_DIR
+    from pipeline import cv_export
+    wurzeln = (_PROJECT_ROOT.resolve(), Path(DATA_DIR).resolve())
+    docx, pdf = (Path(str(payload.get(k) or "")).resolve() for k in ("docx", "pdf"))
+    for pfad, endung in ((docx, ".docx"), (pdf, ".pdf")):
+        if pfad.suffix.lower() != endung or not any(pfad.is_relative_to(w) for w in wurzeln):
+            raise HTTPException(422, f"Pfad außerhalb des Programms oder falsche Endung: {pfad.name}")
+    if not docx.is_file():
+        raise HTTPException(422, f"Datei nicht gefunden: {docx.name}")
+    ok, fehler = cv_export._to_pdf_soffice(str(docx), str(pdf))
+    return {"ok": ok, "fehler": fehler}
+
+
+@app.get("/api/ki-status")
+def get_ki_status():
+    """Für die KI-Karte der Einstellungen: installiert und angemeldet je Anbieter. Getrennt von `/api/einstellungen`,
+    weil dafür ein Programm gestartet wird. Liest nie einen Schlüssel aus."""
+    return ki_anbieter.status(agent_runner.CLAUDE_BIN, agent_runner.SECRETS_DIR)
 
 
 @app.get("/api/einstellungen")
@@ -1849,7 +1916,7 @@ def update_einstellungen(payload: dict, session: Session = Depends(get_session))
     Bezeichnung hängen) — die Bezeichnung bleibt so die KENNUNG (Design-Entscheidung 5), ohne
     dass ein Nutzer beim Umziehen still seinen Bestand verliert."""
     e = _einstellungen_singleton(session)
-    editierbar = {"min_mitarbeiter", "suchbereich", "plaene", "modelle", "portale", "unterlagen"}
+    editierbar = {"min_mitarbeiter", "suchbereich", "plaene", "modelle", "portale", "unterlagen", "ki_anbieter"}
     unbekannt = set(payload) - editierbar
     if unbekannt:
         raise HTTPException(422, f"Nicht editierbare Felder: {', '.join(sorted(unbekannt))}")
@@ -1895,6 +1962,11 @@ def update_einstellungen(payload: dict, session: Session = Depends(get_session))
             bestehend_plaene[p["plan"]] = p
         e.plaene_json = json.dumps([bestehend_plaene[k] for k in ("A", "B", "C") if k in bestehend_plaene],
                                     ensure_ascii=False)
+
+    if "ki_anbieter" in payload:
+        if payload["ki_anbieter"] not in ki_anbieter.LABEL:
+            raise HTTPException(422, f"ki_anbieter muss {' oder '.join(ki_anbieter.LABEL)} sein")
+        e.ki_anbieter = payload["ki_anbieter"]
 
     if "modelle" in payload:
         _validiere_modelle(payload["modelle"])
@@ -4390,7 +4462,7 @@ async def profil_import_zip(file: UploadFile = File(...), session: Session = Dep
     """Robuster Weg (Design-Entscheidung 4a): LinkedIn-Datenexport-ZIP → additiv in die
     Profil-Tabellen, deterministisch, kein LLM (s. `pipeline/linkedin_import.py`).
     Stufe B (Phase 47): löst danach automatisch die Themenbereich-Sortierung der neu
-    importierten Skills als headless Task aus (Muster `profil_einlesen` unten)."""
+    importierten Skills als headless Task aus."""
     from pipeline import linkedin_import
 
     inhalt = await file.read()
@@ -4400,6 +4472,11 @@ async def profil_import_zip(file: UploadFile = File(...), session: Session = Dep
         ergebnis = linkedin_import.importiere_zip(inhalt, session)
     except linkedin_import.LinkedinImportError as e:
         raise HTTPException(422, str(e))
+    return await _nach_linkedin_import(ergebnis, session)
+
+
+async def _nach_linkedin_import(ergebnis: dict, session: Session) -> dict:
+    """Nach ZIP-Import und übernommenem Textvorschlag: Struktur-Datei neu schreiben, neue Skills einsortieren."""
     _profil_struktur_schreiben(session)
     ergebnis["task_id"] = None
     if ergebnis["skills_neu"] > 0:
@@ -4415,23 +4492,68 @@ async def profil_import_zip(file: UploadFile = File(...), session: Session = Dep
     return ergebnis
 
 
-@app.post("/api/profil/einlesen")
-async def profil_einlesen(payload: dict, session: Session = Depends(get_session)):
-    """Best-effort Weg (Design-Entscheidung 4b): URL am Profil speichern + kind=profil-einlesen
-    über den bestehenden Task-Pfad starten (Muster `job_chat_ask` — create_task direkt mit
-    explizitem session aufgerufen, Guards/Doppellauf-Schutz laufen dort automatisch mit)."""
-    from datetime import datetime
-    linkedin_url = (payload.get("linkedin_url") or "").strip()
-    if not linkedin_url:
-        raise HTTPException(422, "linkedin_url fehlt")
-    profile = _profil_singleton(session)
-    profile.linkedin_url = linkedin_url
-    profile.updated_at = datetime.utcnow()
-    session.add(profile)
-    session.commit()
-    _profil_struktur_schreiben(session)
-    task_dto = await create_task({"kind": "profil-einlesen", "params": {"linkedin_url": linkedin_url}}, session)
+@app.post("/api/profil/linkedin-einlesen")
+async def profil_linkedin_einlesen(text: str = Form(""), file: Optional[UploadFile] = File(None),
+                                   session: Session = Depends(get_session)):
+    """Profil aus eingefügtem Text oder PDF: Eingabe zwischenspeichern und den Lauf `profil-einlesen` starten.
+    Gespeichert wird erst nach der Vorschau (`pipeline/linkedin_text.py`)."""
+    from pipeline import linkedin_text
+    try:
+        if file is not None:
+            inhalt = await file.read()
+            if len(inhalt) > _MAX_UPLOAD:
+                raise HTTPException(413, f"Datei größer als {_MAX_UPLOAD // 1024 // 1024} MB")
+            text = linkedin_text.pdf_zu_text(inhalt)
+        linkedin_text.eingabe_speichern(text)
+    except linkedin_text.EingabeFehler as e:
+        raise HTTPException(422, str(e))
+    task_dto = await create_task({"kind": "profil-einlesen"}, session)
     return {"task_id": task_dto["id"], "task": task_dto}
+
+
+@app.get("/api/profil/linkedin-eingabe")
+def profil_linkedin_eingabe():
+    """Für den Lauf `profil-einlesen`: der zu strukturierende Profiltext."""
+    from pipeline import linkedin_text
+    text = linkedin_text.eingabe_lesen()
+    if text is None:
+        raise HTTPException(404, "Es liegt kein Profiltext vor.")
+    return {"text": text}
+
+
+@app.post("/api/profil/linkedin-vorschlag")
+def profil_linkedin_vorschlag_speichern(payload: dict):
+    """Für den Lauf `profil-einlesen`: der strukturierte Vorschlag. Noch nichts am Profil ändert sich."""
+    from pipeline import linkedin_text
+    try:
+        vorschlag = linkedin_text.vorschlag_speichern(payload)
+    except linkedin_text.EingabeFehler as e:
+        raise HTTPException(422, str(e))
+    return {"ok": True, "skills": len(vorschlag["skills"]), "werdegang": len(vorschlag["werdegang"])}
+
+
+@app.get("/api/profil/linkedin-vorschlag")
+def profil_linkedin_vorschau(session: Session = Depends(get_session)):
+    from pipeline import linkedin_text
+    vorschlag = linkedin_text.vorschlag_lesen()
+    return linkedin_text.vorschau(vorschlag, session) if vorschlag else {"vorhanden": False}
+
+
+@app.post("/api/profil/linkedin-vorschlag/uebernehmen")
+async def profil_linkedin_uebernehmen(session: Session = Depends(get_session)):
+    from pipeline import linkedin_text
+    vorschlag = linkedin_text.vorschlag_lesen()
+    if not vorschlag:
+        raise HTTPException(404, "Es liegt kein Vorschlag vor.")
+    ergebnis = linkedin_text.uebernehmen(vorschlag, session)
+    return await _nach_linkedin_import(ergebnis, session)
+
+
+@app.delete("/api/profil/linkedin-vorschlag")
+def profil_linkedin_verwerfen():
+    from pipeline import linkedin_text
+    linkedin_text.verwerfen()
+    return {"ok": True}
 
 
 # ── Bewerbungs-Beirat (18.07.2026) — live orchestrierte Debatten, s. backend/beirat_engine.py ──

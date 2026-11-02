@@ -1,5 +1,6 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState, useSyncExternalStore } from 'react'
 import { Link } from 'react-router-dom'
+import { api, type Einstellungen, type KiAnbieter } from '../api'
 
 // P2-72 (Design aus einer Quelle): Schrift auf den Zustandsflächen (Status, Score, Situation, Tier,
 // Szenario). Der Wert ist geprüft (18.8, Kontrast auf jeder dieser Flächen) und trägt Bedeutung, nicht
@@ -234,9 +235,121 @@ export function BarList({ title, data, colorFn, linkFn, maxValue }: {
   )
 }
 
+// P2-86 — Welche KI die Läufe ausführt (Claude oder ChatGPT). Texte wie „in der Claude-Session starten“
+// stehen an mehreren Stellen; sie lesen den Anbieter hier, statt ihn je einzeln zu laden. Modul-Cache
+// nach dem Muster von suchbereich.ts, dazu ein Abo auf Änderungen: Die Seitenleiste (Tageslauf-Knopf)
+// bleibt beim Wechsel in den Einstellungen gemountet und muss den neuen Anbieter trotzdem zeigen.
+interface KiZustand { anbieter: KiAnbieter; modelle: Einstellungen['modell_optionen'] }
+const KI_NAME: Record<KiAnbieter, string> = { claude: 'Claude', chatgpt: 'ChatGPT' }
+let kiZustand: KiZustand = { anbieter: 'claude', modelle: [] }
+let kiLadeVersuch: Promise<void> | null = null
+const kiHoerer = new Set<() => void>()
+
+/** Den vom Server bestätigten Stand übernehmen — die KI-Karte der Einstellungen ruft das mit der
+ *  PATCH-Antwort auf, damit alle geöffneten Anzeigen sofort umschalten. */
+export function kiAnbieterUebernehmen(e: Pick<Einstellungen, 'ki_anbieter' | 'modell_optionen'>) {
+  kiLadeVersuch = Promise.resolve()
+  kiZustand = { anbieter: e.ki_anbieter === 'chatgpt' ? 'chatgpt' : 'claude', modelle: e.modell_optionen || [] }
+  kiHoerer.forEach((h) => h())
+}
+
+function kiLaden() {
+  if (!kiLadeVersuch) {
+    kiLadeVersuch = api<Einstellungen>('/einstellungen').then(kiAnbieterUebernehmen).catch(() => {})
+  }
+}
+
+const kiAbonnieren = (h: () => void) => { kiHoerer.add(h); return () => { kiHoerer.delete(h) } }
+
+/** Der gewählte Anbieter, bis /api/einstellungen geladen ist (oder wenn es scheitert) `claude`.
+ *  `name` ist die Anzeigeform für Texte, `modellLabel` die Beschriftung einer Modellstufe beim
+ *  gewählten Anbieter (leer, solange nichts geladen ist). */
+export function useKiAnbieter() {
+  const { anbieter, modelle } = useSyncExternalStore(kiAbonnieren, () => kiZustand)
+  useEffect(() => { kiLaden() }, [])
+  return {
+    anbieter,
+    name: KI_NAME[anbieter],
+    modellLabel: (alias: string) => modelle.find((m) => m.alias === alias)?.label || '',
+  }
+}
+
+/** Token lesbar: 950 → „950“, 374 000 → „374 Tsd.“, 1 680 000 → „1,68 Mio.“. */
+export function tokenText(n: number): string {
+  const zahl = (x: number, stellen: number) => x.toLocaleString('de-DE', { maximumFractionDigits: stellen })
+  if (n >= 1_000_000) return `${zahl(n / 1_000_000, 2)} Mio.`
+  if (n >= 1_000) return `${zahl(n / 1_000, 1)} Tsd.`
+  return zahl(n, 0)
+}
+
+/** Kostenangabe eines Laufs: Token, wenn der Lauf welche gemeldet hat (ChatGPT), sonst USD (Claude).
+ *  `null` heißt: nichts anzeigen. Unter ChatGPT wäre „$0.000“ keine Aussage, ChatGPT meldet keine
+ *  Kosten; ein Lauf aus der Zeit unter Claude mit echten Kosten bleibt sichtbar. */
+export function laufKosten(t: { tokens?: number | null; cost_usd: number | null }, anbieter: KiAnbieter): string | null {
+  if (t.tokens) return `${tokenText(t.tokens)} Token`
+  if (t.cost_usd == null || (anbieter === 'chatgpt' && !t.cost_usd)) return null
+  return `$${t.cost_usd.toFixed(3)}`
+}
+
+// Das stream-json von Claude liest die Log-Anzeige selbst (Tasks.tsx, AgentTaskButton.tsx). Die Ereignisse
+// von `codex exec` (ChatGPT) stehen hier, weil beide sie gleich darstellen.
+const SHELL_HUELLE = /^\S*\b(?:ba|z|da)?sh\s+-l?c\s+/
+
+function befehlText(befehl: string): string {
+  const roh = befehl.replace(SHELL_HUELLE, '').trim()
+  return roh.replace(/^(['"])([\s\S]*)\1$/, '$2').replace(/\s+/g, ' ')
+}
+
+/** Eine Zeile des JSONL-Logs von `codex exec --json` lesbar machen (ChatGPT, P2-86), mit den Zeichen der
+ *  Claude-Anzeige: 💬 Nachricht, 🔧 Befehl, ⤷ Unteragent, ✗ Fehler. `undefined` = kein Codex-Ereignis,
+ *  `null` = Rauschen, nicht anzeigen. */
+export function codexZeile(ev: any): string | null | undefined {
+  const typ = String(ev?.type || '')
+  if (typ === 'thread.started') return '· Lauf gestartet'
+  if (typ === 'turn.completed') {
+    const u = ev.usage || {}
+    const neu = (u.input_tokens || 0) - (u.cached_input_tokens || 0) + (u.output_tokens || 0)
+    return neu > 0 ? `· Turn fertig (${tokenText(neu)} Token neu)` : '· Turn fertig'
+  }
+  if (typ === 'turn.failed') return `✗ ${String(ev.error?.message || 'Lauf fehlgeschlagen').slice(0, 200)}`
+  if (typ === 'error') return `⚠ ${String(ev.message || 'Fehler').slice(0, 200)}`
+  if (typ === 'turn.started') return null
+  if (typ !== 'item.started' && typ !== 'item.completed') return undefined
+  const item = ev.item || {}
+  const fertig = typ === 'item.completed'
+  switch (item.type) {
+    case 'command_execution': {
+      const befehl = befehlText(String(item.command || '')).slice(0, 160)
+      // Gezeigt wird beim Start (Live-Anzeige); beim Ende nur ein Fehlschlag.
+      if (!fertig) return `🔧 ${befehl}`
+      return item.exit_code ? `✗ Exit ${item.exit_code}: ${befehl.slice(0, 100)}` : null
+    }
+    case 'collab_tool_call':
+      return !fertig && item.tool !== 'wait' && item.tool !== 'close_agent'
+        ? `⤷ Subagent: ${String(item.prompt || item.tool || 'gestartet').slice(0, 140)}` : null
+    case 'agent_message': {
+      const text = String(item.text || '').trim()
+      return fertig && text ? `💬 ${text.slice(0, 160)}` : null
+    }
+    case 'web_search':
+      return fertig && item.query ? `🔍 Websuche: ${String(item.query).slice(0, 140)}` : null
+    case 'file_change': {
+      const pfade = (item.changes || []).map((c: any) => c?.path).filter(Boolean)
+      return fertig ? `📝 ${pfade.length ? pfade.join(', ').slice(0, 140) : 'Dateien geändert'}` : null
+    }
+    case 'mcp_tool_call':
+      return !fertig ? `🔧 ${[item.server, item.tool].filter(Boolean).join('.')}` : null
+    case 'error':
+      return fertig ? `⚠ ${String(item.message || 'Fehler').slice(0, 200)}` : null
+    default:
+      return null   // reasoning, todo_list und was Codex sonst noch meldet: Rauschen
+  }
+}
+
 /** Kompakter Auslöser-Kopierer für Tabellenzeilen (Claude-in-the-Loop, kleines Pendant zu CopyTrigger). */
 export function CopyChip({ phrase, label = '🚀 Initiativ' }: { phrase: string; label?: string }) {
   const [ok, setOk] = useState(false)
+  const { name } = useKiAnbieter()
   const copy = async (e: React.MouseEvent) => {
     e.stopPropagation()
     try { await navigator.clipboard.writeText(phrase) } catch { /* Hinweis trotzdem zeigen */ }
@@ -244,7 +357,7 @@ export function CopyChip({ phrase, label = '🚀 Initiativ' }: { phrase: string;
     setTimeout(() => setOk(false), 2500)
   }
   return (
-    <button onClick={copy} title={`Kopiert „${phrase}" — in der Claude-Session einfügen & senden`}
+    <button onClick={copy} title={`Kopiert „${phrase}" — in der ${name}-Session einfügen & senden`}
       className={`whitespace-nowrap rounded-lg border px-2 py-1 text-xs font-medium transition ${
         ok ? 'border-emerald-300 bg-emerald-50 text-emerald-700' : 'border-brand-cyan/40 text-brand-navy hover:bg-brand-cyan/10'}`}>
       {ok ? '✓ kopiert' : label}

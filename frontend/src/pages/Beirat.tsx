@@ -13,8 +13,20 @@ import BeiratLive from '../components/BeiratLive'
 
 const INPUT = 'rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-brand-cyan focus:outline-none'
 
+/** P2-86: Welche KI in den Einstellungen gewählt ist. Sie bestimmt, wie der Abo-Motor heißt (Claude-Abo oder
+ *  ChatGPT-Abo) und ob ein Anthropic-Key etwas bewirkt (nur unter Claude). Bis die Einstellung geladen ist, gilt Claude. */
+type Ki = 'claude' | 'chatgpt'
+
+function useKi(): Ki {
+  const [ki, setKi] = useState<Ki>('claude')
+  useEffect(() => {
+    api<any>('/einstellungen').then((e) => setKi(e?.ki_anbieter === 'chatgpt' ? 'chatgpt' : 'claude')).catch(() => {})
+  }, [])
+  return ki
+}
+
 // ── Schlüssel-Panel ───────────────────────────────────────────────────────────────
-function KeyPanel() {
+function KeyPanel({ ki }: { ki: Ki }) {
   const [offen, setOffen] = useState(false)
   const [status, setStatus] = useState<any>(null)
   const [anthropic, setAnthropic] = useState('')
@@ -37,9 +49,11 @@ function KeyPanel() {
         {status && (
           <span className="ml-2 flex gap-2 text-xs">
             <span className={`rounded-full px-2 py-0.5 ${status.cli_verfuegbar ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
-              Claude-Abo {status.cli_verfuegbar ? '✓ (ohne Key nutzbar)' : 'nicht gefunden'}</span>
-            <span className={`rounded-full px-2 py-0.5 ${status.anthropic_gesetzt ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
-              Anthropic-Key {status.anthropic_gesetzt ? `✓ ${status.anthropic_maske}` : '–'}</span>
+              {ki === 'chatgpt' ? 'ChatGPT-Abo' : 'Claude-Abo'} {status.cli_verfuegbar ? (ki === 'chatgpt' ? '✓ (Codex gefunden)' : '✓ (ohne Key nutzbar)') : 'nicht gefunden'}</span>
+            {ki === 'claude' && (
+              <span className={`rounded-full px-2 py-0.5 ${status.anthropic_gesetzt ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
+                Anthropic-Key {status.anthropic_gesetzt ? `✓ ${status.anthropic_maske}` : '–'}</span>
+            )}
             <span className={`rounded-full px-2 py-0.5 ${status.openai_gesetzt ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
               OpenAI-Key {status.openai_gesetzt ? `✓ ${status.openai_maske}` : '–'}</span>
           </span>
@@ -47,11 +61,19 @@ function KeyPanel() {
       </button>
       {offen && (
         <div className="space-y-2 border-t border-slate-100 p-4 text-sm">
-          <p className="text-xs text-slate-500">Ohne Schlüssel debattiert der Beirat über Ihr Claude-Abo, dafür ist <b>kein Key nötig</b>.
-            Ein hier eingetragener Anthropic-Key ersetzt das Abo, ein OpenAI-Key schaltet OpenAI als Motor frei.
-            Die Schlüssel liegen nur auf diesem Rechner, außerhalb des Programmordners. Ein leeres Feld lässt den gespeicherten Schlüssel unverändert.</p>
+          {ki === 'chatgpt' ? (
+            <p className="text-xs text-slate-500">Ohne Schlüssel debattiert der Beirat über Ihr ChatGPT-Abo (Codex), dafür ist <b>kein Key nötig</b>.
+              Ein OpenAI-Key schaltet OpenAI als eigenen Motor frei und wird getrennt über die OpenAI-API abgerechnet.
+              Der Schlüssel liegt nur auf diesem Rechner, außerhalb des Programmordners. Ein leeres Feld lässt den gespeicherten Schlüssel unverändert.</p>
+          ) : (
+            <p className="text-xs text-slate-500">Ohne Schlüssel debattiert der Beirat über Ihr Claude-Abo, dafür ist <b>kein Key nötig</b>.
+              Ein hier eingetragener Anthropic-Key ersetzt das Abo, ein OpenAI-Key schaltet OpenAI als Motor frei.
+              Die Schlüssel liegen nur auf diesem Rechner, außerhalb des Programmordners. Ein leeres Feld lässt den gespeicherten Schlüssel unverändert.</p>
+          )}
           <div className="grid gap-2 md:grid-cols-2">
-            <input type="password" className={INPUT} placeholder="Anthropic-Key (sk-ant-…)" value={anthropic} onChange={(e) => setAnthropic(e.target.value)} />
+            {ki === 'claude' && (
+              <input type="password" className={INPUT} placeholder="Anthropic-Key" value={anthropic} onChange={(e) => setAnthropic(e.target.value)} />
+            )}
             <input type="password" className={INPUT} placeholder="OpenAI-Key (sk-…)" value={openai} onChange={(e) => setOpenai(e.target.value)} />
           </div>
           <div className="flex items-center gap-3">
@@ -66,6 +88,7 @@ function KeyPanel() {
 
 // ── Hauptseite ────────────────────────────────────────────────────────────────────
 export default function Beirat() {
+  const ki = useKi()
   const [mitglieder, setMitglieder] = useState<BeiratMitglied[]>([])
   const [thema, setThema] = useState('')
   const [kontext, setKontext] = useState('')
@@ -111,7 +134,7 @@ export default function Beirat() {
         <p className="text-sm text-slate-500">Sieben fiktive Köpfe mit verschiedenen Fachperspektiven debattieren Ihre Frage live und gehen dabei auf die Beiträge der anderen ein. {vorsitz ?? 'Der Vorsitz'} moderiert und schließt mit einer Synthese. Ob sich eine Bewerbung auf eine bestimmte Stelle lohnt, prüfen Sie mit „Stelle prüfen (Beirat)“ in der Karte „Unterlagen erstellen“ der Stelle.</p>
       </div>
 
-      <KeyPanel />
+      <KeyPanel ki={ki} />
 
       {/* Start-Formular */}
       <div className="rounded-xl border border-brand-cyan/40 bg-brand-cyan/5 p-4">
@@ -127,10 +150,13 @@ export default function Beirat() {
             </label>
             <label className="flex items-center gap-2">Motor
               <select className={INPUT} value={provider} onChange={(e) => setProvider(e.target.value as any)} disabled={laeuft}>
-                <option value="anthropic">Claude (Abo oder Key)</option>
+                <option value="anthropic">{ki === 'chatgpt' ? 'ChatGPT (Abo)' : 'Claude (Abo oder Key)'}</option>
                 <option value="openai">OpenAI (Key nötig)</option>
               </select>
             </label>
+            {ki === 'chatgpt' && provider === 'anthropic' && (
+              <span className="text-xs text-slate-500">Mit ChatGPT erscheint jeder Beitrag erst, wenn er fertig ist, nicht Wort für Wort.</span>
+            )}
             <label className="flex items-center gap-2 text-slate-600">
               <input type="checkbox" checked={alleKoepfe} onChange={(e) => setAlleKoepfe(e.target.checked)} disabled={laeuft} />
               {vorsitz ?? 'Der Vorsitz'} wählt die Köpfe selbst

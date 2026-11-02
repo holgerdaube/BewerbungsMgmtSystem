@@ -95,8 +95,7 @@ def test_get_ohne_datei(client, datei):
         "identitaet": {"name": "", "positionierung": "", "anschrift": "", "email": "", "telefon": "",
                        "linkedin": "", "aktuell": "", "weitere": []},
         "kurzprofil": "",
-        "zielrolle": [{"schluessel": k, "wert": ""} for k in
-                      ("Ebene", "Funktion Plan A", "Funktion Plan B", "Branche", "Region", "Zieltermin")],
+        "zielrolle": [{"schluessel": "Zieltermin", "wert": ""}],
         "rahmenbedingungen": "", "skill_gaps": "", "unveraendert": [], "hinweise": [],
     }
     assert not datei.exists()                       # Lesen legt nichts an
@@ -119,10 +118,8 @@ def test_get_mit_datei(client, datei):
         "telefon": "+49 170 1234567", "linkedin": "https://www.linkedin.com/in/max-mustermann/",
         "aktuell": "", "weitere": [{"schluessel": "Telefon privat", "wert": "030 1234567"}]}
     assert body["kurzprofil"] == "Zwei Sätze über Max."
-    assert body["zielrolle"][0] == {"schluessel": "Ebene", "wert": "Director oder Head of"}
-    assert body["zielrolle"][1] == {"schluessel": "Region", "wert": "DACH"}
-    assert [e["schluessel"] for e in body["zielrolle"]][2:] == [
-        "Funktion Plan A", "Funktion Plan B", "Branche", "Zieltermin"]
+    # Ältere Zeilen wie „Ebene“ bleiben in der Datei, die Maske zeigt nur den Zieltermin.
+    assert body["zielrolle"] == [{"schluessel": "Zieltermin", "wert": ""}]
     assert body["rahmenbedingungen"] == "- Kein Umzug."
     assert body["skill_gaps"] == "- (noch keine)"
     assert body["unveraendert"] == ["Sprachen / CV-Fassungen", "Empirie aus dem Bewerbungsverlauf"]

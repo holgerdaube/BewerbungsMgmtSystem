@@ -78,6 +78,9 @@ export interface AgentTaskRow {
   duration_s: number | null
   num_turns: number | null
   cost_usd: number | null
+  /** P2-86 — neue Token des Laufs (Eingabe ohne Cache plus Ausgabe). Nur ChatGPT meldet sie; unter
+   *  Claude leer oder 0, dort zählt `cost_usd`. */
+  tokens?: number | null
   retry_count: number
   /** 0 = diese Task-Art wird nie wiederholt (nicht idempotent). */
   max_retries: number
@@ -260,7 +263,21 @@ export interface Einstellungen {
   umkreis_label: string | null
   modell_optionen: { alias: string; label: string }[]
   modell_standard: string
+  // P2-86 — welche KI die Läufe ausführt. `modell_optionen` gehört zum gewählten Anbieter und
+  // ändert sich mit ihm (gespeichert bleiben die Stufen opus, sonnet, haiku).
+  ki_anbieter: KiAnbieter
+  ki_anbieter_optionen: { wert: KiAnbieter; label: string }[]
 }
+
+// P2-86 — GET /api/ki-status: je Anbieter, ob das Programm da ist und ob die Anmeldung steht.
+// `angemeldet: null` heißt „nicht bekannt“ (Programm fehlt oder keine Antwort), nicht „nein“.
+export type KiAnbieter = 'claude' | 'chatgpt'
+export interface KiAnbieterStatus {
+  label: string
+  installiert: boolean
+  angemeldet: boolean | null
+}
+export type KiStatus = Record<KiAnbieter, KiAnbieterStatus>
 
 // P2-51 — nur in der PATCH-Antwort von /api/einstellungen, nur wenn der Umkreis (Stadt/Radius)
 // beim Speichern umbenannt wurde; das Backend stellt dabei alle betroffenen Stellen/Firmen in

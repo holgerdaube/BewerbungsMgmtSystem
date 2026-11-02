@@ -1,6 +1,6 @@
 ---
 name: zielfirmen-sweep
-description: Prüft rotierend die Karriereseiten der vom Nutzer kuratierten Zielfirmen (Tab „Zielfirmen") auf neue passende Stellen — 12 je Lauf, die am längsten ungeprüften zuerst, damit alle ~68 Firmen in ~6 Läufen einmal durch sind. Vier-Augen-Pflicht wie bei der normalen Jobsuche. Nutze diesen Skill bei "Zielfirmen-Sweep", "Karriereseiten prüfen".
+description: Prüft rotierend die Karriereseiten der vom Nutzer kuratierten Zielfirmen (Tab „Zielfirmen") auf neue passende Stellen — 12 je Lauf, die am längsten ungeprüften zuerst, damit nach und nach alle Firmen der Liste einmal durch sind. Vier-Augen-Pflicht wie bei der normalen Jobsuche. Nutze diesen Skill bei "Zielfirmen-Sweep", "Karriereseiten prüfen".
 ---
 
 # Zielfirmen-Sweep (Karriereseiten-Rotation)
@@ -19,9 +19,13 @@ als **Status „Neu"** in die zentrale DB schreiben. Der Nutzer sichtet sie in d
 ## Ablauf
 
 ### 1. Kontext laden
-`config/profil.md` (Zielprofil, harte Grenzen), `config/scoring_rubrik.md` (Zielstellen-Fit 1–5,
+`config/profil.md` (Kurzprofil, harte Grenzen; weicht ein älterer Abschnitt „Zielrolle“ von den Plänen ab, gelten die Pläne), `config/scoring_rubrik.md` (Zielstellen-Fit 1–5,
 Situation-Codes, Plan A/B/C), `config/suchprofile.yaml` (Pläne A/B/C aus `plaene` — Stand aus
 `/einstellungen` —, Ausschlüsse, `max_alter_tage`).
+Nicht immer vorhanden: `config/profil.md` (fehlt sie oder ist leer, gelten die harten Grenzen aus
+`suchprofile.yaml` und `scoring_rubrik.md`) und einzelne technische Schlüssel der `suchprofile.yaml` — ohne sie
+weiter, im Bericht nennen. Die Firmenliste kommt aus der API (Schritt 2); `config/zielfirmen.md` wird hier nicht
+gebraucht, fehlt sie, ohne sie weiter.
 
 ### 2. Auswahl (Rotation)
 ```sh
@@ -30,6 +34,8 @@ curl -s http://localhost:8000/api/target-companies
 Nur Einträge mit `website` gesetzt; sortiere nach `last_career_check` (NULL zuerst, dann
 aufsteigend nach Datum) → **die ersten 12**. Im Bericht ausweisen: „geprüft 12 von <n>, ältester
 Rest-Check: <Datum des nächsten, nicht geprüften Eintrags>".
+Ist die Liste leer oder hat kein Eintrag eine `website`, ist das kein Fehler: im Bericht „keine Zielfirmen mit
+Website erfasst“ nennen, nichts prüfen und mit dem leeren Ingest aus Schritt 5 und dem Bericht (Schritt 7) enden.
 
 ### 3. Karriereseiten prüfen — in drei Wellen, nicht Firma für Firma
 Die 12 Firmen sind unabhängig voneinander — bearbeite sie gebündelt statt einzeln nacheinander.
@@ -76,7 +82,9 @@ geschweiften Klammern und keine Inline-Dicts im Heredoc — die Freigabepruefung
 
 **Filter vor Welle 3 (gilt für ALLE 12 Firmen, egal aus welcher Welle ihre Rollenliste kam):**
 Gegen Titel-Profile (`suchprofile.yaml`) und harte Grenzen filtern, inkl. Mindest-Firmengröße
-`min_mitarbeiter` (Beleg-Regel s. Schritt 4b) — nur relevante Kandidaten weiterverfolgen.
+`min_mitarbeiter` (Beleg-Regel s. Schritt 4b) — nur relevante Kandidaten weiterverfolgen. Lässt sich eine
+Region oder Grenze nicht sicher prüfen, bleibt der Kandidat mit Hinweis im `source_note` und im Bericht —
+kein Abbruch (`scoring_rubrik.md`, „Harte Grenzen und Score“).
 
 **Welle 3 — Einzelanzeigen:**
 - Über alle Firmen hinweg die erkennbar passenden Kandidaten aus den in Welle 1/2 gelisteten
@@ -118,9 +126,10 @@ erzwingt es technisch: Records ohne belegten `verifikation`-Block werden verworf
    > ablehnen (potenziell halluziniert). Für JEDEN durchgelassenen Record: beleg = wörtliches Zitat oder
    > konkreter Nachweis. Im Zweifel: ablehnen.
    > **Firmengröße (Phase 34, Beleg-Regel):** Lies beim Live-Check die Firmengröße mit (Karriereseite/
-   > Impressum/„Über uns" o. ä.); belegt < 100 Mitarbeiter → ablehnen mit Beleg (Grund ZU_KLEIN);
+   > Impressum/„Über uns" o. ä.); belegt < <min_mitarbeiter> Mitarbeiter → ablehnen mit Beleg (Grund ZU_KLEIN);
    > unbekannt/nicht genannt → durchlassen, aber `source_note` um „Firmengröße unklar" ergänzen —
    > kein erfundener Punktabzug, keine eigene Zusatzrecherche nur für die Größe."
+   (`<min_mitarbeiter>` im Auftrag durch den Wert aus `suchprofile.yaml` ersetzen, Standard 100.)
 3. **Ergebnis mergen:** je durchgelassenem Record `verifikation: {status: BESTÄTIGT|KORRIGIERT|
    QUELLE_VERTRAUT, beleg, geprueft_am: <ISO>, herkunft}` setzen. Abgelehnte NICHT ingesten → in eine
    Liste `abgelehnt` mit Grund.
@@ -166,8 +175,8 @@ Rest-Check <Datum>"). Zusätzlich (seit Phase 44) falls `dubletten_verdacht > 0`
 `neuausschreibungen > 0`: „N Neuausschreibungen früher aussortierter Stellen → Review“. Verweis auf
 die Review-Ansicht (http://localhost:8000/review).
 **Zusätzlich (Phase 34):** fällt bei einer der 12 geprüften KURATIERTEN Zielfirmen selbst (nicht
-nur bei einem Job-Treffer) eine belegte Größe < 100 Mitarbeiter auf (z. B. „Über uns"/Impressum
-der Karriereseite), im Bericht separat auflisten — „kuratierte Zielfirma(en) < 100 MA: <Firma>
+nur bei einem Job-Treffer) eine belegte Größe unter `min_mitarbeiter` auf (z. B. „Über uns"/Impressum
+der Karriereseite), im Bericht separat auflisten — „kuratierte Zielfirma(en) unter Mindestgröße: <Firma>
 (<Beleg>)". Die Liste selbst NICHT automatisch bereinigen — das entscheidet der Nutzer bewusst selbst.
 
 ## Abgrenzung

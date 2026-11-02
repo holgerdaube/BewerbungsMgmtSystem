@@ -57,7 +57,7 @@ und einen Secret-Scan.
 In Code, Tests, Beispielen, Dokumentation und Commit-Nachrichten stehen **keine echten Personendaten und
 keine echten Bewerbungsdaten**: keine Namen, Anschriften, Mailadressen oder Telefonnummern realer
 Personen, keine Firmennamen, Stellen oder Nummern aus Ihrer eigenen Jobsuche, keine Lebensläufe, keine
-Zugangsdaten. Nehmen Sie erfundene Werte: Max Mustermann oder Birne Helene als Person, Beispiel GmbH oder
+Zugangsdaten. Nehmen Sie erfundene Werte: Max Mustermann oder Benno Bewerbaer als Person, Beispiel GmbH oder
 Firma A als Firma, Adressen unter `beispiel.de`. Prüfen Sie Ihre Änderung vor dem Einreichen mit
 `git diff` auf versehentlich mitgenommene Daten.
 
@@ -71,6 +71,10 @@ Firma A als Firma, Adressen unter `beispiel.de`. Prüfen Sie Ihre Änderung vor 
   (`test_kein_sendcodepfad.py`) hält das fest.
 - **Keine erfundenen Fakten.** KI-Texte arbeiten belegt; was das System nicht weiß, markiert es, statt
   zu raten (Grundprinzip 2).
+- **Zwei KI, ein Wortlaut.** Die KI-Läufe gehen wahlweise über Claude Code oder über die Codex CLI
+  (ChatGPT). Die Skills in `.claude/skills` sind die einzige Quelle: Das BMS spiegelt sie vor jedem Lauf
+  nach `.agents/skills` (nicht versioniert), und `AGENTS.md` übersetzt die Werkzeugnamen. Ändern Sie nie die
+  Kopie unter `.agents/skills`, und schreiben Sie Skills so, dass sie unter beiden KI laufen.
 
 ## Dokumentation
 

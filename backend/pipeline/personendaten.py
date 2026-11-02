@@ -43,7 +43,8 @@ NAME DES NUTZERS: Vor- und Nachname aus dem Profil, als ganze Wörter (keine Buc
 dahinter; ein Genitiv-s ist erlaubt), ohne Beachtung der Schreibweise. Marke und Domain „Daube.Tech“
 zählen nicht als Nachname. Der Kontoname (Vor- plus Nachname zusammengeschrieben, klein) wird als
 Private Kontaktdaten gesucht, weil er in Pfaden und Repo-Adressen steckt; erlaubt ist davon nur der
-Name des öffentlichen Repos (`OEFFENTLICHES_REPO`).
+Name des öffentlichen Repos (`OEFFENTLICHES_REPO`) und, nur in README und FUNDING.yml, die beiden
+Spendenlinks (`SPENDEN_PFADE`).
 
 Reine Funktionen auf einer Liste von `Eintrag`en im Speicher; das Modul fasst weder Git noch die
 Platte an (außer `muster_laden`, das Profil, Datenbank und Musterdatei liest). Pfade sind IMMER
@@ -107,6 +108,24 @@ _OEFFENTLICHES_REPO_RE = re.compile(
     + re.escape(OEFFENTLICHES_REPO)
     + r"(?![\w\-]|\.\w)"
 )
+
+# ── Spendenlinks (die zweite erlaubte Form des Kontonamens) ───────────────────────────────────
+# Freiwillige Unterstuetzung: Die Seiten bei Buy Me a Coffee und PayPal.me tragen den Kontonamen.
+# Die Ausnahme ist noch enger als die fuer das Repo: Sie gilt NUR in `SPENDEN_PFADE`, NUR fuer die
+# Regel „Private Kontaktdaten“ zum Kontonamen (`konten`) und NUR fuer genau diese Formen:
+#   README.md und FUNDING.yml:  https://buymeacoffee.com/<konto>  und  https://paypal.me/<konto>
+#   nur .github/FUNDING.yml:    die ganze Zeile  buy_me_a_coffee: <konto>
+# Der Kontoname ist der aus `OEFFENTLICHES_REPO`, exakt geschrieben. Ein anderer Host, `http://`,
+# `www.`, ein Pfad oder Parameter dahinter, ein laengerer Name und dieselbe Adresse in jeder anderen
+# Datei bleiben Funde. Name, Anschrift, Mail, Telefon und Dritte laufen in beiden Dateien weiter.
+SPENDEN_PFADE: tuple[str, ...] = ("README.md", ".github/FUNDING.yml")
+_SPENDEN_KONTO = OEFFENTLICHES_REPO.split("/", 1)[0]
+_SPENDEN_URL_RE = re.compile(
+    r"(?<![\w.\-/:])https://(?:buymeacoffee\.com|paypal\.me)/"
+    + re.escape(_SPENDEN_KONTO)
+    + r"(?![\w\-/?#]|\.\w)"
+)
+_SPENDEN_FUNDING_RE = re.compile(r"^buy_me_a_coffee:[ \t]*" + re.escape(_SPENDEN_KONTO) + r"[ \t]*$")
 
 # Marke und Domain des Herausgebers: zaehlt nicht als Nachname, auch nicht mit Bindestrich,
 # Unterstrich oder Leerzeichen statt des Punkts. Ohne Trenner geschrieben trifft die Namensregel die
@@ -746,6 +765,21 @@ def _ohne_oeffentliches_repo(text: str) -> str:
     return _OEFFENTLICHES_REPO_RE.sub(" ", text)
 
 
+def _ohne_spendenlinks(pfad: str) -> Callable[[str], str]:
+    """Vorbehandlung fuer die Kontonamen-Regel in `pfad`: ohne Repo-Namen und, NUR in `SPENDEN_PFADE`,
+    ohne die Spendenlinks (s. dort). In jeder anderen Datei genau `_ohne_oeffentliches_repo`."""
+    if pfad not in SPENDEN_PFADE:
+        return _ohne_oeffentliches_repo
+
+    def vorbehandlung(zeile: str) -> str:
+        zeile = _SPENDEN_URL_RE.sub(" ", _ohne_oeffentliches_repo(zeile))
+        if pfad == ".github/FUNDING.yml":
+            zeile = _SPENDEN_FUNDING_RE.sub(" ", zeile)
+        return zeile
+
+    return vorbehandlung
+
+
 def _bereinigt(text: str) -> str:
     """Fuer die Namensregel: ohne den Repo-Namen und ohne die Marke „Daube.Tech“ samt Domain."""
     return _MARKE_RE.sub(" ", _ohne_oeffentliches_repo(text))
@@ -934,8 +968,9 @@ def _datei_funde(e: Eintrag, regeln: _Regeln, umfang: str) -> list[Fund]:
     # P2-82: nur der Name des oeffentlichen Repos ist ausgenommen, s. OEFFENTLICHES_REPO.
     funde += _zeilen_regex_funde(e.pfad, zeilen, regeln.kontakt, "Private Kontaktdaten",
                                   vorbehandlung=_ohne_oeffentliches_repo)
+    # Spendenlinks: nur in SPENDEN_PFADE und nur fuer den Kontonamen, s. SPENDEN_PFADE.
     funde += _zeilen_regex_funde(e.pfad, zeilen, regeln.konten, "Private Kontaktdaten",
-                                  vorbehandlung=_ohne_oeffentliches_repo)
+                                  vorbehandlung=_ohne_spendenlinks(e.pfad))
     funde += _zeilen_regex_funde(e.pfad, zeilen, regeln.telefon, "Private Kontaktdaten")
     funde += _zeilen_regex_funde(e.pfad, zeilen, regeln.dritte, "Dritte Personen")
     # P2-77: fremder Wortlaut (Lizenztexte) bleibt unveraendert, auch mit Autoren-Adressen.

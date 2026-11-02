@@ -64,7 +64,7 @@ def spawn(monkeypatch):
         raise FileNotFoundError(argv[0])
 
     monkeypatch.setattr(ar.asyncio, "create_subprocess_exec", attrappe)
-    monkeypatch.setattr(ar, "_child_env", lambda kind: ({}, None))
+    monkeypatch.setattr(ar, "_child_env", lambda kind, anbieter=None: ({}, None))
     return aufrufe
 
 
@@ -390,7 +390,7 @@ def test_retry_reicht_noch_nicht_weiter_erst_der_endgueltige_fehlschlag(
         raise RuntimeError("Absturz beim Start")        # nicht FileNotFoundError → Wiederholung
 
     monkeypatch.setattr(ar.asyncio, "create_subprocess_exec", abstuerzender_start)
-    monkeypatch.setattr(ar, "_child_env", lambda kind: ({}, None))
+    monkeypatch.setattr(ar, "_child_env", lambda kind, anbieter=None: ({}, None))
     erster, zweiter = _kette(runner_db)
     pruefung.antwort = (True, "Noch kein Bericht vorhanden.")
 
@@ -423,11 +423,11 @@ def test_timeout_mit_schluessel_laesst_die_nachfolger_laufen(
     async def start(*argv, **kwargs):
         return _Haengender()
 
-    async def haengt(proc, log_file):
+    async def haengt(proc, log_file, auswertung=None):
         await asyncio.sleep(3600)
 
     monkeypatch.setattr(ar.asyncio, "create_subprocess_exec", start)
-    monkeypatch.setattr(ar, "_child_env", lambda kind: ({}, None))
+    monkeypatch.setattr(ar, "_child_env", lambda kind, anbieter=None: ({}, None))
     monkeypatch.setattr(ar, "_drain", haengt)
     monkeypatch.setattr(ar, "_kill", lambda pid: None)
     monkeypatch.setattr(ar, "_timeout_for", lambda kind: 0.05)

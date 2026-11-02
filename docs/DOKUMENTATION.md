@@ -35,6 +35,39 @@ der die Web-App liest. Es gibt zwei Betriebsarten:
 Beide Wege nutzen exakt dieselben Skills und schreiben in dieselbe DB — es gibt keine zweite
 Wahrheit.
 
+### Zwei KI: Claude oder ChatGPT (P2-86)
+
+Die Läufe gehen wahlweise über Claude Code (`claude -p`, Standard) oder über die Codex CLI von OpenAI
+(`codex exec`, ChatGPT, im ersten Release eine Vorschau). Gewählt wird in `sucheinstellung.ki_anbieter`
+(`claude` | `chatgpt`) über `GET/PATCH /api/einstellungen` und die Karte „KI“ der Einstellungen; die
+Installationsanleitungen fragen sie in Schritt 0 ab. `GET /api/ki-status` meldet je Anbieter, ob das
+Programm installiert und angemeldet ist, und liest nie einen Schlüssel. Queue, Ketten, Timeout und
+Abbruch bleiben in `agent_runner` gemeinsam, `app/ki_anbieter.py` hält, was sich unterscheidet:
+
+- **Aufruf und Umgebung:** `codex_argv` baut `codex exec --json` mit Sandbox `workspace-write`, Netz an
+  und dem Prompt über die Standardeingabe. `codex_prompt` nennt den Skill ausdrücklich,
+  `codex_umgebung` entfernt `OPENAI_API_KEY`, `CODEX_API_KEY` und die Claude-Variablen: Es gilt die
+  Anmeldung des Rechners (`codex login`, das Abo), nie ein getrennt abgerechneter Schlüssel. Das
+  Programm findet das BMS über `CODEX_BIN` oder den PATH.
+- **Skills:** `.claude/skills` bleibt die einzige Quelle. `skills_spiegeln` kopiert sie vor jedem Lauf
+  nach `.agents/skills` (nicht versioniert), dort sucht Codex. `AGENTS.md` im Projekt übersetzt die
+  Werkzeugnamen der Skills (WebSearch, WebFetch, Read, Write, Edit, Task), die Skills selbst nennen
+  weiter die von Claude Code.
+- **Auswertung:** `CodexAuswertung` macht aus dem JSONL-Strom das Ergebnis, das der Runner von
+  `claude -p` kennt. Ein erreichtes Abo-Limit und eine fehlende Anmeldung erkennt es am Fehlertext
+  (`abo_limit`, `anmeldung`).
+- **PDF:** LibreOffice bricht in der Sandbox von Codex ab. `codex_umgebung` setzt deshalb `BMS_PDF_UEBER_SERVER`, und
+  `cv_export` lässt den Server außerhalb der Sandbox umwandeln (`POST /api/intern/pdf`, nur Word-Dateien aus Programm- und Datenordner).
+- **Kosten:** Codex meldet keine Kosten in Dollar und Token erst am Ende des Turns. Unter ChatGPT bleibt
+  `AgentTask.cost_usd` 0, der Verbrauch steht in `AgentTask.tokens`, und es gibt keine Budgetgrenze je
+  Lauf. Schutz sind das Zeitlimit des Laufs, die Grenzen des Abos und die Tagesgrenze für Läufe.
+- **Modelle:** Gespeichert bleiben die Stufen `opus`, `sonnet`, `haiku`, `CODEX_MODELL` ordnet ihnen die
+  Codex-Modelle zu (§8 „KI-Modelle“). Fable bleibt nie wählbar.
+- **Rechte:** Die Hooks und Freigaben aus `automation/agent_settings.json` und der Pfadwächter gelten nur
+  für Claude Code. Unter ChatGPT begrenzt die Sandbox das Schreiben auf das Projekt, den Log-Ordner (dazu
+  den Datenordner, wenn er außerhalb des Projekts liegt) und bei Mail-Läufen den Ordner der Zugangsdaten. Das Lesen lässt sie im ganzen Benutzerordner zu, auch unter
+  `~/.bewerbung_mgmt_secrets`: Ein Lauf muss dorthin nicht, verhindert wird es aber nicht.
+
 ### Wegweiser durch die Dokumente
 
 In der laufenden App zeigt der Menüpunkt **„📖 Dokumentation“** die Anwender-Dokumente in Reitern: Version
@@ -80,7 +113,7 @@ passende, aktuelle `.html` gehört — wer das Erzeugen vergisst, sieht es an ei
 | **Backend** | FastAPI (Python) + SQLite — `data/bewerbung.sqlite` ist die **einzige Quelle der Wahrheit** (~9 MB, 27 Tabellen + FTS5-Suchindex) |
 | **Frontend** | React + Vite + TypeScript + Tailwind; Status-Farben kanonisch aus dem Daube.Tech-Styleguide abgeleitet (`ui.tsx::STATUS_FARBEN`, Cyan→Navy-Leiter); Markenfarben, Schriften, Icon und Produktname kommen zur Laufzeit aus dem Design (`GET /api/design.css`, s. §8 „Design aus einer Quelle“); gebaut nach `frontend/dist`, vom Backend ausgeliefert |
 | **Deterministische Logik** | 32 Pipeline-Module in `backend/pipeline/` (Ingest, Dedup, Mail [Gmail/IMAP], Export, Suche, Verifikation, LinkedIn-Import, Suchprofil-Writer, Report-Check, Coach-Site-Export …) — kein LLM, reproduzierbar |
-| **Intelligenz** | 24 Claude-Skills in `.claude/skills/` |
+| **Intelligenz** | 24 Skills in `.claude/skills/` (Claude-Format; für ChatGPT vor jedem Lauf nach `.agents/skills` gespiegelt, s. „Zwei KI“) |
 | **API** | 137 REST-Endpunkte |
 
 **Warum SQLite als einzige Quelle?** Alles — Stellen, Firmen, Bewerbungen, E-Mails, Kontakte,
@@ -130,7 +163,8 @@ Maßgeblich ist immer `.gitignore`, nicht der Ordnername.
   einem Beispiel-Zielprofil) und `coach_export.yaml` sind versioniert, `profil_struktur.md` erzeugt die App
   selbst aus der Datenbank (beim Start, wenn sie fehlt, und bei jedem Speichern der Profil-Seite) und
   versioniert sie nicht, weil sie den Werdegang enthält.
-- **Secrets, außerhalb des Projekts:** `agent.env` (Claude-OAuth-, Apify-Token), die Gmail-Tokens
+- **Secrets, außerhalb des Projekts:** `agent.env` (Claude-OAuth-, Apify-Token; ChatGPT braucht sie nicht,
+  die Anmeldung liegt bei Codex selbst), die Gmail-Tokens
   (`gmail_credentials.json`, `gmail_token.json`), die Mail-Konto-Einstellungen (`mail_settings.json`) und
   die Coach-Site-Konfiguration (`coach_settings.json` samt Coach-Zugangsdatei `coach_htpasswd`; die ältere
   `coach_sftp.env` bleibt als Rückfallweg liegen) liegen unter `~/.bewerbung_mgmt_secrets/` (Verzeichnis
@@ -186,7 +220,9 @@ Diese Prinzipien ziehen sich durch das ganze System und erklären viele Design-E
 
 5. **Budget-Leitplanken.** Echtes Geld (Apify) hat harte Tageslimits ($0,50/Tag,
    `BudgetLimit`-Tabelle). Der headless Claude-Runner läuft aufs Max-Abo (virtuelles Geld),
-   hat aber Ausreißer-Bremsen (Pro-Lauf-Deckel, Tasks/Tag).
+   hat aber Ausreißer-Bremsen (Pro-Lauf-Deckel, Tasks/Tag). Unter ChatGPT gibt es keine Kosten in Dollar
+   und keinen Deckel je Lauf (Codex meldet Token erst am Ende des Turns), die Bremsen sind Zeitlimit,
+   Abo-Grenze und Tasks/Tag.
 
 6. **Abgeleitete Sichten statt Write-Trigger.** Excel-Export, Tages-Digest, Volltext-Suchindex und
    seit Phase 81 der Coach-Site-Export sind komplett neu baubar (`refresh_views.sh` bzw.
@@ -534,9 +570,10 @@ wie bei den Suchläufen. Spec: P2-76.
 
 ### Profil (Phase 45/47)
 
-- **profil-einlesen** — „Profil einlesen von \<linkedin_url\>" · liest ein LinkedIn-Profil best
-  effort ein und füllt NUR belegbar öffentlich Sichtbares additiv ins Profil; meldet die Login-Wall
-  ehrlich, statt zu raten. Der verlässliche Weg bleibt das Datenexport-ZIP
+- **profil-einlesen** — „Profil einlesen aus dem hinterlegten Text" · strukturiert den eingefügten
+  Profiltext oder den Text des Profil-PDFs zu einem Vorschlag, den der Nutzer vor dem additiven Speichern
+  prüft (`pipeline/linkedin_text.py`). Kein Web: LinkedIn sperrt automatische Abrufe (HTTP 999). Der
+  vollständigste Weg bleibt das Datenexport-ZIP
   (`pipeline/linkedin_import.py`, deterministisch, kein LLM). *Headless.*
 - **skills-sortieren** — ordnet importierte Skills aus „LinkedIn (unsortiert)" kontextbasiert
   Themenbereichen zu (bevorzugt bestehende, legt neue nur bei Bedarf an). **Verschiebt nur** —
@@ -564,8 +601,8 @@ wie bei den Suchläufen. Spec: P2-76.
 | **Beirat** | 7-köpfiger Bewerbungs-Beirat (Charta-basiert): Thema + Kontext + Mindest-Beiträge rein, der Vorsitz orchestriert autonom (Name aus `GET /api/beirat/mitglieder`, Feld `vorsitz`), Debatte läuft live per SSE (Sprecher-Karten, Moderations-Zeilen), Synthese am Ende; Key-Panel (Anthropic/OpenAI, lokal), Debatten-Archiv. Phase 40 nahm den Menüpunkt heraus, P2-61 setzte ihn als „🏛️ Beirat“ unter Netzwerk zurück, weil Kunden die freie Debatte sonst nur über die Adresse fanden; Seitentexte seitdem in Sie-Form ohne Dateipfade. Der Stellen-Check läuft am Job-Detail |
 | **Tasks** | Task-Center = das EINE Aktivitäts-Log: alle Hintergrund-Aktivitäten (Runner-Skills UND Beirat-Läufe, Phase 42) mit KPIs, Kosten, Live-Log, Abbrechen, Erneut |
 | **Budget** | Kosten je Dienst & Tag, editierbare Limits |
-| **Profil** *(Phase 45/47)* | Die Kandidaten-Substanz für Matching/Anschreiben: LinkedIn-Import (Datenexport-ZIP = verlässlicher Weg, URL-Button = best effort gegen die Login-Wall), Positionierung, Skills als Chips nach Themenbereichen (Auto-Einsortierung importierter Skills), Werdegang, Zeugnis-/Zertifikat-Dateien. Beide Import-Wege additiv & zerstörungsfrei; Ableitung nach `config/profil_struktur.md` bei jedem Save. Seit P2-69 steht als erste Karte „Identität und Suchstrategie“ (`components/ProfilIdentitaet.tsx`): Sie liest und schreibt `config/profil.md` (Name, Anschrift, Kontakt, LinkedIn, Kurzprofil, Zielrolle, Rahmenbedingungen, Skill-Gaps) über `GET/PUT /api/profil/identitaet`, verlustfrei und mit Papierkorb-Kopie (§8 „Profil-Datei“) |
-| **Einstellungen** *(Phase 49/50, P2-51)* | Steuerpult der Suchstrategie: Suchbereich (Remote · Deutschlandweit · Stadt +Umkreis, Bezeichnung „<Stadt-Kurzform> +<km>km" auch als Filter-Reiter in der Jobliste) & Mindest-Firmengröße · **KI-Modell je Funktion** (Jobsuche/Company Fit/Beirat/CV Match/ATS Scan/Anschreiben — Opus 5.5/Sonnet 5.5/Haiku 4.5, Fable gesperrt (s. §8 „KI-Modelle“), Liste + Anzeigenamen kommen ausschließlich vom Backend, Default Sonnet) · **drei Plan-Karten A/B/C** (Label, aktiv, Rollentitel/Seniorität/Branche), Suchreihenfolge A→B→C · **Coach-Site-Karte** *(Phase 82)*: Adresse/SFTP-Zugang/Serverpfad (Button „automatisch ermitteln") + Coach-Login (bcrypt) + Ein/Aus-Schalter, Button „Coach-Site jetzt aktualisieren", Verbindungstest. **Suchportale** *(Phase 87)*: acht Zeilen — die sechs in Deutschland ueblichen Portale (LinkedIn, Indeed, StepStone, Xing, Nejo, Arbeitsagentur) vorbelegt mit Name + URL, dazu zwei Freizeilen. Je Zeile ein Aktiv-Schalter, editierbare URL (Platzhalter `$QUERY`/`$LOCATION`/`$PAGE`) und ein **Pruef-Button**, der die URL serverseitig abruft und dreistufig bewertet: gruen (antwortet mit Inhalt), amber (erreichbar, aber Bot-Schutz oder fast leere Antwort — als Websuche-Kanal trotzdem nutzbar; seit P2-73 auch: die Adresse leitet auf einen anderen Host um, dann gehoert die neue Adresse eingetragen, weil der Abruf der Such-Agenten einer solchen Umleitung nicht selbst folgt), rot (nicht erreichbar). Aendert sich eine Standard-Adresse, zieht der Serverstart sie in Datenbank und Suchprofil-Datei nach, sofern die gespeicherte Adresse noch woertlich die fruehere Standard-Adresse ist (`suchprofil.PORTALE_FRUEHERE_STANDARDS`); eine selbst geaenderte Adresse bleibt stehen. Die Zugriffsart je Portal steht daneben und ist fest: „per Websuche“ fuer Portale mit Bot-Schutz, „direkter Abruf“ fuer Nejo/Arbeitsagentur. Nur aktive Portale werden im Tageslauf durchsucht **Beirat — Besetzung** *(Phase 90)*: die sieben Plaetze mit Name, Perspektive, Farbe und Vorsitz-Markierung; Button „Neu besetzen“ startet den Skill `beirat-persona`, der die Persona recherchiert, in der Bauart der uebrigen Koepfe schreibt und danach die Verweise in den sechs anderen Dateien repariert. Sieben Plaetze sind fix (Ampel auf sieben Stimmen kalibriert), der Vorsitz laesst sich umhaengen, aber nicht entziehen. **Bewerbungspaket — Standardumfang** *(P2-41)*: eine Karte mit einem Schalter „Anschreiben im Paket“ (Standard aus) — Vorbelegung des Häkchens am Job-Detail, pro Stelle jederzeit übersteuerbar; kein Schalter für den Beirat, der hätte in Stufe 1 keine Wirkung. **Datensicherung** *(P2-52)*: zeigt die letzte automatische Sicherung (Zeitpunkt, Größe) und ihre Gesamtzahl, Schalter für die tägliche Automatik, Felder für die Aufbewahrung (täglich/wöchentlich/monatlich), Knopf „Jetzt sichern"; amber Warnung bei einer fehlgeschlagenen Sicherung oder wenn die letzte bei eingeschalteter Automatik älter als 3 Tage ist (`GET/POST /api/sicherung`, `PATCH /api/sicherung/einstellungen`). **Beispieldaten** *(P2-59)*: erste Karte der Seite (bis 1.7.0 stand die Lizenzkarte davor), nur bei Status `vorhanden` oder `entfernt` (`GET /api/beispieldaten`): Zählung der Beispieldaten, Knopf „Beispieldaten entfernen“ mit Inline-Rückfrage (`POST /api/beispieldaten/entfernen`), danach das Ergebnis mit Sicherungsdatei und den Dateien, die der Kunde geändert hat und die deshalb bleiben; löst `PROFIL_GEAENDERT` aus (s. u. Seitenleiste, §8 „Beispieldaten“). **Programmversion** *(P2-51)*: letzte Karte, eigener Endpunkt `GET /api/version` statt der übrigen `/api/einstellungen`-Daten — installierte Version bzw. bei einer Git-Installation der Entwicklungsstand, Datum des letzten Updates, der CHANGELOG-Abschnitt „Neu in dieser Version“ und bei einer Paket-Installation eine Update-Anleitung (`update.command`/`update_windows.bat`). Seit P2-82 trägt sie den Knopf **„Nach Updates suchen“** (nur auf Klick, `GET /api/version/neueste`, Abschnitt „Update-Auskunft über GitHub-Releases“) mit dem Hinweis, dass GitHub dabei die IP-Adresse erhält; die Fußzeile der Karte „Datensicherung“ nennt `wiederherstellen.command`/`wiederherstellen_windows.bat` zum Zurückspielen (P2-66) | Jeder Save regeneriert den verwalteten Block von `config/suchprofile.yaml` — `unterlagen` (Bewerbungspaket-Standardumfang) ist davon ausgenommen, kein Such-Parameter |
+| **Profil** *(Phase 45/47)* | Die Kandidaten-Substanz für Matching/Anschreiben: LinkedIn-Import (Datenexport-ZIP = vollständigster Weg, Profiltext oder PDF = sofort, per KI mit Vorschau), Positionierung, Skills als Chips nach Themenbereichen (Auto-Einsortierung importierter Skills), Werdegang, Zeugnis-/Zertifikat-Dateien. Beide Import-Wege additiv & zerstörungsfrei; Ableitung nach `config/profil_struktur.md` bei jedem Save. Seit P2-69 steht als erste Karte „Identität und Suchstrategie“ (`components/ProfilIdentitaet.tsx`): Sie liest und schreibt `config/profil.md` (Name, Anschrift, Kontakt, LinkedIn, Kurzprofil, Zielrolle, Rahmenbedingungen, Skill-Gaps) über `GET/PUT /api/profil/identitaet`, verlustfrei und mit Papierkorb-Kopie (§8 „Profil-Datei“) |
+| **Einstellungen** *(Phase 49/50, P2-51)* | Steuerpult der Suchstrategie: **KI-Karte** *(P2-86)*: Wahl Claude oder ChatGPT (`ki_anbieter`) mit Status je Anbieter (`GET /api/ki-status`) · Suchbereich (Remote · Deutschlandweit · Stadt +Umkreis, Bezeichnung „<Stadt-Kurzform> +<km>km" auch als Filter-Reiter in der Jobliste) & Mindest-Firmengröße · **KI-Modell je Funktion** (Jobsuche/Company Fit/Beirat/CV Match/ATS Scan/Anschreiben — Opus 5.5/Sonnet 5.5/Haiku 4.5, unter ChatGPT die Codex-Modelle, Fable gesperrt (s. §8 „KI-Modelle“), Liste + Anzeigenamen kommen ausschließlich vom Backend, Default Sonnet) · **drei Plan-Karten A/B/C** (Label, aktiv, Rollentitel/Seniorität/Branche), Suchreihenfolge A→B→C · **Coach-Site-Karte** *(Phase 82)*: Adresse/SFTP-Zugang/Serverpfad (Button „automatisch ermitteln") + Coach-Login (bcrypt) + Ein/Aus-Schalter, Button „Coach-Site jetzt aktualisieren", Verbindungstest. **Suchportale** *(Phase 87)*: acht Zeilen — die sechs in Deutschland ueblichen Portale (LinkedIn, Indeed, StepStone, Xing, Nejo, Arbeitsagentur) vorbelegt mit Name + URL, dazu zwei Freizeilen. Je Zeile ein Aktiv-Schalter, editierbare URL (Platzhalter `$QUERY`/`$LOCATION`/`$PAGE`) und ein **Pruef-Button**, der die URL serverseitig abruft und dreistufig bewertet: gruen (antwortet mit Inhalt), amber (erreichbar, aber Bot-Schutz oder fast leere Antwort — als Websuche-Kanal trotzdem nutzbar; seit P2-73 auch: die Adresse leitet auf einen anderen Host um, dann gehoert die neue Adresse eingetragen, weil der Abruf der Such-Agenten einer solchen Umleitung nicht selbst folgt), rot (nicht erreichbar). Aendert sich eine Standard-Adresse, zieht der Serverstart sie in Datenbank und Suchprofil-Datei nach, sofern die gespeicherte Adresse noch woertlich die fruehere Standard-Adresse ist (`suchprofil.PORTALE_FRUEHERE_STANDARDS`); eine selbst geaenderte Adresse bleibt stehen. Die Zugriffsart je Portal steht daneben und ist fest: „per Websuche“ fuer Portale mit Bot-Schutz, „direkter Abruf“ fuer Nejo/Arbeitsagentur. Nur aktive Portale werden im Tageslauf durchsucht **Beirat — Besetzung** *(Phase 90)*: die sieben Plaetze mit Name, Perspektive, Farbe und Vorsitz-Markierung; Button „Neu besetzen“ startet den Skill `beirat-persona`, der die Persona recherchiert, in der Bauart der uebrigen Koepfe schreibt und danach die Verweise in den sechs anderen Dateien repariert. Sieben Plaetze sind fix (Ampel auf sieben Stimmen kalibriert), der Vorsitz laesst sich umhaengen, aber nicht entziehen. **Bewerbungspaket — Standardumfang** *(P2-41)*: eine Karte mit einem Schalter „Anschreiben im Paket“ (Standard aus) — Vorbelegung des Häkchens am Job-Detail, pro Stelle jederzeit übersteuerbar; kein Schalter für den Beirat, der hätte in Stufe 1 keine Wirkung. **Datensicherung** *(P2-52)*: zeigt die letzte automatische Sicherung (Zeitpunkt, Größe) und ihre Gesamtzahl, Schalter für die tägliche Automatik, Felder für die Aufbewahrung (täglich/wöchentlich/monatlich), Knopf „Jetzt sichern"; amber Warnung bei einer fehlgeschlagenen Sicherung oder wenn die letzte bei eingeschalteter Automatik älter als 3 Tage ist (`GET/POST /api/sicherung`, `PATCH /api/sicherung/einstellungen`). **Beispieldaten** *(P2-59)*: erste Karte der Seite (bis 1.7.0 stand die Lizenzkarte davor), nur bei Status `vorhanden` oder `entfernt` (`GET /api/beispieldaten`): Zählung der Beispieldaten, Knopf „Beispieldaten entfernen“ mit Inline-Rückfrage (`POST /api/beispieldaten/entfernen`), danach das Ergebnis mit Sicherungsdatei und den Dateien, die der Kunde geändert hat und die deshalb bleiben; löst `PROFIL_GEAENDERT` aus (s. u. Seitenleiste, §8 „Beispieldaten“). **Programmversion** *(P2-51)*: letzte Karte, eigener Endpunkt `GET /api/version` statt der übrigen `/api/einstellungen`-Daten — installierte Version bzw. bei einer Git-Installation der Entwicklungsstand, Datum des letzten Updates, der CHANGELOG-Abschnitt „Neu in dieser Version“ und bei einer Paket-Installation eine Update-Anleitung (`update.command`/`update_windows.bat`). Seit P2-82 trägt sie den Knopf **„Nach Updates suchen“** (nur auf Klick, `GET /api/version/neueste`, Abschnitt „Update-Auskunft über GitHub-Releases“) mit dem Hinweis, dass GitHub dabei die IP-Adresse erhält; die Fußzeile der Karte „Datensicherung“ nennt `wiederherstellen.command`/`wiederherstellen_windows.bat` zum Zurückspielen (P2-66) | Jeder Save regeneriert den verwalteten Block von `config/suchprofile.yaml` — `unterlagen` (Bewerbungspaket-Standardumfang) ist davon ausgenommen, kein Such-Parameter |
 | **Dokumentation** *(P2-59)* | Die Lesetexte der Installation in Reitern (`pages/Dokumentation.tsx`, Menüpunkt vor „Rechtliches“): Version (`CHANGELOG.md`, darüber „Installiert: Version …“ aus `GET /api/version`), Funktionen, Anleitung, Installation & Updates (die Datei des laufenden Systems: `BMS_Install_Windows.md` unter Windows, sonst `BMS_Install_MAC.md`), E-Mail einrichten, Windows, Coach-Site, Beirat (der Reiter „Lizenz“ entfiel mit P2-82); in einer Entwicklungsinstallation nach einem Trenner „Intern“ zusätzlich Technik (diese Datei), Automatik, Release, Entwickler-Installation. Das Backend rendert die Dokumente (`GET /api/doku/{name}`), die Seite zeigt sie in einem Rahmen mit Sandbox (§8 „Dokumentationsseite“) |
 | **Rechtliches** *(Phase 71E)* | Vier Reiter: Über dieses Programm (Herausgeber, Lizenz, Haftungshinweis, KI-Hinweis nach Art. 50 AI Act; ersetzt seit 29.10.2026 das Impressum), Open-Source-Lizenz (`lizenz.txt`, bytegleiche Kopie von `LICENSE`, Wächter `test_open_source_lizenz.py`), Datenschutz, Drittanbieter-Lizenzen — als Markdown unter `frontend/src/rechtliches/` gepflegt und von einem kleinen eigenen Renderer angezeigt (bewusst ohne npm-Paket). EULA, Widerrufsbelehrung und Vertriebs-Checkliste sind am 29.10.2026 entfallen, weil das BMS nicht mehr verkauft wird |
 
@@ -717,7 +754,8 @@ Backend; `main.py::_einstellungen_out` liefert sie unverändert als `modell_opti
 `modell_standard` aus. Die Labels nennen die Version, auf die der Kurzname in der installierten CLI
 heute zeigt (`sonnet` → `claude-sonnet-5-5`); die App ruft die CLI weiter mit dem Kurznamen auf und
 pinnt keine Modell-ID. Die frühere, eigene Kopie in `frontend/src/api.ts` (veralteter Anzeigename,
-`fable` fehlte) entfällt ersatzlos.
+`fable` fehlte) entfällt ersatzlos. Unter ChatGPT liefert `ki_anbieter.modell_optionen` an dieser Stelle
+die Codex-Modelle (`CODEX_MODELL_OPTIONEN`), gespeichert bleiben dieselben Stufen.
 
 **Fable ist nicht wählbar (P2-59, Vorgabe vom 01.10.2026).** Grund sind die Kosten: Fable 5.1
 kostet $10 Eingabe und $50 Ausgabe je Million Tokens, Opus 5.5 $4/$20, Sonnet 5.5 $2/$10 und
@@ -1128,7 +1166,7 @@ Tausch im laufenden Betrieb wäre riskant. Beide Starter und das Skript stehen i
 ### Beispieldaten einer frischen Paket-Installation (P2-59)
 
 Wer das BMS zum ersten Mal startet, sähe leere Seiten. `app/beispieldaten.py` legt deshalb beim
-allerersten Start die erfundene Bewerbungsgeschichte von „Birne Helene“ an (Postbote, fünf Jahre
+allerersten Start die erfundene Bewerbungsgeschichte von „Benno Bewerbaer“ an (Postbote, fünf Jahre
 Paketzustellung). Die Daten werden beim Start ERZEUGT statt mitgeliefert: Das Update-Werkzeug
 schreibt nie nach `data/` und lehnt Pakete mit `data/` oder `config/profil.md` ab.
 
@@ -1242,9 +1280,9 @@ Maske ergibt exakt dieselbe Datei.
   Überschriftentext (getrimmt, ohne Rücksicht auf Groß-/Kleinschreibung, „beginnt mit“): `Identität`
   (Feldzeilen: Name, Positionierung, Standort als „Anschrift“, Kontakt als E-Mail und Telefon,
   LinkedIn, Aktuell; weitere Feldzeilen als `weitere` mit editierbarem Wert), `Kurzprofil`,
-  `Harte Rahmenbedingungen` und `Bekannte Skill-Gaps` (jeweils Freitext) sowie `Zielrolle` (alle
-  Feldzeilen als Liste, Standard-Schlüssel Ebene, Funktion Plan A, Funktion Plan B, Branche, Region,
-  Zieltermin). Alle anderen Abschnitte bleiben unverändert, die API meldet nur ihre Überschrift
+  `Harte Rahmenbedingungen` und `Bekannte Skill-Gaps` (jeweils Freitext) sowie aus `Zielrolle` nur die
+  Zeile `Zieltermin`. Ältere Zeilen wie Ebene oder Branche bleiben unberührt in der Datei, Titel, Ebene und
+  Branche kommen aus den Suchplänen. Alle anderen Abschnitte bleiben unverändert, die API meldet nur ihre Überschrift
   (`unveraendert`).
 - Eine Feldzeile ist `^(\s*[-*]\s*)\*\*(.+?):\*\*[ \t]*(.*)$`. Beim Ändern wird nur der Wert
   ersetzt, Einrückung, Aufzählungszeichen und Schlüssel bleiben. Ein neues Feld kommt hinter die letzte
@@ -1257,8 +1295,7 @@ Maske ergibt exakt dieselbe Datei.
 - Freitext-Abschnitte gehen ohne die Leerzeilen an Anfang und Ende an die Maske. Beim Schreiben bleibt
   die bisherige Zahl der Leerzeilen vor und nach dem Rumpf erhalten, ein unveränderter Text lässt den
   Abschnitt bytegleich. Neue Zeilen erhalten das in der Datei vorherrschende Zeilenende.
-- Fehlt die Datei, liefert `lesen()` `vorhanden=False`, leere Werte und die Standard-Schlüssel der
-  Zielrolle, und `schreiben()` erzeugt die Vorlage (Aufbau wie in `beispieldaten._profil_md_text()`,
+- Fehlt die Datei, liefert `lesen()` `vorhanden=False`, leere Werte und den Zieltermin, und `schreiben()` erzeugt die Vorlage (Aufbau wie in `beispieldaten._profil_md_text()`,
   mit den Abschnitten Identität, Kurzprofil, Zielrolle, Harte Rahmenbedingungen, Sprachen /
   CV-Fassungen, Bekannte Skill-Gaps / Red Flags und Empirie). Fehlt in einer vorhandenen Datei ein
   bekannter Abschnitt, legt `schreiben()` ihn nur an, wenn die Maske Inhalt liefert, vor der Empirie
@@ -2050,7 +2087,7 @@ drei, P2-69 zwei, P2-72 drei für das Design):
   (`digest` als HTML in der Sandbox, P2-58), `GET /export/excel|export/outreach`
 - **Profil (Phase 45):** `GET/PATCH /profil`, `POST/PATCH/DELETE /profil/skills[/{id}]`,
   `POST/PATCH/DELETE /profil/werdegang[/{id}]`, `POST/DELETE /profil/dateien[/{id}]`,
-  `POST /profil/import-zip` (LinkedIn-Datenexport), `POST /profil/einlesen` (URL → headless Task)
+  `POST /profil/import-zip` (LinkedIn-Datenexport), `POST /profil/linkedin-einlesen` (Text oder PDF → headless Task), `GET`/`DELETE /profil/linkedin-vorschlag`, `POST /profil/linkedin-vorschlag/uebernehmen`
 - **Profil-Datei (P2-69):** `GET/PUT /profil/identitaet` — liest und schreibt `config/profil.md` über die
   Karte „Identität und Suchstrategie“. Die Antwort trägt `stand` (SHA-256 des Dateiinhalts); ein PUT mit
   veraltetem `stand` ist 409, ein Prüffehler 400. Vor dem Überschreiben geht die alte Datei in den Papierkorb (s. §8 „Profil-Datei“)

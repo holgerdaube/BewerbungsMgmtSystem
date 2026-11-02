@@ -43,7 +43,7 @@ Datenbank, ein späterer Start zeigt denselben Stand.
 ### Beim allerersten Start: Beispieldaten
 
 Eine frische Installation startet nicht leer, sondern mit Beispieldaten. **Entferne sie, bevor du
-eigene Daten einträgst.** Die Beispieldaten gehören zu **Birne Helene**, einer erfundenen Person:
+eigene Daten einträgst.** Die Beispieldaten gehören zu **Benno Bewerbaer**, einer erfundenen Person:
 Postbote mit fünf Jahren Erfahrung in der Paketzustellung. So kannst du alles ausprobieren, bevor
 deine eigenen Daten drin sind. Dazu gehören sechs Firmen, fünf Stellen (je eine im Status Neu,
 Prüfen, Beworben, Interview und Absage), drei Bewerbungen, fünf Mails, ein Gesprächstermin drei
@@ -56,7 +56,7 @@ erfunden. Der Beworben-Check im Tageslauf lässt die Beispielstellen von sich au
 
 Nur der allererste Start legt Beispieldaten an. Eine bestehende Installation und ein Update
 bekommen keine, und nach dem Entfernen kommen sie nie wieder. Solange sie da sind, steht auf dem
-Dashboard ein amberfarbener Hinweis, und die Seitenleiste zeigt „Birne Helene“ als deinen Namen.
+Dashboard ein amberfarbener Hinweis, und die Seitenleiste zeigt „Benno Bewerbaer“ als deinen Namen.
 
 **So entfernst du sie:** Öffne die **Einstellungen**, die Karte „Beispieldaten“ steht ganz oben auf
 der Seite. Klicke auf „Beispieldaten entfernen“ und bestätige mit „Ja, entfernen“. Vorher
@@ -85,12 +85,15 @@ BMS lernt Sie kennen“), danach erst den LinkedIn-Import. Der Import füllt nur
 Leeres, mit den Beispieldaten im Profil übernähme er deshalb deine Positionierung nicht. Hast du dein
 Profil schon gespeichert oder `config/profil.md` von Hand bearbeitet, bevor du die Beispieldaten
 entfernst, erkennt das BMS die Datei als deine eigene und lässt sie stehen. Gehe die Karte dann
-einmal ganz durch: Name, Anschrift, Kontakt, Kurzprofil, Zielrolle und Rahmenbedingungen sollen von
-dir sein, nichts mehr von Birne Helene.
+einmal ganz durch: Name, Anschrift, Kontakt, Kurzprofil, Zieltermin und Rahmenbedingungen sollen von
+dir sein, nichts mehr von Benno Bewerbaer.
 
 ---
 
 ## 2. Der Motor — die Skills
+Welche KI die Skills ausführt, Claude oder ChatGPT, legst du in den **Einstellungen** fest (Karte „KI“,
+Standard ist Claude). Die Skills sind für beide dieselben.
+
 Zwei gleichwertige Wege, einen Skill zu starten:
 1. **Als Button in der App** — Review (Jobsuche & Sweeps), Job-Detail („Unterlagen erstellen"),
    Einstellungen (Coach-Site) oder der ☀️-Tageslauf-Button in der Seitenleiste starten den Lauf
@@ -114,7 +117,7 @@ Zwei gleichwertige Wege, einen Skill zu starten:
 | „**CV-Match für Job \<id\>**" | `cv-match` | **Schritt 2a (erst nach Schritt 1):** Match-Dashboard + angepasster CV-Entwurf (DE/EN), am Job-Detail bearbeitbar. |
 | „**CV erstellen für Job \<id\>**" | `cv-erstellen` | **Schritt 2b:** aus dem (ggf. editierten) Entwurf Word + PDF + ATS-Scan erzeugen. |
 | „**Anschreiben für Job \<id\>**" | `anschreiben-erstellen` | Firmenspezifisches Anschreiben (DE/EN) mit Direktansprache → `.docx` + PDF. |
-| „**Profil einlesen von \<URL\>**" | `profil-einlesen` | Liest ein LinkedIn-Profil best-effort ein (Profil-Seite) — meldet die Login-Wall ehrlich, statt zu raten. |
+| „**Profil einlesen aus dem hinterlegten Text**" | `profil-einlesen` | Strukturiert den auf der Profil-Seite eingefügten Text oder das PDF deines LinkedIn-Profils. Du prüfst den Vorschlag, bevor etwas gespeichert wird. |
 | „**Deep-Dive für Job \<id\>**" | `job-deepdive` | Beides in einem Rutsch (Firma + CV) — Standard sind aber die zwei getrennten Schritte oben. |
 
 ---
@@ -297,7 +300,9 @@ Absage ohne erkennbaren Bezug), landet die Mail trotzdem in der Inbox — mit Ba
 Stelle"** und eigener KPI-Kachel oben (klickbar = filtert darauf). Zeile aufklappen → **„📎 Stelle
 zuordnen"** öffnet eine Suche gegen den Bestand; Treffer anklicken ordnet zu (inkl. rückwirkender
 Antwortzeit-Berechnung). Gibt es die Stelle noch nicht: **„+ Stelle anlegen"** öffnet „Neue Stelle"
-mit Firma/Notiz aus der Mail vorbefüllt. Nach dem Zuordnen schlägt das System bei Absage/Angebot/
+mit Firma/Notiz aus der Mail vorbefüllt. Ist die URL oder dieselbe Firma mit demselben Titel schon
+erfasst, warnt das Formular und verlinkt die vorhandene Stelle; gelöschte Stellen zählen dabei nicht.
+Nach dem Zuordnen schlägt das System bei Absage/Angebot/
 Einladung den passenden Job-Status vor — geändert wird nur, wenn du bestätigst. Über **„🔓
 Zuordnung lösen"** lässt sich eine Fehlzuordnung jederzeit rückgängig machen.
 
@@ -445,7 +450,8 @@ steht rot unter dem Namen) · `abgebrochen`. Je Zeile gibt es:
 
 Solange etwas aktiv ist, frischt sich die Liste alle 3 Sekunden selbst auf. **Leitplanken:** max. 2
 Läufe parallel, Notbremse ~$15 je Lauf, $100 und 100 Läufe pro Tag; ein zweiter Lauf desselben Skills
-für dieselbe Stelle wird abgelehnt. ⚠️ „Läufe gesamt" und „Kosten gesamt" beziehen sich auf die
+für dieselbe Stelle wird abgelehnt. Mit ChatGPT als KI gibt es keine Kosten in Dollar und keine Grenze
+je Lauf, es gelten die Grenzen deines ChatGPT-Abos. Den Verbrauch hält das BMS dort in Token fest. ⚠️ „Läufe gesamt" und „Kosten gesamt" beziehen sich auf die
 **letzten 100 Läufe** — nur „Heute verbraucht" ist eine echte Tagesabrechnung.
 
 ### 💶 Budget — Kosten sehen und deckeln
@@ -500,12 +506,12 @@ schöpfen. Von oben nach unten:
 - **Identität und Suchstrategie** — die erste Karte der Seite. Hier trägst du ein, wer du bist und
   wonach du suchst. Die Karte liest und schreibt die Datei `config/profil.md`.
   - **Felder:** Name (Pflicht), Positionierung (Kurzzeile), Anschrift, E-Mail, Telefon, LinkedIn,
-    Aktuell, Kurzprofil, Zielrolle (Ebene, Funktion Plan A und Plan B, Branche, Region, Zieltermin),
+    Aktuell, Kurzprofil, Zieltermin,
     harte Rahmenbedingungen und bekannte Skill-Gaps.
   - **Worauf es ankommt:** Name, Anschrift, Kontakt und LinkedIn bilden den Briefkopf deiner
     Anschreiben und die Dateinamen. Die Anschrift schreibst du als `Straße Nr, PLZ Ort`, etwa
     `Musterweg 3, 12345 Musterstadt`. Daraus entsteht die Ortszeile der Anschreiben, und sie ist der
-    Startpunkt der Routenplanung zu Gesprächen. Kurzprofil, Zielrolle und Rahmenbedingungen liest die KI
+    Startpunkt der Routenplanung zu Gesprächen. Kurzprofil, Zieltermin und Rahmenbedingungen liest die KI
     als Hintergrund: je konkreter, desto besser.
   - **Speichern** ist erst aktiv, wenn du etwas geändert hast. Danach steht dort „✓ Gespeichert“, und
     Seitenleiste und Routenplanung laden die neuen Angaben. Gelbe Zeilen sind Hinweise, etwa wenn der
@@ -517,13 +523,14 @@ schöpfen. Von oben nach unten:
     laden: Klicke auf „Neu laden“ und trage deine Änderung noch einmal ein.
   - Wer mag, bearbeitet `config/profil.md` weiter von Hand. Dann muss die Schreibweise `**Name:**`
     stimmen.
-- **LinkedIn einlesen — zwei Wege.** Der **empfohlene** ist das Datenexport-ZIP: LinkedIn →
+- **LinkedIn einlesen — zwei Wege.** Der **vollständigste** ist das Datenexport-ZIP: LinkedIn →
   Einstellungen → Datenschutz → „Get a copy of your data" → **oberste Option „Download larger data
   archive"** (⚠️ *nicht* die Schnellauswahl „Profile" — die enthält nur die Positionierung). Nur das
   große Archiv bringt Skills, Berufserfahrung, Ausbildung und Zertifizierungen; LinkedIn braucht dafür
-  bis zu ~24 Stunden. Der zweite Weg ist der Button **„Profil einlesen"** neben dem URL-Feld — der ist
-  *best effort*: was hinter LinkedIns Login-Wall liegt, meldet er ehrlich als nicht lesbar, statt es
-  zu erfinden.
+  bis zu ~24 Stunden. Der zweite Weg geht sofort: **„Profil auslesen"**. Du fügst den Text deines Profils ein
+  oder lädst das PDF hoch, das LinkedIn über „Als PDF speichern" erzeugt. Die KI strukturiert ihn, du prüfst den
+  Vorschlag, und erst dann ergänzt das BMS dein Profil. Einen Abruf über die Profil-Adresse gibt es nicht,
+  LinkedIn sperrt ihn (HTTP 999).
 - **Positionierung** — großer Prosa-Block, frei editierbar.
 - **Skills als Chips**, nach Themenbereichen gruppiert. Neue Skills trägst du in einer Zeile nach
   (Name + Bereich wählen oder neu anlegen). **Importierte Skills sortieren sich selbst ein:**
@@ -561,10 +568,18 @@ von Hand zu editieren:
   **nie gesendet** — nur gelesen und Entwürfe abgelegt. Outlook.com/Microsoft-Konten werden
   mangels IMAP-Basic-Auth derzeit nicht unterstützt.
 - **Beispieldaten**: nur auf einer frischen Installation, ganz oben auf der Seite. Die Karte
-  nennt, was an Beispieldaten von Birne Helene da ist, und entfernt es mit „Beispieldaten entfernen“
+  nennt, was an Beispieldaten von Benno Bewerbaer da ist, und entfernt es mit „Beispieldaten entfernen“
   und einer Rückfrage. Vorher legt das BMS eine Sicherung an. Was dabei passiert, steht in Abschnitt 1
   unter „Beim allerersten Start: Beispieldaten“. Danach bleibt nur die kleine Zeile „Beispieldaten
   entfernt am …“.
+- **KI**: Hier wählst du, ob die KI-Läufe mit **Claude** (Standard) oder mit **ChatGPT** laufen, und
+  siehst, ob das Programm der jeweiligen KI installiert und angemeldet ist. ChatGPT ist eine Vorschau:
+  Die Läufe ohne Mail sind erprobt, die Mail-Läufe und der Tageslauf noch nicht. Die Inhalte der Läufe gehen dann an OpenAI statt an Anthropic. Eine
+  Budgetgrenze je Lauf gibt es dort nicht, es gelten die Grenzen deines Abos, und viele Läufe hintereinander können ein Plus-Konto an die Grenze bringen. Für ChatGPT brauchst du das Programm Codex CLI
+  (`npm install -g @openai/codex`, auf dem Mac auch `brew install --cask codex`) und einmal die Anmeldung
+  mit deinem ChatGPT-Konto im Terminal: `codex login`. Prüfen kannst du sie mit `codex login status`, es
+  soll „Logged in using ChatGPT“ zeigen. Einen Schlüssel zum Einfügen und die Datei `agent.env` brauchst
+  du dafür nicht. Gemini gibt es nicht, weil Googles Regeln das Abo in Apps nicht zulassen.
 - **KI-Modell je Funktion**: Für **Jobsuche · Company Fit · Beirat · CV Match · ATS Scan ·
   Anschreiben** wählst du jeweils **Opus 5.5**, **Sonnet 5.5** oder **Haiku 4.5**, Standard ist
   überall Sonnet 5.5. So setzt du das stärkere Modell gezielt dort ein, wo es sich lohnt. **Fable**
@@ -574,7 +589,8 @@ von Hand zu editieren:
   **über die App-Buttons oder das Task-Center** startest. Tippst du einen Skill von Hand in der
   Claude-Session, zählt weiterhin das dort eingestellte Modell. Läufe ohne eigene Auswahl, etwa
   E-Mail-Check, Gesprächs-Auswertung und Absagen-Analyse, laufen immer mit Sonnet 5.5, nicht mit dem
-  Standardmodell deiner Claude-Installation.
+  Standardmodell deiner Claude-Installation. Hast du ChatGPT gewählt, stehen hier statt Opus, Sonnet
+  und Haiku die Modelle von ChatGPT zur Wahl. Die Stufe je Funktion bleibt beim Wechsel der KI erhalten.
 - **Drei Plan-Karten A / B / C** — je ein frei benennbares Label, ein Aktiv-Schalter und Chip-Listen
   für **Rollentitel · Seniorität · Branche**. Die Jobsuche arbeitet die Pläne in der Reihenfolge
   **A → B → C** ab. Plan C ist neu (vorher gab es nur A und B) und taucht entsprechend auch in den

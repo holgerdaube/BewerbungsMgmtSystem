@@ -202,7 +202,8 @@ export function ProfilIdentitaetAnsicht({
       <div className="mb-2 text-sm font-semibold text-brand-navy">Identität und Suchstrategie</div>
       <p className="mb-3 text-xs text-slate-500">
         Name, Anschrift, Kontakt und LinkedIn bilden den Briefkopf der Anschreiben und die Dateinamen.
-        Kurzprofil, Zielrolle und Rahmenbedingungen liest die KI als Hintergrund.
+        Kurzprofil, Zieltermin und Rahmenbedingungen liest die KI als Hintergrund. Titel, Ebene und Branche
+        Ihrer Zielrollen stehen unter „Einstellungen“ in den Suchplänen.
       </p>
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
@@ -237,14 +238,11 @@ export function ProfilIdentitaetAnsicht({
         onChange={(v) => onForm({ ...form, kurzprofil: v })} />
 
       {form.zielrolle.length > 0 && (
-        <div className="mt-4 border-t border-slate-100 pt-3">
-          <div className="mb-1.5 text-xs font-semibold text-brand-navy">Zielrolle</div>
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-            {form.zielrolle.map((f, n) => (
-              <Feld key={`zielrolle-${n}-${f.schluessel}`} label={f.schluessel} value={f.wert}
-                onChange={(v) => setListe('zielrolle', n, v)} />
-            ))}
-          </div>
+        <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
+          {form.zielrolle.map((f, n) => (
+            <Feld key={`zielrolle-${n}-${f.schluessel}`} label={f.schluessel} value={f.wert}
+              placeholder="z. B. neue Rolle bis 31.12.2026" onChange={(v) => setListe('zielrolle', n, v)} />
+          ))}
         </div>
       )}
 

@@ -24,7 +24,9 @@ Die Software kann optionale Drittdienste einbinden — diese werden vom **Nutzer
 eigenen Konten** verbunden, nicht vom Herausgeber bereitgestellt:
 
 - **Anthropic (Claude / Claude Code)** — für die KI-gestützten Funktionen (Recherche,
-  Textentwürfe, Matching).
+  Textentwürfe, Matching), wenn Claude als KI gewählt ist (Standard).
+- **OpenAI (ChatGPT / Codex CLI)** — für dieselben Funktionen, wenn der Nutzer ChatGPT als KI
+  wählt. Die Anmeldung ist die des ChatGPT-Kontos des Nutzers, ein API-Schlüssel ist dafür nicht nötig.
 - **Google Gmail** — für das Lesen relevanter Bewerbungs-Mails und das Anlegen von
   E-Mail-Entwürfen. Verwendete Scopes: **readonly** und **compose**. Es existiert **kein
   Sende-Codepfad** — die Software kann keine E-Mails verschicken, sie legt ausschließlich
@@ -40,6 +42,28 @@ Für jeden dieser Dienste gelten die **Datenschutzbestimmungen des jeweiligen An
 Der Nutzer ist für den datenschutzkonformen Einsatz dieser Drittdienste **selbst
 verantwortlich**, da er die Konten selbst anlegt, verbindet und die entsprechenden
 Zustimmungen gegenüber diesen Anbietern selbst erteilt.
+
+### KI-Läufe: Claude oder ChatGPT
+
+Die KI-gestützten Funktionen führt wahlweise Claude Code oder die Codex CLI von OpenAI aus. Die
+Auswahl trifft der Nutzer bei der Installation oder später in den Einstellungen (Karte „KI“),
+Standard ist Claude. Beide Programme laufen auf dem Rechner des Nutzers und melden sich mit dessen
+eigenem Konto an.
+
+- **Empfänger:** der Anbieter der gewählten KI, bei Claude Anthropic, bei ChatGPT OpenAI. Der
+  Herausgeber betreibt dafür keinen Server und erhält weder die Anfragen noch die Antworten. Der
+  Anbieter verarbeitet sie in eigener Verantwortung; es gilt dessen Datenschutzerklärung.
+  Anthropic: https://www.anthropic.com/legal/privacy
+  OpenAI: https://openai.com/policies/privacy-policy/
+- **Daten:** die Inhalte, die ein Lauf braucht, soweit sie für den jeweiligen Lauf nötig sind, etwa
+  Teile von Profil, Lebenslauf, Stellenanzeigen und gelesenen E-Mails, dazu die Anweisungen des
+  Laufs. Bei ChatGPT gehen sie an OpenAI statt an Anthropic.
+- **Zweck:** Recherche, Bewertung und Textentwürfe, die der Nutzer in der App anstößt.
+- **Auslöser:** Läufe, die der Nutzer in der App startet, und Schritte, die auf eine seiner Aktionen
+  folgen.
+- **Aufbewahrung und Training:** Dazu trifft die Software keine Aussage. Es gelten die Bedingungen des
+  jeweiligen Anbieters und der Tarif des Nutzerkontos, nachzulesen in dessen Datenschutzerklärung und
+  Nutzungsbedingungen.
 
 ### Nach Updates suchen
 

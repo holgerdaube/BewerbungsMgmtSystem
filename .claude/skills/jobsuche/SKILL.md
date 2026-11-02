@@ -27,7 +27,8 @@ Notbremse bei effektiv $19 — der ganze Lauf schlug fehl, **nichts** wurde gefu
 
 ### 1. Kontext laden
 Lies zuerst:
-- `config/profil.md` — Zielprofil, harte Grenzen, Skill-Gaps.
+- `config/profil.md` — Kurzprofil, harte Grenzen, Skill-Gaps. Zielrollen stehen in den Plänen (unten); weicht ein
+  älterer Abschnitt „Zielrolle“ in der Datei davon ab, gelten die Pläne.
 - `config/scoring_rubrik.md` — Zielstellen-Fit 1–5, Situation-Codes, Plan A/B/C, harte Regionsgrenze.
 - `config/suchprofile.yaml` — **`plaene`** (Phase 49, Stand aus `/einstellungen`): Liste je Plan
   `{plan, label, aktiv, prioritaet, titel, senioritaet, branche}` — NUR Pläne mit `aktiv: true`
@@ -50,7 +51,15 @@ Lies zuerst:
   Feinparameter, die die Oberfläche NICHT abbildet, stehen weiterhin unter **`portale_technik`**
   (Nejo-Filter und `max_seiten`, Arbeitsagentur-`titel_deutsch` und `max_queries_je_lauf`,
   `apify`-Portalnamen, `websearch`-Zusatzquellen).
-- `config/zielfirmen.md` — priorisierte Firmen für gezielte Recherche.
+- `config/zielfirmen.md` — priorisierte Firmen für gezielte Recherche. **Optional:** fehlt sie, ohne sie weiter.
+- **Nicht immer vorhanden:** `config/profil.md` (fehlt sie oder ist leer, gelten die harten Grenzen aus
+  `suchprofile.yaml` und `scoring_rubrik.md`) und einzelne technische Schlüssel in `suchprofile.yaml`
+  (`portale_technik`, `radar_signale`, `ausschluss_bedingungen`, `skill_gaps_pruefen`, `apify_actors`) — eine
+  frisch angelegte Datei hat sie zum Teil nicht. Das ist kein Fehler und kein Grund zum Abbruch: Was fehlt,
+  entfällt (kein Nejo-Filter, kein Radar-Nachlauf; ohne `titel_deutsch` fragt die Arbeitsagentur mit den deutschen Titeln der Pläne), und der
+  Bericht nennt es.
+- Haben die aktiven Pläne keinen Titel, gibt es nichts zu suchen: mit dem Hinweis enden, dass die Zielrollen
+  unter „Einstellungen“ fehlen. Keine Titel erfinden.
 
 ### 2. Parallel suchen (max. 3 Subagenten — ein Bucket je Agent)
 Starte **höchstens drei** `general-purpose`-Subagenten, aufgeteilt nach den drei Such-Buckets aus
@@ -63,7 +72,7 @@ Budget mit („höchstens 8 WebSearch + 5 WebFetch — unabhängige Aufrufe davo
 Antwort gebündelt absetzen, nicht einzeln nacheinander —, dann JSON-Array zurück"). Der
 Bündelungs-Hinweis aus dem headless-Suffix erreicht Subagenten NICHT automatisch (der Suffix wird
 nur an den Haupt-Agenten angehängt) — deshalb steht er hier wörtlich im Subagenten-Prompt:
-- **Agent 1 — Bucket Remote** (Remote EMEA/DACH/Germany). Remote-Suchsyntax („remote"-Filter
+- **Agent 1 — Bucket Remote** (die `regionen` des Buckets, z. B. Remote EMEA/DACH/Germany). Remote-Suchsyntax („remote"-Filter
   bzw. -Keyword); bei Nejo zusätzlich `filter_remote` anhängen und bei dünnem Ergebnis einmal
   ohne den Filter nachholen (Regel „Remote-Bucket, dünnes Ergebnis“ in a2 — wörtlich in den
   Prompt dieses Agenten übernehmen). `tab: "Remote"`.
@@ -76,7 +85,8 @@ nur an den Haupt-Agenten angehängt) — deshalb steht er hier wörtlich im Suba
   Bucket, in dem Onsite zählt). Fehlt dieser Bucket, entfällt Agent 3 ganz. Suchraum: Orte im
   Umkreis von `<umkreis_km>` km um `<Stadt>`. Nejo hat KEINEN wirksamen Orts-Parameter
   (Phase-29-Verifikation) → Ort in die Nejo-Query aufnehmen („<Titel> <Stadt>") bzw. die
-  extrahierten Treffer-Orte gegen den Radius filtern. `tab: "<Bucket-Schlüssel>"`.
+  extrahierten Treffer-Orte gegen den Radius filtern. `tab: "<Bucket-Schlüssel>"`. Lässt sich der Radius nicht
+  sicher prüfen, nicht abbrechen: s. Schritt 3 (Region nicht prüfbar).
 - **Optionaler Radar-Nachlauf (SERIELL, kein vierter Parallel-Agent):** nach den drei Buckets bei
   übrigem Budget `radar_signale` prüfen (Restructuring-Radar-Firmen mit frischem Signal),
   höchstens ~6 Suchen. Zielfirmen-Karriereseiten prüft seit Phase 26 der eigene, rotierende Skill
@@ -96,7 +106,7 @@ nutzbar) — deckt auch Stellen ab, die
 nicht auf LinkedIn/Indeed/StepStone stehen. Je Titel eines AKTIVEN Plans (Reihenfolge nach
 `prioritaet`, Standard A→B→C) × Bucket die URL des Portals `nejo` aus der Liste `portale`
 (Phase 87 — nur wenn dort `aktiv: true`; Filter und `max_seiten` weiterhin aus
-`portale_technik.nejo`) fetchen: Remote-Bucket → zusätzlich `filter_remote` anhängen, immer `filter_management` anhängen. Aus dem gefetchten HTML je Treffer Firma, Titel,
+`portale_technik.nejo`) fetchen: Remote-Bucket → zusätzlich `filter_remote` anhängen, immer `filter_management` anhängen (beide Filter nur, wenn in `portale_technik.nejo` gesetzt). Aus dem gefetchten HTML je Treffer Firma, Titel,
 Ort, Arbeitsmodell, Alter ("vor X Tagen") und die Nejo-Job-URL extrahieren. Eiserne Regeln:
 - Nejo-Job-URLs NUR wörtlich aus dem gefetchten HTML übernehmen (nie konstruieren). Steht dort
   nur der Pfad (`/de/job/…`), gehört der Host der abgerufenen Seite davor; das ist kein
@@ -118,7 +128,7 @@ Ort, Arbeitsmodell, Alter ("vor X Tagen") und die Nejo-Job-URL extrahieren. Eise
   die findet der Deutschlandweit- bzw. Umkreis-Agent in derselben Liste selbst. Das Nachholen
   zählt als ein WebFetch ins Budget.
 - `max_alter_tage` gegen die "vor X Tagen"-Angabe der Trefferliste prüfen.
-- `portal: "Nejo"` setzen. `max_seiten` aus der config einhalten (Budget-Leitplanke).
+- `portal: "Nejo"` setzen. `max_seiten` aus der config einhalten (fehlt der Wert: 2; Budget-Leitplanke).
 Nejo-Fetches zählen ins normale Subagenten-Budget (~8 WebSearch + 5 WebFetch je Subagent) —
 dieses Budget wird durch Nejo NICHT erhöht.
 
@@ -128,7 +138,7 @@ gepinnt. Vorher immer den Verbrauch prüfen — im Apify **Free Plan (~5 $/Monat
 ```sh
 cd backend && ~/.bewerbung_mgmt_venv/bin/python -m pipeline.apify_client usage
 ~/.bewerbung_mgmt_venv/bin/python -m pipeline.apify_client run --portal LinkedIn \
-  --query "Director Professional Services" --location "Remote Germany" --max-items 25
+  --query "<Titel aus einem aktiven Plan>" --location "<Region aus einem Bucket>" --max-items 25
 ```
 Regeln: erst `--dry-run`, wenn du dir beim Input unsicher bist. Höchstens **2–3 Läufe** je
 Runde (Titel × Region), niemals die volle Titel×Region-Matrix — das sprengt das Monatsbudget.
@@ -144,16 +154,15 @@ ruft er die öffentliche Jobsuche-SUCHSEITE ab (serverseitig gerendertes HTML mi
 JSON, kein Account, kein Secret) und holt bei Bedarf mehrere Seiten nach. Läuft im Hauptlauf (DU
 rufst das CLI direkt auf, kein Subagenten-Budget nötig) mit den DEUTSCHEN Titel-Synonymen aus
 `config/suchprofile.yaml` (`portale_technik.arbeitsagentur.titel_deutsch` — der BA-Bestand ist
-deutschsprachig, die englischen Plan-A/B-Titel des Nutzers liefern dort 0 Treffer; welcher Titel
+deutschsprachig, englische Plan-Titel liefern dort meist 0 Treffer; welcher Titel
 in welchem Bucket läuft, steht unten unter „Kern und Breite“):
 ```sh
 cd backend && ~/.bewerbung_mgmt_venv/bin/python -m pipeline.arbeitsagentur_client run \
-  --was "Leiter Professional Services" --days <max_alter_tage> --size 25
+  --was "<Titel aus titel_deutsch, ersatzweise ein deutscher Titel aus den aktiven Plänen>" --days <max_alter_tage> --size 25
 ```
 - **Remote-Bucket:** ohne `--wo` (bundesweit) — der Homeoffice-Parameter (`--arbeitszeit ho`)
   ist mechanisch wirksam UND (neu gemessen 21.08.2026 gegen die SSR-Suchseite, s. Modul-
-  Docstring) inzwischen auch für diese engen Titel ergiebig (11 von 36 Treffern bei „Leiter
-  Professional Services"); trotzdem zusätzlich Remote-/Hybrid-Charakter am Titel/Text der
+  Docstring) inzwischen auch für enge Titel ergiebig; trotzdem zusätzlich Remote-/Hybrid-Charakter am Titel/Text der
   Treffer einschätzen, statt sich allein auf den Filter zu verlassen.
 - **Deutschlandweit-Bucket:** ebenfalls ohne `--wo`.
 - **Umkreis-Bucket:** `--wo "<Stadt>" --umkreis <umkreis_km>` (Felder aus dem Umkreis-Bucket,
@@ -172,13 +181,13 @@ Obergrenze ist `max_queries_je_lauf` aus der config (fehlt der Wert: 6) — nie 
 Titel×Bucket-Matrix. Reicht sie nicht für Kern und Breite, erst den Kern, dann die Breite in
 Listen-Reihenfolge. Die normalisierten Records aus der Ausgabe
 (`vorschau` + Rohdatei unter `data/arbeitsagentur/`) gehen in denselben Trichter wie
-WebSearch/Nejo/Apify: harte Grenzen (die 100+-MA-Regel greift hier besonders oft — die BA hat
+WebSearch/Nejo/Apify: harte Grenzen (die Mindest-Firmengröße `min_mitarbeiter` greift hier besonders oft — die BA hat
 viele Kleinbetriebe) → Scoring → Vier-Augen 4b → Ingest.
 
 Jeder Subagent gibt **nur ein JSON-Array** im Record-Schema (unten) zurück, keine Prosa, keine erfundenen URLs.
 
 ### 3. Zusammenführen & harte Grenzen anwenden
-- Ausschlüsse aus `suchprofile.yaml` anwenden (reine Sales-/IC-Rollen; Umzugspflicht außerhalb
+- Ausschlüsse aus `suchprofile.yaml` anwenden (`ausschluss_titel`; Umzugspflicht außerhalb
   des aktiven Umkreis-Buckets; die Kriterien aus `ausschluss_bedingungen` und
   `skill_gaps_pruefen`; Mindest-Firmengröße `min_mitarbeiter` — s. Beleg-Regel in Schritt 4b,
   hier noch keine Ablehnung ohne Beleg).
@@ -187,6 +196,9 @@ Jeder Subagent gibt **nur ein JSON-Array** im Record-Schema (unten) zurück, kei
   greift nur mit Beleg, Hybrid außerhalb des Umkreises gehört in den Bucket „Deutschlandweit“,
   und schwache Passung ist ein niedriger Score, kein Ausschluss. Je aussortierter Stelle Grenze
   und Beleg für den Abschlussbericht notieren.
+- Lässt sich eine Region oder harte Grenze nicht sicher prüfen (Ortsname unbekannt, Entfernung unklar,
+  Arbeitsmodell nicht erkennbar), ist das kein Abbruchgrund: Die Grenze gilt als nicht belegt, die Stelle
+  bleibt mit Hinweis im `source_note` drin, und der Bericht nennt den Fall.
 
 ### 4. Zielstellen-Fit bewerten (1–5) nach Bewertungsraster
 Für jede verbleibende Stelle Score + `match_rationale` **mit Beleg** setzen (Zitat/Quelle, nicht behaupten).
@@ -235,10 +247,11 @@ erzwingt es technisch: Records ohne belegten `verifikation`-Block werden verworf
    > Konflikt nicht — trage ihn ins Feld `konflikte` des Records ein, jeder Eintrag im Format
    > `KONFLIKT <Feld>: <Quelle A sagt X> vs. <Quelle B sagt Y> — im Gespräch klären (geprüft <ISO>)`.
    > **Firmengröße (Phase 34, Beleg-Regel):** Lies beim Live-Check die Firmengröße mit
-   > (LinkedIn-Größen-Chip/Anzeigentext o. ä.); belegt < 100 Mitarbeiter → ablehnen mit Beleg (Grund
-   > ZU_KLEIN); Bracket 51–200 oder unbekannt/nicht genannt → durchlassen, aber `source_note` um
+   > (LinkedIn-Größen-Chip/Anzeigentext o. ä.); belegt < <min_mitarbeiter> Mitarbeiter → ablehnen mit Beleg (Grund
+   > ZU_KLEIN); ein Bracket, das die Grenze einschließt (z. B. 51–200 bei 100), oder unbekannt/nicht genannt → durchlassen, aber `source_note` um
    > „Firmengröße unklar (<Beleg, z. B. LinkedIn 51–200>)" ergänzen — kein erfundener Punktabzug,
    > keine eigene Zusatzrecherche nur für die Größe."
+   (`<min_mitarbeiter>` im Auftrag durch den Wert aus `suchprofile.yaml` ersetzen, Standard 100.)
 3. **Ergebnis mergen:** je durchgelassenem Record den Block
    `verifikation: {status: BESTÄTIGT|KORRIGIERT|QUELLE_VERTRAUT, beleg, geprueft_am: <ISO>, herkunft}`
    setzen (herkunft nur bei QUELLE_VERTRAUT; bei KORRIGIERT ist `url` bereits die korrigierte)
@@ -294,7 +307,7 @@ Firmenschreibweise, 12.09.2026, s. P2-39).
   "portal": "LinkedIn|Indeed|StepStone|Xing|Nejo|Firmenseite",
   "work_model": "Remote|Hybrid|Onsite", "relocation_needed": "Nein",
   "tab": "<Bucket-Schlüssel, z. B. Remote>", "plan_ab": "A|B|C",
-  "seniority": "Director|VP|Head|Senior Manager|Manager",
+  "seniority": "<Ebene wie in der Anzeige, z. B. Director|VP|Head|Manager|Experte|Berufseinsteiger>",
   "salary": null, "published_date": "…",
   "situation": "BUILD|SCALE-UP|POST-MERGER|PE|CARVE-OUT|RESTRUCT|RUN|UNKLAR",
   "match_score": 1, "match_rationale": "… mit Beleg …",

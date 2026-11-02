@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api, type AgentStatus, type AgentTaskRow } from '../api'
+import { codexZeile, laufKosten, tokenText, useKiAnbieter } from '../components/ui'
 
 const ACTIVE = ['queued', 'running']
 const CHIP: Record<string, string> = {
@@ -36,7 +37,7 @@ function pretty(line: string): string | null {
       return text ? `💬 ${text.slice(0, 160)}` : null
     }
     if (ev.type === 'result') return `${ev.is_error ? '✗' : '✓'} ${String(ev.result || '').slice(0, 200)}`
-    return null
+    return codexZeile(ev) ?? null   // ChatGPT: das JSONL von `codex exec` (P2-86)
   } catch {
     return line.trim() ? line.slice(0, 160) : null
   }
@@ -54,6 +55,8 @@ function zeit(iso: string | null) {
 }
 
 export default function Tasks() {
+  const { anbieter } = useKiAnbieter()
+  const chatgpt = anbieter === 'chatgpt'
   const [tasks, setTasks] = useState<AgentTaskRow[] | null>(null)
   const [budget, setBudget] = useState<AgentStatus | null>(null)
   const [filter, setFilter] = useState<typeof FILTERS[number]['id']>('alle')
@@ -89,6 +92,7 @@ export default function Tasks() {
       aktiv,
       fehler: all.filter((t) => t.status === 'failed').length,
       kosten: all.reduce((s, t) => s + (t.cost_usd || 0), 0),
+      token: all.reduce((s, t) => s + (t.tokens || 0), 0),
     }
   }, [tasks, aktiv])
 
@@ -117,9 +121,13 @@ export default function Tasks() {
         <h1 className="text-2xl font-bold text-brand-navy">Task-Center</h1>
         <p className="text-sm text-slate-500">
           Skills, die das Backend headless ausführt
-          {budget && <> · max. {budget.max_parallel} parallel
-            {budget.per_run_budget != null && <> · Notbremse ${budget.per_run_budget.toFixed(2)} je Lauf</>}
-            {' '}· Tagesbudget ${budget.daily_budget.toFixed(2)} / {budget.max_tasks} Läufe</>}
+          {budget && (chatgpt
+            // ChatGPT (P2-86): Es gibt weder USD-Kosten noch eine Budgetgrenze je Lauf, begrenzt wird
+            // durch Zeitlimit, Abo-Grenzen und die Zahl der Läufe am Tag.
+            ? <> · max. {budget.max_parallel} parallel · max. {budget.max_tasks} Läufe am Tag · Zeitlimit statt Budget je Lauf</>
+            : <> · max. {budget.max_parallel} parallel
+              {budget.per_run_budget != null && <> · Notbremse ${budget.per_run_budget.toFixed(2)} je Lauf</>}
+              {' '}· Tagesbudget ${budget.daily_budget.toFixed(2)} / {budget.max_tasks} Läufe</>)}
         </p>
         {budget?.warnung && (
           <p className="mt-1 text-xs text-amber-600">⚠ {budget.warnung}</p>
@@ -131,22 +139,36 @@ export default function Tasks() {
         <div className="rounded-xl border border-indigo-200 bg-white p-4 shadow-sm"><div className="text-xs uppercase tracking-wide text-slate-500">Aktiv</div><div className={`mt-1 text-3xl font-bold ${stats.aktiv ? 'text-indigo-700' : 'text-brand-navy'}`}>{stats.aktiv}</div></div>
         <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"><div className="text-xs uppercase tracking-wide text-slate-500">Fehlgeschlagen</div><div className={`mt-1 text-3xl font-bold ${stats.fehler ? 'text-rose-600' : 'text-brand-navy'}`}>{stats.fehler}</div></div>
         {budget && (() => {
-          const anteil = budget.daily_budget ? budget.spent_today / budget.daily_budget : 0
+          // ChatGPT (P2-86): Dollar gibt es nicht, die Kachel zählt die Läufe gegen die Tagesgrenze.
+          const anteil = chatgpt
+            ? (budget.max_tasks ? budget.tasks_today / budget.max_tasks : 0)
+            : (budget.daily_budget ? budget.spent_today / budget.daily_budget : 0)
           const knapp = anteil >= 0.8
           return (
             <div className={`rounded-xl border bg-white p-4 shadow-sm ${knapp ? 'border-amber-300' : 'border-slate-200'}`}
               title={`${budget.tasks_today} von ${budget.max_tasks} Läufen heute`}>
-              <div className="text-xs uppercase tracking-wide text-slate-500">Heute verbraucht</div>
+              <div className="text-xs uppercase tracking-wide text-slate-500">{chatgpt ? 'Läufe heute' : 'Heute verbraucht'}</div>
               <div className={`mt-1 text-3xl font-bold ${knapp ? 'text-amber-600' : 'text-brand-navy'}`}>
-                ${budget.spent_today.toFixed(2)}
+                {chatgpt ? budget.tasks_today : `$${budget.spent_today.toFixed(2)}`}
               </div>
               <div className="mt-1 text-xs text-slate-400">
-                von ${budget.daily_budget.toFixed(2)} · {budget.tasks_today}/{budget.max_tasks} Läufe
+                {chatgpt
+                  ? `von max. ${budget.max_tasks} Läufen`
+                  : <>von ${budget.daily_budget.toFixed(2)} · {budget.tasks_today}/{budget.max_tasks} Läufe</>}
               </div>
             </div>
           )
         })()}
-        <div className="rounded-xl border border-brand-cyan/40 bg-white p-4 shadow-sm"><div className="text-xs uppercase tracking-wide text-slate-500">Kosten gesamt</div><div className="mt-1 text-3xl font-bold text-brand-cyan">${stats.kosten.toFixed(2)}</div></div>
+        {chatgpt ? (
+          <div className="rounded-xl border border-brand-cyan/40 bg-white p-4 shadow-sm"
+            title="Neue Token aller Läufe: Eingabe ohne Cache plus Ausgabe">
+            <div className="text-xs uppercase tracking-wide text-slate-500">Token gesamt</div>
+            <div className="mt-1 text-3xl font-bold text-brand-cyan">{tokenText(stats.token)}</div>
+            <div className="mt-1 text-xs text-slate-400">Kosten in USD meldet ChatGPT nicht</div>
+          </div>
+        ) : (
+          <div className="rounded-xl border border-brand-cyan/40 bg-white p-4 shadow-sm"><div className="text-xs uppercase tracking-wide text-slate-500">Kosten gesamt</div><div className="mt-1 text-3xl font-bold text-brand-cyan">${stats.kosten.toFixed(2)}</div></div>
+        )}
       </div>
 
       <div className="flex items-center gap-1 rounded-xl border border-slate-200 bg-white p-2 shadow-sm">
@@ -199,7 +221,8 @@ export default function Tasks() {
                   <td className="px-3 py-2"><span className={`rounded-full px-2 py-0.5 text-xs font-medium ${CHIP[t.status]}`}>{CHIP_TEXT[t.status]}</span></td>
                   <td className="whitespace-nowrap px-3 py-2 text-slate-500">{zeit(t.started_at || t.created_at)}</td>
                   <td className="px-3 py-2 text-right tabular-nums text-slate-500">{t.duration_s != null ? `${t.duration_s}s` : '–'}</td>
-                  <td className="px-3 py-2 text-right tabular-nums text-slate-500">{t.cost_usd != null ? `$${t.cost_usd.toFixed(3)}` : '–'}</td>
+                  <td className="px-3 py-2 text-right tabular-nums text-slate-500"
+                    title={t.tokens ? 'Neue Token des Laufs: Eingabe ohne Cache plus Ausgabe' : undefined}>{laufKosten(t, anbieter) ?? '–'}</td>
                   <td className="whitespace-nowrap px-3 py-2 text-right text-xs">
                     <button onClick={() => setOpen(open === t.id ? null : t.id)} className="text-brand-cyan hover:underline">
                       {open === t.id ? 'Log zu' : 'Log'}

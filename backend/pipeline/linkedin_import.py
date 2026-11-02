@@ -98,15 +98,10 @@ def _career_key(art: str, firma: str | None, rolle: str | None, von: str | None,
            (von or "").strip().lower(), (bis or "").strip().lower())
 
 
-def importiere_zip(inhalt: bytes, session: Session) -> dict:
-    """Kern der Stufe C — nimmt die rohen ZIP-Bytes (vom Upload-Endpunkt gelesen) entgegen,
-    schreibt additiv in Profile/ProfileSkill/CareerEntry, liefert eine Bericht-Zusammenfassung
-    (auch fürs UI-Feedback nach dem Upload)."""
-    try:
-        zf = zipfile.ZipFile(io.BytesIO(inhalt))
-    except zipfile.BadZipFile:
-        raise LinkedinImportError("Datei ist kein gültiges ZIP-Archiv")
-
+def _additiv_schreiben(session: Session, felder: dict, skills: list[str], eintraege: list[dict]) -> dict:
+    """Gemeinsamer Kern von ZIP-Import und Textvorschlag: `felder` (headline, standort, positionierung) nur,
+    wenn sie leer sind; `skills` und `eintraege` (art, firma, rolle, von, bis, weitere Felder von CareerEntry)
+    nur, wenn es sie noch nicht gibt. Liefert die Bericht-Zusammenfassung fürs UI-Feedback."""
     profile = session.get(Profile, 1)
     if not profile:
         profile = Profile(id=1)
@@ -114,30 +109,19 @@ def importiere_zip(inhalt: bytes, session: Session) -> dict:
         session.flush()
 
     profil_aktualisiert: list[str] = []
-    profil_rows = _lese_csv(zf, "Profile.csv")
-    if profil_rows:
-        p = profil_rows[0]
-        headline = _get(p, "Headline")
-        standort = _get(p, "Geo Location", "Location", "Zip Code")
-        summary = _get(p, "Summary")
-        if headline and not profile.headline:
-            profile.headline = headline
-            profil_aktualisiert.append("headline")
-        if standort and not profile.standort:
-            profile.standort = standort
-            profil_aktualisiert.append("standort")
-        if summary and not profile.positionierung:
-            profile.positionierung = summary
-            profil_aktualisiert.append("positionierung")
+    for feld in ("headline", "standort", "positionierung"):
+        wert = felder.get(feld)
+        if wert and not getattr(profile, feld):
+            setattr(profile, feld, wert)
+            profil_aktualisiert.append(feld)
 
     bestehende_skills = {s.name.strip().lower() for s in session.exec(select(ProfileSkill)).all()}
     skills_neu = 0
-    for row in _lese_csv(zf, "Skills.csv"):
-        name = _get(row, "Name")
+    for name in skills:
         if not name or name.strip().lower() in bestehende_skills:
             continue
-        # LinkedIns Skills-Export liefert KEINE Kategorie — Sammelbereich, der Nutzer sortiert per
-        # PATCH /api/profil/skills/{id} bei Bedarf in einen passenden Bereich um.
+        # Weder der Export noch der Textvorschlag liefern eine Kategorie — Sammelbereich, der Nutzer sortiert
+        # per PATCH /api/profil/skills/{id} bei Bedarf in einen passenden Bereich um.
         session.add(ProfileSkill(name=name, bereich="LinkedIn (unsortiert)", quelle="linkedin"))
         bestehende_skills.add(name.strip().lower())
         skills_neu += 1
@@ -147,36 +131,16 @@ def importiere_zip(inhalt: bytes, session: Session) -> dict:
         for c in session.exec(select(CareerEntry)).all()
     }
     werdegang_neu = 0
-
-    def _career_anlegen(art: str, firma: str, rolle: str, von: str, bis: str, **rest) -> None:
-        nonlocal werdegang_neu
+    for e in eintraege:
+        art, firma, rolle, von, bis = (e.get(k) or "" for k in ("art", "firma", "rolle", "von", "bis"))
         key = _career_key(art, firma, rolle, von, bis)
         if key in bestehende_career:
-            return
+            continue
+        rest = {k: v or None for k, v in e.items() if k not in ("art", "firma", "rolle", "von", "bis")}
         session.add(CareerEntry(art=art, firma=firma or None, rolle=rolle or None,
-                                von=von or None, bis=bis or None, quelle="linkedin",
-                                **{k: v or None for k, v in rest.items()}))
+                                von=von or None, bis=bis or None, quelle="linkedin", **rest))
         bestehende_career.add(key)
         werdegang_neu += 1
-
-    for row in _lese_csv(zf, "Positions.csv"):
-        _career_anlegen("Beruf", _get(row, "Company Name", "Company"), _get(row, "Title"),
-                        _get(row, "Started On", "Start Date"), _get(row, "Finished On", "End Date"),
-                        beschreibung=_get(row, "Description"))
-
-    for row in _lese_csv(zf, "Education.csv"):
-        rolle = " ".join(x for x in (_get(row, "Degree Name"), _get(row, "Field Of Study")) if x)
-        _career_anlegen("Ausbildung", _get(row, "School Name", "School"), rolle,
-                        _get(row, "Start Date"), _get(row, "End Date"),
-                        beschreibung=_get(row, "Notes", "Activities"))
-
-    for row in _lese_csv(zf, "Certifications.csv"):
-        lizenz = _get(row, "License Number")
-        authority = _get(row, "Authority")
-        _career_anlegen("Zertifizierung", authority, _get(row, "Name"),
-                        _get(row, "Started On", "Start Date"), _get(row, "Finished On", "End Date"),
-                        referenzgeber=authority,
-                        notiz=f"Lizenznummer: {lizenz}" if lizenz else "")
 
     if profil_aktualisiert or skills_neu or werdegang_neu:
         profile.linkedin_eingelesen_am = date.today().isoformat()
@@ -191,3 +155,43 @@ def importiere_zip(inhalt: bytes, session: Session) -> dict:
         "werdegang_neu": werdegang_neu,
         "linkedin_eingelesen_am": profile.linkedin_eingelesen_am,
     }
+
+
+def importiere_zip(inhalt: bytes, session: Session) -> dict:
+    """Kern der Stufe C — nimmt die rohen ZIP-Bytes (vom Upload-Endpunkt gelesen) entgegen,
+    schreibt additiv in Profile/ProfileSkill/CareerEntry, liefert eine Bericht-Zusammenfassung
+    (auch fürs UI-Feedback nach dem Upload)."""
+    try:
+        zf = zipfile.ZipFile(io.BytesIO(inhalt))
+    except zipfile.BadZipFile:
+        raise LinkedinImportError("Datei ist kein gültiges ZIP-Archiv")
+
+    felder: dict = {}
+    profil_rows = _lese_csv(zf, "Profile.csv")
+    if profil_rows:
+        p = profil_rows[0]
+        felder = {"headline": _get(p, "Headline"), "standort": _get(p, "Geo Location", "Location", "Zip Code"),
+                  "positionierung": _get(p, "Summary")}
+
+    skills = [_get(row, "Name") for row in _lese_csv(zf, "Skills.csv")]
+
+    eintraege: list[dict] = []
+    for row in _lese_csv(zf, "Positions.csv"):
+        eintraege.append({"art": "Beruf", "firma": _get(row, "Company Name", "Company"), "rolle": _get(row, "Title"),
+                          "von": _get(row, "Started On", "Start Date"), "bis": _get(row, "Finished On", "End Date"),
+                          "beschreibung": _get(row, "Description")})
+
+    for row in _lese_csv(zf, "Education.csv"):
+        rolle = " ".join(x for x in (_get(row, "Degree Name"), _get(row, "Field Of Study")) if x)
+        eintraege.append({"art": "Ausbildung", "firma": _get(row, "School Name", "School"), "rolle": rolle,
+                          "von": _get(row, "Start Date"), "bis": _get(row, "End Date"),
+                          "beschreibung": _get(row, "Notes", "Activities")})
+
+    for row in _lese_csv(zf, "Certifications.csv"):
+        lizenz = _get(row, "License Number")
+        authority = _get(row, "Authority")
+        eintraege.append({"art": "Zertifizierung", "firma": authority, "rolle": _get(row, "Name"),
+                          "von": _get(row, "Started On", "Start Date"), "bis": _get(row, "Finished On", "End Date"),
+                          "referenzgeber": authority, "notiz": f"Lizenznummer: {lizenz}" if lizenz else ""})
+
+    return _additiv_schreiben(session, felder, skills, eintraege)

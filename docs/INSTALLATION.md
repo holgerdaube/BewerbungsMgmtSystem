@@ -24,7 +24,8 @@ vollständig auf dem eigenen Rechner (FastAPI + SQLite + React); es gibt keinen 
 Netz, bei dem man sich anmeldet.
 
 Die inhaltliche Arbeit — Recherche, Textentwürfe, Matching — erledigt **Claude Code** als
-Unterprozess. Ohne ein aktives Claude-Konto laufen die Grundfunktionen (Erfassen, Verwalten,
+Unterprozess, wahlweise die **Codex CLI** von OpenAI (ChatGPT, Vorschau, s. 3.7). Ohne ein aktives
+Claude- oder ChatGPT-Konto laufen die Grundfunktionen (Erfassen, Verwalten,
 Auswerten, Exportieren), aber alle KI-gestützten Abläufe nicht. Eine Lizenzdatei ist nicht nötig: Alle
 Funktionen stehen ohne Lizenz zur Verfügung.
 
@@ -36,6 +37,8 @@ Funktionen stehen ohne Lizenz zur Verfügung.
 | Claude Code (CLI) | aktuell | alle KI-Funktionen | faktisch ja |
 | LibreOffice | aktuell | Word-Dateien in PDF wandeln | für PDF-Ausgabe |
 | Claude-Konto | Abo oder API | Betrieb der KI-Funktionen | für KI-Funktionen |
+| Codex CLI (statt Claude Code) | aktuell | KI-Funktionen mit ChatGPT | nur bei ChatGPT |
+| ChatGPT-Konto | Plus oder Pro | Betrieb der KI-Funktionen mit ChatGPT | nur bei ChatGPT |
 
 Zeitbedarf: etwa 30–45 Minuten für die Technik (Teil 1 oder 2), danach ein bis zwei Stunden für
 die persönliche Einrichtung (Teil 3). Für den LinkedIn-Datenexport, den Teil 3 empfiehlt, sollte
@@ -422,6 +425,14 @@ Das ausgegebene Token in eine Datei `agent.env` im Secrets-Verzeichnis schreiben
 Als Vorlage dient `automation/agent.env.example`. Achtung beim Kopieren: Bricht das Token über
 mehrere Zeilen um, gehören die Teile wieder in eine Zeile — eine Zeile ohne `=` ist die
 Fortsetzung der vorherigen. Nach dem Anlegen den Server neu starten.
+
+**Mit ChatGPT statt Claude (Vorschau):** Die Codex CLI installieren (`npm install -g @openai/codex`,
+unter macOS auch `brew install --cask codex`), einmal mit dem ChatGPT-Konto anmelden (`codex login`,
+prüfen mit `codex login status`, erwartet „Logged in using ChatGPT“) und in den Einstellungen in der
+Karte „KI“ ChatGPT wählen (oder `PATCH /api/einstellungen` mit `{"ki_anbieter":"chatgpt"}`). Ein
+Token und `agent.env` sind dafür nicht nötig. Die Inhalte der KI-Läufe gehen dann an OpenAI statt an
+Anthropic. Unter Windows nutzen Sie `npm.cmd` und `codex.cmd`; die bevorzugte Sandbox von Codex braucht
+dort laut OpenAI einmalig ein Administrator-Setup, und der Weg ist unter Windows nicht erprobt.
 
 Zusätzlich muss die Freigabeliste `automation/agent_settings.json` den Pfad zum Python der virtuellen
 Umgebung treffen. Sie nennt ihn in der `~`-Form (`~/.bewerbung_mgmt_venv/bin/python`); liegt Ihre Umgebung

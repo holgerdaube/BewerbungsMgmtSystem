@@ -92,6 +92,17 @@ def _anzeigentext_attrappe(request, monkeypatch):
     monkeypatch.setattr(posting_snapshot, "anzeigentext_sichern", _vorhanden, raising=False)
 
 
+@pytest.fixture(autouse=True)
+def _suchprofile_nie_echt(monkeypatch, tmp_path_factory):
+    """`PATCH /api/einstellungen` schreibt `config/suchprofile.yaml` neu, und dieser Pfad hängt NICHT an `BMS_DATA_DIR`:
+    Ohne Umleitung überschreibt ein Test den verwalteten Kopf der echten Datei mit den Plänen der Test-DB. Tests, die
+    den Pfad selbst setzen, überschreiben diese Umleitung."""
+    from pipeline import suchprofil
+    ziel = tmp_path_factory.mktemp("suchprofil") / "suchprofile_test.yaml"     # eigener Ordner: Tests zählen teils tmp_path
+    ziel.write_text(suchprofil.MARKER + "\n", encoding="utf-8")
+    monkeypatch.setattr(suchprofil, "SUCHPROFILE_PATH", ziel)
+
+
 @pytest.fixture(scope="session", autouse=True)
 def _sqlite_ohne_plattenbestaetigung():
     """P2-65: Jede SQLite-Verbindung, die im Testprozess über SQLAlchemy entsteht, läuft mit

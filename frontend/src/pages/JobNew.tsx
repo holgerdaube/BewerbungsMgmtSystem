@@ -1,12 +1,13 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { api } from '../api'
 import { isoTag } from '../zeit'
 import { useSuchTabs } from '../suchbereich'
+import { SENIORITAETEN } from '../senioritaet'
 
 const PORTALE = ['LinkedIn', 'Indeed', 'StepStone', 'Xing', 'Firmenseite', 'Empfehlung', 'E-Mail', 'Headhunter', 'Sonstiges']
 const MODELLE = ['', 'Remote', 'Hybrid', 'Onsite', 'Unbekannt']
-const SENIOR = ['', 'VP', 'Senior Director', 'Director', 'Head', 'Senior Manager', 'Manager']
+const SENIOR = ['', ...SENIORITAETEN]
 const STATI = ['Neu', 'Prüfen', 'Beworben']
 const KANAELE = ['', 'Portal', 'E-Mail', 'Recruiter', 'Empfehlung']
 
@@ -34,19 +35,33 @@ export default function JobNew() {
     seniority: '', tab: '', plan_ab: '', salary: '', published_date: '',
     status: 'Prüfen', applied_date: today, channel: '', match_score: '', notes: params.get('notes') || '',
   })
-  const set = (k: string, v: any) => setF((s: any) => ({ ...s, [k]: v }))
   const [saving, setSaving] = useState(false)
   const [err, setErr] = useState<string | null>(null)
-  const [existing, setExisting] = useState<any>(null)
+  const [dublette, setDublette] = useState<{ art: string; job: any } | null>(null)
+  const set = (k: string, v: any) => {
+    setF((s: any) => ({ ...s, [k]: v }))
+    if (k === 'url' || k === 'company_name' || k === 'title') setDublette(null)
+  }
+
+  // Warnt schon beim Verlassen des Felds. Nur ein Hinweis: Ein Fehler hier stört das Anlegen nicht,
+  // das Speichern prüft ohnehin noch einmal.
+  const dublettePruefen = async () => {
+    const abfrage = new URLSearchParams({ url: f.url.trim(), company_name: f.company_name.trim(), title: f.title.trim() })
+    try {
+      const r = await api<any>(`/jobs/dublette?${abfrage}`)
+      setDublette(r.job ? { art: r.art, job: r.job } : null)
+    } catch { /* s. o. */ }
+  }
+  useEffect(() => { if (f.company_name && f.title) dublettePruefen() }, [])
 
   const submit = async () => {
-    setSaving(true); setErr(null); setExisting(null)
+    setSaving(true); setErr(null); setDublette(null)
     try {
       const payload: any = { ...f }
       payload.match_score = f.match_score ? Number(f.match_score) : null
       if (f.status !== 'Beworben') { delete payload.applied_date; delete payload.channel }
       const r = await api<any>('/jobs', { method: 'POST', body: JSON.stringify(payload) })
-      if (r.existing) setExisting(r.job)
+      if (r.existing) setDublette({ art: r.art, job: r.job })
       else nav(`/jobs/${r.job.id}`)
     } catch (e) {
       setErr(String(e))
@@ -66,20 +81,21 @@ export default function JobNew() {
         </p>
       </div>
 
-      {existing && (
-        <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-800">
-          <b>Schon vorhanden:</b> {existing.company_name} — {existing.title} ({existing.status}).{' '}
-          <Link to={`/jobs/${existing.id}`} className="font-medium text-brand-cyan hover:underline">Zum bestehenden Job →</Link>
-        </div>
-      )}
       {err && <div className="rounded-xl border border-rose-300 bg-rose-50 p-4 text-sm text-rose-700">Fehler: {err}</div>}
 
       <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-          <Row label="Firma" required><input className={inputCls} value={f.company_name} onChange={(e) => set('company_name', e.target.value)} placeholder="z. B. Muster GmbH" /></Row>
-          <Row label="Rollen-Titel" required><input className={inputCls} value={f.title} onChange={(e) => set('title', e.target.value)} placeholder="z. B. Head of Professional Services DACH" /></Row>
+          <Row label="Firma" required><input className={inputCls} value={f.company_name} onChange={(e) => set('company_name', e.target.value)} onBlur={dublettePruefen} placeholder="z. B. Muster GmbH" /></Row>
+          <Row label="Rollen-Titel" required><input className={inputCls} value={f.title} onChange={(e) => set('title', e.target.value)} onBlur={dublettePruefen} placeholder="z. B. Head of Professional Services DACH" /></Row>
         </div>
-        <Row label="Stellen-URL"><input className={inputCls} value={f.url} onChange={(e) => set('url', e.target.value)} placeholder="https://…" /></Row>
+        <Row label="Stellen-URL"><input className={inputCls} value={f.url} onChange={(e) => set('url', e.target.value)} onBlur={dublettePruefen} placeholder="https://…" /></Row>
+        {dublette && (
+          <div role="alert" className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800">
+            <b>{dublette.art === 'url' ? 'URL bereits erfasst in Stelle' : 'Stelle bereits erfasst:'}</b>{' '}
+            {dublette.job.company_name} — {dublette.job.title} ({dublette.job.status}).{' '}
+            <Link to={`/jobs/${dublette.job.id}`} className="font-medium text-brand-cyan hover:underline">Zur Stelle →</Link>
+          </div>
+        )}
         <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
           <Row label="Portal / Quelle">
             <select className={inputCls} value={f.portal} onChange={(e) => set('portal', e.target.value)}>{PORTALE.map((p) => <option key={p}>{p}</option>)}</select>

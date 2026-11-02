@@ -1,4 +1,4 @@
-"""Tests für P2-59, Paket B: Beispieldaten („Birne Helene“) einer frischen Paket-Installation.
+"""Tests für P2-59, Paket B: Beispieldaten („Benno Bewerbaer“) einer frischen Paket-Installation.
 
 Alles läuft unter `tmp_path`: eigener Projekt-Root (`config/`, `data/`), eigener Datenordner und eine
 eigene SQLite-Datei je Test (Fixture `umgebung`). Die Funktionen bekommen Projekt-Root, Datenordner
@@ -204,7 +204,7 @@ def test_paket_legt_an_und_schreibt_die_markierung(umgebung):
     assert _einspielen(umgebung) is True
     markierung = _markierung(umgebung)
     assert markierung["status"] == "vorhanden"
-    assert markierung["name"] == "Birne Helene"
+    assert markierung["name"] == "Benno Bewerbaer"
     assert markierung["angelegt_am"] == "2026-10-01T09:30:00"
     assert set(markierung["dateien"]) == {"config/profil.md", "data/cv_basis/base_de.docx"}
     assert all(len(h) == 64 for h in markierung["dateien"].values())
@@ -477,11 +477,11 @@ def test_profil_md_ist_fuer_den_profil_leser_lesbar(angelegt, monkeypatch):
     pfad = angelegt.projekt / "config" / "profil.md"
     monkeypatch.setattr(user_profile, "_PROFIL_MD", pfad)
 
-    assert user_profile.user_name() == "Birne Helene"
+    assert user_profile.user_name() == "Benno Bewerbaer"
     assert user_profile.anschrift() == "Musterweg 7, 12345 Musterstadt"
     assert user_profile.briefkopf_ort() == "Musterstadt"
     assert user_profile.briefkopf() == (
-        "Birne Helene\nMusterweg 7, 12345 Musterstadt\nbirne.helene@beispiel.de | +49 170 1234567")
+        "Benno Bewerbaer\nMusterweg 7, 12345 Musterstadt\nbenno.bewerbaer@beispiel.de | +49 170 1234567")
     text = pfad.read_text(encoding="utf-8")
     for abschnitt in ("## Identität", "## Kurzprofil", "## Zielrolle", "## Harte Rahmenbedingungen",
                       "## Sprachen / CV-Fassungen", "## Bekannte Skill-Gaps / Red Flags",
@@ -932,7 +932,7 @@ def test_status_form(umgebung):
 
     _einspielen(umgebung)
     vorhanden = beispieldaten.status(umgebung.daten)
-    assert vorhanden["status"] == "vorhanden" and vorhanden["name"] == "Birne Helene"
+    assert vorhanden["status"] == "vorhanden" and vorhanden["name"] == "Benno Bewerbaer"
     assert vorhanden["angelegt_am"] == "2026-10-01T09:30:00" and vorhanden["entfernt_am"] is None
     assert vorhanden["anzahl"] == {
         "stellen": 5, "firmen": 6, "bewerbungen": 3, "mails": 5, "gespraeche": 1, "kontakte": 1,
@@ -982,7 +982,7 @@ def test_router_get_liefert_den_status(router_client, angelegt):
     r = router_client.get("/api/beispieldaten")
     assert r.status_code == 200
     body = r.json()
-    assert body["status"] == "vorhanden" and body["name"] == "Birne Helene"
+    assert body["status"] == "vorhanden" and body["name"] == "Benno Bewerbaer"
     assert body["anzahl"]["stellen"] == 5 and body["anzahl"]["dateien"] == 2
 
 

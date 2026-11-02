@@ -39,7 +39,7 @@ import contextlib
 import datetime
 import importlib
 
-from app import zeit
+from app import ki_anbieter, zeit
 import json
 import os
 import signal
@@ -286,17 +286,11 @@ PROMPTS = {
         # kein Retry: legt bei jedem Lauf eine neue ki-Row an, ein zweiter Versuch dupliziert die Antwort
     },
     "profil-einlesen": {
-        "label": "Profil einlesen (LinkedIn-URL)", "template": "Profil einlesen von {linkedin_url}",
-        "needs_job": False, "needs_params": ("linkedin_url",), "headless": True, "timeout_s": 300,
-        # best effort GEGENÜBER der Login-Wall (Design-Entscheidung 4b, Phase 45) — braucht
-        # WebFetch (EIN Aufruf auf die übergebene URL, profil-einlesen/SKILL.md Schritt 1),
-        # deshalb NICHT gesperrt. Kein Retry: additive Schreiblogik ist zwar idempotent-sicher
-        # (linkedin_import-Dedup), ein zweiter Versuch bringt aber nichts Neues, solange dieselbe
-        # Login-Wall im Weg steht.
-        # Phase 66A (S1-Beleg): WebSearch kommt im Skill NIRGENDS vor — mehr noch, ein
-        # WebSearch-Fallback widerspräche der ausdrücklichen Design-Grenze „KEIN Login-Versuch,
-        # keine Umgehung der Wall" (Schritt 1). Sperren, WebFetch bleibt erlaubt.
-        "disallowed_tools": ["WebSearch"],
+        "label": "Profil einlesen (Text oder PDF)", "template": "Profil einlesen aus dem hinterlegten Text",
+        "needs_job": False, "headless": True, "timeout_s": 300,
+        # Strukturiert nur den vom Nutzer gelieferten Text (pipeline/linkedin_text.py), kein Web. Kein Retry:
+        # Ein neuer Versuch ist ein neuer Klick mit neuer Eingabe.
+        "disallowed_tools": ["WebSearch", "WebFetch"],
     },
     "beirat-persona": {
         "label": "Beiratsplatz neu besetzen",
@@ -367,6 +361,7 @@ PROMPTS = {
     },
     "jobsuche-apify": {
         "label": "Jobsuche + Apify", "template": "such nach neuen Stellen, nutze dabei auch Apify",
+        "skill": "jobsuche",    # P2-86: Skill-Name für `ki_anbieter.codex_prompt`, wo er von der Art abweicht
         "needs_job": False, "headless": True, "timeout_s": 3000,
         # kein Retry: ein zweiter Lauf verbrennt echte Apify-Credits (Free Plan)
         # kostet_geld: der Lauf ruft einen Pay-per-Call-Dienst → Budget-Guard vor dem Start (Phase 10)
@@ -893,7 +888,7 @@ SECRET_KEYS_BY_KIND: dict[str, set[str]] = {
 }
 
 
-def _child_env(kind: str) -> tuple[dict, Optional[str]]:
+def _child_env(kind: str, anbieter: Optional[str] = None) -> tuple[dict, Optional[str]]:
     """Server-Env (unverändert, für JEDE Art identisch) + die für `kind` freigegebenen Secrets
     aus ENV_FILE (SECRETS_DIR/agent.env; Ort seit Phase 63A außerhalb von Projekt & iCloud).
 
@@ -907,9 +902,13 @@ def _child_env(kind: str) -> tuple[dict, Optional[str]]:
     Klartext-Satz fürs Task-Log (S2) — der Aufrufer (`_run_task`) schreibt ihn dorthin, damit
     ein künftiger Skill, der einen neuen Schlüssel braucht, nicht rätselhaft scheitert, sondern
     die Ursache im eigenen Log steht. Werte werden NIE geloggt, nur Schlüssel-NAMEN.
+
+    Unter ChatGPT (P2-86) bekommt der Lauf den Claude-Token nicht, und ein API-Schlüssel im Server-Env
+    wird entfernt, damit Codex über das Abo läuft (`ki_anbieter.codex_umgebung`).
     """
     env = os.environ.copy()
     erlaubt = {"CLAUDE_CODE_OAUTH_TOKEN"} | SECRET_KEYS_BY_KIND.get(kind, set())
+    chatgpt = anbieter == ki_anbieter.CHATGPT
     zurueckgehalten: list[str] = []
     if ENV_FILE.exists():
         for raw in ENV_FILE.read_text(encoding="utf-8").splitlines():
@@ -918,10 +917,14 @@ def _child_env(kind: str) -> tuple[dict, Optional[str]]:
                 continue
             k, v = line.split("=", 1)
             k = k.strip()
+            if chatgpt and k == "CLAUDE_CODE_OAUTH_TOKEN":
+                continue
             if k in erlaubt:
                 env[k] = v.strip().strip('"').strip("'")
             else:
                 zurueckgehalten.append(k)
+    if chatgpt:
+        env = ki_anbieter.codex_umgebung(env)
     hinweis = None
     if zurueckgehalten:
         hinweis = (
@@ -1090,11 +1093,12 @@ def _argv(prompt: str, kind: str, modell_override: Optional[str] = None) -> list
     return argv
 
 
-async def _drain(proc, log_file):
+async def _drain(proc, log_file, auswertung=None):
     """stdout zeilenweise ins Log schreiben.
 
     Gibt zurück: (letztes `result`-Event | None, letzte nicht-leere Zeile).
     Die Zeile trägt die Meldung lokaler Schritte, die kein stream-json sprechen.
+    `auswertung` (P2-86): liest den Strom von `codex exec`, der kein `result`-Event kennt.
     """
     result = None
     letzte = ""
@@ -1112,10 +1116,14 @@ async def _drain(proc, log_file):
         if stripped.startswith("{"):
             try:
                 ev = json.loads(stripped)
-                if ev.get("type") == "result":
+                if auswertung:
+                    auswertung.ereignis(ev)
+                elif ev.get("type") == "result":
                     result = ev
             except json.JSONDecodeError:
                 pass
+    if auswertung:
+        result = auswertung.ergebnis(letzte)
     return result, letzte
 
 
@@ -1212,22 +1220,35 @@ async def _run_task(task_id: int) -> None:
     _update(task_id, status="running", started_at=started, log_path=log_filename)
 
     proc = None
+    chatgpt = False
     try:
         with open(log_path, "w", encoding="utf-8") as log_file:
             # Phase 66A: nur die für `kind` freigegebenen Secrets weiterreichen (s. _child_env()-
             # Docstring). Ein zurückgehaltener Schlüssel wird SOFORT ins Task-Log geschrieben —
             # bevor der Subprozess überhaupt startet —, damit die Ursache eines möglichen
             # Fehlschlags (S2) an derselben Stelle steht, an der der Nutzer ohnehin zuerst nachsieht.
-            child_env, secrets_hinweis = _child_env(kind)
+            # P2-86: Lokale Schritte brauchen keine KI, sonst entscheidet die Einstellung.
+            anbieter = None if local_cmd else ki_anbieter.aktiv()
+            chatgpt = anbieter == ki_anbieter.CHATGPT
+            child_env, secrets_hinweis = _child_env(kind, anbieter)
             if secrets_hinweis:
                 log_file.write(secrets_hinweis + "\n")
                 log_file.flush()
                 print(secrets_hinweis, flush=True)   # zusätzlich im Server-Log (Konvention wie
                                                        # _update()/_fehlschlag() oben)
+            auswertung = None
+            if chatgpt:
+                ki_anbieter.skills_spiegeln(PROJECT_ROOT)
+                auswertung = ki_anbieter.CodexAuswertung()
+                aufruf = ki_anbieter.codex_argv(kind, PROMPTS.get(kind, {}), modell_fuer_kind(kind), MODELL_STANDARD,
+                                                PROJECT_ROOT, LOG_DIR, SECRETS_DIR)
+            else:
+                aufruf = local_cmd or _argv(prompt, kind, modell_fuer_kind(kind))
             proc = await asyncio.create_subprocess_exec(
-                *(local_cmd or _argv(prompt, kind, modell_fuer_kind(kind))),
+                *aufruf,
                 cwd=str(PROJECT_ROOT),
                 env=child_env,
+                stdin=asyncio.subprocess.PIPE if chatgpt else None,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.STDOUT,
                 # stream-json-Zeilen können groß werden (Datei-Reads, .docx-Inhalt, Bilder als
@@ -1243,8 +1264,12 @@ async def _run_task(task_id: int) -> None:
             # start_new_session=True-Stelle oben und sind damit gleichermaßen vom
             # Ctrl+C-Verwaisungsproblem betroffen (s. _erwartete_kommandozeile()).
             _update(task_id, pid=proc.pid)
+            if chatgpt:
+                proc.stdin.write(ki_anbieter.codex_prompt(prompt, kind, PROMPTS.get(kind, {})).encode("utf-8"))
+                await proc.stdin.drain()
+                proc.stdin.close()
             try:
-                result, letzte = await asyncio.wait_for(_drain(proc, log_file), timeout=timeout_s)
+                result, letzte = await asyncio.wait_for(_drain(proc, log_file, auswertung), timeout=timeout_s)
                 rc = await proc.wait()
             except asyncio.TimeoutError:
                 _kill(proc.pid)
@@ -1271,7 +1296,10 @@ async def _run_task(task_id: int) -> None:
             _finish(task_id, started, "done", exit_code=rc, result=result)
         else:
             sub = ((result or {}).get("subtype") or "").lower()
-            if "budget" in sub:
+            if sub in ("abo_limit", "anmeldung"):
+                # KEIN Retry: ChatGPT-Abo am Limit oder Anmeldung abgelaufen, ein zweiter Versuch scheitert genauso.
+                _finish(task_id, started, "failed", exit_code=rc, result=result, error=result.get("result"))
+            elif "budget" in sub:
                 # KEIN Retry: das Geld ist weg, ein zweiter Lauf reißt dieselbe Grenze.
                 _finish(task_id, started, "failed", exit_code=rc, result=result,
                         error=f"Budget-Notbremse gegriffen (Limit ${_budget_for(kind)}) — Lauf "
@@ -1282,7 +1310,7 @@ async def _run_task(task_id: int) -> None:
 
     except FileNotFoundError:
         # KEIN Retry: die Binary fehlt auch beim zweiten Versuch.
-        fehlt = (local_cmd or [CLAUDE_BIN])[0]
+        fehlt = (local_cmd or [ki_anbieter.CODEX_BIN if chatgpt else CLAUDE_BIN])[0]
         _finish(task_id, started, "failed", exit_code=None,
                 error=f"Binary '{fehlt}' nicht gefunden (PATH des Server-Prozesses prüfen)")
     except Exception as e:                          # noqa: BLE001 — Runner darf nie sterben
@@ -1358,6 +1386,7 @@ def _finish(task_id: int, started, status: str, exit_code=None, error=None, resu
             fields["result_json"] = json.dumps(result, ensure_ascii=False)[:20000]
             fields["num_turns"] = result.get("num_turns")
             fields["cost_usd"] = result.get("total_cost_usd")
+            fields["tokens"] = result.get("tokens")
         _update(task_id, **fields)
         ok = status == "done"
         if status == "failed":
@@ -1614,7 +1643,9 @@ def _ist_unser_prozess(pid: int, task: AgentTask) -> bool:
     cmdline = _prozess_kommandozeile(pid)
     if not cmdline:
         return False
-    if _erwartete_kommandozeile(task.kind) not in cmdline:
+    # P2-86: Nach einem Wechsel der KI kann noch ein Lauf der anderen unterwegs sein, deshalb beide Programme.
+    if _erwartete_kommandozeile(task.kind) not in cmdline and (
+            PROMPTS.get(task.kind, {}).get("local_cmd") or ki_anbieter.CODEX_BIN not in cmdline):
         return False
     if not task.started_at:
         return False                  # ohne Vergleichszeitpunkt keine Bestätigung möglich
@@ -1740,7 +1771,9 @@ def start_workers() -> None:
     global _queue, _LETZTE_ROTATION
     if _queue is not None:
         return
-    for w in check_env_file() + check_secret_files():
+    # P2-86: Unter ChatGPT wird der Claude-Schlüssel in agent.env nicht gebraucht, ein Fehlen ist keine Warnung wert.
+    env_warnungen = check_env_file() if ki_anbieter.aktiv() == ki_anbieter.CLAUDE else []
+    for w in env_warnungen + check_secret_files():
         print(f"[agent-runner] WARNUNG: {w}", flush=True)
 
     # Guardrails sichtbar machen, statt sie im Code zu verstecken.

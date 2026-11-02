@@ -8,8 +8,9 @@ Open Source (Apache License 2.0).
 ## Für wen ist das BMS?
 
 Für Bewerbende, die ihre Jobsuche selbst steuern und dabei Hilfe von KI wollen. Die KI-Arbeit
-(Recherche, Bewertung, Textentwürfe) erledigt Claude von Anthropic über Ihr eigenes Claude-Konto. Dafür
-brauchen Sie keine eigenen API-Schlüssel, und ohne KI laufen Erfassen, Verwalten und Auswerten trotzdem.
+(Recherche, Bewertung, Textentwürfe) erledigt wahlweise Claude von Anthropic oder ChatGPT von OpenAI,
+jeweils über Ihr eigenes Konto. Dafür brauchen Sie keine eigenen API-Schlüssel, und ohne KI laufen
+Erfassen, Verwalten und Auswerten trotzdem.
 
 Das BMS unterstützt ausschließlich die Seite, die sich bewirbt. Funktionen, mit denen Arbeitgeber
 Bewerbende bewerten, sortieren oder auswählen, gibt es nicht und sind nicht vorgesehen. Sie behalten die
@@ -34,25 +35,39 @@ beschreibt [`docs/ANLEITUNG.md`](docs/ANLEITUNG.md).
 ## Voraussetzungen
 
 - Ein Mac (macOS) oder ein Windows-PC mit etwa 2 GB freiem Speicher und Internetverbindung.
-- Für die KI-Funktionen ein Claude-Konto (Pro oder Max) bei Anthropic. Die Kosten zahlen Sie direkt an
-  Anthropic, das BMS selbst kostet nichts.
+- Für die KI-Funktionen ein Abo bei Claude (Pro oder Max, Anthropic) oder bei ChatGPT (Plus oder Pro,
+  OpenAI). Die Kosten zahlen Sie direkt an den Anbieter, das BMS selbst kostet nichts.
 - Optional ein E-Mail-Konto mit IMAP-Zugang (auch Gmail), damit das BMS Antworten im Postfach erkennt.
 - Optional ein LinkedIn-Datenexport, um Werdegang und Fähigkeiten zu übernehmen.
 
 Python, Node.js und die übrigen Programme müssen Sie nicht vorab installieren: Die Installationsanleitung
 richtet ein, was fehlt. Programmierkenntnisse brauchen Sie nicht.
 
+## Welche KI?
+
+Das BMS kann die KI-Funktionen mit **Claude** oder mit **ChatGPT** ausführen. Die Installation fragt gleich
+zu Beginn, welche Sie nutzen, und richtet genau diese ein. In den Einstellungen, Karte „KI“, wechseln Sie
+später.
+
+- **Claude** ist der Standard und der am besten erprobte Weg. Die Inhalte der KI-Läufe gehen an Anthropic.
+- **ChatGPT** ist im BMS eine Vorschau. Die Läufe nutzen Ihre Anmeldung bei ChatGPT (Plus oder Pro) über
+  das Programm Codex CLI, einen API-Schlüssel brauchen Sie nicht. Die Inhalte der KI-Läufe gehen dann an
+  OpenAI statt an Anthropic. Die Läufe ohne Mail sind erprobt, die Mail-Läufe und der Tageslauf noch nicht. Es gibt keine Budgetgrenze je Lauf, es
+  gelten die Grenzen Ihres Abos, und viele Läufe hintereinander können ein Plus-Konto an die Grenze bringen.
+- **Gemini** gibt es nicht: Googles Regeln lassen das Gemini-Abo in Apps wie dem BMS nicht zu.
+
 ## Installation
 
-Die Installation führt Claude mit einer Anleitungsdatei Schritt für Schritt aus Ihrer Sicht durch:
+Die Installation führt eine KI im Chat mit einer Anleitungsdatei Schritt für Schritt aus Ihrer Sicht durch:
 
 1. Laden Sie die Anleitung für Ihr System von https://github.com/holgerdaube/BewerbungsMgmtSystem/releases/latest
    herunter: `BMS_Install_MAC.md` für macOS oder `BMS_Install_Windows.md` für Windows. Beide liegen auch
    im Hauptordner dieses Repositorys.
-2. Öffnen Sie Claude Desktop, starten Sie einen neuen Chat und hängen Sie die Datei an.
+2. Öffnen Sie Claude Desktop oder ChatGPT, starten Sie einen neuen Chat und hängen Sie die Datei an.
 3. Schreiben Sie dazu: „Führe mich mit dieser Anleitung durch die Installation des BMS.“
 
-Claude gibt Ihnen jeden Befehl zum Kopieren vor und prüft das Ergebnis mit Ihnen. Die Anleitung lädt das
+Der Assistent im Chat gibt Ihnen jeden Befehl zum Kopieren vor und prüft das Ergebnis mit Ihnen. Die
+Anleitung fragt zuerst, welche KI das BMS nutzen soll (Claude oder ChatGPT). Sie lädt das
 Programmpaket selbst aus dem GitHub-Release und prüft dessen Prüfsumme. Danach richtet sie mit Ihnen
 Profil, Lebenslauf, Zielrollen und Suchregion ein. Rechnen Sie mit etwa 45 Minuten für die Technik und
 ein bis zwei Stunden für die Einrichtung.
@@ -71,14 +86,14 @@ Ihre Daten und macht bei einem Fehler alles rückgängig. Was sich je Version ä
 Das BMS läuft vollständig auf Ihrem Rechner: Ihre Bewerbungs-, Profil- und E-Mail-Daten bleiben in
 lokalen Dateien und einer lokalen Datenbank, und der Herausgeber betreibt keinen Server und erhält keine
 Daten. Nur wenn Sie nach Updates suchen oder ein Update laden, fragt das BMS bei GitHub an, und GitHub
-erhält dabei die IP-Adresse Ihres Rechners. Dienste, die Sie selbst anbinden (Claude, Ihr Postfach,
-optional Apify), verarbeiten Daten nach ihren eigenen Datenschutzbestimmungen; Einzelheiten stehen im
-Reiter „Datenschutz“ unter „Rechtliches“ in der App.
+erhält dabei die IP-Adresse Ihres Rechners. Dienste, die Sie selbst anbinden (Claude oder ChatGPT, Ihr
+Postfach, optional Apify), verarbeiten Daten nach ihren eigenen Datenschutzbestimmungen; Einzelheiten
+stehen im Reiter „Datenschutz“ unter „Rechtliches“ in der App.
 
 ## Hinweis zur KI
 
-Texte, Bewertungen und Entwürfe erzeugt das BMS mit KI (Claude). Sie sind Vorschläge und müssen vor dem
-Versand geprüft werden.
+Texte, Bewertungen und Entwürfe erzeugt das BMS mit KI (Claude oder ChatGPT, je nach Ihrer Wahl). Sie sind
+Vorschläge und müssen vor dem Versand geprüft werden.
 
 ## Lizenz und Haftung
 
@@ -104,6 +119,18 @@ Entwickelt von Holger Daube. Impressum: https://daube.tech/impressum.html
   beschrieben.
 - **Beiträge:** Pull Requests sind willkommen. Die Regeln (Lizenz, Sprache, Tests) stehen in
   [`CONTRIBUTING.md`](CONTRIBUTING.md).
+
+## Unterstützen
+
+Das BMS ist kostenlos und bleibt es. Wer die Arbeit daran unterstützen möchte, kann freiwillig etwas
+geben, über den Knopf „Sponsor“ oben auf dieser Seite oder direkt:
+
+- **Buy Me a Coffee:** https://buymeacoffee.com/holgerdaube
+- **PayPal:** https://paypal.me/holgerdaube
+
+Eine Unterstützung ist ein freiwilliges Dankeschön und keine Gegenleistung für das Programm. Sie schaltet
+nichts frei und begründet keinen Anspruch auf Support, Funktionen oder Updates; die Überlassung bleibt
+unentgeltlich (siehe „Lizenz und Haftung“). Steuerlich absetzbar ist sie nicht.
 
 ## Für Entwickler
 

@@ -19,7 +19,7 @@ import stat
 
 import pytest
 
-ZIELROLLE_STANDARD = ["Ebene", "Funktion Plan A", "Funktion Plan B", "Branche", "Region", "Zieltermin"]
+ZIELROLLE_STANDARD = ["Zieltermin"]
 
 # Vorlage aus der Anleitung (früher `BMS_Install.md`, heute `BMS_Install_MAC.md` bzw.
 # `BMS_Install_Windows.md`; Abschnitt „Einrichten: Das BMS lernt Sie kennen“, dort „Ihr Profil:
@@ -351,9 +351,8 @@ def test_lesen_der_umfangreichen_datei(pd, datei):
                                 {"schluessel": "Hobby", "wert": "Wandern"}]
     assert d["kurzprofil"].startswith("Erste Zeile des Kurzprofils.\n\nZweiter Absatz")
     assert d["kurzprofil"].endswith("### Eine Unterüberschrift im Kurzprofil\nLetzte Zeile.")
-    # Alle Feldzeilen der Zielrolle, dazu die fehlenden Standard-Schlüssel (leer) -- Plan C steht in der Datei
-    assert [e["schluessel"] for e in d["zielrolle"]] == [
-        "Ebene", "Funktion Plan A", "Funktion Plan B", "Funktion Plan C", "Branche", "Region", "Zieltermin"]
+    # Nur der Zieltermin: Ältere Zeilen wie „Ebene“ zeigt die Maske nicht mehr, sie bleiben aber in der Datei
+    assert [e["schluessel"] for e in d["zielrolle"]] == ["Zieltermin"]
     assert d["zielrolle"][-1] == {"schluessel": "Zieltermin", "wert": ""}
     assert d["rahmenbedingungen"] == "- Kein Umzug.\n\n- Mindestens 100 Mitarbeiter.\n\t- Eingerückt mit Tabulator."
     assert d["skill_gaps"] == "- Noch wenig Erfahrung im Vertrieb."
@@ -488,14 +487,13 @@ def test_geaendertes_identitaetsfeld_aendert_genau_eine_zeile(pd, feld, wert, al
         assert entfernt == [alte_zeile + ende] and hinzu == [neue_zeile + ende]
 
 
-def test_geaendertes_zielrolle_feld_aendert_genau_eine_zeile(pd):
-    daten = pd.lesen_aus_text(UMFANGREICH)
-    daten["zielrolle"][1]["wert"] = "Leitung Service Delivery"
+def test_geaenderter_zieltermin_aendert_genau_eine_zeile_und_aeltere_zeilen_bleiben(pd):
+    t = "## Identität\n- **Name:** Max\n\n## Zielrolle\n- **Ebene:** Director\n- **Zieltermin:** 2026\n- **Region:** DACH\n"
+    daten = pd.lesen_aus_text(t)
+    assert daten["zielrolle"] == [{"schluessel": "Zieltermin", "wert": "2026"}]
+    daten["zielrolle"][0]["wert"] = "Ende 2027"
 
-    neu = pd.anwenden(UMFANGREICH, daten)
-
-    assert _diff(UMFANGREICH, neu) == (["- **Funktion Plan A:** Leitung Professional Services\n"],
-                                       ["- **Funktion Plan A:** Leitung Service Delivery\n"])
+    assert pd.anwenden(t, daten) == t.replace("2026", "Ende 2027")
 
 
 def test_geaenderte_weitere_zeile_aendert_genau_eine_zeile_und_behaelt_einrueckung(pd):
@@ -647,13 +645,12 @@ def test_neues_feld_mit_leerem_wert_wird_nicht_angelegt(pd):
     assert pd.anwenden(t, daten) == t
 
 
-def test_vorhandenes_zielrolle_feld_mit_leerem_wert_behaelt_seine_zeile(pd):
-    daten = pd.lesen_aus_text(UMFANGREICH)
-    daten["zielrolle"][5]["wert"] = ""          # Region
+def test_vorhandener_zieltermin_mit_leerem_wert_behaelt_seine_zeile(pd):
+    t = "## Identität\n- **Name:** Max\n\n## Zielrolle\n- **Zieltermin:** 2026\n"
+    daten = pd.lesen_aus_text(t)
+    daten["zielrolle"][0]["wert"] = ""
 
-    neu = pd.anwenden(UMFANGREICH, daten)
-
-    assert _diff(UMFANGREICH, neu) == (["- **Region:** DACH\n"], ["- **Region:**\n"])
+    assert pd.anwenden(t, daten) == t.replace(" 2026", "")
 
 
 def test_fehlender_standard_schluessel_der_zielrolle_wird_angelegt(pd):
@@ -675,7 +672,7 @@ def test_standard_schluessel_wird_ohne_beachtung_der_schreibweise_zugeordnet(pd)
 
 
 def test_doppelter_schluessel_wird_der_reihe_nach_zugeordnet(pd):
-    t = "## Identität\n- **Name:** Max\n\n## Zielrolle\n- **Ebene:** eins\n- **Ebene:** zwei\n"
+    t = "## Identität\n- **Name:** Max\n\n## Zielrolle\n- **Zieltermin:** eins\n- **Zieltermin:** zwei\n"
     d = pd.lesen_aus_text(t)
     assert [e["wert"] for e in d["zielrolle"][:2]] == ["eins", "zwei"]
     assert pd.anwenden(t, d) == t
@@ -739,12 +736,12 @@ def test_fehlender_abschnitt_ohne_empirie_kommt_ans_dateiende(pd):
     t = "## Identität\n- **Name:** Max\n"
     d = pd.lesen_aus_text(t)
     d["kurzprofil"] = "Zwei Sätze."
-    d["zielrolle"][0]["wert"] = "Director"
+    d["zielrolle"][0]["wert"] = "bis 2027"
 
     neu = pd.anwenden(t, d)
 
     assert neu == ("## Identität\n- **Name:** Max\n\n## Kurzprofil\nZwei Sätze.\n\n"
-                   "## Zielrolle\n- **Ebene:** Director\n")
+                   "## Zielrolle\n- **Zieltermin:** bis 2027\n")
 
 
 def test_fehlender_abschnitt_am_ende_einer_datei_ohne_zeilenende(pd):
@@ -773,8 +770,7 @@ def test_fehlende_datei_ergibt_die_vorlage_und_die_leser_liefern_die_eingaben(pd
                                linkedin="https://www.linkedin.com/in/max-mustermann/")
     daten["kurzprofil"] = "Zwei Sätze über Max."
     daten["rahmenbedingungen"] = "- Kein Umzug."
-    daten["zielrolle"][0]["wert"] = "Director oder Head of"
-    daten["zielrolle"][5]["wert"] = "neue Rolle bis 31.12.2026"
+    daten["zielrolle"][0]["wert"] = "neue Rolle bis 31.12.2026"
 
     ergebnis = pd.schreiben(daten, "")
 
@@ -791,7 +787,6 @@ def test_fehlende_datei_ergibt_die_vorlage_und_die_leser_liefern_die_eingaben(pd
 Zwei Sätze über Max.
 
 ## Zielrolle
-- **Ebene:** Director oder Head of
 - **Zieltermin:** neue Rolle bis 31.12.2026
 
 ## Harte Rahmenbedingungen

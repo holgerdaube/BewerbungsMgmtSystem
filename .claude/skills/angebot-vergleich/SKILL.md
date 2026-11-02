@@ -32,7 +32,7 @@ Vorhandene Quellen nutzen: `firma-pruefen`-Dashboard (Situation/Risiken), `gut_f
 | Nebenleistungen (Urlaub, bAV, Mobility, Weiterbildung) | 1 |
 | Pendel-/Reiseaufwand (Route/Häufigkeit) | 1 |
 Gewichte sind Startwerte — mit dem Nutzer abstimmen, wenn er anders priorisiert. **Rote Linien sind K.-o.,
-keine Punkte** (Umzugspflicht, IC-Zuschnitt, Scope-Downgrade → Angebot fällt durch, egal wie der Score ist).
+keine Punkte** (Umzugspflicht, ein Zuschnitt, den die Ausschlussregeln in `suchprofile.yaml` ausschließen, Scope-Downgrade → Angebot fällt durch, egal wie der Score ist).
 
 ### 3. Auswerten
 - **Ein Angebot:** gewichteter Score in % + K.-o.-Check + die 3 stärksten/schwächsten Punkte + was

@@ -458,10 +458,10 @@ def test_wache_uebersicht_nutzt_nur_die_mittel_des_mini_renderers():
     for zeile in md.split("\n"):
         assert not zeile.lstrip().startswith(("|", ">", "# ", "1.")), zeile
     ist = m.bestand_ist(md, txt)
-    assert len(ist["python_direkt"]) + len(ist["python_mit"]) == 38
-    assert len(ist["npm_direkt"]) + len(ist["npm_mit"]) == 10
-    assert len(ist["bau_direkt"]) == 8 and ist["bau_gesamt"] == 176
-    assert len(ist["texte"]) == 48 and ist["bloecke"] >= 1
+    assert len(ist["python_direkt"]) + len(ist["python_mit"]) == 39
+    assert len(ist["npm_direkt"]) + len(ist["npm_mit"]) == 11
+    assert len(ist["bau_direkt"]) == 8 and ist["bau_gesamt"] == 181
+    assert len(ist["texte"]) == 50 and ist["bloecke"] >= 1
 
 
 def test_wache_gegenprobe_geaenderte_version_wird_gemeldet(tmp_path):

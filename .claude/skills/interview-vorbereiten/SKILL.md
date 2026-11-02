@@ -32,7 +32,7 @@ Die `id` dieses Interviews ist die **Zielrunde** — sie wird in Schritt 5 regis
   Klärungsfragen herausziehen (`/api/artifact?path=<fit_analysis_path>` oder Datei direkt lesen).
 - **(b) CV:** den aktuellsten angepassten CV lesen (`cv_versions[].file_path`, .docx) — sonst `data/cv_basis/base_de.docx`
   (bzw. `base_en.docx`, wenn das Gespräch auf Englisch läuft). Liefert die echten Belege für die Antwortskizzen.
-- **(c) Profil:** `config/profil.md` — Zielprofil, Kernbotschaften und **harte Grenzen** (rote Linien).
+- **(c) Profil:** `config/profil.md` — Kurzprofil, Kernbotschaften und **harte Grenzen** (rote Linien).
 - **(d) Bisherige Transkripte:** ALLE `transcripts[].file_path` dieses Jobs lesen. **Bei Runde ≥ 2 sind die
   unbeantworteten Punkte / offenen To-dos aus der/den Vorrunde(n) Pflichtinput** — sie gehören in einen
   eigenen Abschnitt „Aus Runde n-1 offen".

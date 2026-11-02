@@ -9,23 +9,25 @@ LinkedIn-Datenexport (Abschnitt „Werdegang und Fähigkeiten von LinkedIn über
 bis das Archiv bereitsteht.
 
 Programmierkenntnisse brauchen Sie nicht. An einigen Stellen geben Sie Befehle im Terminal ein.
-Claude gibt Ihnen jeden Befehl zum Kopieren vor und sagt dazu, was er tut.
+Der Assistent im Chat gibt Ihnen jeden Befehl zum Kopieren vor und sagt dazu, was er tut.
 
-So ist die Datei aufgebaut: Die „Anweisung an Claude“ führt Sie durch die Installation (Schritt 0 bis
+So ist die Datei aufgebaut: Die „Anweisung an die KI“ führt Sie durch die Installation (Schritt 0 bis
 Schritt 10). Ab „Nach der Installation“ steht alles für den Alltag: Einrichten, Prüfen,
 Aktualisieren, Hilfe bei Problemen und Ihre Daten. Haben Sie einen Windows-PC, nutzen Sie die
 Anleitung `BMS_Install_Windows.md`.
 
 ## So starten Sie
 
-1. Öffnen Sie **Claude Desktop** und starten Sie einen neuen Chat oder eine neue Code-Sitzung.
+1. Öffnen Sie **Claude Desktop** oder **ChatGPT** (App oder chatgpt.com) und starten Sie einen neuen
+   Chat, in Claude Desktop auch eine neue Code-Sitzung. Welche KI Sie hier zum Installieren nutzen und
+   welche das BMS später für seine KI-Funktionen verwendet, sind zwei getrennte Entscheidungen.
 2. Hängen Sie diese Datei (`BMS_Install_MAC.md`) an die Nachricht an.
 3. Schreiben Sie dazu: **„Führe mich mit dieser Anleitung durch die Installation des BMS.“**
-4. Halten Sie bereit: Ihr Claude-Konto (Pro oder Max), wenn Sie die KI-Funktionen nutzen wollen. Das BMS
-   selbst ist kostenlos und braucht keine Lizenz. Die Anleitung lädt das Programmpaket selbst von
-   GitHub. Eine BMS-ZIP-Datei (`BMS_<Version>.zip`) brauchen Sie nur als Ersatzweg, wenn das Laden nicht
-   klappt.
-5. Überlegen Sie, in welchem Ordner das BMS liegen soll. Claude fragt Sie gleich zu Beginn danach
+4. Halten Sie bereit: Ihr Konto bei der KI, die das BMS für seine KI-Funktionen nutzen soll: Claude (Pro
+   oder Max) oder ChatGPT (Plus oder Pro). Das BMS selbst ist kostenlos und braucht keine Lizenz. Die
+   Anleitung lädt das Programmpaket selbst von GitHub. Eine BMS-ZIP-Datei (`BMS_<Version>.zip`) brauchen
+   Sie nur als Ersatzweg, wenn das Laden nicht klappt.
+5. Überlegen Sie, in welchem Ordner das BMS liegen soll. Der Assistent fragt Sie gleich zu Beginn danach
    und schlägt den Ordner `BMS` in Ihrem Benutzerordner vor (`~/BMS`). Im Rest dieser Anleitung
    heißt dieser Ordner „Ihr BMS-Ordner“. Zwei Regeln für die Wahl:
    - **Kein synchronisierter Ordner.** Das BMS speichert Ihre Daten in einer einzigen
@@ -37,16 +39,16 @@ Anleitung `BMS_Install_Windows.md`.
      sondern aktualisieren es (Abschnitt „Aktualisierungen einspielen“).
 
 Diese Anleitung geht von einem Mac aus, auf dem unter Ihrem Benutzerkonto noch kein BMS installiert
-ist. Claude prüft das in Schritt 1. Gibt es schon eins, aktualisieren Sie es (Abschnitt
+ist. Der Assistent prüft das in Schritt 1. Gibt es schon eins, aktualisieren Sie es (Abschnitt
 „Aktualisierungen einspielen“), oder Sie installieren bewusst ein zweites daneben. Die Hinweise
-dazu gibt Claude in Schritt 1.
+dazu gibt er in Schritt 1.
 
-Claude führt Sie nun Schritt für Schritt. Zu jedem Schritt bekommen Sie genau die Befehle, die Sie
-im **Terminal** einfügen (⌘ + Leertaste, „Terminal“ tippen, Eingabetaste, Befehl einfügen,
-Eingabetaste). Danach fragt Claude, ob der Befehl durchgelaufen ist, und prüft das Ergebnis mit
+Der Assistent führt Sie nun Schritt für Schritt. Zu jedem Schritt bekommen Sie genau die Befehle, die
+Sie im **Terminal** einfügen (⌘ + Leertaste, „Terminal“ tippen, Eingabetaste, Befehl einfügen,
+Eingabetaste). Danach fragt er, ob der Befehl durchgelaufen ist, und prüft das Ergebnis mit
 Ihnen. Es geht erst weiter, wenn ein Schritt sauber war. Planen Sie etwa 45 Minuten ein.
 
-Wer ohne Claude installiert, führt die Befehle der Schritte 1 bis 9 selbst aus und setzt die
+Wer ohne Assistenten installiert, führt die Befehle der Schritte 1 bis 9 selbst aus und setzt die
 Platzhalter (`INSTALLVERZ` für Ihren BMS-Ordner, `ZIP-PFAD` für den Pfad der ZIP-Datei, `VERSION` für
 die Versionsnummer) von Hand ein.
 
@@ -64,11 +66,15 @@ Dazu kommen:
 - Das BMS selbst ist kostenlos. Es steht als Open Source unter der Apache-Lizenz 2.0, Sie kaufen nichts
   und schalten nichts frei. Die Anleitung lädt das Programmpaket von GitHub, dafür brauchen Sie kein
   Konto.
-- Ein Claude-Abo (Pro oder Max) bei Anthropic, wenn Sie die KI-Funktionen nutzen wollen. Die
-  KI-Funktionen des BMS, also Recherche, Firmenprüfung, Lebenslauf-Anpassung und Anschreiben, laufen
-  über das Programm Claude Code und damit über Ihr eigenes Konto. Die Kosten dafür zahlen Sie direkt an
-  Anthropic. Ohne Abo können Sie Stellen erfassen, verwalten und auswerten, die KI-Funktionen aber nicht
-  nutzen.
+- Ein Abo bei einer der zwei KI, wenn Sie die KI-Funktionen nutzen wollen: **Claude** (Pro oder Max,
+  Anthropic) oder **ChatGPT** (Plus oder Pro, OpenAI). Die KI-Funktionen des BMS, also Recherche,
+  Firmenprüfung, Lebenslauf-Anpassung und Anschreiben, laufen bei Claude über das Programm Claude Code,
+  bei ChatGPT über das Programm Codex CLI, jeweils über Ihr eigenes Konto. Die Kosten dafür zahlen Sie
+  direkt an den Anbieter. Ohne Abo können Sie Stellen erfassen, verwalten und auswerten, die
+  KI-Funktionen aber nicht nutzen.
+- Zur Wahl der KI: Claude ist der Standard und der am besten erprobte Weg. Bei ChatGPT gehen die
+  Inhalte der KI-Läufe an OpenAI statt an Anthropic. ChatGPT ist im BMS eine Vorschau: Die Läufe ohne Mail sind erprobt, die Mail-Läufe und der Tageslauf noch nicht. Es gibt keine Budgetgrenze je Lauf, es gelten die Grenzen Ihres Abos, und viele Läufe hintereinander können ein Plus-Konto an die Grenze bringen. Der Assistent fragt Sie in Schritt 0
+  danach. Später wechseln Sie die KI in den „Einstellungen“, Karte „KI“.
 - Optional ein E-Mail-Konto mit IMAP-Zugang, damit das BMS Antworten auf Ihre Bewerbungen im
   Postfach erkennt.
 - Optional ein LinkedIn-Konto, um Werdegang und Fähigkeiten per Datenexport zu übernehmen.
@@ -76,15 +82,19 @@ Dazu kommen:
   weil ein Firmennetz den Zugriff auf GitHub verhindert. Sie laden sie im Browser von der Seite
   https://github.com/holgerdaube/BewerbungsMgmtSystem/releases/latest.
 
-# Anweisung an Claude: geführte Installation
+# Anweisung an die KI: geführte Installation
 
-Ab hier steht die Anweisung an Claude. Sie ist nicht für den Anwender gedacht. Für ihn geht es unter
-„Nach der Installation“ weiter.
+Ab hier steht die Anweisung an die KI im Chat, die durch die Installation führt (Claude, ChatGPT oder
+ein anderer Assistent). Sie ist nicht für den Anwender gedacht. Für ihn geht es unter „Nach der
+Installation“ weiter.
 
 Du führst einen Anwender durch die Installation des Bewerbungs-Management-Systems (BMS) auf seinem
 Mac. Du arbeitest als Anleiter: **Der Anwender führt alle Befehle selbst im Terminal aus, du gibst
 sie vor und prüfst die Ergebnisse.** Das gilt auch dann, wenn du in dieser Sitzung selbst Befehle
 ausführen könntest.
+
+Welche KI das BMS später für seine KI-Funktionen nutzt, Claude oder ChatGPT, ist davon unabhängig.
+Du fragst sie in Schritt 0 ab. Wo diese Anleitung „die KI-Wahl“ sagt, meint sie diese Antwort.
 
 ## Gesprächsregeln
 
@@ -114,6 +124,7 @@ ausführen könntest.
 5. **Sprache:** Deutsch, kurze Sätze, kein Fachjargon, höfliche Anrede mit „Sie“.
 6. **Geheimnisse:** Der Zugangsschlüssel (Token) und das Mac-Kennwort dürfen nie im Chat erscheinen.
    Bitte den Anwender ausdrücklich, sie nicht einzufügen. Das Kennwort tippt er nur im Terminal ein.
+   Bei ChatGPT gibt es keinen Schlüssel zum Einfügen, die Anmeldung läuft nur im Browser.
    Wenn eine Ausgabe Geheimnisse enthalten könnte, gib einen Befehl vor, der nur „vorhanden“ oder
    „fehlt“ ausgibt. Die Antwort von GitHub (die Auskunft in 4a, Schritt 4) enthält keine Geheimnisse
    und darf in den Chat.
@@ -154,12 +165,21 @@ die Antworten.
    Laden (4a bis 4c), und es geht mit dem Entpacken (4d) weiter. Nennt er keine, gilt das Laden von
    GitHub.
 3. **KI-Funktionen:** „Möchten Sie die KI-Funktionen einrichten (Recherche, Firmenprüfung,
-   Lebenslauf, Anschreiben)? Dafür brauchen Sie ein Claude-Konto (Pro oder Max) und etwa 10 Minuten
-   mehr.“ (Ja/Nein, später nachholbar.)
+   Lebenslauf, Anschreiben)? Dafür brauchen Sie ein Abo bei einer KI und etwa 10 Minuten mehr.“
+   (Ja/Nein, später nachholbar.) Bei „Nein“ entfällt Punkt 4.
+4. **Welche KI** (nur bei „Ja“ zu Punkt 3): „Welche KI soll die KI-Funktionen ausführen: **Claude**
+   (Anthropic, Abo Pro oder Max) oder **ChatGPT** (OpenAI, Abo Plus oder Pro)?“ Sage dazu in wenigen
+   Sätzen: Claude ist der Standard und der am besten erprobte Weg. Bei ChatGPT gehen die Inhalte der
+   KI-Läufe an OpenAI statt an Anthropic. ChatGPT ist im BMS eine Vorschau: Die Läufe ohne Mail sind erprobt, die Mail-Läufe und der Tageslauf noch nicht. Es gibt keine Budgetgrenze je Lauf, es gelten die Grenzen des Abos, und viele Läufe hintereinander können ein Plus-Konto an die Grenze bringen. Fragt der Anwender nach Gemini: Das BMS bietet es
+   bewusst nicht an, weil Googles Regeln das Abo in Apps nicht zulassen. Nennt der Anwender keine Wahl,
+   gilt Claude. Diese Antwort heißt im Folgenden **die KI-Wahl**. Sie bestimmt Schritt 3, 7 und 8 und
+   die Prüfung in Schritt 9. Später lässt sie sich in den „Einstellungen“, Karte „KI“, wechseln. Dann
+   müssen das Programm der anderen KI installiert und ihre Anmeldung erledigt sein (Schritt 3 und 7 für
+   diese KI).
 
-Wiederhole danach das gewählte Installationsverzeichnis in einem Satz („Das BMS wird nach …
-installiert.“) und lass es dir bestätigen, bevor du mit Schritt 1 beginnst. Danach wird der Ordner
-nicht mehr gewechselt.
+Wiederhole danach das gewählte Installationsverzeichnis und die KI-Wahl in einem Satz („Das BMS wird
+nach … installiert, mit Claude als KI.“, entsprechend mit ChatGPT oder „ohne KI-Funktionen“) und
+lass es dir bestätigen, bevor du mit Schritt 1 beginnst. Danach wird der Ordner nicht mehr gewechselt.
 
 Das **Protokoll** liegt im Installationsverzeichnis als `Installprotokoll.md`. Sage das dem Anwender.
 
@@ -236,15 +256,16 @@ Erwartung: Die Ausgabe zeigt die drei Kopfzeilen.
 ## Schritt 3: Programme installieren
 
 Das BMS braucht vier Programme: Python 3.12 (die Programmiersprache des BMS), Node.js (baut
-einmalig die Oberfläche), Claude Code (führt die KI-Funktionen aus) und LibreOffice (erzeugt
-PDF-Dateien aus den Lebensläufen). Dazu kommt Homebrew, ein verbreitetes, kostenloses Werkzeug, das
-Programme auf dem Mac installiert. Prüfe zuerst, was schon vorhanden ist, damit nichts doppelt
-installiert wird:
+einmalig die Oberfläche), das KI-Programm (bei Claude ist das Claude Code, bei ChatGPT die Codex CLI,
+es führt die KI-Funktionen aus) und LibreOffice (erzeugt PDF-Dateien aus den Lebensläufen). Dazu kommt
+Homebrew, ein verbreitetes, kostenloses Werkzeug, das Programme auf dem Mac installiert. Prüfe zuerst,
+was schon vorhanden ist, damit nichts doppelt installiert wird:
 
 ```sh
 command -v brew >/dev/null && echo "brew:   ja" || echo "brew:   nein"
 command -v node >/dev/null && echo "node:   ja" || echo "node:   nein"
 command -v claude >/dev/null && echo "claude: ja" || echo "claude: nein"
+command -v codex >/dev/null && echo "codex:  ja" || echo "codex:  nein"
 [ -d /Applications/LibreOffice.app ] && echo "office: ja" || echo "office: nein"
 ```
 
@@ -275,8 +296,8 @@ Erwartung: eine Homebrew-Version. Der aktuelle Installationsbefehl steht auch au
 Die folgenden Befehle installieren nur, was noch fehlt. Python installiert Homebrew in jedem
 Fall, weil das BMS genau dieses Python 3.12 verwendet (Schritt 5). Ein anderes Python auf dem Mac
 bleibt davon unberührt. Du darfst Zeilen weglassen, deren Programm die Prüfung oben als vorhanden
-gezeigt hat; die Zeile für Python bleibt immer. Bei „Nein“ in Schritt 0, Punkt 3, lässt du die
-Zeile mit `claude-code` weg. Kündige an, dass das einige Minuten dauert.
+gezeigt hat; die Zeile für Python bleibt immer. Bei „Nein“ in Schritt 0, Punkt 3, und bei ChatGPT
+lässt du die Zeile mit `claude-code` weg. Kündige an, dass das einige Minuten dauert.
 
 ```sh
 brew install python@3.12
@@ -285,8 +306,20 @@ command -v claude >/dev/null || brew install --cask claude-code
 [ -d /Applications/LibreOffice.app ] || brew install --cask libreoffice
 ```
 
-Hat der Anwender Node.js, Claude Code oder LibreOffice schon auf anderem Weg installiert, bleibt es
-dabei, und es entsteht keine zweite Kopie daneben. Node.js sollte dann Version 18 oder neuer sein.
+Bei ChatGPT gibst du stattdessen diese Zeile vor:
+
+```sh
+command -v codex >/dev/null || brew install --cask codex
+```
+
+Meldet Homebrew dabei einen Fehler, geht es auch über Node.js:
+
+```sh
+npm install -g @openai/codex
+```
+
+Hat der Anwender Node.js, Claude Code, Codex oder LibreOffice schon auf anderem Weg installiert, bleibt
+es dabei, und es entsteht keine zweite Kopie daneben. Node.js sollte dann Version 18 oder neuer sein.
 Meldet Homebrew bei einem Programm, es sei schon installiert, ist das in Ordnung. Prüfe danach, ob
 alles da ist:
 
@@ -296,16 +329,22 @@ node --version
 test -d /Applications/LibreOffice.app && echo "LibreOffice: ja" || echo "LibreOffice: nein"
 ```
 
-Zusätzlich bei „Ja“ zu den KI-Funktionen:
+Zusätzlich bei Claude:
 
 ```sh
 claude --version
 ```
 
-Erwartung: `Python 3.12.x`, eine Node-Version (18 oder neuer), `LibreOffice: ja`, bei KI eine
-Claude-Version. Hinweise:
+Zusätzlich bei ChatGPT:
 
-- „command not found“ bei `brew` oder `claude`: Die „Next steps“-Befehle von Homebrew fehlen (3a).
+```sh
+codex --version
+```
+
+Erwartung: `Python 3.12.x`, eine Node-Version (18 oder neuer), `LibreOffice: ja`, bei Claude eine
+Claude-Version, bei ChatGPT eine Codex-Version (getestet wurde 0.166.0). Hinweise:
+
+- „command not found“ bei `brew`, `claude` oder `codex`: Die „Next steps“-Befehle von Homebrew fehlen (3a).
   Danach das Terminal neu öffnen.
 - Ist Node.js älter als Version 18, kläre das Vorgehen mit dem Anwender, bevor du etwas
   installierst. Ein Versuch mit `brew install node` ist möglich, prüfe danach `node --version`.
@@ -457,6 +496,11 @@ Installation unbedenklich. Sage das dem Anwender vorab, damit er sie nicht für 
 
 ## Schritt 7: KI-Zugang einrichten (nur bei „Ja“ in Schritt 0, sonst als ÜBERSPRUNGEN protokollieren)
 
+Welcher Zweig gilt, bestimmt die KI-Wahl aus Schritt 0. Bei **Claude** gehst du 7a bis 7d durch, bei
+**ChatGPT** 7e und 7f. Den Zweig, der nicht gilt, protokollierst du als ÜBERSPRUNGEN.
+
+### Zweig Claude: 7a bis 7d
+
 **Wichtig:** Sage dem Anwender vorab, dass er den Schlüssel, der gleich erscheint, **nicht in den
 Chat einfügt**.
 
@@ -511,6 +555,30 @@ grep -Eq '^CLAUDE_CODE_OAUTH_TOKEN=sk-ant-oat01-[A-Za-z0-9_-]{40,}[[:space:]]*$'
 Erwartung: `vorhanden`. Bei `fehlt`: Zeile prüfen (kein `#`, Wert nach dem `=`, eine Zeile). Das Beispiel
 `sk-ant-oat01-...` darf nicht mehr in der Zeile stehen.
 
+### Zweig ChatGPT: 7e und 7f
+
+Bei ChatGPT gibt es keinen Schlüssel zum Einfügen und keine Datei `agent.env`: Die Anmeldung läuft im
+Browser und bleibt im Programm Codex. Sage dem Anwender vorab: „Gleich öffnet sich der Browser. Melden
+Sie sich dort mit Ihrem ChatGPT-Konto an (Plus oder Pro).“
+
+7e. Anmelden:
+
+```sh
+codex login
+```
+
+Codex öffnet den Browser. Der Anwender meldet sich mit seinem ChatGPT-Konto an und bestätigt den
+Zugriff. Danach kehrt der Befehl im Terminal zur Eingabe zurück.
+
+7f. Prüfen:
+
+```sh
+codex login status
+```
+
+Erwartung: `Logged in using ChatGPT`. Bei einer anderen Ausgabe wiederholst du 7e. Hilft das nach zwei
+Versuchen nicht, halte an (Gesprächsregel 4).
+
 ## Schritt 8: Erster Start und Selbsttest
 
 Der Server läuft im Terminal-Fenster, das der Start öffnet. Dieses Fenster muss offen bleiben.
@@ -535,7 +603,7 @@ Erwartung: Eine Antwort mit der Programmversion; `200`; `Datenbank vorhanden`.
 
 Hinweis, den der Anwender nicht als Fehler werten soll: Beim ersten Start legt das BMS selbst an,
 was es braucht: den Datenordner, die Datenbank und eine Grundfassung der Sucheinstellungen. Außerdem
-füllt es sich einmalig mit Beispieldaten einer erfundenen Person („Birne Helene“). Das ist normal.
+füllt es sich einmalig mit Beispieldaten einer erfundenen Person („Benno Bewerbaer“). Das ist normal.
 
 Bricht der Start ab: Der Anwender soll die letzten Zeilen des Terminal-Fensters einfügen.
 
@@ -549,6 +617,17 @@ Bricht der Start ab: Der Anwender soll die letzten Zeilen des Terminal-Fensters 
   `rm -rf ~/.bewerbung_mgmt_venv` vor (es löscht nur die Python-Umgebung, keine Daten) und wiederhole
   Schritt 5.
 
+**Nur bei ChatGPT: KI umstellen.** Das BMS startet mit Claude als KI. Bei ChatGPT stellt der Anwender
+jetzt einmal um, entweder in den „Einstellungen“ (Karte „KI“, ChatGPT wählen) oder im Terminal. Gib für
+das Terminal in einem **neuen** Fenster vor:
+
+```sh
+curl -s -X PATCH http://localhost:8000/api/einstellungen -H 'Content-Type: application/json' -d '{"ki_anbieter":"chatgpt"}' > /dev/null
+curl -s http://localhost:8000/api/einstellungen | grep -o '"ki_anbieter":"[a-z]*"'
+```
+
+Erwartung: `"ki_anbieter":"chatgpt"`. Bei Claude ist nichts zu tun, Claude ist der Standard.
+
 ## Schritt 9: Abnahme
 
 Gehe diese Punkte nacheinander mit dem Anwender durch. Frage jeweils, was er sieht, und
@@ -557,11 +636,23 @@ protokolliere OK oder PROBLEM mit Wortlaut.
 1. „Einstellungen“ öffnen: alle Karten erscheinen ohne Fehlermeldung.
 2. Karte „Beispieldaten“ → „Beispieldaten entfernen“: Die Beispieldaten verschwinden.
 3. „Stellen“ → „+ Stelle anlegen“ → eine Testfirma erfassen: Sie erscheint in der Liste.
-4. Nur bei KI-Einrichtung: In dieser Stelle „Firma prüfen“ starten. Der Lauf erscheint im
-   „Task-Center“ und endet nach etwa zehn Minuten mit einem Ergebnis. Frage nach dem Status und lass
-   dir bei einem Fehler die Meldung aus dem Task-Center vollständig nennen.
-5. Dashboard: Excel-Export auslösen. Eine Datei wird erzeugt.
-6. Beenden und neu starten: Im Terminal-Fenster des BMS Ctrl + C, danach
+4. Nur bei KI-Einrichtung: den Zugang der gewählten KI prüfen. Bei Claude hat 7d schon `vorhanden`
+   gemeldet. Bei ChatGPT gib in einem Terminal-Fenster vor:
+
+   ```sh
+   codex login status
+   curl -s http://localhost:8000/api/ki-status
+   ```
+
+   Erwartung: `Logged in using ChatGPT`, und in der Antwort des zweiten Befehls steht beim Eintrag
+   `"chatgpt"` `"installiert":true,"angemeldet":true`.
+5. Nur bei KI-Einrichtung: In dieser Stelle „Company-Fit prüfen“ starten. Der Lauf erscheint im
+   „Task-Center“ und endet nach einigen Minuten (bei Claude etwa zehn) mit einem Ergebnis. Frage nach
+   dem Status und lass dir bei einem Fehler die Meldung aus dem Task-Center vollständig nennen. Meldet
+   ein ChatGPT-Lauf, das Nutzungslimit des Abos sei erreicht, ist das kein Installationsfehler: Der
+   Lauf wird später erneut gestartet.
+6. Dashboard: Excel-Export auslösen. Eine Datei wird erzeugt.
+7. Beenden und neu starten: Im Terminal-Fenster des BMS Ctrl + C, danach
 
    ```sh
    open "INSTALLVERZ/start.command"
@@ -573,7 +664,7 @@ protokolliere OK oder PROBLEM mit Wortlaut.
 Weise den Anwender zum Schluss darauf hin, dass „CV erstellen“ (PDF über LibreOffice) erst nach
 Anlage von Profil und Basis-Lebenslauf prüfbar ist. Das Profil trägt er in der Oberfläche ein: auf
 der Seite „Profil“ in der ersten Karte „Identität und Suchstrategie“ (Name als Pflichtfeld, Anschrift
-als `Straße Nr, PLZ Ort`, Kontakt, Kurzprofil, Zielrolle, Rahmenbedingungen). Danach lädt er den
+als `Straße Nr, PLZ Ort`, Kontakt, Kurzprofil, Zieltermin, Rahmenbedingungen). Danach lädt er den
 Basis-Lebenslauf hoch, ebenfalls auf der Seite „Profil“. Das ist Teil der Einrichtung, die im
 Abschnitt „Einrichten: Das BMS lernt Sie kennen“ weiter unten und in `docs/ANLEITUNG.md` im
 Installationsverzeichnis beschrieben ist.
@@ -603,7 +694,7 @@ werden kann.
 
 Fasse zum Schluss in höchstens zehn Zeilen zusammen:
 
-- was installiert wurde (mit Versionen aus den Prüfungen),
+- was installiert wurde (mit Versionen aus den Prüfungen) und welche KI gewählt ist,
 - was funktioniert und was nicht (auch ehrlich, was nicht geprüft werden konnte),
 - wie das BMS künftig gestartet wird (`INSTALLVERZ/start.command` per Doppelklick im Finder) und
   beendet (Ctrl + C im Terminal-Fenster, sonst `INSTALLVERZ/stop.command` per Doppelklick),
@@ -618,7 +709,7 @@ darauf hin, dass der Abschnitt jederzeit in dieser Datei steht.
 
 # Nach der Installation
 
-Dieser Teil richtet sich an Sie. Er gilt, sobald das BMS läuft. Claude nutzt ihn zugleich als
+Dieser Teil richtet sich an Sie. Er gilt, sobald das BMS läuft. Der Assistent nutzt ihn zugleich als
 Grundlage, wenn Sie nach der Installation mit dem Einrichten weitermachen.
 
 ## Einrichten: Das BMS lernt Sie kennen
@@ -632,12 +723,12 @@ E-Mail-Anbindung unter „E-Mail-Postfach verbinden“ ist optional.
 
 ### Zuerst: Beispieldaten entfernen
 
-Beim allerersten Start bringt das BMS Beispieldaten von „Birne Helene“ mit, einer erfundenen Person:
+Beim allerersten Start bringt das BMS Beispieldaten von „Benno Bewerbaer“ mit, einer erfundenen Person:
 Postbote mit fünf Jahren Erfahrung in der Paketzustellung. Dazu gehören sechs Firmen, fünf Stellen in
 verschiedenen Stadien, drei Bewerbungen, fünf Mails, ein Gesprächstermin, ein Profil mit Fähigkeiten
 und Werdegang, die Profil-Datei `config/profil.md` und ein deutscher Basis-Lebenslauf. Damit können
 Sie das BMS ausprobieren. Solange die Beispieldaten da sind, steht auf dem Dashboard ein Hinweis, und
-die Seitenleiste zeigt „Birne Helene“ als Ihren Namen. Wer das BMS schon benutzt hat, bekommt keine
+die Seitenleiste zeigt „Benno Bewerbaer“ als Ihren Namen. Wer das BMS schon benutzt hat, bekommt keine
 Beispieldaten, und ein Update bringt keine.
 
 Entfernen Sie die Beispieldaten, bevor Sie eigene Daten eintragen:
@@ -661,7 +752,7 @@ Grund. Danach gilt:
 Haben Sie Ihr Profil schon gespeichert (Karte „Identität und Suchstrategie“, siehe unten) oder die
 Datei `config/profil.md` von Hand bearbeitet, bevor Sie die Beispieldaten entfernen, erkennt das BMS
 die Datei als Ihre eigene und lässt sie stehen. Gehen Sie die Karte dann einmal ganz durch und
-ersetzen Sie alles, was noch von Birne Helene stammt: Name, Anschrift, Kontakt, Kurzprofil, Zielrolle
+ersetzen Sie alles, was noch von Benno Bewerbaer stammt: Name, Anschrift, Kontakt, Kurzprofil, Zieltermin
 und Rahmenbedingungen. Genauso bleibt ein Basis-Lebenslauf, den Sie schon hochgeladen haben.
 
 Der Grund für die Reihenfolge: Der LinkedIn-Import (siehe „Werdegang und Fähigkeiten von LinkedIn
@@ -675,9 +766,9 @@ von LinkedIn.
 
 Öffnen Sie in der Seitenleiste „Profil“. Die erste Karte heißt „Identität und Suchstrategie“. Dort
 tragen Sie ein, wer Sie sind und wonach Sie suchen. Name, Anschrift, Kontakt und LinkedIn bilden den
-Briefkopf Ihrer Anschreiben und die Dateinamen Ihrer Unterlagen. Kurzprofil, Zielrolle und
+Briefkopf Ihrer Anschreiben und die Dateinamen Ihrer Unterlagen. Kurzprofil, Zieltermin und
 Rahmenbedingungen liest die KI als Hintergrund, wenn sie Stellen bewertet und Anschreiben schreibt.
-Zeigt die Karte noch Angaben von „Birne Helene“, haben Sie die Beispieldaten noch nicht entfernt.
+Zeigt die Karte noch Angaben von „Benno Bewerbaer“, haben Sie die Beispieldaten noch nicht entfernt.
 Holen Sie das zuerst nach (siehe oben).
 
 Das tragen Sie ein:
@@ -691,11 +782,11 @@ Das tragen Sie ein:
 | LinkedIn | Optional. Die Adresse Ihres Profils, etwa `https://www.linkedin.com/in/max-mustermann/`. |
 | Aktuell | Optional. Ihre jetzige Stelle in einer Zeile, etwa „Manager Professional Services bei der Beispiel GmbH, seit 2024“. |
 | Kurzprofil | Zwei bis vier Sätze über Sie. Das BMS nutzt sie als Tonvorlage für Ihre Anschreiben. |
-| Zielrolle | Je eine Zeile für Ebene, Funktion Plan A, Funktion Plan B, Branche, Region und Zieltermin, etwa „Director oder Head of“ bei der Ebene und „neue Rolle bis 31.12.2026“ beim Zieltermin. Plan A ist Ihr eigentliches Ziel, Plan B die realistische Alternative. Wonach die Jobsuche sucht, stellen Sie unter „Zielrollen und Suchgebiet“ ein. |
+| Zieltermin | Optional. Bis wann Sie wechseln möchten, etwa „neue Rolle bis 31.12.2026“. Titel, Ebene und Branche Ihrer Zielrollen tragen Sie unter „Einstellungen“ in die Karten „Plan A“, „Plan B“ und „Plan C“ ein (Abschnitt „Zielrollen und Suchgebiet“). |
 | Harte Rahmenbedingungen | Was für Sie nicht verhandelbar ist. Je Zeile ein Punkt, beginnend mit „- “, etwa „- Kein Umzug, kein dauerhafter Zweitwohnsitz.“ |
 | Bekannte Skill-Gaps | Lücken in Ihrem Profil, die Sie selbst kennen. Je Zeile ein Punkt. Ehrliche Angaben helfen, denn so bewertet die KI Stellen realistisch. |
 
-Je konkreter Sie schreiben, desto passender werden Bewertungen und Anschreiben. Kurzprofil, Zielrolle
+Je konkreter Sie schreiben, desto passender werden Bewertungen und Anschreiben. Kurzprofil, Zieltermin
 und Rahmenbedingungen dürfen Sie frei formulieren.
 
 Mit „Speichern“ übernimmt das BMS Ihre Angaben. Der Knopf ist erst aktiv, wenn Sie etwas geändert
@@ -760,6 +851,13 @@ Es ergänzt dabei nur und überschreibt nichts. Anschließend sortiert es Ihre F
 Hintergrund in Themenbereiche. Laden Sie die Datei erst hoch, wenn die Beispieldaten entfernt sind,
 denn mit ihnen übernähme das BMS nicht alles (Begründung unter „Zuerst: Beispieldaten entfernen“).
 
+Ohne Export und ohne Wartezeit geht es unter „Profil“ mit „Profil auslesen“, wenn der KI-Zugang eingerichtet ist (Schritt 7). Öffnen Sie Ihr
+Profil bei LinkedIn im Browser, markieren Sie alles, kopieren Sie es und fügen Sie es ein. Oder laden Sie das PDF hoch, das
+LinkedIn über „Als PDF speichern“ erzeugt. Die KI strukturiert den Text, Sie prüfen das Ergebnis in einer Vorschau, und erst
+dann ergänzt das BMS Ihr Profil. LinkedIn zeigt auf der Profilseite und im PDF nicht alles, Fähigkeiten oft nur gekürzt.
+Der Export bleibt deshalb der vollständigste Weg. Einen automatischen Abruf über die Adresse Ihres Profils gibt es nicht,
+denn LinkedIn sperrt ihn.
+
 Ohne LinkedIn tragen Sie Positionierung, Werdegang und Fähigkeiten direkt auf der Profil-Seite ein.
 In beiden Fällen gilt: Sehen Sie das Ergebnis einmal durch und ergänzen Sie, was fehlt. Diese
 Angaben nutzt das BMS als Faktenbasis für Anschreiben und Lebensläufe.
@@ -780,7 +878,8 @@ Reihenfolge durch:
 4. „KI-Modell je Funktion“: Zur Wahl stehen Opus 5.5, Sonnet 5.5 und Haiku 4.5, voreingestellt ist
    Sonnet 5.5. Die Voreinstellung passt für den Alltag, hier müssen Sie nichts ändern. Das Modell
    Fable bietet das BMS bewusst nicht an, weil es zu teuer ist: Es kostet das Zweieinhalbfache von
-   Opus 5.5 und das Fünffache von Sonnet 5.5.
+   Opus 5.5 und das Fünffache von Sonnet 5.5. Haben Sie ChatGPT als KI gewählt, stehen dort die Modelle
+   von ChatGPT zur Wahl, voreingestellt ist die mittlere Stufe.
 
 ### Suchbereich in der Jobliste
 
@@ -827,11 +926,11 @@ Sie die Datei und starten Sie das BMS neu, damit es die Änderung einliest.
 | Prüfung | Erwartung | Falls nicht |
 |---|---|---|
 | `http://localhost:8000` im Browser | Die Oberfläche mit Menü erscheint | Oberfläche bauen (Schritt 6) |
-| Seitenleiste links oben ansehen | Unter „Bewerbungs-Management-System“ steht Ihr Name, nicht „Birne Helene“ oder „Bewerber“ | Beispieldaten entfernt (Abschnitt „Einrichten: Das BMS lernt Sie kennen“)? Name in der Karte „Identität und Suchstrategie“ eingetragen und gespeichert (Abschnitt „Ihr Profil: Identität und Suchstrategie“)? Bei einer von Hand bearbeiteten `config/profil.md` die Schreibweise `**Name:**` prüfen |
-| „Dashboard“ ansehen | Kein Hinweis auf Beispieldaten mehr, keine Stellen und Mails von Birne Helene | „Beispieldaten entfernen“ in den „Einstellungen“ (Abschnitt „Zuerst: Beispieldaten entfernen“) |
+| Seitenleiste links oben ansehen | Unter „Bewerbungs-Management-System“ steht Ihr Name, nicht „Benno Bewerbaer“ oder „Bewerber“ | Beispieldaten entfernt (Abschnitt „Einrichten: Das BMS lernt Sie kennen“)? Name in der Karte „Identität und Suchstrategie“ eingetragen und gespeichert (Abschnitt „Ihr Profil: Identität und Suchstrategie“)? Bei einer von Hand bearbeiteten `config/profil.md` die Schreibweise `**Name:**` prüfen |
+| „Dashboard“ ansehen | Kein Hinweis auf Beispieldaten mehr, keine Stellen und Mails von Benno Bewerbaer | „Beispieldaten entfernen“ in den „Einstellungen“ (Abschnitt „Zuerst: Beispieldaten entfernen“) |
 | „Einstellungen“ öffnen | Alle Bereiche erscheinen ohne Fehlermeldung | Das Terminal-Fenster des BMS auf Fehlermeldungen prüfen, BMS neu starten |
 | Unter „Stellen“ mit „+ Stelle anlegen“ eine Stelle erfassen | Sie erscheint in der Liste | BMS neu starten |
-| In dieser Stelle „Firma prüfen“ starten | Der Lauf erscheint im „Task-Center“ und endet mit einem Ergebnis | Zugangsschlüssel prüfen (Schritt 7) |
+| In dieser Stelle „Company-Fit prüfen“ starten | Der Lauf erscheint im „Task-Center“ und endet mit einem Ergebnis | Bei Claude den Zugangsschlüssel prüfen, bei ChatGPT `codex login status` (Schritt 7) |
 | Danach „CV-Match“ und anschließend „CV erstellen“ starten | Eine Word- und eine PDF-Datei entstehen | Basis-CV (Abschnitt „Ihr Lebenslauf“) und LibreOffice prüfen |
 | „Einstellungen“ → „Programmversion“ und den Fuß der Seitenleiste ansehen | Beide zeigen Ihre installierte Version | BMS neu starten, danach die Seite neu laden |
 
@@ -931,14 +1030,16 @@ der Seitenleiste. Was sich in einer Version geändert hat, lesen Sie unter „Do
 | Was Sie sehen | Was hilft |
 |---|---|
 | Der Browser zeigt eine leere Seite | Die Oberfläche wurde nicht gebaut: Schritt 6 |
-| „command not found“ bei `brew` oder `claude` | Die zwei „Next steps“-Befehle von Homebrew fehlen (Schritt 3), danach Terminal neu öffnen |
+| „command not found“ bei `brew`, `claude` oder `codex` | Die zwei „Next steps“-Befehle von Homebrew fehlen (Schritt 3), danach Terminal neu öffnen |
 | „start.command kann nicht geöffnet werden“ | Befehl `xattr` aus Schritt 4 ausführen. Alternativ unter Systemeinstellungen, Datenschutz & Sicherheit, „Dennoch öffnen“ wählen |
 | Der Start bricht mit einer Meldung zu `cryptography` oder „symbol not found“ ab | Die Python-Umgebung entstand mit einem anderen Python. Im Terminal `rm -rf ~/.bewerbung_mgmt_venv` eingeben und Schritt 5 wiederholen |
 | „address already in use“ oder Port 8000 belegt | Das BMS läuft bereits. Browser auf `http://localhost:8000` richten oder erst mit `stop.command` beenden |
-| KI-Läufe enden mit einem Anmeldefehler | Zugangsschlüssel prüfen (Schritt 7): eine Zeile, kein `#` davor, vollständig kopiert. Danach das BMS neu starten |
+| KI-Läufe enden mit einem Anmeldefehler | Bei Claude den Zugangsschlüssel prüfen (Schritt 7): eine Zeile, kein `#` davor, vollständig kopiert. Danach das BMS neu starten. Bei ChatGPT soll `codex login status` im Terminal `Logged in using ChatGPT` zeigen, sonst `codex login` wiederholen und den Lauf neu starten |
+| Im „Task-Center“ steht, das Nutzungslimit Ihres ChatGPT-Abos sei erreicht | Es gelten die Grenzen Ihres Abos, das BMS setzt keine eigene Grenze je Lauf. Starten Sie den Lauf später erneut. Ein Tageslauf kann ein Plus-Konto schnell an die Grenze bringen |
+| Sie möchten die KI wechseln, Claude oder ChatGPT | „Einstellungen“, Karte „KI“: die andere KI wählen. Ihr Programm muss vorher installiert und angemeldet sein (Schritt 3 und 7 für diese KI) |
 | Es entsteht keine PDF-Datei | LibreOffice fehlt oder liegt nicht am vorgeschlagenen Ort |
 | Lebensläufe heißen `CV_Bewerber_…` | Im Profil steht noch kein Name. Tragen Sie ihn in der Karte „Identität und Suchstrategie“ ein und speichern Sie (Abschnitt „Ihr Profil: Identität und Suchstrategie“). Bearbeiten Sie `config/profil.md` von Hand, prüfen Sie, ob die Zeile `**Name:**` genau so geschrieben ist |
-| Im BMS stehen Stellen, Mails oder ein Profil von „Birne Helene“, die Sie nicht angelegt haben | Das sind die Beispieldaten. Entfernen Sie sie in den „Einstellungen“ mit „Beispieldaten entfernen“ (Abschnitt „Zuerst: Beispieldaten entfernen“) |
+| Im BMS stehen Stellen, Mails oder ein Profil von „Benno Bewerbaer“, die Sie nicht angelegt haben | Das sind die Beispieldaten. Entfernen Sie sie in den „Einstellungen“ mit „Beispieldaten entfernen“ (Abschnitt „Zuerst: Beispieldaten entfernen“) |
 | „Beispieldaten entfernen“ meldet, dass gerade eine Sicherung oder eine Aufgabe läuft | Einen Moment warten, bei einer Aufgabe bis sie im „Task-Center“ fertig ist, und noch einmal klicken. Es wurde nichts verändert |
 | `Antwort: 404` beim Laden des Programmpakets, oder in der Auskunft steht `Not Found` | Zu dieser Version gibt es auf GitHub kein Programmpaket, oder es ist noch keine Version veröffentlicht. Prüfen Sie die Versionsnummer aus der Auskunft. Hilft das nicht, nehmen Sie den Ersatzweg mit einer ZIP-Datei von der Release-Seite |
 | In der Auskunft steht `API rate limit exceeded`, oder das Update-Werkzeug meldet „GitHub begrenzt gerade die Anfragen.“ | GitHub erlaubt ohne Anmeldung nur 60 Anfragen je Stunde und IP-Adresse. In einem Firmennetz teilen sich oft viele Rechner eine Adresse. Versuchen Sie es in einer Stunde noch einmal, oder nehmen Sie den Ersatzweg mit einer ZIP-Datei |
@@ -961,8 +1062,9 @@ Kontakt zu GitHub gibt es nur beim Laden des Programmpakets in der Installation 
 nach einer neuen Version suchen (Knopf „Nach Updates suchen“ in den Einstellungen oder das
 Update-Werkzeug). GitHub erhält dabei die IP-Adresse Ihres Rechners und die Anfrage selbst, sonst
 nichts. Mit `--offline` oder mit einer ZIP-Datei gibt es keinen Kontakt. Näheres steht unter
-„Rechtliches“, Reiter „Datenschutz“. Die KI-Funktionen übermitteln Inhalte an Anthropic, soweit sie
-für den jeweiligen Lauf nötig sind, und zwar über Ihr eigenes Claude-Konto.
+„Rechtliches“, Reiter „Datenschutz“. Die KI-Funktionen übermitteln Inhalte an den Anbieter der
+gewählten KI, soweit sie für den jeweiligen Lauf nötig sind, und zwar über Ihr eigenes Konto: bei
+Claude an Anthropic, bei ChatGPT an OpenAI.
 
 Das BMS sichert Ihre Datenbank automatisch, solange es läuft: einmal täglich als ZIP-Datei im
 Ordner `data/backups/auto`. Aufbewahrt werden die neueste Sicherung, alle der letzten 24 Stunden

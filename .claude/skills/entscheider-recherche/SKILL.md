@@ -1,6 +1,6 @@
 ---
 name: entscheider-recherche
-description: Recherchiert für eine Stelle oder Firma aus dem Bewerbungs-Management-System die tatsächlichen Fachentscheider (VP/Head/C-Level für Professional Services, Customer Success oder Delivery — statt HR-Sammeladresse) und optional die Vorbesetzung der Zielrolle (wer hatte sie vorher, welches Profil), ausschließlich über öffentliche Quellen. Legt Treffer dedupliziert als Kontakte am Job an und empfiehlt die Ansprache. Nutze diesen Skill bei "Entscheider für Job <id>", "wer ist der Hiring Manager bei <Firma>", "Entscheider-Recherche für <Firma>", "Vorbesetzungs-Recherche für Job <id>", "wen soll ich ansprechen bei <Firma>".
+description: Recherchiert für eine Stelle oder Firma aus dem Bewerbungs-Management-System die tatsächlichen Fachentscheider (die Verantwortlichen der Fachfunktion, in der die Zielrolle liegt — statt HR-Sammeladresse) und optional die Vorbesetzung der Zielrolle (wer hatte sie vorher, welches Profil), ausschließlich über öffentliche Quellen. Legt Treffer dedupliziert als Kontakte am Job an und empfiehlt die Ansprache. Nutze diesen Skill bei "Entscheider für Job <id>", "wer ist der Hiring Manager bei <Firma>", "Entscheider-Recherche für <Firma>", "Vorbesetzungs-Recherche für Job <id>", "wen soll ich ansprechen bei <Firma>".
 ---
 
 # Entscheider-Recherche (Fachentscheider statt HR-Flaschenhals)
@@ -16,12 +16,13 @@ Beantwortet: **Wer entscheidet wirklich über diese Rolle — und wie erreiche i
 curl -s http://localhost:8000/api/jobs/<id>          # bzw. Firma aus dem Auslöser
 curl -s "http://localhost:8000/api/network-check?company=<Firma>"
 ```
-Zielrolle/Funktion bestimmen (PS / CS / Delivery / Implementation) und vorhandene Kontakte + warme Pfade
-kennen, bevor recherchiert wird — ein warmer Kontakt schlägt jede Kalt-Recherche.
+Zielrolle/Funktion aus Stellentitel und Anzeige bestimmen (bei Initiativ aus den Plänen: `plaene` in
+`config/suchprofile.yaml`) und vorhandene Kontakte + warme Pfade kennen, bevor recherchiert wird — ein warmer Kontakt schlägt jede Kalt-Recherche.
 
 ### 2. Fachentscheider recherchieren (WebSearch — NUR öffentliche Quellen)
 Suchmuster (kombinieren, DE + EN):
-- `<Firma> "VP Professional Services" OR "Head of Professional Services" OR "Director Services" site:linkedin.com`
+- `<Firma> "Head of <Funktion>" OR "VP <Funktion>" OR "Director <Funktion>" site:linkedin.com` — Funktion der
+  Zielrolle einsetzen, die Ebene so wählen, dass sie über der Zielrolle liegt.
 - Leadership-/Team-Seite der Firma, Pressemitteilungen (Neubesetzungen!), Konferenz-Speaker, Podcasts, Handelsregister-Signale.
 - Gesucht: **Fachverantwortliche der Zielfunktion** (nicht HR) + deren Chef (Reporting-Linie), Name, exakte
   Rolle, LinkedIn-URL, 1–2 Kontextpunkte (Posts, Vorträge, Schwerpunkte) für die persönliche Ansprache.

@@ -66,9 +66,8 @@ seine zweite Adresse gefunden werden (z. B. `@personalberatung.example.de`):
   Stichwort, Absender ohne ATS-Muster; der Recruiter stand ohne Adresse in der DB, und die
   Firmendomain wurde bis dahin nur für Personalberater durchsucht. Die Mail fiel durch beide Netze.
 
-Dazu die **Namen der Berater-Kontakte ohne E-Mail-Adresse** (für die Berichtszeile in Schritt 4 —
-Bestandsmessung 18.08.: 109 von 162 Kontakten insgesamt ohne E-Mail, 15 von 25 Berater-Kontakten
-an einer terminalen Stelle). Die Domain-Liste ist gegen eine Sperrliste aus generischen
+Dazu die **Namen der Berater-Kontakte ohne E-Mail-Adresse** (für die Berichtszeile in Schritt 4).
+Die Domain-Liste ist gegen eine Sperrliste aus generischen
 ATS-/Portal-Domains, großen Jobportalen (LinkedIn, XING, Indeed, StepStone, Glassdoor) und Freemail
 gefiltert — sonst würde die Domain-Suche entweder bereits über die Haupt-Query abgedeckte
 ATS-Systeme unnötig doppeln, jede Portal-Mitteilung einsammeln oder bei Freemail auf „lies mein

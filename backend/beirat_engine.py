@@ -39,6 +39,14 @@ Architektur-Entscheidungen (bewusst, bitte nicht "vereinfachen"):
   Auth-Fehlertexte werden je Auth-Weg in Klartext übersetzt (`_auth_fehler_uebersetzen()`) statt
   als kryptischer CLI-Rohtext in `AgentTask.error`/`Debatte.fehler` zu landen. Details/Ist-Analyse:
   tasks/spec_phase77_beirat_auth.md.
+- P2-86 (KI-Anbieter wählbar): Ist in den Einstellungen ChatGPT gewählt (`ki_anbieter.aktiv()`), läuft der
+  Abo-Motor ("anthropic" in Formular und API) über `codex exec` statt `claude -p`: `_turn_codex()` mit dem
+  Anbieter-Wert "codex", einmal je Debatte im Konstruktor festgelegt (`_wirksamer_motor()`). Ein Turn ist reiner
+  Text ohne Werkzeuge (Sandbox read-only, keine Websuche, leeres cwd). Codex meldet den Text erst am Ende des
+  Turns, deshalb gibt es keine Teil-Ereignisse (`on_delta` bleibt ungenutzt, die Oberfläche bekommt den Beitrag
+  mit `beitrag_ende` am Stück) und keine Kosten in USD (`Debatte.kosten_usd` bleibt 0, die Notbremse in USD greift
+  nicht; die Obergrenze der Beiträge begrenzt den Lauf). Claude-Vorbereitung (Keychain-Vorwärmen, Token aus
+  agent.env) entfällt. Unter Claude und für den API-Schlüssel-Weg über OpenAI ändert sich nichts.
 """
 from __future__ import annotations
 
@@ -55,7 +63,7 @@ from pathlib import Path
 import httpx
 from sqlmodel import Session
 
-from app import agent_runner  # Phase 77: ENV_FILE zur LAUFZEIT übers Modul lesen (s. _headless_token)
+from app import agent_runner, ki_anbieter  # Phase 77: ENV_FILE zur LAUFZEIT übers Modul lesen (s. _headless_token)
 from app.agent_runner import LOG_DIR as AGENT_LOG_DIR, modell_fuer_beirat, neue_log_datei
 from app.db import artefakt_pfad, engine
 from app.models import AgentTask, JobFile
@@ -580,17 +588,39 @@ def keys_schreiben(anthropic: str | None, openai: str | None) -> None:
     os.chmod(KEY_PFAD, 0o600)
 
 
+def _aktive_ki() -> str:
+    """Die in den Einstellungen gewählte KI (`ki_anbieter.CLAUDE` oder `CHATGPT`). Lässt sich die Einstellung nicht
+    lesen (z. B. Datenbank noch nicht angelegt), gilt Claude, wie vor P2-86."""
+    try:
+        return ki_anbieter.aktiv()
+    except Exception:  # noqa: BLE001 — Statusanzeige und Debattenstart dürfen daran nicht scheitern
+        return ki_anbieter.STANDARD
+
+
+def _wirksamer_motor(provider: str) -> str:
+    """Der Motor, über den die Debatte tatsächlich läuft. "anthropic" heißt in Formular und API „das Abo der
+    gewählten KI“: unter ChatGPT wird daraus "codex". "openai" (API-Schlüssel) bleibt, wie gewählt."""
+    if provider == "anthropic" and _aktive_ki() == ki_anbieter.CHATGPT:
+        return "codex"
+    return provider
+
+
 def keys_status() -> dict:
     k = keys_lesen()
     def _mask(v):
         return f"…{v[-4:]}" if v else None
-    return {
-        "anthropic_gesetzt": bool(k.get("anthropic")), "anthropic_maske": _mask(k.get("anthropic")),
-        "openai_gesetzt": bool(k.get("openai")), "openai_maske": _mask(k.get("openai")),
+    if _aktive_ki() == ki_anbieter.CHATGPT:
+        # P2-86: Das Abo läuft über Codex, nicht über die Claude-CLI.
+        cli_verfuegbar = bool(ki_anbieter._programm(ki_anbieter.CODEX_BIN))
+    else:
         # Phase 100: `which` zuerst, damit auch ein blosser Befehlsname (Env-Override
         # CLAUDE_BIN=claude) als verfügbar gilt; `.exists()` bleibt als Fallback für eine
         # vorhandene, aber nicht als ausführbar markierte Datei.
-        "cli_verfuegbar": bool(shutil.which(CLAUDE_BIN)) or Path(CLAUDE_BIN).exists(),
+        cli_verfuegbar = bool(shutil.which(CLAUDE_BIN)) or Path(CLAUDE_BIN).exists()
+    return {
+        "anthropic_gesetzt": bool(k.get("anthropic")), "anthropic_maske": _mask(k.get("anthropic")),
+        "openai_gesetzt": bool(k.get("openai")), "openai_maske": _mask(k.get("openai")),
+        "cli_verfuegbar": cli_verfuegbar,
     }
 
 
@@ -955,10 +985,109 @@ async def _turn_openai(system_prompt: str, user_prompt: str, model: str, on_delt
     return voll, 0.0
 
 
+def _codex_argv(programm: str, modell: str) -> list[str]:
+    """Aufruf von `codex exec` für einen reinen Text-Turn: Sandbox read-only, keine Websuche, keine
+    Nutzer-Konfiguration, keine gespeicherte Sitzung. Der Text kommt über die Standardeingabe (`-`)."""
+    return [programm, "exec", "--json", "--skip-git-repo-check", "--ignore-user-config", "--ephemeral",
+            "-s", "read-only", "-c", 'web_search="disabled"', "-m", modell, "-"]
+
+
+def _codex_env() -> dict:
+    """Umgebung für einen Codex-Turn: die Anmeldung des Rechners (`codex login`), kein Claude- oder Anthropic-
+    Schlüssel und kein OpenAI-Schlüssel, der Codex auf die getrennt abgerechnete API umstellen würde."""
+    env = {n: v for n, v in os.environ.items() if not n.startswith(("CLAUDE", "ANTHROPIC"))}
+    return ki_anbieter.codex_umgebung(env)
+
+
+def _codex_eingabe(system_prompt: str, user_prompt: str) -> str:
+    """Codex kennt keinen getrennten System-Prompt: Anweisung und Aufgabe gehen zusammen über die Standardeingabe."""
+    anweisung = f"ANWEISUNG (gilt für deine ganze Antwort):\n{system_prompt}\n\n---\n\n" if system_prompt else ""
+    return (f"{anweisung}AUFGABE:\n{user_prompt}\n\n---\n\n"
+            "Du hast hier keine Werkzeuge und keinen Dateizugriff. Antworte direkt mit dem verlangten Text.")
+
+
+async def _turn_codex(system_prompt: str, user_prompt: str, modell_alias: str | None, on_delta,
+                      task_id: int | None = None, timeout: int = MAX_TURN_SEKUNDEN) -> tuple[str, float]:
+    """Ein Redebeitrag über `codex exec` mit dem ChatGPT-Abo (P2-86). Rückgabe (Text, 0.0): Codex meldet keine Kosten
+    in USD, der Verbrauch hängt am Abo.
+
+    Keine Teil-Ausgabe: Der Text kommt erst mit dem Ende des Turns, `on_delta` wird deshalb nie aufgerufen. Die
+    Oberfläche zeigt „schreibt…“ und bekommt den Beitrag mit `beitrag_ende` am Stück (BeiratLive.tsx).
+
+    Das Modell folgt der Stufe des Turns (`persona_model`: die Beiratswahl für Köpfe und Voten, "sonnet" für Vorsitz
+    und Synthese, wie unter Claude) über `ki_anbieter.CODEX_MODELL`; ein unbekannter Wert fällt auf die Beiratswahl.
+    Fehler (Abo-Limit, Anmeldung) kommen als Klartext aus `CodexAuswertung.ergebnis`. Wie bei `_turn_anthropic` läuft
+    der Turn im leeren `WORK_DIR`, damit keine Projektdateien (AGENTS.md, Skills) die Persona überlagern.
+
+    Die Abstimmung startet drei Turns gleichzeitig. Ein fälliger Token-Refresh von `codex login` fällt vorher im
+    ersten, seriellen Turn jeder Debatte (Dispatch) an. Gegen einen echten Codex-Lauf ist das nicht geprüft."""
+    programm = ki_anbieter._programm(ki_anbieter.CODEX_BIN)
+    if not programm:
+        raise RuntimeError(f"Das ChatGPT-Programm „{ki_anbieter.CODEX_BIN}“ (Codex) wurde nicht gefunden. "
+                           "Bitte installieren und im Terminal mit `codex login` anmelden.")
+    modell = ki_anbieter.CODEX_MODELL.get(modell_alias or "") or ki_anbieter.CODEX_MODELL[modell_fuer_beirat()]
+    WORK_DIR.mkdir(parents=True, exist_ok=True)
+    _log_notiz(task_id, f"Motor: ChatGPT-Abo (Codex), Modell {modell}")
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            *_codex_argv(programm, modell), cwd=str(WORK_DIR), env=_codex_env(),
+            stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.STDOUT,
+            limit=16 * 1024 * 1024)       # eine Antwortzeile kann länger sein als die 64 KB des Standards
+    except OSError as ex:
+        raise RuntimeError(f"Codex ließ sich nicht starten: {ex}") from ex
+    auswertung = ki_anbieter.CodexAuswertung()
+    letzte = ""                           # letzte nicht leere Zeile (auch stderr), Meldung bei einem Abbruch ohne Turn
+    eingabe = _codex_eingabe(system_prompt, user_prompt).encode("utf-8")
+
+    async def _eingeben() -> None:
+        try:
+            proc.stdin.write(eingabe)
+            await proc.stdin.drain()
+            proc.stdin.close()
+        except (BrokenPipeError, ConnectionResetError):
+            pass                          # Codex endete vor dem Lesen, die Ausgabe sagt warum
+
+    async def _lesen() -> int:
+        nonlocal letzte
+        assert proc.stdout is not None
+        while True:
+            zeile = await proc.stdout.readline()
+            if not zeile:
+                break
+            text = zeile.decode("utf-8", "ignore")
+            _log_zeile(task_id, text)
+            gekuerzt = text.strip()
+            if gekuerzt:
+                letzte = gekuerzt
+            if gekuerzt.startswith("{"):
+                try:
+                    auswertung.ereignis(json.loads(gekuerzt))
+                except json.JSONDecodeError:
+                    pass
+        return await proc.wait()
+
+    try:
+        _, rc = await asyncio.wait_for(asyncio.gather(_eingeben(), _lesen()), timeout=timeout)
+    except asyncio.TimeoutError:
+        raise RuntimeError(f"ChatGPT-Turn nach {timeout} s abgebrochen (Zeitlimit).") from None
+    finally:
+        if proc.returncode is None:
+            proc.kill()
+    ergebnis = auswertung.ergebnis(letzte)
+    if ergebnis["is_error"]:
+        raise RuntimeError(ergebnis["result"])
+    text = (ergebnis["result"] or "").strip()
+    if not text:
+        raise RuntimeError(f"Leerer ChatGPT-Turn (exit {rc}): {letzte[-500:]}")
+    return text, 0.0
+
+
 async def _turn(provider: str, openai_model: str, system_prompt: str, user_prompt: str,
                 persona_model: str, on_delta, task_id: int | None = None) -> tuple[str, float]:
     if provider == "openai":
         return await _turn_openai(system_prompt, user_prompt, openai_model, on_delta, task_id)
+    if provider == "codex":
+        return await _turn_codex(system_prompt, user_prompt, persona_model, on_delta, task_id)
     return await _turn_anthropic(system_prompt, user_prompt, persona_model, on_delta, task_id)
 
 
@@ -984,7 +1113,8 @@ class Debatte:
         self.thema, self.kontext = thema.strip(), (kontext or "").strip()
         self.min_beitraege = max(2, int(min_beitraege))
         self.max_beitraege = int(self.min_beitraege * 1.5) + 2
-        self.provider, self.openai_model = provider, openai_model
+        # P2-86: einmal je Debatte festgelegt: ein Wechsel der KI in den Einstellungen ändert keine laufende Debatte.
+        self.provider, self.openai_model = _wirksamer_motor(provider), openai_model
         self.modus = modus                   # "frei" | "stellen_check" (Phase 40)
         self.job_id = job_id
         self.job_titel, self.job_firma = job_titel, job_firma
@@ -1301,7 +1431,8 @@ class Debatte:
             # Vorwärmung, bricht die Debatte SOFORT ab (kein Persona-Fan-out, kein
             # Retry-Gewitter) — die Klartext-Meldung landet über die äußere except-Klausel wie
             # jeder andere Fehler in self.fehler/AgentTask.error.
-            if _bestimme_auth_weg() == "keychain":
+            # P2-86: Die Vorwärmung gilt der Claude-Abo-Session, unter ChatGPT gibt es sie nicht.
+            if self.provider != "codex" and _bestimme_auth_weg() == "keychain":
                 vorwaerm_fehler, vorwaerm_kosten = await _keychain_vorwaermen(self.task_id)
                 self._erfassen(vorwaerm_kosten)
                 if vorwaerm_fehler:
@@ -1664,6 +1795,8 @@ def _task_abschliessen(d: Debatte) -> None:
         result = {"debatte_id": d.id, "beitraege": len(d.beitraege)}
     if d.provider == "openai":
         result["hinweis"] = "OpenAI-Kosten nicht erfasst (nur Anthropic-Turns fließen in cost_usd ein)"
+    elif d.provider == "codex":
+        result["hinweis"] = "ChatGPT-Abo: keine Kosten in USD erfasst (cost_usd bleibt 0), der Verbrauch hängt am Abo"
     with Session(engine) as s:
         t = s.get(AgentTask, d.task_id)
         if not t:
