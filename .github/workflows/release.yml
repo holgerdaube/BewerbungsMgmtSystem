@@ -94,6 +94,24 @@ jobs:
         run: |
           python -m pipeline.kundenpaket --ref HEAD --ziel-ordner "${{ runner.temp }}/paket"
 
+      - name: Fester Name fuer die Produktseite
+        # Byte-gleiche Kopie unter einem Namen ohne Version: bms.daube.tech verlinkt dauerhaft
+        # releases/latest/download/BMS_latest.zip. Der Schritt davor steht, damit die Schleife in
+        # "Pruefsumme" auch BMS_latest.zip.sha256 erzeugt (mit BMS_latest.zip in der Zeile, damit
+        # `shasum -a 256 -c` direkt klappt). Nur bei der echten Freigabe; der Probebau traegt einen
+        # anderen Namen (Version + Datum + Kurz-SHA). Update-Werkzeug und Anleitungen bleiben bei
+        # BMS_<Version>.zip; im Download-Ordner findet bms_update.py auch BMS_latest.zip (BMS_*.zip,
+        # Version aus dem Manifest).
+        if: github.event_name == 'push'
+        working-directory: ${{ runner.temp }}/paket
+        run: |
+          tag="${GITHUB_REF#refs/tags/v}"
+          if [ ! -f "BMS_$tag.zip" ]; then
+            echo "BMS_$tag.zip fehlt im Paketordner." >&2
+            exit 1
+          fi
+          cp "BMS_$tag.zip" BMS_latest.zip
+
       - name: Pruefsumme
         working-directory: ${{ runner.temp }}/paket
         run: |
@@ -109,6 +127,7 @@ jobs:
           python -m pipeline.release notizen "$tag" > "${{ runner.temp }}/notizen.md"
 
       - name: GitHub Release veroeffentlichen
+        # paket/*.zip und paket/*.sha256 sind BMS_<Version>.zip und BMS_latest.zip samt Pruefsummen.
         # Neben ZIP und Pruefsumme haengen die beiden Installationsanleitungen aus dem Checkout am
         # Release: README Schritt 1 verweist fuer den Download auf releases/latest. Fehlt eine der
         # beiden Dateien, schlaegt der Schritt fehl, bevor ein Release entsteht.

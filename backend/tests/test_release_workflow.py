@@ -1,15 +1,21 @@
 """Tests für `.github/workflows/release.yml` (P2-84, Paket C1): Releases entstehen nur im öffentlichen Repo,
 und das Release trägt die beiden Installationsanleitungen.
 
-Reine Textprüfung der Workflow-Datei, kein Netzwerk, kein `gh`, kein YAML-Paket (die CI installiert nur die
-Laufzeit-Abhängigkeiten). Die Datei wird zeilenweise in ihre Jobs und Schritte zerlegt; das genügt, weil
+Textprüfung der Workflow-Datei, kein Netzwerk, kein `gh`, kein YAML-Paket (die CI installiert nur die
+Laufzeit-Abhängigkeiten). Die beiden Schritte für `BMS_latest.zip` werden zusätzlich mit bash nachgestellt.
+Die Datei wird zeilenweise in ihre Jobs und Schritte zerlegt; das genügt, weil
 `release.yml` eine feste, flache Form hat.
 
 NUR ERFUNDENE DATEN, KEINE ECHTEN KONTEN: Das Repo kommt aus `personendaten.OEFFENTLICHES_REPO`, nicht aus
 einem Literal in dieser Datei. Diese Datei wird mit dem öffentlichen Baum geprüft.
 
 App-/Pipeline-Importe nie auf Modulebene (conftest-Regel), nur über die Fixture `repo`."""
+import hashlib
+import os
 import re
+import shutil
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -103,3 +109,79 @@ def test_anleitungen_liegen_im_projekt_root(anleitung):
     datei = PROJEKT_ROOT / anleitung
     assert datei.is_file(), f"{anleitung} fehlt im Projekt-Root; der Checkout in release.yml fände sie nicht"
     assert datei.stat().st_size > 0
+
+
+# ── BMS_latest.zip: fester Name für den Download-Link der Produktseite ────────────────────────────────
+
+def _run_block(schritt_text):
+    """Der Inhalt von `run: |` eines Schritts, ohne die Einrückung (zehn Leerzeichen)."""
+    teile = schritt_text.split("        run: |\n", 1)
+    assert len(teile) == 2, "Schritt ohne `run: |`"
+    zeilen = []
+    for zeile in teile[1].splitlines():
+        if zeile.strip() and not zeile.startswith("          "):
+            break
+        zeilen.append(zeile[10:])
+    return "\n".join(zeilen).strip() + "\n"
+
+
+def test_latest_schritt_steht_vor_der_pruefsumme(text):
+    """Nur so erzeugt die Schleife in „Pruefsumme“ auch `BMS_latest.zip.sha256`."""
+    assert text.index("- name: Fester Name fuer die Produktseite") < text.index("- name: Pruefsumme")
+
+
+def test_latest_schritt_laeuft_nur_beim_tag_push(text):
+    """Der Probebau heißt `BMS_<Version>_<Datum>_<SHA>.zip`; eine Kopie dort hätte kein Original."""
+    assert re.search(r"^        if: github\.event_name == 'push'$",
+                     _schritt(text, "Fester Name fuer die Produktseite"), re.MULTILINE)
+
+
+def test_latest_schritt_kopiert_das_versionierte_zip(text):
+    befehl = _run_block(_schritt(text, "Fester Name fuer die Produktseite"))
+    assert 'cp "BMS_$tag.zip" BMS_latest.zip' in befehl
+    assert "exit 1" in befehl.split("cp ")[0], "fehlt das Original, bricht der Schritt nicht ab"
+
+
+def test_release_haengt_latest_ueber_die_muster_an(text):
+    """`gh release create` nimmt `paket/*.zip` und `paket/*.sha256`; ein eigener Eintrag ist nicht nötig, aber
+    die Muster dürfen nicht auf `BMS_<Version>` eingeengt werden."""
+    schritt = re.sub(r"\\\n\s*", " ", _schritt(text, "GitHub Release veroeffentlichen"))
+    zeile = next(z for z in schritt.splitlines() if "gh release create" in z)
+    assert '"${{ runner.temp }}"/paket/*.zip' in zeile
+    assert '"${{ runner.temp }}"/paket/*.sha256' in zeile
+
+
+@pytest.mark.skipif(sys.platform == "win32" or not shutil.which("bash") or not shutil.which("sha256sum"),
+                    reason="braucht bash und sha256sum (läuft in der CI unter Ubuntu und auf dem Mac)")
+def test_latest_und_pruefsumme_nachgestellt(text, tmp_path):
+    """Beide Schritte so ausführen, wie die CI es tut: Paketordner mit einem Test-ZIP, `GITHUB_REF` eines Tags."""
+    inhalt = b"zip-inhalt (Test)"
+    (tmp_path / "BMS_9.8.7.zip").write_bytes(inhalt)
+    umgebung = {"PATH": os.environ.get("PATH", ""), "GITHUB_REF": "refs/tags/v9.8.7"}
+    for name in ("Fester Name fuer die Produktseite", "Pruefsumme"):
+        lauf = subprocess.run(["bash", "-e", "-c", _run_block(_schritt(text, name))], cwd=tmp_path,
+                              env=umgebung, capture_output=True, text=True)
+        assert lauf.returncode == 0, f"{name}: {lauf.stderr}"
+
+    assert sorted(p.name for p in tmp_path.iterdir()) == [
+        "BMS_9.8.7.zip", "BMS_9.8.7.zip.sha256", "BMS_latest.zip", "BMS_latest.zip.sha256"]
+    assert (tmp_path / "BMS_latest.zip").read_bytes() == inhalt
+    digest = hashlib.sha256(inhalt).hexdigest()
+    assert (tmp_path / "BMS_latest.zip.sha256").read_text() == f"{digest}  BMS_latest.zip\n"
+    assert (tmp_path / "BMS_9.8.7.zip.sha256").read_text() == f"{digest}  BMS_9.8.7.zip\n"
+    pruefung = subprocess.run(["sha256sum", "-c", "BMS_latest.zip.sha256"], cwd=tmp_path, env=umgebung,
+                              capture_output=True, text=True)
+    assert pruefung.returncode == 0, pruefung.stdout + pruefung.stderr
+
+
+@pytest.mark.skipif(sys.platform == "win32" or not shutil.which("bash"),
+                    reason="braucht bash (läuft in der CI unter Ubuntu und auf dem Mac)")
+def test_latest_schritt_bricht_ohne_original_ab(text, tmp_path):
+    """Passt das gebaute ZIP nicht zum Tag, entsteht kein Release mit einem falschen BMS_latest.zip."""
+    (tmp_path / "BMS_9.8.6.zip").write_bytes(b"alt")
+    lauf = subprocess.run(["bash", "-e", "-c", _run_block(_schritt(text, "Fester Name fuer die Produktseite"))],
+                          cwd=tmp_path, env={"PATH": os.environ.get("PATH", ""), "GITHUB_REF": "refs/tags/v9.8.7"},
+                          capture_output=True, text=True)
+    assert lauf.returncode != 0
+    assert "BMS_9.8.7.zip fehlt" in lauf.stderr
+    assert not (tmp_path / "BMS_latest.zip").exists()

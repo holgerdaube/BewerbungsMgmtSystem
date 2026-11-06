@@ -4,6 +4,10 @@ Here you will find, for each version, what changes for you. You can see which ve
 
 ## Unreleased
 
+## 2.2.1 (06.11.2026)
+
+- Each release now also carries the program package under the fixed name `BMS_latest.zip`, with its checksum. The download link on bms.daube.tech therefore always points to the newest version. Nothing changes for installing and updating.
+
 ## 2.2.0 (06.11.2026)
 
 - BMS is now available in German and English: interface, messages, reports, exports, sample data and documentation. You can switch in the sidebar or in the settings. The AI reports follow this setting; your CV and cover letter still follow the language of the job posting.

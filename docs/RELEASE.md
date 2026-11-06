@@ -22,7 +22,7 @@ scripts/release.sh freigeben patch --probe        # nur pruefen
 scripts/release.sh freigeben patch                # Entwicklungs-Repo: Version, CHANGELOG, Commit, Tag, Push
 scripts/veroeffentlichen.sh --ziel <Arbeitskopie> --ref v1.1.0   # geprueften Stand in die Arbeitskopie des oeffentlichen Repos
 # … committen, pushen, CI abwarten, taggen, Tag pushen (Abschnitt „Veröffentlichen“): das Tag startet das Release …
-scripts/release.sh abholen 1.1.0                  # laedt ZIP + .sha256 aus dem Release (nur zum Pruefen)
+scripts/release.sh abholen 1.1.0                  # laedt ZIP + .sha256 (auch BMS_latest.zip) aus dem Release (nur zum Pruefen)
 # … Das GitHub-Release im öffentlichen Repo ist die Veroeffentlichung, danach folgt kein weiterer Schritt (Schritt 5 unten) …
 ```
 
@@ -123,9 +123,9 @@ fortsetzt.
 Jobs übersprungen. Job `tests` ruft `ci.yml` als kompletten Testlauf gegen genau diesen Stand auf (`secret-scan` läuft
 dabei bewusst nicht noch einmal — der Commit wurde beim Push auf `main` schon gescannt, und ein
 Tag-Push liefert der gitleaks-Action ohnehin keine Commit-Liste). Job `paket` baut danach mit
-`python -m pipeline.kundenpaket --ref HEAD --ziel-ordner …` das ZIP, erzeugt eine `.sha256`-Datei
-(Format von `sha256sum`), holt die Release-Notizen über `pipeline.release notizen` und
-veröffentlicht ein GitHub-Release `vX.Y.Z` mit ZIP, Prüfsumme und den beiden Installationsanleitungen
+`python -m pipeline.kundenpaket --ref HEAD --ziel-ordner …` das ZIP, legt eine byte-gleiche Kopie
+`BMS_latest.zip` daneben, erzeugt für beide eine `.sha256`-Datei (Format von `sha256sum`), holt die Release-Notizen über `pipeline.release notizen` und
+veröffentlicht ein GitHub-Release `vX.Y.Z` mit beiden ZIPs, ihren Prüfsummen und den Installationsanleitungen
 (`BMS_Install_MAC.md`, `BMS_Install_Windows.md` aus dem Checkout; fehlt eine, schlägt der Schritt fehl) als
 Anhang. Fortschritt siehst du auf der Actions-Seite des öffentlichen Repos. **Mit diesem Release ist die
 Version veröffentlicht.**
@@ -140,7 +140,8 @@ scripts/release.sh abholen 1.1.0
 
 Lädt die Anhänge des Releases `v1.1.0` aus dem öffentlichen Repo (`gh release download --repo …`, nicht
 aus dem Entwicklungs-Repo) nach `outputs/kundenpaket/` (Override mit `--ziel DIR`), prüft `BMS_1.1.0.zip`
-gegen `BMS_1.1.0.zip.sha256` und nennt den Pfad.
+gegen `BMS_1.1.0.zip.sha256` und nennt den Pfad. Trägt das Release `BMS_latest.zip` (ab dem ersten Release nach
+2.2.0), prüft es auch diese Datei: Prüfsumme, Dateiname in der `.sha256`-Zeile und byte-gleich mit `BMS_1.1.0.zip`.
 
 **5. Mehr ist nicht zu tun.** Es gibt keinen Server, auf den ein Paket gelegt wird. Update-Knopf und
 Update-Werkzeug finden die Version über `releases/latest` des Repos `holgerdaube/BewerbungsMgmtSystem`
@@ -161,6 +162,16 @@ Update-Werkzeug finden die Version über `releases/latest` des Repos `holgerdaub
 Die Namen `BMS_<Version>.zip` und `BMS_<Version>.zip.sha256` muss `release.yml` genau so erzeugen,
 sonst finden Knopf und Werkzeug das Paket nicht. Ändere an Dateinamen im Workflow nichts, ohne
 `scripts/bms_update.py` und die Anleitungen mitzuziehen.
+
+**`BMS_latest.zip` für die Produktseite.** Zusätzlich hängen `BMS_latest.zip` (byte-gleiche Kopie von
+`BMS_<Version>.zip`) und `BMS_latest.zip.sha256` (mit `BMS_latest.zip` in der Zeile, damit `shasum -a 256 -c`
+direkt klappt) am Release. Grund: bms.daube.tech verlinkt im Abschnitt „Installation“ dauerhaft
+`releases/latest/download/BMS_latest.zip` und `…/BMS_latest.zip.sha256`, ohne den Link nach jedem Release
+nachzuziehen. Die Kopie entsteht nur beim Tag-Push (Schritt „Fester Name fuer die Produktseite“), der Probebau
+hat sie nicht. Update-Werkzeug, Knopf und Anleitungen nutzen sie nicht, sie bleiben bei `BMS_<Version>.zip`.
+Legt ein Anwender `BMS_latest.zip` in den Download-Ordner, findet das Update-Werkzeug sie trotzdem: Es sucht
+dort `BMS_*.zip` und liest die Version aus dem Manifest, nicht aus dem Dateinamen. Den Namen nie in `BMS.zip`
+ändern, das fände es nicht. Der Link funktioniert ab dem ersten Release nach 2.2.0.
 
 **Vertrauensanker ist dein GitHub-Konto.** Wer es übernimmt, könnte ein Release mit fremdem Code
 veröffentlichen; `digest` und Manifest kämen dann vom selben Ort. Schutz: Zwei-Faktor-Anmeldung und
@@ -450,9 +461,9 @@ scripts/release.sh abholen X.Y.Z
 3. Ein Commit mit `-s` (fügt „Signed-off-by“ mit der noreply-Adresse hinzu), Nachricht „BMS X.Y.Z“.
 4. Erst `main` pushen und die CI abwarten: `ci.yml` testet den Stand, bevor ein Tag das Release auslöst.
 5. Dann das annotierte Tag setzen und pushen. Der Tag-Push startet `release.yml` im öffentlichen Repo: Test,
-   Paketbau, Release mit ZIP, Prüfsumme und beiden Installationsanleitungen.
+   Paketbau, Release mit ZIP, `BMS_latest.zip`, Prüfsummen und den Installationsanleitungen.
 6. Das Release prüfen: `scripts/release.sh abholen X.Y.Z` lädt aus dem öffentlichen Repo und vergleicht die
-   Prüfsumme. Auf GitHub zeigt die Release-Seite die Notizen aus dem CHANGELOG und vier Anhänge.
+   Prüfsumme. Auf GitHub zeigt die Release-Seite die Notizen aus dem CHANGELOG und acht Anhänge (zwei ZIPs, zwei Prüfsummen, vier Anleitungen).
 
 ### Beiträge Dritter
 

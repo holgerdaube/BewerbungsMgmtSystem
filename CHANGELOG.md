@@ -4,6 +4,10 @@ Hier steht zu jeder Version, was sich für Sie ändert. Welche Version installie
 
 ## Unveröffentlicht
 
+## 2.2.1 (06.11.2026)
+
+- Das Programmpaket hängt an jeder Version jetzt zusätzlich unter dem festen Namen `BMS_latest.zip`, samt Prüfsumme. Der Download-Link auf bms.daube.tech zeigt damit immer auf die neueste Version. Für Installation und Update ändert sich nichts.
+
 ## 2.2.0 (06.11.2026)
 
 - Das BMS gibt es jetzt auf Deutsch und Englisch: Oberfläche, Meldungen, Berichte, Exporte, Beispieldaten und Dokumentation. Umschalten können Sie in der Seitenleiste oder in den Einstellungen. Die KI-Berichte folgen dieser Einstellung, Lebenslauf und Anschreiben weiter der Sprache der Stellenanzeige.

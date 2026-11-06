@@ -22,7 +22,7 @@ scripts/release.sh freigeben patch --probe        # nur pruefen
 scripts/release.sh freigeben patch                # Entwicklungs-Repo: Version, CHANGELOG, Commit, Tag, Push
 scripts/veroeffentlichen.sh --ziel <Arbeitskopie> --ref v1.1.0   # geprueften Stand in die Arbeitskopie des oeffentlichen Repos
 # … committen, pushen, CI abwarten, taggen, Tag pushen (Abschnitt „Veröffentlichen“): das Tag startet das Release …
-scripts/release.sh abholen 1.1.0                  # laedt ZIP + .sha256 aus dem Release (nur zum Pruefen)
+scripts/release.sh abholen 1.1.0                  # downloads ZIP + .sha256 (also BMS_latest.zip) from the release (check only)
 # … Das GitHub-Release im öffentlichen Repo ist die Veroeffentlichung, danach folgt kein weiterer Schritt (Schritt 5 unten) …
 ```
 
@@ -123,9 +123,9 @@ continue by hand.
 jobs stay skipped. The job `tests` calls `ci.yml` as a complete test run against exactly this state (`secret-scan` deliberately does not run
 again there: the commit was already scanned on the push to `main`, and a
 tag push gives the gitleaks action no commit list anyway). The job `paket` then builds the ZIP with
-`python -m pipeline.kundenpaket --ref HEAD --ziel-ordner …`, creates a `.sha256` file
-(`sha256sum` format), fetches the release notes via `pipeline.release notizen` and
-publishes a GitHub release `vX.Y.Z` with the ZIP, checksum and the two installation guides
+`python -m pipeline.kundenpaket --ref HEAD --ziel-ordner …`, puts a byte-identical copy `BMS_latest.zip`
+next to it, creates a `.sha256` file for both (`sha256sum` format), fetches the release notes via `pipeline.release notizen` and
+publishes a GitHub release `vX.Y.Z` with both ZIPs, their checksums and the installation guides
 (`BMS_Install_MAC.en.md`, `BMS_Install_Windows.en.md` from the checkout; if one is missing, the step fails) as
 attachments. You can see progress on the Actions page of the public repo. **With this release the
 version is published.**
@@ -140,7 +140,8 @@ scripts/release.sh abholen 1.1.0
 
 Downloads the attachments of release `v1.1.0` from the public repo (`gh release download --repo …`, not
 from the development repo) to `outputs/kundenpaket/` (override with `--ziel DIR`), checks `BMS_1.1.0.zip`
-against `BMS_1.1.0.zip.sha256` and prints the path.
+against `BMS_1.1.0.zip.sha256` and prints the path. If the release carries `BMS_latest.zip` (from the first release
+after 2.2.0), it checks that file too: checksum, file name in the `.sha256` line and byte-identical with `BMS_1.1.0.zip`.
 
 **5. Nothing more to do.** There is no server on which a package is placed. The update button and
 update tool find the version via `releases/latest` of the repo `holgerdaube/BewerbungsMgmtSystem`
@@ -161,6 +162,16 @@ update tool find the version via `releases/latest` of the repo `holgerdaube/Bewe
 `release.yml` must produce the names `BMS_<Version>.zip` and `BMS_<Version>.zip.sha256` exactly like this,
 otherwise the button and the tool will not find the package. Do not change anything about file names in the workflow without
 also updating `scripts/bms_update.py` and the guides.
+
+**`BMS_latest.zip` for the product page.** The release also carries `BMS_latest.zip` (a byte-identical copy of
+`BMS_<Version>.zip`) and `BMS_latest.zip.sha256` (with `BMS_latest.zip` in the line, so `shasum -a 256 -c` works
+directly). Reason: bms.daube.tech links permanently to `releases/latest/download/BMS_latest.zip` and
+`…/BMS_latest.zip.sha256` in its "Installation" section, without updating the link after every release. The copy is
+only made on a tag push (step "Fester Name fuer die Produktseite"); the trial build does not have it. The update tool,
+the button and the guides do not use it; they stay with `BMS_<Version>.zip`. If a user puts `BMS_latest.zip` in the
+downloads folder, the update tool still finds it: it looks for `BMS_*.zip` there and reads the version from the
+manifest, not from the file name. Never rename it to `BMS.zip`, the tool would not find that. The link works from the
+first release after 2.2.0.
 
 **The trust anchor is your GitHub account.** Whoever takes it over could publish a release with foreign code;
 `digest` and manifest would then come from the same place. Protection: two-factor sign-in and
@@ -449,9 +460,9 @@ scripts/release.sh abholen X.Y.Z
 3. One commit with `-s` (adds "Signed-off-by" with the noreply address), message "BMS X.Y.Z".
 4. Push `main` first and wait for CI: `ci.yml` tests the state before a tag triggers the release.
 5. Then set and push the annotated tag. The tag push starts `release.yml` in the public repo: test,
-   package build, release with ZIP, checksum and both installation guides.
+   package build, release with ZIP, `BMS_latest.zip`, checksums and the installation guides.
 6. Check the release: `scripts/release.sh abholen X.Y.Z` downloads from the public repo and compares the
-   checksum. On GitHub, the release page shows the notes from the CHANGELOG and four attachments.
+   checksum. On GitHub, the release page shows the notes from the CHANGELOG and eight attachments (two ZIPs, two checksums, four guides).
 
 ### Third-party contributions
 

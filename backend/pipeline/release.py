@@ -388,10 +388,15 @@ def _sha256_pruefen(datei: Path, sha_datei: Path) -> bool:
 
 def abholen(version: str, *, ziel: str | None = None, projekt_root: Path = PROJECT_ROOT) -> int:
     """Laedt das Release `vVERSION` des OEFFENTLICHEN Repos (alle Anhaenge) und prueft ZIP gegen
-    `.sha256`. Zum Pruefen einer Freigabe, nicht zum Veroeffentlichen."""
+    `.sha256`, dazu `BMS_latest.zip`, falls das Release ihn traegt. Zum Pruefen einer Freigabe,
+    nicht zum Veroeffentlichen."""
     zielordner = Path(ziel) if ziel else (projekt_root / "outputs" / "kundenpaket")
     zielordner.mkdir(parents=True, exist_ok=True)
     tag_name = f"v{version}"
+    # Ein BMS_latest.zip eines frueheren Abholens gehoert womoeglich zu einer anderen Version und
+    # verfaelschte den Vergleich unten, wenn dieses Release (bis 2.2.0) keinen traegt.
+    for alt in ("BMS_latest.zip", "BMS_latest.zip.sha256"):
+        (zielordner / alt).unlink(missing_ok=True)
 
     try:
         # Das Release gibt es nur im oeffentlichen Repo; ohne --repo suchte gh in `origin`, dem
@@ -412,6 +417,26 @@ def abholen(version: str, *, ziel: str | None = None, projekt_root: Path = PROJE
     if not _sha256_pruefen(zip_pfad, sha_pfad):
         print(f"Abbruch: SHA-256-Pruefsumme von {zip_pfad.name} stimmt nicht.")
         return 1
+
+    # BMS_latest.zip (fester Name fuer den Link der Produktseite, s. release.yml) gibt es erst ab
+    # Releases nach 2.2.0. Ist er da, muss er samt Pruefsumme stimmen und byte-gleich sein.
+    latest_pfad = zielordner / "BMS_latest.zip"
+    latest_sha = zielordner / "BMS_latest.zip.sha256"
+    if latest_pfad.exists() or latest_sha.exists():
+        if not latest_pfad.exists() or not latest_sha.exists():
+            print(f"Abbruch: {latest_pfad.name} und {latest_sha.name} gibt es nur zusammen.")
+            return 1
+        if not _sha256_pruefen(latest_pfad, latest_sha):
+            print(f"Abbruch: SHA-256-Pruefsumme von {latest_pfad.name} stimmt nicht.")
+            return 1
+        # Der Name in der Zeile muss passen, sonst scheitert `shasum -a 256 -c` beim Anwender.
+        if latest_sha.read_text(encoding="utf-8").split()[1:2] != [latest_pfad.name]:
+            print(f"Abbruch: {latest_sha.name} nennt nicht {latest_pfad.name}.")
+            return 1
+        if latest_pfad.read_bytes() != zip_pfad.read_bytes():
+            print(f"Abbruch: {latest_pfad.name} weicht von {zip_pfad.name} ab.")
+            return 1
+        print(f"{latest_pfad.name} ist byte-gleich mit {zip_pfad.name}.")
 
     print(f"Kundenpaket liegt unter {zip_pfad}")
     return 0

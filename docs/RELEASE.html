@@ -113,7 +113,7 @@ veröffentlicht.“ bzw. ein Verbindungsfehler).</p>
 scripts/release.sh freigeben patch                # Entwicklungs-Repo: Version, CHANGELOG, Commit, Tag, Push
 scripts/veroeffentlichen.sh --ziel &lt;Arbeitskopie&gt; --ref v1.1.0   # geprueften Stand in die Arbeitskopie des oeffentlichen Repos
 # … committen, pushen, CI abwarten, taggen, Tag pushen (Abschnitt „Veröffentlichen“): das Tag startet das Release …
-scripts/release.sh abholen 1.1.0                  # laedt ZIP + .sha256 aus dem Release (nur zum Pruefen)
+scripts/release.sh abholen 1.1.0                  # laedt ZIP + .sha256 (auch BMS_latest.zip) aus dem Release (nur zum Pruefen)
 # … Das GitHub-Release im öffentlichen Repo ist die Veroeffentlichung, danach folgt kein weiterer Schritt (Schritt 5 unten) …
 </code></pre>
 <p><code>scripts/release.sh</code> und <code>scripts/veroeffentlichen.sh</code> reichen alle Argumente 1:1 an <code>python -m pipeline.release</code>
@@ -190,9 +190,9 @@ fortsetzt.</p>
 Jobs übersprungen. Job <code>tests</code> ruft <code>ci.yml</code> als kompletten Testlauf gegen genau diesen Stand auf (<code>secret-scan</code> läuft
 dabei bewusst nicht noch einmal — der Commit wurde beim Push auf <code>main</code> schon gescannt, und ein
 Tag-Push liefert der gitleaks-Action ohnehin keine Commit-Liste). Job <code>paket</code> baut danach mit
-<code>python -m pipeline.kundenpaket --ref HEAD --ziel-ordner …</code> das ZIP, erzeugt eine <code>.sha256</code>-Datei
-(Format von <code>sha256sum</code>), holt die Release-Notizen über <code>pipeline.release notizen</code> und
-veröffentlicht ein GitHub-Release <code>vX.Y.Z</code> mit ZIP, Prüfsumme und den beiden Installationsanleitungen
+<code>python -m pipeline.kundenpaket --ref HEAD --ziel-ordner …</code> das ZIP, legt eine byte-gleiche Kopie
+<code>BMS_latest.zip</code> daneben, erzeugt für beide eine <code>.sha256</code>-Datei (Format von <code>sha256sum</code>), holt die Release-Notizen über <code>pipeline.release notizen</code> und
+veröffentlicht ein GitHub-Release <code>vX.Y.Z</code> mit beiden ZIPs, ihren Prüfsummen und den Installationsanleitungen
 (<code>BMS_Install_MAC.md</code>, <code>BMS_Install_Windows.md</code> aus dem Checkout; fehlt eine, schlägt der Schritt fehl) als
 Anhang. Fortschritt siehst du auf der Actions-Seite des öffentlichen Repos. <strong>Mit diesem Release ist die
 Version veröffentlicht.</strong></p>
@@ -203,7 +203,8 @@ Release grün ist:</p>
 </code></pre>
 <p>Lädt die Anhänge des Releases <code>v1.1.0</code> aus dem öffentlichen Repo (<code>gh release download --repo …</code>, nicht
 aus dem Entwicklungs-Repo) nach <code>outputs/kundenpaket/</code> (Override mit <code>--ziel DIR</code>), prüft <code>BMS_1.1.0.zip</code>
-gegen <code>BMS_1.1.0.zip.sha256</code> und nennt den Pfad.</p>
+gegen <code>BMS_1.1.0.zip.sha256</code> und nennt den Pfad. Trägt das Release <code>BMS_latest.zip</code> (ab dem ersten Release nach
+2.2.0), prüft es auch diese Datei: Prüfsumme, Dateiname in der <code>.sha256</code>-Zeile und byte-gleich mit <code>BMS_1.1.0.zip</code>.</p>
 <p><strong>5. Mehr ist nicht zu tun.</strong> Es gibt keinen Server, auf den ein Paket gelegt wird. Update-Knopf und
 Update-Werkzeug finden die Version über <code>releases/latest</code> des Repos <code>holgerdaube/BewerbungsMgmtSystem</code>
 (GitHub liefert dort nur veröffentlichte Releases, keine Entwürfe und Vorabversionen):</p>
@@ -223,6 +224,15 @@ Update-Werkzeug finden die Version über <code>releases/latest</code> des Repos 
 <p>Die Namen <code>BMS_&lt;Version&gt;.zip</code> und <code>BMS_&lt;Version&gt;.zip.sha256</code> muss <code>release.yml</code> genau so erzeugen,
 sonst finden Knopf und Werkzeug das Paket nicht. Ändere an Dateinamen im Workflow nichts, ohne
 <code>scripts/bms_update.py</code> und die Anleitungen mitzuziehen.</p>
+<p><strong><code>BMS_latest.zip</code> für die Produktseite.</strong> Zusätzlich hängen <code>BMS_latest.zip</code> (byte-gleiche Kopie von
+<code>BMS_&lt;Version&gt;.zip</code>) und <code>BMS_latest.zip.sha256</code> (mit <code>BMS_latest.zip</code> in der Zeile, damit <code>shasum -a 256 -c</code>
+direkt klappt) am Release. Grund: bms.daube.tech verlinkt im Abschnitt „Installation“ dauerhaft
+<code>releases/latest/download/BMS_latest.zip</code> und <code>…/BMS_latest.zip.sha256</code>, ohne den Link nach jedem Release
+nachzuziehen. Die Kopie entsteht nur beim Tag-Push (Schritt „Fester Name fuer die Produktseite“), der Probebau
+hat sie nicht. Update-Werkzeug, Knopf und Anleitungen nutzen sie nicht, sie bleiben bei <code>BMS_&lt;Version&gt;.zip</code>.
+Legt ein Anwender <code>BMS_latest.zip</code> in den Download-Ordner, findet das Update-Werkzeug sie trotzdem: Es sucht
+dort <code>BMS_*.zip</code> und liest die Version aus dem Manifest, nicht aus dem Dateinamen. Den Namen nie in <code>BMS.zip</code>
+ändern, das fände es nicht. Der Link funktioniert ab dem ersten Release nach 2.2.0.</p>
 <p><strong>Vertrauensanker ist dein GitHub-Konto.</strong> Wer es übernimmt, könnte ein Release mit fremdem Code
 veröffentlichen; <code>digest</code> und Manifest kämen dann vom selben Ort. Schutz: Zwei-Faktor-Anmeldung und
 Releases nur über <code>release.yml</code>, nie von Hand hochgeladene Pakete.</p>
@@ -445,9 +455,9 @@ scripts/release.sh abholen X.Y.Z
 <li>Ein Commit mit <code>-s</code> (fügt „Signed-off-by“ mit der noreply-Adresse hinzu), Nachricht „BMS X.Y.Z“.</li>
 <li>Erst <code>main</code> pushen und die CI abwarten: <code>ci.yml</code> testet den Stand, bevor ein Tag das Release auslöst.</li>
 <li>Dann das annotierte Tag setzen und pushen. Der Tag-Push startet <code>release.yml</code> im öffentlichen Repo: Test,
-   Paketbau, Release mit ZIP, Prüfsumme und beiden Installationsanleitungen.</li>
+   Paketbau, Release mit ZIP, <code>BMS_latest.zip</code>, Prüfsummen und den Installationsanleitungen.</li>
 <li>Das Release prüfen: <code>scripts/release.sh abholen X.Y.Z</code> lädt aus dem öffentlichen Repo und vergleicht die
-   Prüfsumme. Auf GitHub zeigt die Release-Seite die Notizen aus dem CHANGELOG und vier Anhänge.</li>
+   Prüfsumme. Auf GitHub zeigt die Release-Seite die Notizen aus dem CHANGELOG und acht Anhänge (zwei ZIPs, zwei Prüfsummen, vier Anleitungen).</li>
 </ol>
 <h3>Beiträge Dritter</h3>
 <p>Ein Pull Request wird <strong>nie im öffentlichen Repo gemergt</strong>: Der nächste Export überschriebe ihn. Er läuft über
@@ -476,4 +486,4 @@ Freigabe von Workflow-Läufen für alle externen Beitragenden. Wiki und Projects
 heutigen Daten ab; ein Name, der nirgends steht, rutscht durch. Deshalb bleibt die Durchsicht des Exports vor
 dem ersten Umschalten des Repos auf öffentlich Pflicht.</p></section>
 </div></body></html>
-<!-- docs_render quelle=RELEASE.md sha256=3e589305eeadf6a4e3a72fbc77a8534819fe3b1435d7d2bd9cf94c0f38babb8e -->
+<!-- docs_render quelle=RELEASE.md sha256=d5b7023782f612061569b3813fde8a1cc5b1ede0b186aa169eabac5e94921fe7 -->

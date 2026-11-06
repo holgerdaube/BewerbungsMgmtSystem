@@ -553,3 +553,87 @@ def test_abholen_bricht_bei_falscher_pruefsumme_ab(tmp_path, monkeypatch):
     monkeypatch.setattr(release, "_gh", fake_gh)
     rc = release.abholen("1.0.0", ziel=str(ziel), projekt_root=repo)
     assert rc == 1
+
+
+def _release_mit_latest(zielordner, version, *, latest=b"zip-inhalt (Test)", latest_sha=True, sha_name=None):
+    """Legt BMS_<version>.zip samt Prüfsumme an und, wenn `latest` nicht None ist, BMS_latest.zip dazu."""
+    inhalt = b"zip-inhalt (Test)"
+    (zielordner / f"BMS_{version}.zip").write_bytes(inhalt)
+    (zielordner / f"BMS_{version}.zip.sha256").write_text(
+        f"{hashlib.sha256(inhalt).hexdigest()}  BMS_{version}.zip\n", encoding="utf-8")
+    if latest is not None:
+        (zielordner / "BMS_latest.zip").write_bytes(latest)
+    if latest_sha:
+        (zielordner / "BMS_latest.zip.sha256").write_text(
+            f"{hashlib.sha256(latest or b'').hexdigest()}  {sha_name or 'BMS_latest.zip'}\n", encoding="utf-8")
+
+
+def test_abholen_prueft_latest_mit(tmp_path, monkeypatch, capsys):
+    from pipeline import release
+
+    monkeypatch.setattr(release, "_gh", lambda args, projekt_root: _release_mit_latest(
+        Path(args[args.index("--dir") + 1]), "2.3.0"))
+    assert release.abholen("2.3.0", ziel=str(tmp_path / "kunde"), projekt_root=tmp_path) == 0
+    assert "BMS_latest.zip ist byte-gleich mit BMS_2.3.0.zip" in capsys.readouterr().out
+
+
+def test_abholen_ohne_latest_bleibt_gruen(tmp_path, monkeypatch, capsys):
+    """Releases bis 2.2.0 tragen kein BMS_latest.zip."""
+    from pipeline import release
+
+    monkeypatch.setattr(release, "_gh", lambda args, projekt_root: _release_mit_latest(
+        Path(args[args.index("--dir") + 1]), "2.2.0", latest=None, latest_sha=False))
+    assert release.abholen("2.2.0", ziel=str(tmp_path / "kunde"), projekt_root=tmp_path) == 0
+    assert "BMS_latest" not in capsys.readouterr().out
+
+
+@pytest.mark.parametrize("variante, meldung", [
+    ({"latest": b"anderer Inhalt"}, "weicht von BMS_2.3.0.zip ab"),
+    ({"latest_sha": False}, "gibt es nur zusammen"),
+    ({"latest": None}, "gibt es nur zusammen"),
+])
+def test_abholen_bricht_bei_falschem_latest_ab(tmp_path, monkeypatch, capsys, variante, meldung):
+    from pipeline import release
+
+    monkeypatch.setattr(release, "_gh", lambda args, projekt_root: _release_mit_latest(
+        Path(args[args.index("--dir") + 1]), "2.3.0", **variante))
+    assert release.abholen("2.3.0", ziel=str(tmp_path / "kunde"), projekt_root=tmp_path) == 1
+    assert meldung in capsys.readouterr().out
+
+
+def test_abholen_bricht_bei_falscher_latest_pruefsumme_ab(tmp_path, monkeypatch, capsys):
+    from pipeline import release
+
+    def fake_gh(args, projekt_root):
+        zielordner = Path(args[args.index("--dir") + 1])
+        _release_mit_latest(zielordner, "2.3.0")
+        (zielordner / "BMS_latest.zip.sha256").write_text("0" * 64 + "  BMS_latest.zip\n", encoding="utf-8")
+
+    monkeypatch.setattr(release, "_gh", fake_gh)
+    assert release.abholen("2.3.0", ziel=str(tmp_path / "kunde"), projekt_root=tmp_path) == 1
+    assert "Pruefsumme von BMS_latest.zip stimmt nicht" in capsys.readouterr().out
+
+
+def test_abholen_bricht_ab_wenn_latest_pruefsumme_den_falschen_namen_nennt(tmp_path, monkeypatch, capsys):
+    """Mit `BMS_2.3.0.zip` in der Zeile schlüge `shasum -a 256 -c BMS_latest.zip.sha256` beim Anwender fehl."""
+    from pipeline import release
+
+    monkeypatch.setattr(release, "_gh", lambda args, projekt_root: _release_mit_latest(
+        Path(args[args.index("--dir") + 1]), "2.3.0", sha_name="BMS_2.3.0.zip"))
+    assert release.abholen("2.3.0", ziel=str(tmp_path / "kunde"), projekt_root=tmp_path) == 1
+    assert "nennt nicht BMS_latest.zip" in capsys.readouterr().out
+
+
+def test_abholen_vergleicht_kein_altes_latest_aus_frueherem_abholen(tmp_path, monkeypatch):
+    """Liegt im Zielordner noch BMS_latest.zip einer neueren Version, darf das Abholen von 2.2.0 (ohne die
+    Datei) nicht daran scheitern."""
+    from pipeline import release
+
+    ziel = tmp_path / "kunde"
+    ziel.mkdir()
+    (ziel / "BMS_latest.zip").write_bytes(b"Paket 2.3.0")
+    (ziel / "BMS_latest.zip.sha256").write_text("0" * 64 + "  BMS_latest.zip\n", encoding="utf-8")
+    monkeypatch.setattr(release, "_gh", lambda args, projekt_root: _release_mit_latest(
+        Path(args[args.index("--dir") + 1]), "2.2.0", latest=None, latest_sha=False))
+    assert release.abholen("2.2.0", ziel=str(ziel), projekt_root=tmp_path) == 0
+    assert not (ziel / "BMS_latest.zip").exists()
