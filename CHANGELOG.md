@@ -4,6 +4,22 @@ Hier steht zu jeder Version, was sich für Sie ändert. Welche Version installie
 
 ## Unveröffentlicht
 
+## 2.2.0 (06.11.2026)
+
+- Das BMS gibt es jetzt auf Deutsch und Englisch: Oberfläche, Meldungen, Berichte, Exporte, Beispieldaten und Dokumentation. Umschalten können Sie in der Seitenleiste oder in den Einstellungen. Die KI-Berichte folgen dieser Einstellung, Lebenslauf und Anschreiben weiter der Sprache der Stellenanzeige.
+- Lebenslauf und Anschreiben entstehen jetzt auch auf Französisch, Italienisch, Spanisch und Portugiesisch, wenn die Anzeige in dieser Sprache steht und Sie einen passenden Basis-CV hochgeladen haben. Fehlt er, nimmt das BMS die englische, sonst die deutsche Fassung, übersetzt nichts und nennt das im Bericht des Laufs. Fußzeile, Datum und Grußformel folgen der Sprache des Dokuments, Akzente bleiben in Dateinamen als Grundbuchstabe erhalten (`Société` wird `Societe`).
+- Im englischen Anschreiben steht das Datum jetzt als `3 November 2026`.
+- Geschlossene Anzeigen, Anmeldeseiten, Gender-Zusätze, Rechtsformen und Arbeitsmodelle werden auch in diesen vier Sprachen erkannt. Die Postfach-Suche sucht zusätzlich nach Wörtern in diesen Sprachen, sobald Sie dort einen Basis-CV oder eine laufende Bewerbung haben.
+- Neue Installationen starten im Suchprofil ohne Mindest-Seniorität. Ein vorhandener Wert bleibt.
+- Meldungen im Terminal (Update, Start, Stopp, Wiederherstellen, Server-Fenster) folgen der Sprache Ihres Systems: Deutsch auf einem deutschen System, sonst Englisch.
+- Die Seite des Projekts auf GitHub ist jetzt auf Englisch, eine deutsche Fassung ist einen Klick entfernt. Im Programmpaket steht das README in beiden Sprachen.
+- Die Seiten Netzwerk, Firmen und Radar haben oben ein Suchfeld, das die Liste schon beim Tippen eingrenzt.
+- Der Beirat zeigt auf Englisch auch die Titel früherer deutscher Stellen-Checks englisch. Inhalte früherer Debatten lassen sich mit `python -m pipeline.beirat_uebersetzen` übersetzen, die Originale bleiben erhalten.
+- Im Task-Center zählen die Kacheln jetzt alle Läufe. Bisher blieben „Läufe gesamt“, „Fehlgeschlagen“ und die Kosten bei den letzten 100 stehen. Die Liste zeigt weiter die letzten 100 und sagt das, der Filter „Fehlgeschlagen“ reicht jetzt auch weiter zurück.
+- Firmenprüfung, CV-Match, CV erstellen und Anschreiben melden jetzt einen Fehler, wenn der Lauf endet, ohne sein Ergebnis anzulegen. Bisher galten sie als erfolgreich.
+- Im Tages-Digest zeigt „Heute geändert“ jetzt auch die Änderungen kurz nach Mitternacht. Bisher fehlten sie den ganzen Tag, in Deutschland die der ersten ein bis zwei Stunden.
+- Mails aus Gmail, deren Absender eine ältere Zeichenkodierung angibt (etwa Outlook mit ISO-8859-1), kommen beim Postfach-Check jetzt mit richtigen Umlauten und Akzenten an. Bisher stand dort „Ã¤“ statt „ä“, was das Einordnen solcher Antworten erschweren konnte.
+
 ## 2.1.0 (02.11.2026)
 
 - Das BMS läuft jetzt wahlweise mit Claude oder als Vorschau mit ChatGPT. Die Wahl treffen Sie bei der Installation oder unter „Einstellungen“ auf der Karte „KI“. Unter ChatGPT nutzt das BMS Ihr ChatGPT-Abo über die Codex-Kommandozeile (`codex login`), und die Inhalte der KI-Läufe gehen an OpenAI statt an Anthropic. Kosten in USD und eine Budgetgrenze je Lauf gibt es dort nicht, es gelten die Grenzen Ihres Abos. Wer Claude nutzt, muss nichts tun.

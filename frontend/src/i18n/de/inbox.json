@@ -1,0 +1,57 @@
+{
+  "titel": "Inbox",
+  "kopf_one": "{{count}} bewerbungsrelevante Mails · Ø Antwortzeit {{antwortzeit}} · {{offen}} zu beantworten · Zeile anklicken = Volltext & Antwort",
+  "kopf_other": "{{count}} bewerbungsrelevante Mails · Ø Antwortzeit {{antwortzeit}} · {{offen}} zu beantworten · Zeile anklicken = Volltext & Antwort",
+  "lade": "Lade…",
+  "stunden": "{{wert}} h",
+  "ohne_stelle": "⚠ Ohne Stelle",
+  "filter_aktiv": "Filter aktiv — klicken zum Aufheben",
+  "filter_hinweis": "Mails ohne Stellen-Zuordnung — klicken zum Filtern",
+  "alle_kategorien": "Alle Kategorien",
+  "nur_zu_beantworten": "nur „zu beantworten\"",
+  "nur_ohne_stelle": "nur ohne Stelle",
+  "spalte": {
+    "kategorie": "Kategorie",
+    "betreff": "Betreff",
+    "firma_stelle": "Firma / Stelle",
+    "von": "Von",
+    "empfangen": "Empfangen",
+    "antwortzeit": "Antwortzeit"
+  },
+  "keine_mails": "Keine Mails. Der Gmail-Check (email-check) füllt diese Ansicht.",
+  "badge_reply": "Reply",
+  "badge_entwurf": "Entwurf",
+  "entwurf_seit": "Entwurf seit {{datum}}",
+  "archivieren": "Archivieren",
+  "fehler": {
+    "archivieren": "Archivieren fehlgeschlagen",
+    "zurueckholen": "Zurückholen fehlgeschlagen"
+  },
+  "archiv": {
+    "titel": "🗄 Archiv ({{anzahl}})",
+    "hinweis": "Ausgeblendete Mails ohne Stelle. In Gmail bleiben sie unverändert.",
+    "kein_betreff": "(kein Betreff)",
+    "archiviert": "archiviert {{datum}}",
+    "zurueckholen": "↩ Zurückholen",
+    "wird_zurueckgeholt": "Wird zurückgeholt…"
+  },
+  "detail": {
+    "volltext_fehler": "Volltext konnte nicht geladen werden",
+    "kein_volltext": "Kein Volltext verfügbar",
+    "zuordnung_loesen": "🔓 Zuordnung lösen",
+    "wird_archiviert": "Wird archiviert…",
+    "archivieren": "🗄 Archivieren",
+    "nur_app": "Nur in der App. Gmail bleibt unverändert.",
+    "status_setzen": "Status auf „{{status}}“ setzen",
+    "nicht_jetzt": "nicht jetzt",
+    "entwurf_warnung": "⚠ Entwurf liegt in Gmail seit {{datum}} — vor erneutem Anlegen prüfen (Doppel-Entwurf).",
+    "antwort_entwerfen": "↩ Antwort entwerfen"
+  },
+  "zuordnen": {
+    "knopf": "📎 Stelle zuordnen",
+    "suche": "Firma oder Titel suchen…",
+    "anlegen": "+ Stelle anlegen",
+    "abbrechen": "Abbrechen",
+    "notiz": "Aus E-Mail „{{betreff}}“"
+  }
+}

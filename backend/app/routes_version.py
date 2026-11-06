@@ -8,6 +8,7 @@ dieser Router ist bewusst dünn.
 """
 from fastapi import APIRouter
 
+from app.sprache import uebersetzt
 from app.update_pruefen import neueste_version
 from app.version import version_info
 
@@ -27,4 +28,9 @@ def get_neueste_version():
     Herkunftsprüfung betrifft nur schreibende Methoden, die Route hängt an keiner Sperre. Die Route
     ist absichtlich `def` (nicht `async`): Der Abruf blockiert bis zu 10 s und läuft so im
     Threadpool statt im Ereignis-Loop."""
-    return neueste_version(version_info().get("version"))
+    antwort = neueste_version(version_info().get("version"))
+    # `update_pruefen` bleibt frei von der Datenbank (Wächtertest) und liefert deutsche Kundentexte; die
+    # Übersetzung geschieht hier, beim Antworten.
+    if antwort.get("fehler"):
+        antwort["fehler"] = uebersetzt(antwort["fehler"])
+    return antwort

@@ -1,0 +1,59 @@
+{
+  "titel": "Outreach / Network",
+  "untertitel": "Imported once from an Excel sheet and maintained here from then on. Click a row to edit it and see the activity log.",
+  "export": "⬇ Outreach tracker (original format)",
+  "lade": "Loading…",
+  "wert": {
+    "Initiated": "Initiated",
+    "Responded": "Responded",
+    "In Dialogue": "In Dialogue",
+    "Meeting Scheduled": "Meeting Scheduled",
+    "Opportunity": "Opportunity",
+    "On Hold": "On Hold",
+    "Closed Positive": "Closed Positive",
+    "Closed Negative": "Closed Negative",
+    "auto": "auto",
+    "manuell": "manual"
+  },
+  "kachel": {
+    "kontakte": "Total contacts",
+    "antworten": "Replies",
+    "response_rate": "Response rate",
+    "ueberfaellig": "Overdue follow-ups",
+    "filter_aktiv": "Filter active — click to clear",
+    "filter_hinweis": "Click to filter the list"
+  },
+  "alle_status": "All statuses ({{anzahl}})",
+  "chip_ueberfaellig": "Overdue follow-ups only",
+  "eintraege_one": "{{count}} entry",
+  "eintraege_other": "{{count}} entries",
+  "spalte": {
+    "datum": "Date",
+    "kontakt": "Contact",
+    "unternehmen": "Company",
+    "position": "Position",
+    "kanal": "Channel",
+    "status": "Status",
+    "naechster_schritt": "Next step",
+    "next_action": "Next action"
+  },
+  "keine_eintraege": "No entries",
+  "keine_eintraege_nichts_ueberfaellig": "No entries — nothing overdue 👍",
+  "detail": {
+    "aktion_bearbeiten": "Edit next action",
+    "naechster_schritt_platzhalter": "Next step…",
+    "datum_loeschen": "✕ Clear date",
+    "beworben_am": "Applied on ⓘ",
+    "beworben_am_hinweis": "Only set this if there is no application in the job tracker — otherwise the same application is counted twice (if in doubt, the job tracker wins).",
+    "beworben_am_titel": "Only set this if there is no application in the job tracker",
+    "speichern": "Save",
+    "speichern_laeuft": "Saving…",
+    "gespeichert": "✓ Saved & logged",
+    "template": "Template:",
+    "notizen": "Notes:",
+    "log_titel": "Activity log ({{anzahl}})",
+    "log_platzhalter": "Log an activity — e.g. phone call, will get back next week…",
+    "eintrag": "+ Add entry",
+    "log_leer": "No activity yet — status and step changes will now be logged here automatically."
+  }
+}

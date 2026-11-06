@@ -372,6 +372,41 @@ def test_freigeben_erfolgsfall(tmp_path, monkeypatch, capsys):
     assert "Actions" not in ausgabe and "github.com" not in ausgabe
 
 
+def test_freigeben_mit_englischem_changelog_ohne_heute(tmp_path, monkeypatch):
+    """Echtfall 06.11.2026: Die echte Freigabe ruft `freigeben` ohne `heute` auf. Der englische
+    Zweig bekam dann `None` als Datum und brach ab, NACHDEM VERSION und CHANGELOG.md geschrieben
+    waren. Die Tests gaben `heute` immer mit und hatten kein CHANGELOG.en.md, deshalb blieb das
+    verborgen. Dieser Test laesst `heute` weg und hat beide Changelogs."""
+    from pipeline import release, uebersetzung
+
+    repo = _repo_mit_origin(tmp_path)
+    (repo / "CHANGELOG.en.md").write_text(
+        "# Changes\n\nIntro.\n\n## Unreleased\n\n- Test item for the release.\n",
+        encoding="utf-8", newline="\n")
+    monkeypatch.setattr(uebersetzung, "pruefen", lambda root, gruppen: [])
+
+    def _bestaetigen(root, ziel):   # schreibt die Quellen-Datei, die freigeben() mitcommittet
+        pfad = root / uebersetzung.QUELLEN_DATEI
+        pfad.parent.mkdir(parents=True, exist_ok=True)
+        pfad.write_text('{"CHANGELOG.en.md": "x"}\n', encoding="utf-8")
+
+    monkeypatch.setattr(uebersetzung, "bestaetigen", _bestaetigen)
+    _git(repo, "add", "CHANGELOG.en.md")
+    _git(repo, "commit", "-q", "-m", "en")
+    _git(repo, "push", "-q", "origin", "main")
+    _happy(monkeypatch)
+
+    rc = release.freigeben("1.1.0", projekt_root=repo)
+    assert rc == 0
+
+    kopf = f"## 1.1.0 ({date.today().strftime('%d.%m.%Y')})"
+    assert kopf in (repo / "CHANGELOG.md").read_text(encoding="utf-8")
+    en = (repo / "CHANGELOG.en.md").read_text(encoding="utf-8")
+    assert kopf in en and "- Test item for the release." in en
+    assert "CHANGELOG.en.md" in _git(repo, "show", "--name-only", "--format=", "HEAD").stdout
+    assert _git(repo, "status", "--porcelain").stdout.strip() == ""
+
+
 # ── 5. Firmennamen-Regel nur, wenn die Datenbank lokal vorhanden ist ──────────────────────
 
 def test_pruefe_paket_reicht_firmen_db_nur_wenn_datei_vorhanden(tmp_path, monkeypatch):

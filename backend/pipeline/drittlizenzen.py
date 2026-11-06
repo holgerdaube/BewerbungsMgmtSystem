@@ -57,6 +57,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 STANDARD_NODE_MODULES = Path.home() / ".bewerbung_mgmt_node" / "frontend_build" / "node_modules"
 
 ZIEL_MD = "frontend/src/rechtliches/drittlizenzen.md"
+ZIEL_MD_EN = "frontend/src/rechtliches/drittlizenzen.en.md"
 ZIEL_TXT = "frontend/src/rechtliches/drittlizenzen_texte.txt"
 
 # ── Konstanten ─────────────────────────────────────────────────────────────────────────────
@@ -102,6 +103,8 @@ ZWECK: dict[str, str] = {
     "markdown": "Dokumentation nach HTML",
     # Oberfläche (package.json, dependencies)
     "react": "Grundgerüst der Oberfläche",
+    "i18next": "Oberfläche in mehreren Sprachen",
+    "react-i18next": "Mehrsprachigkeit in der Oberfläche",
     "react-dom": "Darstellung im Browser",
     "react-router-dom": "Seitennavigation",
     "@fontsource/inter": "Schrift Inter (Fließtext)",
@@ -359,7 +362,9 @@ def _lizenz_str(eintrag: dict) -> str | None:
 
 def _lockfile_npm(root: Path) -> tuple[list[tuple[str, str, str | None, str]], list[tuple[str, str, str | None]]]:
     """Aus package-lock.json: (Produktiv-Pakete, dev-Pakete). Produktiv: (Name, Version, Kennung,
-    Schlüssel) ohne `"dev": true`; dev: (Name, Version, Kennung). Nur Schlüssel `node_modules/…`."""
+    Schlüssel) ohne `"dev": true`; dev: (Name, Version, Kennung). Nur Schlüssel `node_modules/…`.
+    `"devOptional": true` zählt als dev: So markiert npm ein Bauwerkzeug, das ein Produktivpaket zusätzlich
+    als optionalen Peer nennt (TypeScript bei `react-i18next`). In die Auslieferung gelangt es nicht."""
     daten = _json_laden(root / "frontend" / "package-lock.json", "frontend/package-lock.json")
     produktiv, dev = [], []
     for schluessel, eintrag in daten.get("packages", {}).items():
@@ -368,7 +373,7 @@ def _lockfile_npm(root: Path) -> tuple[list[tuple[str, str, str | None, str]], l
         name = _npm_name(schluessel)
         version = str(eintrag.get("version", ""))
         kennung = _lizenz_str(eintrag)
-        if eintrag.get("dev") is True:
+        if eintrag.get("dev") is True or eintrag.get("devOptional") is True:
             dev.append((name, version, kennung))
         else:
             produktiv.append((name, version, kennung, schluessel))
@@ -584,6 +589,96 @@ def _zaehlung_sortiert(zaehlung: dict[str, int]) -> list[tuple[str, int]]:
 def _paketzeile(p: Paket) -> str:
     zeile = f"- **{p.name}** {p.version} — {p.kennung}"
     return f"{zeile} — {p.zweck}" if p.zweck else zeile
+
+
+# Die englische Übersicht entsteht aus der deutschen: Gleiche Zeilen, gleiche Pakete, nur die festen Texte unten.
+_UEBERSICHT_EN: tuple[tuple[str, str], ...] = (
+    ("## Drittanbieter-Lizenzen", "## Third-party licences"),
+    ("Diese Software verwendet Open-Source-Bestandteile. Für jeden gilt seine eigene Lizenz. Die Installation lädt die "
+     "Pakete in genau diesen Versionen aus den öffentlichen Paketverzeichnissen PyPI und npm. Den vollständigen Wortlaut "
+     "aller Lizenzen zeigt „Lizenztexte anzeigen“ unten. Im Programmordner steht er in der Datei "
+     "frontend/src/rechtliches/drittlizenzen_texte.txt.",
+     "This software uses open-source components. Each has its own licence. The installation downloads the packages in "
+     "exactly these versions from the public PyPI and npm registries. “Show licence texts” below shows the full wording of "
+     "all licences. In the program folder it is in the file frontend/src/rechtliches/drittlizenzen_texte.txt."),
+    (_H_PY_DIREKT, "Backend (Python), used directly"),
+    (_H_PY_MIT, "Backend (Python), brought in by these packages"),
+    (_H_NPM_DIREKT, "Interface (runs in the browser), used directly"),
+    (_H_NPM_MIT, "Interface, brought in"),
+    (_H_BAU, "For building the interface"),
+    (_H_PROGRAMME, "Programs installed separately by the user"),
+    (_H_DIENSTE, "Third-party services connected by users"),
+    ("Sie sind nicht Bestandteil dieser Software. Das BMS ruft sie als eigenständige Programme auf.",
+     "They are not part of this software. The BMS calls them as independent programs."),
+    ("Diese Dienste sind keine Bestandteile dieser Software. Ihre Nutzung unterliegt den Bedingungen des jeweiligen "
+     "Anbieters, s. Datenschutzerklärung.",
+     "These services are not part of this software. Their use is subject to the terms of the respective provider, see "
+     "the privacy notice."),
+    ("Diese Übersicht wird aus den Paketlisten des Programms erzeugt.",
+     "This overview is generated from the program's package lists."),
+    # Zweck der Pakete
+    ("Abrufe bei Apify, Arbeitsagentur, OpenAI", "Requests to Apify, the Federal Employment Agency, OpenAI"),
+    ("Anmeldung bei Gmail", "Sign-in to Gmail"),
+    ("Darstellung im Browser", "Rendering in the browser"),
+    ("Datei-Uploads", "File uploads"),
+    ("Datenmodell und Datenbankzugriff", "Data model and database access"),
+    ("Dokumentation nach HTML", "Documentation to HTML"),
+    ("Excel-Import (Netzwerk, Listen)", "Excel import (network, lists)"),
+    ("Gmail-Anbindung", "Gmail connection"),
+    ("Grundgerüst der Oberfläche", "Basis of the interface"),
+    ("Konfiguration (Suchprofile, Budgets)", "Configuration (search profiles, budgets)"),
+    ("Mehrsprachigkeit in der Oberfläche", "Multiple languages in the interface"),
+    ("Oberfläche in mehreren Sprachen", "Interface in several languages"),
+    ("Passwort-Hash der Coach-Site", "Password hash of the coach site"),
+    ("Schrift Inter (Fließtext)", "Inter typeface (body text)"),
+    ("Schrift Montserrat (Überschriften)", "Montserrat typeface (headings)"),
+    ("Seitennavigation", "Page navigation"),
+    ("Text aus dem PDF des LinkedIn-Profils lesen", "Reading text from the LinkedIn profile PDF"),
+    ("Web-Schnittstelle des Backends", "Web interface of the backend"),
+    ("Word-Dateien (Lebenslauf, Anschreiben)", "Word files (CV, cover letter)"),
+    ("lokaler Webserver", "local web server"),
+    # Programme
+    ("Laufzeit des Backends", "Runtime of the backend"),
+    ("Datenbank (in Python enthalten)", "Database (included in Python)"),
+    ("baut die Oberfläche bei Installation und Update", "builds the interface during installation and updates"),
+    ("proprietär (Anthropic)", "proprietary (Anthropic)"),
+    ("führt die KI-Funktionen aus, wenn Claude gewählt ist", "runs the AI functions if Claude is selected"),
+    ("führt die KI-Funktionen aus, wenn ChatGPT gewählt ist", "runs the AI functions if ChatGPT is selected"),
+    ("wandelt Lebensläufe in PDF um", "converts CVs to PDF"),
+    ("installiert die Programme (macOS)", "installs the programs (macOS)"),
+    ("installiert die Programme (Windows)", "installs the programs (Windows)"),
+    ("wird von Claude Code unter Windows gebraucht", "needed by Claude Code on Windows"),
+    ("lädt die Coach-Site per SFTP hoch (optional)", "uploads the coach site via SFTP (optional)"),
+    ("Passwortdatei der Coach-Site (optional)", "password file of the coach site (optional)"),
+    # Dienste
+    ("KI-Funktionen, wenn Claude gewählt ist, mit eigenem Konto oder eigenem API-Schlüssel",
+     "AI functions if Claude is selected, with your own account or API key"),
+    ("KI-Funktionen, wenn ChatGPT gewählt ist, mit eigenem ChatGPT-Konto; außerdem optional zweiter Motor für den Beirat, "
+     "mit eigenem API-Schlüssel",
+     "AI functions if ChatGPT is selected, with your own ChatGPT account; also an optional second engine for the Advisory "
+     "Board, with your own API key"),
+    ("Portal-Suche mit Scrapern von Drittentwicklern, mit eigenem Konto",
+     "portal search with scrapers by third-party developers, with your own account"),
+    ("**Jobsuche der Bundesagentur für Arbeit**: Abruf der öffentlichen Suchseite, ohne Konto",
+     "**Job search of the German Federal Employment Agency**: fetching the public search page, no account"),
+    ("**E-Mail-Anbieter des Nutzers** (IMAP) oder **Google Gmail**: Antworten und Job-Alerts lesen",
+     "**The user's email provider** (IMAP) or **Google Gmail**: reading replies and job alerts"),
+    ("Export des Outreach-Trackers", "export of the outreach tracker"),
+    ("Suche nach Updates und Laden neuer Versionen, nur auf Start des Nutzers, ohne Konto",
+     "checking for updates and downloading new versions, only when the user starts it, no account"),
+)
+
+
+def uebersicht_englisch(md: str) -> str:
+    """Die deutsche Übersicht als englische Fassung. Ein neuer deutscher Text ohne Eintrag oben lässt
+    test_drittlizenzen.py scheitern."""
+    for deutsch, englisch in _UEBERSICHT_EN:
+        md = md.replace(deutsch, englisch)
+    return re.sub(
+        r"Dazu kommen (\d+) weitere Werkzeuge, die diese mitbringen\. Sie laufen nur beim Bauen und sind nicht Teil der "
+        r"fertigen Oberfläche\. Lizenzen aller (\d+):",
+        r"In addition there are \1 more tools that these bring in. They only run during the build and are not part of the "
+        r"finished interface. Licences of all \2:", md)
 
 
 def uebersicht_erzeugen(b: Bestand) -> str:
@@ -896,7 +991,7 @@ def main(argv=None, *, projekt_root: Path | None = None, site_pfad: list | None 
                          "frontend_build/node_modules)")
     args = ap.parse_args(argv)
     root = Path(projekt_root) if projekt_root else PROJECT_ROOT
-    ziele = [(root / ZIEL_MD, ZIEL_MD), (root / ZIEL_TXT, ZIEL_TXT)]
+    ziele = [(root / ZIEL_MD, ZIEL_MD), (root / ZIEL_TXT, ZIEL_TXT), (root / ZIEL_MD_EN, ZIEL_MD_EN)]
 
     try:
         md, txt = erzeugen(root, Path(args.node_modules), site_pfad)
@@ -904,7 +999,7 @@ def main(argv=None, *, projekt_root: Path | None = None, site_pfad: list | None 
         print(f"FEHLER: {exc}", file=sys.stderr)
         return 2
 
-    inhalte = [md.encode("utf-8"), txt.encode("utf-8")]
+    inhalte = [md.encode("utf-8"), txt.encode("utf-8"), uebersicht_englisch(md).encode("utf-8")]
     if args.pruefen:
         veraltet = []
         for (pfad, rel), soll in zip(ziele, inhalte):
@@ -917,7 +1012,7 @@ def main(argv=None, *, projekt_root: Path | None = None, site_pfad: list | None 
         if veraltet:
             print("→ scripts/drittlizenzen.sh ausführen und das Ergebnis committen.")
             return 1
-        print("Alles aktuell (2 Dateien geprüft).")
+        print("Alles aktuell (3 Dateien geprüft).")
         return 0
 
     for (pfad, rel), inhalt in zip(ziele, inhalte):

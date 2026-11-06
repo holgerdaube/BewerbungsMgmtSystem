@@ -1,0 +1,5 @@
+{
+  "fehler": "Error: {{meldung}}",
+  "untertitel": "Drag a card to another column to change its status · {{anzahl}} archived ({{stati}})",
+  "leer": "empty"
+}

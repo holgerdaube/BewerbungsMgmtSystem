@@ -1,0 +1,59 @@
+{
+  "titel": {
+    "stellen": "Jobs",
+    "laufend": "Active applications",
+    "laufend_hint": "Applied · Interview · Offer",
+    "ohne_fit": "Jobs · no target-role fit",
+    "fit": "Jobs · target-role fit {{score}}/5",
+    "situation": "Jobs · situation {{situation}}",
+    "situation_plan": "Jobs · situation {{situation}} · plan {{plan}}",
+    "ohne_plan": "Jobs · no plan assigned",
+    "plan": "Jobs · plan {{plan}}",
+    "portal": "Jobs · portal {{portal}}",
+    "verfuegbarkeit": "Applied jobs · {{status}}",
+    "top": "Top target jobs",
+    "top_hint": "Target-role fit ≥ 4",
+    "status": "Jobs · {{status}}"
+  },
+  "treffer_one": "{{count}} result",
+  "treffer_other": "{{count}} results",
+  "klick_hinweis": "Click a row to open the details",
+  "filter_zuruecksetzen": "✕ Reset filters",
+  "stelle_anlegen": "+ Add job",
+  "filter": {
+    "suche": "Search company / title…",
+    "alle_status": "All statuses",
+    "alle_tabs": "All tabs",
+    "alle_fit": "All fit values",
+    "fit_min": "Target-role fit ≥ {{wert}}",
+    "sortieren": "Sort:",
+    "sort_score": "Target-role fit",
+    "sort_found": "Date (newest first)",
+    "sort_company": "Company",
+    "sort_status": "Status"
+  },
+  "chip": {
+    "laufend": "Active applications",
+    "ohne_fit": "no target-role fit",
+    "fit": "Target-role fit = {{score}}",
+    "situation": "Situation: {{wert}}",
+    "plan": "Plan: {{wert}}",
+    "plan_ohne": "not assigned",
+    "portal": "Portal: {{wert}}",
+    "verfuegbarkeit": "Availability: {{wert}}"
+  },
+  "segment_titel": "{{status}}: {{anzahl}} ({{prozent}}%)",
+  "spalte": {
+    "fit": "Fit",
+    "firma": "Company",
+    "rolle": "Role",
+    "ebene": "Level",
+    "standort": "Location",
+    "gefunden": "Found",
+    "status": "Status"
+  },
+  "lade": "Loading…",
+  "keine_treffer": "No results",
+  "follow_up_faellig": "Follow-up due",
+  "verfuegbarkeit_geprueft": "Availability checked on {{datum}}"
+}

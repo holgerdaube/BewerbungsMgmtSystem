@@ -78,3 +78,10 @@ def test_windows_testschritt_legt_temp_auf_runner_temp():
     env = testschritte[0].get("env") or {}
     assert env.get("TEMP") == "${{ runner.temp }}"
     assert env.get("TMP") == "${{ runner.temp }}"
+
+
+def test_profil_struktur_zeigt_im_test_nie_auf_die_echte_datei():
+    """Sonst ersetzt jeder Test, der einen Profil-Endpunkt ruft, `config/profil_struktur.md` durch Testdaten."""
+    from app import main
+
+    assert main._PROFIL_STRUKTUR_PATH != main._PROJECT_ROOT / "config" / "profil_struktur.md"

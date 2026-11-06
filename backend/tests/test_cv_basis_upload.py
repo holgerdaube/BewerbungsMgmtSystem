@@ -192,6 +192,7 @@ def test_liste_zeigt_stationen_und_automatik_kennzeichen(client, cv_basis_root):
     assert _upload(client, sprache="de", docx_bytes=_minimal_docx(mit_stationen=True)).status_code == 200
     assert _upload(client, sprache="en", docx_bytes=_minimal_docx(mit_stationen=True)).status_code == 200
     assert _upload(client, sprache="fr", docx_bytes=_minimal_docx(mit_stationen=True)).status_code == 200
+    assert _upload(client, sprache="nl", docx_bytes=_minimal_docx(mit_stationen=True)).status_code == 200
 
     r = client.get("/api/profil/cv-basis")
     assert r.status_code == 200
@@ -200,7 +201,8 @@ def test_liste_zeigt_stationen_und_automatik_kennzeichen(client, cv_basis_root):
     assert liste["de"]["stationen"] == 1
     assert liste["de"]["automatisch"] is True
     assert liste["en"]["automatisch"] is True
-    assert liste["fr"]["automatisch"] is False
+    assert liste["fr"]["automatisch"] is True        # seit der Sprachwahl nach Anzeige: de, en, fr, it, es, pt
+    assert liste["nl"]["automatisch"] is False
 
 
 # ── GET übersteht eine unlesbare Datei im Ordner ────────────────────────────────────────────

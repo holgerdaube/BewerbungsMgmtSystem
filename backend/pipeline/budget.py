@@ -43,6 +43,7 @@ from sqlmodel import Session, select
 
 from app.db import engine, init_db
 from app.models import AgentTask, ApiCost, BudgetLimit
+from app.sprache import tx, uebersetzt
 
 from app import zeit
 
@@ -178,16 +179,16 @@ def ensure_budget(provider: str, estimated_cost: float = 0.0) -> dict:
 
     if not lim.active:
         return {"allowed": False, "warn": False,
-                "grund": f"Dienst '{provider}' ist in der App pausiert",
+                "grund": tx("Dienst '{provider}' ist in der App pausiert", provider=provider),
                 "spent_today": heute, "spent_month": monat, "limits": limits}
 
     grund = None
     if lim.daily_limit_usd is not None and heute + estimated_cost > lim.daily_limit_usd:
-        grund = (f"Tageslimit {_usd(lim.daily_limit_usd)} erreicht "
-                 f"({_usd(heute)} verbraucht, geschätzt +{_usd(estimated_cost)})")
+        grund = tx("Tageslimit {limit} erreicht ({verbraucht} verbraucht, geschätzt +{geschaetzt})",
+                   limit=_usd(lim.daily_limit_usd), verbraucht=_usd(heute), geschaetzt=_usd(estimated_cost))
     elif lim.monthly_limit_usd is not None and monat + estimated_cost > lim.monthly_limit_usd:
-        grund = (f"Monatslimit {_usd(lim.monthly_limit_usd)} erreicht "
-                 f"({_usd(monat)} verbraucht, geschätzt +{_usd(estimated_cost)})")
+        grund = tx("Monatslimit {limit} erreicht ({verbraucht} verbraucht, geschätzt +{geschaetzt})",
+                   limit=_usd(lim.monthly_limit_usd), verbraucht=_usd(monat), geschaetzt=_usd(estimated_cost))
 
     verletzt = grund is not None
     return {"allowed": not (verletzt and lim.enforcement == "hart"),
@@ -218,7 +219,7 @@ def sync_apify() -> dict:
     tok = token_or_none()
     if not tok:
         return {"ok": False, "rows": 0,
-                "fehler": f"APIFY_TOKEN fehlt ({ENV_FILE}) — Apify-Verbrauch nicht abrufbar"}
+                "fehler": tx("APIFY_TOKEN fehlt ({datei}) — Apify-Verbrauch nicht abrufbar", datei=ENV_FILE)}
 
     zyklen = [None]
     if datetime.date.today().day <= 3:      # Anfang des Monats auch den Vormonat nachziehen
@@ -237,11 +238,11 @@ def sync_apify() -> dict:
                 if r.status_code >= 400:
                     # r.text kann den Token nicht enthalten (der steht im Query-String).
                     return {"ok": False, "rows": geschrieben,
-                            "fehler": f"Apify-API {r.status_code}: {r.text[:200]}"}
+                            "fehler": tx("Apify-API {status}: {text}", status=r.status_code, text=r.text[:200])}
                 daten = r.json().get("data", {})
                 geschrieben += _upsert_apify_tage(daten)
     except httpx.HTTPError as e:
-        return {"ok": False, "rows": geschrieben, "fehler": f"Netzwerkfehler: {type(e).__name__}"}
+        return {"ok": False, "rows": geschrieben, "fehler": tx("Netzwerkfehler: {art}", art=type(e).__name__)}
     return {"ok": True, "rows": geschrieben, "fehler": None}
 
 
@@ -324,11 +325,11 @@ def report() -> dict:
                 prognose = round(monat / max(tag_im_monat, 1) * 30 * 12, 2)
                 calls_monat = sum(1 for d, _ in tage if d >= monat_iso) or None
                 runs_heute = sum(1 for d, _ in tage if d == heute_iso)
-                hinweis = ("Virtuelle Kosten (Claude-Abo) — Kostenschätzung der CLI, "
-                          "verbraucht Abo-Kontingent, keine echte Rechnung")
+                hinweis = tx("Virtuelle Kosten (Claude-Abo) — Kostenschätzung der CLI, "
+                             "verbraucht Abo-Kontingent, keine echte Rechnung")
                 from app import ki_anbieter     # P2-86: Unter ChatGPT gibt es keine Kostenschätzung
                 if ki_anbieter.aktiv() == ki_anbieter.CHATGPT:
-                    hinweis = "Läufe über das ChatGPT-Abo: keine Kosten in USD, es gelten die Grenzen des Abos"
+                    hinweis = tx("Läufe über das ChatGPT-Abo: keine Kosten in USD, es gelten die Grenzen des Abos")
             else:
                 rows = [r for r in alle if r.provider == p]
                 heute = round(sum(r.cost_usd or 0 for r in rows if r.date == heute_iso), 4)
@@ -360,7 +361,7 @@ def report() -> dict:
                     "max_runs_per_day": lim.max_runs_per_day,
                 }
             providers.append({
-                "provider": p, "label": (lim.label if lim else None) or p.capitalize(),
+                "provider": p, "label": uebersetzt((lim.label if lim else None) or p.capitalize()),
                 "art": "verbrauch",
                 "heute_usd": heute, "monat_usd": monat, "jahr_usd": jahr,
                 "schnitt_tag_usd": schnitt, "jahr_prognose_usd": prognose, "geschaetzt": True,
@@ -380,8 +381,8 @@ def report() -> dict:
         usd = monatlich if (f.get("waehrung") or "USD").upper() == "USD" else monatlich / rate
         fix_monat_usd += usd
         providers.append({
-            "provider": f.get("provider"), "label": f.get("label") or f.get("provider"),
-            "art": "abo", "hinweis": f.get("hinweis"),
+            "provider": f.get("provider"), "label": uebersetzt(f.get("label") or f.get("provider")),
+            "art": "abo", "hinweis": uebersetzt(f.get("hinweis")) if f.get("hinweis") else f.get("hinweis"),
             "heute_usd": round(usd / 30, 4), "monat_usd": round(usd, 2),
             "jahr_usd": round(usd * 12, 2), "jahr_prognose_usd": round(usd * 12, 2),
             "geschaetzt": False,

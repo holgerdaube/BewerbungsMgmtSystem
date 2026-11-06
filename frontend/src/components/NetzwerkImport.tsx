@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react'
+import { Trans } from 'react-i18next'
 import type { ChangeEvent } from 'react'
 import {
   apiUpload,
@@ -6,6 +7,8 @@ import {
   type NetzwerkImportVorschau, type NetzwerkImportZeile,
 } from '../api'
 import { TEXT_AUF_ZUSTAND } from './ui'
+import { t } from '../i18n'
+import { zahl } from '../i18n/format'
 
 // P2-62: Netzwerk-Listen (Zielfirmen, Headhunter, Netzwerk-Kontakte) aus einer Datei importieren.
 //
@@ -17,70 +20,50 @@ import { TEXT_AUF_ZUSTAND } from './ui'
 // Server merkt sich nichts zwischen den Schritten: Der Import schickt dieselbe Datei noch einmal
 // und plant neu, das Ergebnis zählt also den Stand beim Schreiben und nicht den der Vorschau.
 
-const TEXTE: Record<NetzwerkImportListe, { titel: string; zusatz: string }> = {
-  zielfirmen: { titel: 'Zielfirmen aus Datei importieren', zusatz: '' },
-  headhunter: { titel: 'Headhunter aus Datei importieren', zusatz: '' },
-  kontakte: {
-    titel: 'Netzwerk-Kontakte aus Datei importieren',
-    zusatz: ' Auch die Datei Connections.csv aus dem LinkedIn-Datenexport können Sie verwenden.',
-  },
+const TEXTE: Record<NetzwerkImportListe, { titel: string; info: string }> = {
+  zielfirmen: { titel: 'netzwerk:import.titel_zielfirmen', info: 'netzwerk:import.info' },
+  headhunter: { titel: 'netzwerk:import.titel_headhunter', info: 'netzwerk:import.info' },
+  kontakte: { titel: 'netzwerk:import.titel_kontakte', info: 'netzwerk:import.info_kontakte' },  // mit dem Satz zur Datei Connections.csv
 }
 
 // Anzeigenamen für „Ergänzt: …“. Maßgeblich sind die erkannten Spalten der Vorschau (Label vom
-// Server); diese Liste fängt Felder ab, die der Server ableitet statt aus einer Spalte zu lesen
-// (LinkedIn-Export: Kanal, Notizen).
-const FELD_NAMEN: Record<string, string> = {
-  company: 'Firma', industry: 'Branche', size_ma: 'Größe (MA)', revenue: 'Umsatz', location_hq: 'HQ',
-  ownership: 'Eigentümer', tier: 'Tier', scenario: 'Szenario', key_contact: 'Key Contact',
-  connection_status: 'Status', website: 'Webseite', karriere_url: 'Karriereseite',
-  wachstumssignal: 'Wachstumssignal', ki_readiness: 'KI-Readiness', einschaetzung: 'Einschätzung',
-  ranking: 'Ranking', last_update: 'Letzte Aktualisierung',
-  firma: 'Firma', ansprechpartner: 'Ansprechpartner', fokus: 'Fokus', region: 'Region', kanal: 'Kanal',
-  linkedin_gefolgt: 'LinkedIn gefolgt', letzter_kontakt: 'Letzter Kontakt', status: 'Status',
-  webseite: 'Webseite', notizen: 'Notizen',
-  name: 'Name', beziehung: 'Beziehung', unternehmen: 'Unternehmen', rolle: 'Rolle', prioritaet: 'Priorität',
-  next_action: 'Nächste Aktion', next_action_date: 'Fällig am',
-}
+// Server); die Namen unter netzwerk:feld.<feld> fangen Felder ab, die der Server ableitet statt aus einer
+// Spalte zu lesen (LinkedIn-Export: Kanal, Notizen).
+const feldName = (feld: string) => t(`netzwerk:feld.${feld}`, { defaultValue: feld })
 
 // Dashboard-Farbmodell (Style Guide v5 §18): dieselben Tokens wie die Status-Badges der Seite, Textfarbe
 // je Fläche kontrastgeprüft. Fehler nimmt das Rot mit Weiß (4,58:1) statt status.negative (3,9:1).
 // Die Farbe ist nie der einzige Träger: Badge und Zähler tragen immer den Klartext.
-const AKTION: Record<NetzwerkImportAktion, { text: string; bg: string; fg: string }> = {
-  neu: { text: 'Neu', bg: '#18A957', fg: TEXT_AUF_ZUSTAND },                  // status.positive
-  ergaenzt: { text: 'Ergänzt', bg: '#00B4D8', fg: TEXT_AUF_ZUSTAND },         // status.active
-  unveraendert: { text: 'Unverändert', bg: '#94A3B8', fg: TEXT_AUF_ZUSTAND }, // status.new
-  geloescht: { text: 'Gelöscht', bg: '#E4A11B', fg: TEXT_AUF_ZUSTAND },       // status.parked
-  fehler: { text: 'Fehler', bg: '#D9364F', fg: '#ffffff' },                   // score.1
+const AKTION: Record<NetzwerkImportAktion, { bg: string; fg: string }> = {
+  neu: { bg: '#18A957', fg: TEXT_AUF_ZUSTAND },                  // status.positive
+  ergaenzt: { bg: '#00B4D8', fg: TEXT_AUF_ZUSTAND },             // status.active
+  unveraendert: { bg: '#94A3B8', fg: TEXT_AUF_ZUSTAND },         // status.new
+  geloescht: { bg: '#E4A11B', fg: TEXT_AUF_ZUSTAND },            // status.parked
+  fehler: { bg: '#D9364F', fg: '#ffffff' },                      // score.1
 }
 
-const ZAEHLER: { aktion: NetzwerkImportAktion; label: string; hilfe: string }[] = [
-  { aktion: 'neu', label: 'Neu', hilfe: 'werden angelegt' },
-  { aktion: 'ergaenzt', label: 'Ergänzt', hilfe: 'leere Felder werden gefüllt' },
-  { aktion: 'unveraendert', label: 'Unverändert', hilfe: 'vorhanden, nichts zu ergänzen' },
-  { aktion: 'geloescht', label: 'Gelöscht, übersprungen', hilfe: 'in der App gelöscht, bleiben gelöscht' },
-  { aktion: 'fehler', label: 'Fehler', hilfe: 'werden nicht importiert' },
-]
+// Beschriftung und Hilfe je Aktion stehen unter netzwerk:zaehler.<aktion>.label / .hilfe
+const ZAEHLER: NetzwerkImportAktion[] = ['neu', 'ergaenzt', 'unveraendert', 'geloescht', 'fehler']
 
 const LINK = 'font-medium text-brand-navy underline decoration-brand-cyan underline-offset-2 hover:decoration-2'
 const SEKUNDAER = 'rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40'
 
-const zahl = (n: number) => n.toLocaleString('de-DE')
-
 function groesse(n: number): string {
   if (n < 1024) return `${n} B`
   if (n < 1024 * 1024) return `${zahl(Math.round(n / 1024))} KB`
-  return `${(n / (1024 * 1024)).toLocaleString('de-DE', { maximumFractionDigits: 1 })} MB`
+  return `${zahl(n / (1024 * 1024), { maximumFractionDigits: 1 })} MB`
 }
 
 function formatText(v: NetzwerkImportVorschau): string {
-  if (v.format === 'linkedin') return 'LinkedIn-Export (Connections.csv)'
-  if (v.format === 'xlsx') return v.blatt ? `Excel-Datei, Blatt „${v.blatt}“` : 'Excel-Datei'
-  return 'CSV-Datei'
+  if (v.format === 'linkedin') return t('netzwerk:format.linkedin')
+  if (v.format === 'xlsx') return v.blatt ? t('netzwerk:format.xlsx_blatt', { blatt: v.blatt }) : t('netzwerk:format.xlsx')
+  return t('netzwerk:format.csv')
 }
 
-// Teile einer Zahlenzeile ohne die Nullen: „12 angelegt, 3 ergänzt“.
+// Teile einer Zahlenzeile ohne die Nullen: „12 angelegt, 3 ergänzt“. Der zweite Wert ist der Schlüssel
+// des Teils (netzwerk:teil.*), er bekommt `zahl` und `count`.
 function teile(paare: [number, string][]): string {
-  return paare.filter(([n]) => n > 0).map(([n, text]) => `${zahl(n)} ${text}`).join(', ')
+  return paare.filter(([n]) => n > 0).map(([n, schluessel]) => t(schluessel, { zahl: zahl(n), count: n })).join(', ')
 }
 
 // Upload mit FormData, NICHT über api(): Das setzt den JSON-Kopf, den multipart nicht verträgt
@@ -93,9 +76,9 @@ async function senden<T>(pfad: string, datei: File): Promise<T> {
   if (!res.ok) {
     throw new Error(typeof body?.detail === 'string' && body.detail
       ? body.detail
-      : `Der Server hat die Datei nicht angenommen (Status ${res.status}).`)
+      : t('netzwerk:fehler.import_abgelehnt', { status: res.status }))
   }
-  if (!body?.anzahl) throw new Error('Der Server hat eine unerwartete Antwort geschickt.')
+  if (!body?.anzahl) throw new Error(t('netzwerk:fehler.import_unerwartet'))
   return body as T
 }
 
@@ -103,9 +86,9 @@ function fehlerText(e: unknown): string {
   // fetch wirft einen TypeError, wenn der Server nicht antwortet oder der Browser die Datei nicht
   // mehr lesen kann, weil sie nach der Auswahl geändert wurde (typisch: in Excel korrigiert).
   if (e instanceof TypeError) {
-    return 'Die Anfrage ist fehlgeschlagen. Der Server antwortet nicht, oder die Datei wurde nach der Auswahl geändert. Wählen Sie die Datei dann erneut aus.'
+    return t('netzwerk:fehler.anfrage_netz')
   }
-  return e instanceof Error && e.message ? e.message : 'Die Anfrage ist fehlgeschlagen.'
+  return e instanceof Error && e.message ? e.message : t('netzwerk:fehler.anfrage')
 }
 
 /** Nebenknopf für die Kopfzeile des Reiters: Rahmen statt Cyan-Fläche, sitzt links vom Anlege-Knopf. */
@@ -116,16 +99,16 @@ export function NetzwerkImportKnopf({ onClick }: { onClick: () => void }) {
   return (
     <button type="button" onClick={onClick}
       className="ml-auto mr-2 rounded-lg border border-brand-cyan px-3 py-1.5 text-sm font-medium text-brand-navy last:mr-0 hover:bg-brand-cyan/10">
-      <span aria-hidden="true">⇪</span> Aus Datei importieren
+      <span aria-hidden="true">⇪</span> {t('netzwerk:import.knopf')}
     </button>
   )
 }
 
 function AktionBadge({ aktion }: { aktion: NetzwerkImportAktion }) {
-  const f = AKTION[aktion] || { text: String(aktion), bg: '#94A3B8', fg: TEXT_AUF_ZUSTAND }
+  const f = AKTION[aktion] || { bg: '#94A3B8', fg: TEXT_AUF_ZUSTAND }
   return (
     <span className="inline-block whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium" style={{ backgroundColor: f.bg, color: f.fg }}>
-      {f.text}
+      {AKTION[aktion] ? t(`netzwerk:aktion.${aktion}`) : String(aktion)}
     </span>
   )
 }
@@ -133,17 +116,17 @@ function AktionBadge({ aktion }: { aktion: NetzwerkImportAktion }) {
 function Zaehler({ anzahl }: { anzahl: NetzwerkImportAnzahl }) {
   return (
     <dl className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
-      {ZAEHLER.map((z) => {
-        const n = anzahl[z.aktion] ?? 0
-        const fehler = z.aktion === 'fehler' && n > 0
+      {ZAEHLER.map((aktion) => {
+        const n = anzahl[aktion] ?? 0
+        const fehler = aktion === 'fehler' && n > 0
         return (
-          <div key={z.aktion} className={`rounded-lg border px-3 py-2 ${fehler ? 'border-rose-300 bg-rose-50' : 'border-slate-200 bg-white'}`}>
+          <div key={aktion} className={`rounded-lg border px-3 py-2 ${fehler ? 'border-rose-300 bg-rose-50' : 'border-slate-200 bg-white'}`}>
             <dt className="flex items-center gap-1.5 text-xs text-slate-500">
-              <span aria-hidden="true" className="inline-block h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: AKTION[z.aktion].bg }} />
-              {z.label}
+              <span aria-hidden="true" className="inline-block h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: AKTION[aktion].bg }} />
+              {t(`netzwerk:zaehler.${aktion}.label`)}
             </dt>
             <dd className={`text-lg font-semibold tabular-nums ${fehler ? 'text-rose-700' : 'text-brand-navy'}`}>{zahl(n)}</dd>
-            <dd className="text-xs text-slate-500">{z.hilfe}</dd>
+            <dd className="text-xs text-slate-500">{t(`netzwerk:zaehler.${aktion}.hilfe`)}</dd>
           </div>
         )
       })}
@@ -154,11 +137,11 @@ function Zaehler({ anzahl }: { anzahl: NetzwerkImportAnzahl }) {
 function ZeilenTabelle({ zeilen, labelVon }: { zeilen: NetzwerkImportZeile[]; labelVon: (feld: string) => string }) {
   // Ergänzte Felder und Meldung in einer Spalte: bei „Ergänzt“ ist beides wichtig (was und warum).
   const details = (z: NetzwerkImportZeile) => {
-    const t: string[] = []
-    if (z.aktion === 'ergaenzt' && z.felder_ergaenzt?.length) t.push(`Ergänzt: ${z.felder_ergaenzt.map(labelVon).join(', ')}`)
-    const meldung = z.meldung || (z.aktion === 'geloescht' ? 'In der App gelöscht, wird nicht wieder angelegt.' : null)
-    if (meldung) t.push(meldung)
-    return t.join(' · ')
+    const tx: string[] = []
+    if (z.aktion === 'ergaenzt' && z.felder_ergaenzt?.length) tx.push(t('netzwerk:tabelle.ergaenzt', { felder: z.felder_ergaenzt.map(labelVon).join(', ') }))
+    const meldung = z.meldung || (z.aktion === 'geloescht' ? t('netzwerk:tabelle.geloescht_standard') : null)
+    if (meldung) tx.push(meldung)
+    return tx.join(' · ')
   }
   // Fehler und Gelöschtes zuerst: Diese Zeilen brauchen Aufmerksamkeit und würden sonst zwischen bis zu
   // 100 unauffälligen Zeilen untergehen. Innerhalb der Gruppen bleibt die Dateireihenfolge (sort ist stabil).
@@ -167,20 +150,20 @@ function ZeilenTabelle({ zeilen, labelVon }: { zeilen: NetzwerkImportZeile[]; la
   return (
     <div className="max-h-96 overflow-auto rounded-lg border border-slate-200 bg-white">
       <table className="w-full text-sm">
-        <caption className="sr-only">Zeilen der Datei mit Aktion und Hinweis</caption>
+        <caption className="sr-only">{t('netzwerk:tabelle.caption')}</caption>
         <thead className="sticky top-0 bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
           <tr>
-            <th scope="col" className="px-3 py-2">Zeile</th>
-            <th scope="col" className="px-3 py-2">Eintrag</th>
-            <th scope="col" className="px-3 py-2">Aktion</th>
-            <th scope="col" className="px-3 py-2">Hinweis</th>
+            <th scope="col" className="px-3 py-2">{t('netzwerk:tabelle.zeile')}</th>
+            <th scope="col" className="px-3 py-2">{t('netzwerk:tabelle.eintrag')}</th>
+            <th scope="col" className="px-3 py-2">{t('netzwerk:tabelle.aktion')}</th>
+            <th scope="col" className="px-3 py-2">{t('netzwerk:tabelle.hinweis')}</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-100">
           {geordnet.map((z, i) => (
             <tr key={`${z.nr}-${i}`} className={`align-top ${z.aktion === 'fehler' ? 'bg-rose-50/60' : ''}`}>
               <td className="whitespace-nowrap px-3 py-1.5 tabular-nums text-slate-500">{z.nr}</td>
-              <td className="px-3 py-1.5 font-medium text-brand-navy">{z.anzeige || <span className="font-normal text-slate-500">ohne Angabe</span>}</td>
+              <td className="px-3 py-1.5 font-medium text-brand-navy">{z.anzeige || <span className="font-normal text-slate-500">{t('netzwerk:tabelle.ohne_angabe')}</span>}</td>
               <td className="px-3 py-1.5"><AktionBadge aktion={z.aktion} /></td>
               <td className={`px-3 py-1.5 ${z.aktion === 'fehler' ? 'text-rose-700' : 'text-slate-600'}`}>{details(z)}</td>
             </tr>
@@ -207,7 +190,7 @@ export default function NetzwerkImport({ liste, onImportiert, onClose }: {
   const aktiv = useRef(true)      // false, sobald das Panel weg ist (Reiterwechsel mitten im Import)
   const schliessenRef = useRef<HTMLButtonElement>(null)
   const id = useId()
-  const t = TEXTE[liste]
+  const kopf = TEXTE[liste]
 
   // Der Importieren-Knopf, auf dem der Fokus lag, verschwindet mit dem Ergebnis: Fokus auf „Schließen“.
   useEffect(() => { if (ergebnis) schliessenRef.current?.focus() }, [ergebnis])
@@ -257,29 +240,28 @@ export default function NetzwerkImport({ liste, onImportiert, onClose }: {
   const ignoriert = vorschau?.spalten?.ignoriert ?? []
   const hinweise = vorschau?.hinweise ?? []
   const zeilen = vorschau?.zeilen ?? []
-  const labelVon = (feld: string) => erkannt.find((s) => s.feld === feld)?.label || FELD_NAMEN[feld] || feld
+  const labelVon = (feld: string) => erkannt.find((s) => s.feld === feld)?.label || feldName(feld)
 
   const ergebnisText = ergebnis
-    ? (teile([[ergebnis.anzahl.neu, 'angelegt'], [ergebnis.anzahl.ergaenzt, 'ergänzt']]) || 'Nichts angelegt oder ergänzt') + '.'
+    ? t('netzwerk:ergebnis.satz', { inhalt: teile([[ergebnis.anzahl.neu, 'netzwerk:teil.angelegt'], [ergebnis.anzahl.ergaenzt, 'netzwerk:teil.ergaenzt']]) || t('netzwerk:ergebnis.nichts') })
     : ''
   const uebersprungen = ergebnis
-    ? teile([[ergebnis.anzahl.unveraendert, 'unverändert'], [ergebnis.anzahl.geloescht, 'in der App gelöscht'], [ergebnis.anzahl.fehler, 'mit Fehlern']])
+    ? teile([[ergebnis.anzahl.unveraendert, 'netzwerk:teil.unveraendert'], [ergebnis.anzahl.geloescht, 'netzwerk:teil.in_app_geloescht'], [ergebnis.anzahl.fehler, 'netzwerk:teil.mit_fehlern']])
     : ''
   // Ein Bereich, der immer im DOM steht: Nur dann sagen Screenreader die Wechsel von „wird geprüft“
   // über „Vorschau bereit“ bis zum Ergebnis an.
-  const ansage = busy === 'vorschau' ? 'Datei wird geprüft.'
-    : busy === 'import' ? 'Import läuft.'
-    : ergebnis ? `${ergebnisText}${ergebnis.sicherung ? ` Vorher gesichert: ${ergebnis.sicherung}.` : ''}`
-    : a ? `Vorschau bereit: ${teile([[a.neu, 'neu'], [a.ergaenzt, 'ergänzt'], [a.unveraendert, 'unverändert'], [a.geloescht, 'gelöscht'], [a.fehler, 'Fehler']]) || 'keine Datenzeilen'}.`
+  const ansage = busy === 'vorschau' ? t('netzwerk:ansage.pruefen')
+    : busy === 'import' ? t('netzwerk:ansage.import')
+    : ergebnis ? (ergebnis.sicherung ? t('netzwerk:ansage.sicherung', { ergebnis: ergebnisText, sicherung: ergebnis.sicherung }) : ergebnisText)
+    : a ? t('netzwerk:ansage.vorschau', { teile: teile([[a.neu, 'netzwerk:teil.neu'], [a.ergaenzt, 'netzwerk:teil.ergaenzt'], [a.unveraendert, 'netzwerk:teil.unveraendert'], [a.geloescht, 'netzwerk:teil.geloescht'], [a.fehler, 'netzwerk:teil.fehler']]) || t('netzwerk:ansage.keine_datenzeilen') })
     : ''
 
   return (
     <section aria-labelledby={`${id}-titel`} className="rounded-xl border border-brand-cyan/40 bg-brand-cyan/5 p-4">
-      <h3 id={`${id}-titel`} className="mb-1 font-sans text-sm font-semibold text-brand-navy">{t.titel}</h3>
+      <h3 id={`${id}-titel`} className="mb-1 font-sans text-sm font-semibold text-brand-navy">{t(kopf.titel)}</h3>
       {!ergebnis && (
         <p id={`${id}-info`} className="mb-3 text-xs text-slate-600">
-          Laden Sie eine CSV- oder Excel-Datei hoch. Die Spalten werden an ihrer Überschrift erkannt.{t.zusatz}{' '}
-          Zuerst sehen Sie eine Vorschau. Vorhandene Einträge werden nur um leere Felder ergänzt, in der App gelöschte bleiben gelöscht.
+          {t(kopf.info)}
         </p>
       )}
       <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">{ansage}</div>
@@ -292,30 +274,31 @@ export default function NetzwerkImport({ liste, onImportiert, onClose }: {
             disabled={busy === 'import'} autoFocus aria-describedby={`${id}-info`} className="peer sr-only" />
           <label htmlFor={`${id}-datei`}
             className="cursor-pointer rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-1 peer-focus-visible:outline-brand-navy peer-disabled:cursor-not-allowed peer-disabled:opacity-50">
-            Datei auswählen
+            {t('netzwerk:import.datei_waehlen')}
           </label>
-          <span className="text-xs text-slate-600 [overflow-wrap:anywhere]">{datei ? `${datei.name} (${groesse(datei.size)})` : 'Keine Datei ausgewählt'}</span>
+          <span className="text-xs text-slate-600 [overflow-wrap:anywhere]">{datei ? `${datei.name} (${groesse(datei.size)})` : t('netzwerk:import.keine_datei')}</span>
           <span className="text-xs text-slate-600">
-            Vorlage:{' '}
-            <a href={`/api/netzwerk-import/${liste}/vorlage?format=csv`} download aria-label="Vorlage als CSV-Datei herunterladen" className={LINK}>CSV</a>
+            {t('netzwerk:import.vorlage')}{' '}
+            <a href={`/api/netzwerk-import/${liste}/vorlage?format=csv`} download aria-label={t('netzwerk:import.vorlage_csv')} className={LINK}>CSV</a>{/* i18n-ok: Dateiformat */}
             {' · '}
-            <a href={`/api/netzwerk-import/${liste}/vorlage?format=xlsx`} download aria-label="Vorlage als Excel-Datei herunterladen" className={LINK}>Excel</a>
+            <a href={`/api/netzwerk-import/${liste}/vorlage?format=xlsx`} download aria-label={t('netzwerk:import.vorlage_excel')} className={LINK}>Excel</a>
           </span>
         </div>
       )}
 
-      {busy === 'vorschau' && <p className="mt-3 text-sm text-slate-500">Datei wird geprüft…</p>}
+      {busy === 'vorschau' && <p className="mt-3 text-sm text-slate-500">{t('netzwerk:import.pruefen')}</p>}
       {fehler && !vorschau && <p role="alert" className="mt-3 text-sm text-rose-700">{fehler}</p>}
 
       {vorschau && a && !ergebnis && (
         <div className="mt-4 space-y-3">
           <p className="text-sm text-slate-700">
-            Erkannt: <span className="font-medium text-brand-navy">{formatText(vorschau)}</span>
-            {' · '}{a.zeilen === 1 ? '1 Datenzeile' : `${zahl(a.zeilen)} Datenzeilen`}
+            <Trans i18nKey="netzwerk:import.erkannt" values={{ format: formatText(vorschau) }}
+              components={{ fett: <span className="font-medium text-brand-navy" /> }} />
+            {' · '}{t('netzwerk:import.datenzeilen', { count: a.zeilen, zahl: zahl(a.zeilen) })}
           </p>
 
           <div>
-            <div id={`${id}-erkannt`} className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">Erkannte Spalten</div>
+            <div id={`${id}-erkannt`} className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">{t('netzwerk:import.spalten_erkannt')}</div>
             {erkannt.length > 0 ? (
               <ul aria-labelledby={`${id}-erkannt`} className="flex flex-wrap gap-1.5">
                 {erkannt.map((s, i) => (
@@ -324,10 +307,10 @@ export default function NetzwerkImport({ liste, onImportiert, onClose }: {
                   </li>
                 ))}
               </ul>
-            ) : <p className="text-xs text-slate-500">Keine Spalte erkannt.</p>}
+            ) : <p className="text-xs text-slate-500">{t('netzwerk:import.spalten_keine')}</p>}
             {ignoriert.length > 0 && (
               <div className="mt-2">
-                <div id={`${id}-ignoriert`} className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">Nicht verwendete Spalten</div>
+                <div id={`${id}-ignoriert`} className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">{t('netzwerk:import.spalten_ignoriert')}</div>
                 <ul aria-labelledby={`${id}-ignoriert`} className="flex flex-wrap gap-1.5">
                   {ignoriert.map((s, i) => <li key={`${s}-${i}`} className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500">{s}</li>)}
                 </ul>
@@ -345,11 +328,11 @@ export default function NetzwerkImport({ liste, onImportiert, onClose }: {
 
           {a.zeilen === 0 ? (
             // Der Server nennt den Fall meist schon in den Hinweisen; ohne diesen Hinweis bliebe die Vorschau stumm.
-            hinweise.length === 0 && <p className="text-sm text-slate-600">Die Datei enthält keine Datenzeilen. Tragen Sie Einträge unter der Kopfzeile ein.</p>
+            hinweise.length === 0 && <p className="text-sm text-slate-600">{t('netzwerk:import.keine_datenzeilen')}</p>
           ) : zeilen.length > 0 && (
             <div className="space-y-1">
               <ZeilenTabelle zeilen={zeilen} labelVon={labelVon} />
-              {vorschau.zeilen_gekuerzt && <p className="text-xs text-slate-500">Weitere Zeilen ohne Besonderheiten sind nicht aufgeführt.</p>}
+              {vorschau.zeilen_gekuerzt && <p className="text-xs text-slate-500">{t('netzwerk:import.gekuerzt')}</p>}
             </div>
           )}
 
@@ -358,14 +341,14 @@ export default function NetzwerkImport({ liste, onImportiert, onClose }: {
                 Fehler säße er auf dem Seitenanfang. Gegen Doppelklick schützt `schreibt`. */}
             <button type="button" onClick={importieren} disabled={schreibbar === 0} aria-busy={busy === 'import'}
               className={`rounded-lg bg-brand-cyan px-3 py-1.5 text-sm font-medium text-brand-aufAktion hover:bg-brand-cyanHover disabled:cursor-not-allowed disabled:opacity-40 ${busy === 'import' ? 'cursor-wait opacity-60' : ''}`}>
-              {busy === 'import' ? 'Sichert und importiert…' : `Importieren${schreibbar > 0 ? ` (${teile([[a.neu, 'neu'], [a.ergaenzt, 'ergänzen']])})` : ''}`}
+              {busy === 'import' ? t('netzwerk:import.importiert_laufend') : schreibbar > 0 ? t('netzwerk:import.importieren_mit', { teile: teile([[a.neu, 'netzwerk:teil.neu'], [a.ergaenzt, 'netzwerk:teil.ergaenzen']]) }) : t('netzwerk:import.importieren')}
             </button>
-            <button type="button" onClick={onClose} disabled={busy === 'import'} className={SEKUNDAER}>Abbrechen</button>
+            <button type="button" onClick={onClose} disabled={busy === 'import'} className={SEKUNDAER}>{t('netzwerk:knopf.abbrechen')}</button>
             {schreibbar === 0 && a.zeilen > 0 && (
-              <span className="text-xs text-slate-600">Es gibt nichts zu importieren: Alle Zeilen sind bereits vorhanden, in der App gelöscht oder fehlerhaft.</span>
+              <span className="text-xs text-slate-600">{t('netzwerk:import.nichts_zu_importieren')}</span>
             )}
             {schreibbar > 0 && a.fehler > 0 && (
-              <span className="text-xs text-slate-600">Zeilen mit Fehlern werden nicht importiert.</span>
+              <span className="text-xs text-slate-600">{t('netzwerk:import.fehler_nicht_importiert')}</span>
             )}
             {fehler && <p role="alert" className="basis-full text-sm text-rose-700">{fehler}</p>}
           </div>
@@ -377,11 +360,12 @@ export default function NetzwerkImport({ liste, onImportiert, onClose }: {
           <div>
             <p className="text-sm text-emerald-700">
               <span aria-hidden="true">✓</span> {ergebnisText}
-              {ergebnis.sicherung && <> Vorher gesichert: <code className="rounded bg-slate-100 px-1">{ergebnis.sicherung}</code></>}
+              {ergebnis.sicherung && <>{' '}<Trans i18nKey="netzwerk:ergebnis.sicherung" values={{ sicherung: ergebnis.sicherung }}
+                components={{ code: <code className="rounded bg-slate-100 px-1" /> }} /></>}
             </p>
-            {uebersprungen && <p className="mt-1 text-xs text-slate-500">Übersprungen: {uebersprungen}.</p>}
+            {uebersprungen && <p className="mt-1 text-xs text-slate-500">{t('netzwerk:ergebnis.uebersprungen', { teile: uebersprungen })}</p>}
           </div>
-          <button ref={schliessenRef} type="button" onClick={onClose} className={SEKUNDAER}>Schließen</button>
+          <button ref={schliessenRef} type="button" onClick={onClose} className={SEKUNDAER}>{t('netzwerk:knopf.schliessen')}</button>
         </div>
       )}
     </section>

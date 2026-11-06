@@ -1,0 +1,106 @@
+{
+  "titel": "Task Centre",
+  "lade": "Loading…",
+  "abbrechen": "Cancel",
+  "noch_keine_ausgabe": "No output yet…",
+  "chip": {
+    "queued": "queued",
+    "running": "running",
+    "done": "done",
+    "failed": "failed",
+    "cancelled": "cancelled"
+  },
+  "button_chip": {
+    "queued": "queued…",
+    "running": "running…",
+    "done": "✓ done",
+    "failed": "✗ failed",
+    "cancelled": "cancelled"
+  },
+  "filter": {
+    "alle": "All",
+    "aktiv": "Active",
+    "failed": "Failed"
+  },
+  "log": {
+    "lauf_gestartet": "· Run started ({{anzahl}} tools)",
+    "subagent": "⤷ Subagent: {{text}}",
+    "subagent_fertig": "⤷ Subagent finished: {{text}}"
+  },
+  "kopf": {
+    "untertitel": "Skills the backend runs headless",
+    "parallel": "max. {{anzahl}} in parallel",
+    "laeufe_tag": "max. {{anzahl}} runs per day",
+    "zeitlimit": "time limit instead of a budget per run",
+    "notbremse": "safety cap ${{betrag}} per run",
+    "tagesbudget": "daily budget ${{betrag}} / {{laeufe}} runs"
+  },
+  "stat": {
+    "gesamt": "Total runs",
+    "aktiv": "Active",
+    "fehlgeschlagen": "Failed",
+    "laeufe_heute": "Runs today",
+    "heute_verbraucht": "Spent today",
+    "laeufe_heute_titel": "{{anzahl}} of {{max}} runs today",
+    "von_max_laeufen": "of max. {{max}} runs",
+    "von_betrag": "of ${{betrag}} · {{anzahl}}/{{max}} runs",
+    "token_gesamt": "Total tokens",
+    "token_gesamt_titel": "New tokens across all runs: uncached input plus output",
+    "keine_usd_kosten": "ChatGPT does not report costs in USD",
+    "kosten_gesamt": "Total cost"
+  },
+  "eintraege_one": "{{count}} entry",
+  "eintraege_other": "{{count}} entries",
+  "letzte_von": "The last {{anzahl}} of {{gesamt}}",
+  "spalte": {
+    "aufgabe": "Task",
+    "stelle": "Job",
+    "status": "Status",
+    "gestartet": "Started",
+    "dauer": "Duration",
+    "kosten": "Cost"
+  },
+  "keine_laeufe": "No runs",
+  "versuch": "Attempt {{aktuell}}/{{max}}",
+  "versuch_titel": "The first attempt failed and was retried",
+  "kette": "{{kette}} · step {{pos}}",
+  "job_nr": "Job {{id}}",
+  "lauf_token_titel": "New tokens of the run: uncached input plus output",
+  "log_zeigen": "Log",
+  "log_zu": "Hide log",
+  "erneut": "Run again",
+  "neustart_fehler": "Could not restart",
+  "button": {
+    "start_fehlgeschlagen": "Start failed",
+    "laeuft": "⏳ Running…",
+    "starte": "Starting…",
+    "kette_schritt": "{{kette}} · step {{pos}}: {{label}}",
+    "kette_aus": "from: {{kette}}",
+    "turns_one": "· {{count}} turn",
+    "turns_other": "· {{count}} turns",
+    "log_ausblenden": "Hide log",
+    "log_anzeigen": "Show log",
+    "anzeige_nachholen": "Fetching the posting text …",
+    "abschlussmeldung": "Final message of the run:",
+    "weniger": "▴ show less",
+    "mehr": "▸ show more",
+    "mehr_zeilen_one": "▸ show more ({{count}} more line)",
+    "mehr_zeilen_other": "▸ show more ({{count}} more lines)",
+    "low_match_frage": "Are you really sure?",
+    "low_match_ja": "Yes, start anyway",
+    "anzeige_fehlt_frage": "Start without the posting text?",
+    "anzeige_fehlt_ja": "Start anyway"
+  },
+  "tageslauf": {
+    "starten": "Start daily run",
+    "name": "Daily run",
+    "schritte": "Nine steps in a row: <b>search jobs</b> (WebSearch) → <b>email job search</b> → <b>target company sweep</b> → <b>recruiter search</b> → <b>applied check</b> → <b>check inbox</b> → <b>rejection analysis</b> (once a week, otherwise skipped) → <b>refresh views</b> (Excel + digest) → <b>refresh coach site</b> (skipped if it is switched off). Runs in the background and takes a few minutes.",
+    "hinweis": "Apify is left out (free plan) — to scrape a portal, start the job search on its own with Apify. Emails are only read, never sent.",
+    "letzter_lauf": "Last run:",
+    "lieber_session": "Start in the {{name}} session instead",
+    "ausloeser": "📋 Copy trigger — daily run",
+    "task_center": "Task Centre →",
+    "treffer": "Review matches →",
+    "schliessen": "Close"
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "lade": "Lade…",
+  "untertitel": "Fällige nächste Schritte & anstehende Gespräche · Fälligkeit setzt du im Job-Detail · ✉️ kopiert den Nachfass-Auslöser",
+  "nachfass": "✉️ Nachfass",
+  "naechster_schritt": "Nächster Schritt:",
+  "leer": "Noch keine Follow-ups gesetzt. Öffne eine Stelle (Fälligkeitsdatum unter „Nächste Schritte & Follow-up\") oder setze bei einem Netzwerk-Kontakt eine „Fällig am\"-Aktion.",
+  "tage": {
+    "heute": "heute fällig",
+    "ueberfaellig_one": "{{count}} Tag überfällig",
+    "ueberfaellig_other": "{{count}} Tage überfällig",
+    "morgen": "morgen",
+    "in_tagen_one": "in {{count}} Tagen",
+    "in_tagen_other": "in {{count}} Tagen"
+  },
+  "gespraeche": {
+    "titel": "🎙️ Anstehende Gespräche ({{anzahl}})",
+    "gespraech": "Gespräch",
+    "runde": "Runde {{runde}} · {{art}}",
+    "briefing": "📋 Briefing",
+    "route": "🗺️ Route",
+    "route_titel": "Route von zu Hause (Google Maps)",
+    "termin_fehlt": "Termin fehlt — im Job-Detail setzen"
+  },
+  "stellen": {
+    "ueberfaellig": "🔴 Stellen — überfällig & heute ({{anzahl}})",
+    "nichts_ueberfaellig": "Nichts überfällig — sauber. 👍",
+    "anstehend": "⏳ Stellen — anstehend ({{anzahl}})",
+    "keine_anstehend": "Keine anstehenden Follow-ups."
+  },
+  "netzwerk": {
+    "titel": "🤝 Netzwerk-Aktionen ({{anzahl}})",
+    "naechste_aktion": "Nächste Aktion:"
+  }
+}

@@ -1,6 +1,6 @@
 ---
 name: job-deepdive
-description: Erzeugt für EINE passende Stelle aus dem Bewerbungs-Management-System des Nutzers den Deep-Dive — Company-Fit-Dashboard + angepasster CV (DE/EN) + ATS-Score — und verlinkt die Artefakte am Job-Detail. Nutze diesen Skill bei "Deep-Dive für Job <id>", "mach den Deep-Dive für <Firma>", "angepassten CV für diese Stelle", "Company-Fit für <Firma>", "bereite die Bewerbung für <Stelle> vor".
+description: Erzeugt für EINE passende Stelle aus dem Bewerbungs-Management-System des Nutzers den Deep-Dive — Company-Fit-Dashboard + angepasster CV (DE, EN, FR, IT, ES oder PT) + ATS-Score — und verlinkt die Artefakte am Job-Detail. Nutze diesen Skill bei "Deep-Dive für Job <id>", "mach den Deep-Dive für <Firma>", "angepassten CV für diese Stelle", "Company-Fit für <Firma>", "bereite die Bewerbung für <Stelle> vor".
 ---
 
 # Job Deep-Dive (Claude-in-the-Loop)
@@ -16,7 +16,7 @@ Job-ID vom Nutzer (oder aus dem Kontext). Daten holen:
 curl -s http://localhost:8000/api/jobs/<id>
 ```
 Liefert Titel, Firma, URL, Situation, Sprache-Hinweise. Stellensprache bestimmen
-(deutscher Fließtext → DE-CV, englischer → EN-CV; siehe cv-job-match Schritt 0).
+(Sprache des Fließtexts → CV in dieser Sprache, `base_<sprache>.docx`; siehe cv-job-match Schritt 0 und Sprachregeln).
 
 ### 2. Stellenbeschreibung besorgen
 JD über `job.url` per WebFetch holen. Bei Login-Wall/Blockade: Firmen-Karriereseite suchen
@@ -45,8 +45,11 @@ Und wie in `firma-pruefen` Schritt 3c: nennt die Anzeige ein **Gehalt** und ist 
 `PATCH /api/jobs/<id> {"salary": "<wörtlich>"}` nachtragen (nie überschreiben, keine Schätzung).
 
 ### 4. Angepasster CV (Skill `cv-job-match`)
-Mit der zur Stellensprache passenden Basis-CV-Datei (`data/cv_basis/base_de.docx` bzw. `data/cv_basis/base_en.docx` —
-beides `_ATS`-Varianten, also nur Text-Einbau, keine Strukturänderung; seit Phase 76 „v9 ATS":
+Mit der zur Stellensprache passenden Basis-CV-Datei (`data/cv_basis/base_<sprache>.docx` mit `de`, `en`, `fr`, `it`,
+`es` oder `pt`, bei gemischten Anzeigen die dominante Sprache des Fließtexts; fehlt bei einer französischen,
+italienischen, spanischen oder portugiesischen Anzeige die Fassung dieser Sprache: nichts übersetzen, zuerst
+`base_en.docx` nehmen, falls vorhanden, sonst `base_de.docx`, und den Sprachbruch im Bericht nennen —
+alle `_ATS`-Varianten, also nur Text-Einbau, keine Strukturänderung; seit Phase 76 „v9 ATS":
 Titel VOR der „Firma\tZeitraum"-Zeile, Workday-Fix — Reihenfolge nie zurückdrehen). Ergebnis:
 - angepasste `.docx` → `outputs/cv/` — **Arbeitsname egal**; die Registrierung benennt sie automatisch
   nach `CV_<Name>_<Firma>_<Position>[_<Sprache>]` um und erzeugt daneben das **PDF** (kein Namensbau nötig).
@@ -75,7 +78,7 @@ cd backend && ~/.bewerbung_mgmt_venv/bin/python -m pipeline.deepdive <deepdive.j
 `deepdive.json` (Schema siehe Kopf von `backend/pipeline/deepdive.py`) mit `job_id`,
 `company_fit_path`, `posting_path` (Snapshot aus Schritt 3, `data/job_postings/<name>.html`),
 `fit_ampel` (Phase 24 F, optional, `gruen|gelb|rot` — deine Bewertung aus Schritt 3 strukturiert
-mitgeben, nur zusammen mit `company_fit_path` sinnvoll), `cv` (language, file_path, ats_score,
+mitgeben, nur zusammen mit `company_fit_path` sinnvoll), `cv` (language großgeschrieben, z. B. `DE`, `EN`, `FR`: die Sprache der benutzten Fassung, file_path, ats_score,
 match_score100, match_dashboard_path, ats_scan_path) und optional `next_step`. `register()` benennt
 die `.docx` um und erzeugt das PDF (LibreOffice headless); die finalen Namen stehen im Rückgabe-JSON
 unter `export` (`docx`, `pdf`, ggf. `pdf_fehler`).

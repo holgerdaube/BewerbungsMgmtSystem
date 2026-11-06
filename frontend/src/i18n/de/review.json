@@ -1,0 +1,37 @@
+{
+  "lade": "Lade…",
+  "untertitel_one": "{{count}} neue Treffer aus der Jobsuche · annehmen (→ Prüfen) oder verwerfen (→ Kein Match)",
+  "untertitel_other": "{{count}} neue Treffer aus der Jobsuche · annehmen (→ Prüfen) oder verwerfen (→ Kein Match)",
+  "neue_suche": "Neue Jobsuche starten",
+  "letzter_lauf": "Letzter Suchlauf:",
+  "aus_tageslauf": "aus Tageslauf",
+  "kind": {
+    "jobsuche": "Jobsuche (WebSearch)",
+    "jobsuche-apify": "Jobsuche + Apify",
+    "mail-jobsuche": "Mail-Jobsuche",
+    "zielfirmen-sweep": "Zielfirmen-Sweep",
+    "headhunter-suche": "Headhunter-Suche",
+    "beworben-check": "Beworben-Check"
+  },
+  "knopf": {
+    "email_check": "E-Mail-Check"
+  },
+  "hinweis_suche": "Läuft headless im Hintergrund (einige Minuten). „+ Apify\" nutzt zusätzlich die Portal-Scraper — kostet Apify-Credits (durch das Budget gedeckelt); WebSearch ist kostenlos.",
+  "hinweis_pruefungen": "Rotierende Karriereseiten-Prüfung (Phase 26) — je Lauf ein Ausschnitt der Zielfirmen bzw. Headhunter, kostenlos (WebFetch). Beworben-Check: prüft wöchentlich, ob beworbene Stellen noch ausgeschrieben sind. E-Mail-Check: liest nur das Postfach (Antworten, Absagen, Termine) und ordnet Mails den Bewerbungen zu — ohne Jobsuche.",
+  "keine_treffer": "Keine neuen Treffer. Starte oben eine Jobsuche — neue Treffer landen hier zur Sichtung.",
+  "plan": "Plan {{plan}}",
+  "oeffnen": "Öffnen ↗",
+  "annehmen": "✓ Annehmen",
+  "verwerfen": "✕ Verwerfen",
+  "dublette": {
+    "parken": "Als Dublette parken",
+    "parken_titel": "Setzt Status auf Geparkt + Querverweis-Notiz an beiden Stellen. Regel: die weiter fortgeschrittene Stelle bleibt.",
+    "keine": "Keine Dublette"
+  },
+  "log": {
+    "begruendung": "Dublette von Job {{jobId}} — Text-Ähnlichkeit {{prozent}} %",
+    "geparkt": "Als Dublette geparkt: {{begruendung}}",
+    "querverweis": "Job {{jobId}} („{{titel}}\") wurde als vermutete Dublette dieser Stelle geparkt.",
+    "verneint": "Dublette-Verdacht verneint."
+  }
+}

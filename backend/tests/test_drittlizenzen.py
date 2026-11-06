@@ -459,9 +459,9 @@ def test_wache_uebersicht_nutzt_nur_die_mittel_des_mini_renderers():
         assert not zeile.lstrip().startswith(("|", ">", "# ", "1.")), zeile
     ist = m.bestand_ist(md, txt)
     assert len(ist["python_direkt"]) + len(ist["python_mit"]) == 39
-    assert len(ist["npm_direkt"]) + len(ist["npm_mit"]) == 11
+    assert len(ist["npm_direkt"]) + len(ist["npm_mit"]) == 16
     assert len(ist["bau_direkt"]) == 8 and ist["bau_gesamt"] == 181
-    assert len(ist["texte"]) == 50 and ist["bloecke"] >= 1
+    assert len(ist["texte"]) == 55 and ist["bloecke"] >= 1
 
 
 def test_wache_gegenprobe_geaenderte_version_wird_gemeldet(tmp_path):
@@ -501,3 +501,12 @@ def test_wache_gegenprobe_geaenderte_version_wird_gemeldet(tmp_path):
     lock.write_text(lock.read_text(encoding="utf-8") + "neuespaket==1.0\n", encoding="utf-8")
     meldungen = m.abweichungen(m.bestand_soll(kopie), ist)
     assert any("neuespaket" in z for z in meldungen), meldungen
+
+
+def test_englische_uebersicht_enthaelt_kein_deutsch():
+    """Ein neuer deutscher Text im Generator braucht einen Eintrag in `_UEBERSICHT_EN`."""
+    from pathlib import Path
+    en = (Path(__file__).resolve().parents[2] / "frontend" / "src" / "rechtliches" / "drittlizenzen.en.md").read_text(encoding="utf-8")
+    assert "## Third-party licences" in en
+    import re
+    assert not re.search(r"[äöüÄÖÜß]|\b(?:und|oder|nicht|mit|für)\b", en), re.findall(r".*(?:[äöüÄÖÜß]|\b(?:und|oder|nicht|mit|für)\b).*", en)[:5]

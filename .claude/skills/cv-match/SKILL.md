@@ -1,6 +1,6 @@
 ---
 name: cv-match
-description: Schritt 2a nach dem Firma-Check — erzeugt für EINE Stelle das Match-Dashboard und einen angepassten CV-ENTWURF (DE/EN), OHNE PDF und OHNE ATS-Scan. Der Entwurf landet als Absatz-Liste in der Datenbank und ist danach am Job-Detail direkt bearbeitbar; „CV erstellen" (eigener Skill/Button) macht daraus Word+PDF+ATS. Nutze diesen Skill bei "CV-Match für Job <id>", "CV-Match für diese Stelle", "Lebenslauf matchen". NICHT für die Firmen-/Fit-Prüfung (das ist Schritt 1 → firma-pruefen) und NICHT für die finale Erstellung (das ist cv-erstellen).
+description: Schritt 2a nach dem Firma-Check — erzeugt für EINE Stelle das Match-Dashboard und einen angepassten CV-ENTWURF (DE, EN, FR, IT, ES oder PT), OHNE PDF und OHNE ATS-Scan. Der Entwurf landet als Absatz-Liste in der Datenbank und ist danach am Job-Detail direkt bearbeitbar; „CV erstellen" (eigener Skill/Button) macht daraus Word+PDF+ATS. Nutze diesen Skill bei "CV-Match für Job <id>", "CV-Match für diese Stelle", "Lebenslauf matchen". NICHT für die Firmen-/Fit-Prüfung (das ist Schritt 1 → firma-pruefen) und NICHT für die finale Erstellung (das ist cv-erstellen).
 ---
 
 # CV-Match (Schritt 2a)
@@ -44,6 +44,11 @@ venv-Python, weil `cp` headless nicht freigegeben ist):
 ```sh
 ~/.bewerbung_mgmt_venv/bin/python -c "import pathlib, shutil; z = pathlib.Path('data/cv_basis/entwuerfe'); z.mkdir(parents=True, exist_ok=True); shutil.copy('data/cv_basis/base_<lang>.docx', z / '<arbeitsname>.docx')"
 ```
+`<lang>` ist das Kürzel der Basis-CV-Fassung nach der Sprachwahl aus `cv-job-match` (Abschnitt Sprachregeln): die
+Sprache der Anzeige (`de`, `en`, `fr`, `it`, `es`, `pt`, bei gemischten Anzeigen die dominante Sprache des
+Fließtexts). Fehlt bei einer französischen, italienischen, spanischen oder portugiesischen Anzeige die Fassung
+dieser Sprache: nichts übersetzen, zuerst `base_en.docx` nehmen, falls vorhanden, sonst `base_de.docx`, und den
+Sprachbruch in der Meldung nennen.
 NIE eine bestehende tailored-/Entwurfs-docx (auch nicht die eigene aus einem
 früheren Lauf für denselben Job) als Ausgangspunkt nehmen. Grund: Nur die frische Kopie garantiert,
 dass der Entwurf auf der AKTUELLEN Basis-Struktur steht (s. „Vorhandene CV-Versionen sind Kontext,
@@ -54,12 +59,13 @@ Rufe — sobald die Stellenbeschreibung vorliegt (nächster Absatz) — den **Pr
 (Skill-Werkzeug, `skill: cv-job-match`, ohne Namensraum; er liegt unter `.claude/skills/cv-job-match/`). Er holt
 die Anzeige nicht selbst und stellt in diesem Lauf keine Rückfragen (kein Rückkanal). Übergib ihm: die frische
 Arbeitskopie (Pfad in `data/cv_basis/entwuerfe/`), die zur **Stellensprache** passende Basis-CV-Datei als
-Referenz für seine Audits (`data/cv_basis/base_de.docx` bzw. `data/cv_basis/base_en.docx` — beides `_ATS`-Varianten →
+Referenz für seine Audits (`data/cv_basis/base_<sprache>.docx`, dieselbe Fassung wie die Arbeitskopie — alle `_ATS`-Varianten →
 nur Text einbauen, keine Strukturänderung; seit Phase 76 „v9 ATS": je Station steht der TITEL VOR der
 „Firma\tZeitraum"-Zeile — Workday-Parser-Fix, diese Reihenfolge NIE zurückdrehen), den Anzeigentext samt
 Quellenlage und das Keyword-Protokoll aus 1d (15 Begriffe, VOR dem Aufruf aufgestellt: die einzige Keyword-Liste,
 mit der er arbeitet). Er liefert Match-Score, Befunde, die bearbeitete Arbeitskopie und das Änderungsprotokoll
-zurück; Match-Dashboard (1b bis 1d) und Registrierung (Schritt 2) bleiben hier.
+zurück; Match-Dashboard (1b bis 1d) und Registrierung (Schritt 2) bleiben hier. **Sein Bericht beendet den Lauf nicht:
+Mache sofort hier weiter, ohne Abschlussmeldung. Fehlen Dashboard oder Registrierung, gilt der Lauf als fehlgeschlagen.**
 **Stellenbeschreibung beschaffen (in dieser Reihenfolge):**
 1. **Anzeigentext aus dem Snapshot lesen** (`job.posting_snapshot_path` aus den Schritt-0-Daten, Karte
    „Anzeigentext …" oder Block „Volltext (unbereinigt)"). Der Server hat den Text beim Start dieses Laufs
@@ -212,7 +218,7 @@ Format (wird unverändert als `keywords_json` gespeichert, Schritt 2):
 ]}
 ```
 Sprache: Begriffe in Anzeigensprache (DE-Anzeige → deutsche Begriffe); bei EN-CV gegen eine
-DE-Anzeige gilt sinngleiche Übersetzung mit Beleg als abgedeckt.
+DE-Anzeige (oder eine FR-, IT-, ES-, PT-Anzeige) gilt sinngleiche Übersetzung mit Beleg als abgedeckt.
 
 Die **CV-Anpassung aus Schritt 1** optimiert den Entwurf wahrheitstreu gegen alle
 `abdeckbar: true`-Begriffe dieser Liste. Das **Match-Dashboard** (Keyword-Teil) verwendet
@@ -264,7 +270,8 @@ Meldet einer der beiden Befehle eine benutzte Klasse ohne Regel: die Klasse durc
 ```sh
 cd backend && ~/.bewerbung_mgmt_venv/bin/python -m pipeline.deepdive entwurf <entwurf.json>
 ```
-`entwurf.json` mit `job_id` und `cv` (`language`, `kind:"tailored"`, `file_path` — **Arbeitsname
+`entwurf.json` mit `job_id` und `cv` (`language` großgeschrieben: `DE`, `EN`, `FR`, `IT`, `ES` oder `PT`, die Sprache der
+benutzten Fassung, `kind:"tailored"`, `file_path` — **Arbeitsname
 egal**, der Ordner nicht, z. B. `data/cv_basis/entwuerfe/2026_CV_<Name>_v8_<LANG>_<slug>.docx`, wird NICHT umbenannt in diesem
 Schritt —, `match_score100`, `match_dashboard_path`, **`keywords_json`** — das komplette Dict aus
 Schritt 1d, EINE Liste für Match-Dashboard und späteren ATS-Scan). `register_entwurf()` extrahiert

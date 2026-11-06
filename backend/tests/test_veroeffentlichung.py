@@ -1107,3 +1107,12 @@ def test_echter_stand_hat_keine_funde_mit_allgemeinen_regeln():
     funde = veroeffentlichung.alle_funde(eintraege, personendaten.Muster())
     assert funde == [], f"{len(funde)} Fund(e) im öffentlichen Baum:\n" + "\n".join(
         f"  {f.pfad}:{f.zeile}  [{f.regel}]" for f in funde)
+
+
+def test_deutsche_fassungen_liegen_im_oeffentlichen_baum():
+    """P2-92: `README.de.md`, `CONTRIBUTING.de.md` und `SECURITY.de.md` sind Teil des öffentlichen Repos."""
+    from pipeline import personendaten as pd
+    from pipeline import veroeffentlichung as v
+
+    for pfad in ("README.de.md", "CONTRIBUTING.de.md", "SECURITY.de.md"):
+        assert not pd.pfad_trifft(pfad, v.NICHT_OEFFENTLICH), pfad

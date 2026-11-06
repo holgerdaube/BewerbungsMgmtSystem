@@ -1,0 +1,37 @@
+{
+  "lade": "Loading…",
+  "untertitel_one": "{{count}} new result from the job search · accept (→ To review) or discard (→ No match)",
+  "untertitel_other": "{{count}} new results from the job search · accept (→ To review) or discard (→ No match)",
+  "neue_suche": "Start a new job search",
+  "letzter_lauf": "Last search run:",
+  "aus_tageslauf": "from daily run",
+  "kind": {
+    "jobsuche": "Job search (WebSearch)",
+    "jobsuche-apify": "Job search + Apify",
+    "mail-jobsuche": "Mail job search",
+    "zielfirmen-sweep": "Target-company sweep",
+    "headhunter-suche": "Headhunter search",
+    "beworben-check": "Applied-jobs check"
+  },
+  "knopf": {
+    "email_check": "Email check"
+  },
+  "hinweis_suche": "Runs headless in the background (a few minutes). “+ Apify” also uses the portal scrapers — it costs Apify credits (capped by the budget); WebSearch is free.",
+  "hinweis_pruefungen": "Rotating check of career pages — each run covers a selection of the target companies or headhunters, free of charge (WebFetch). Applied-jobs check: checks weekly whether the jobs you applied for are still advertised. Email check: only reads the mailbox (responses, rejections, appointments) and matches emails to your applications — without a job search.",
+  "keine_treffer": "No new results. Start a job search above — new results land here for review.",
+  "plan": "Plan {{plan}}",
+  "oeffnen": "Open ↗",
+  "annehmen": "✓ Accept",
+  "verwerfen": "✕ Discard",
+  "dublette": {
+    "parken": "Park as duplicate",
+    "parken_titel": "Sets the status to Parked and adds a cross-reference note to both jobs. Rule: the job that is further along stays.",
+    "keine": "Not a duplicate"
+  },
+  "log": {
+    "begruendung": "Duplicate of job {{jobId}} — text similarity {{prozent}}%",
+    "geparkt": "Parked as duplicate: {{begruendung}}",
+    "querverweis": "Job {{jobId}} (“{{titel}}”) was parked as a suspected duplicate of this job.",
+    "verneint": "Duplicate suspicion dismissed."
+  }
+}

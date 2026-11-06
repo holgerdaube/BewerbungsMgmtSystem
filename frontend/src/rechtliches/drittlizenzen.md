@@ -51,18 +51,23 @@ Diese Software verwendet Open-Source-Bestandteile. Für jeden gilt seine eigene 
 
 - **@fontsource/inter** 5.3.0 — OFL-1.1 — Schrift Inter (Fließtext)
 - **@fontsource/montserrat** 5.3.0 — OFL-1.1 — Schrift Montserrat (Überschriften)
+- **i18next** 26.5.3 — MIT — Oberfläche in mehreren Sprachen
 - **react** 18.3.1 — MIT — Grundgerüst der Oberfläche
 - **react-dom** 18.3.1 — MIT — Darstellung im Browser
+- **react-i18next** 17.1.0 — MIT — Mehrsprachigkeit in der Oberfläche
 - **react-router-dom** 7.18.5 — MIT — Seitennavigation
 
 ### Oberfläche, mitgebracht
 
+- **@babel/runtime** 7.29.10 — MIT
 - **cookie** 1.1.1 — MIT
+- **html-parse-stringify** 4.0.1 — MIT
 - **js-tokens** 4.0.0 — MIT
 - **loose-envify** 1.4.0 — MIT
 - **react-router** 7.18.5 — MIT
 - **scheduler** 0.23.2 — MIT
 - **set-cookie-parser** 2.7.3 — MIT
+- **use-sync-external-store** 1.7.0 — MIT
 
 ### Zum Bauen der Oberfläche
 

@@ -14,6 +14,7 @@ Payload von PUT ist ein plain dict (kein pydantic.BaseModel) -- Projektkonventio
 Muster app/routes_coach_settings.py); die Prüfung der Felder macht `profil_datei.schreiben`."""
 from fastapi import APIRouter, HTTPException
 
+from app.sprache import tx
 from pipeline import profil_datei
 
 router = APIRouter(prefix="/api", tags=["profil-datei"])
@@ -26,15 +27,15 @@ def get_profil_identitaet():
     except profil_datei.DateiNichtLesbar as exc:
         raise HTTPException(422, str(exc))
     except OSError as exc:
-        raise HTTPException(500, f"Ihre Profil-Datei konnte nicht gelesen werden: {exc}")
+        raise HTTPException(500, tx("Ihre Profil-Datei konnte nicht gelesen werden: {grund}", grund=str(exc)))
 
 
 @router.put("/profil/identitaet")
 def put_profil_identitaet(payload: dict):
     stand = payload.get("stand")
     if not isinstance(stand, str):
-        raise HTTPException(400, "Es fehlt die Angabe zum Stand der Profil-Datei. Bitte laden Sie die "
-                                 "Karte neu und versuchen Sie es noch einmal.")
+        raise HTTPException(400, tx("Es fehlt die Angabe zum Stand der Profil-Datei. Bitte laden Sie die "
+                                    "Karte neu und versuchen Sie es noch einmal."))
     try:
         ergebnis = profil_datei.schreiben(payload, stand)
     except profil_datei.StandVeraltet as exc:
@@ -42,8 +43,8 @@ def put_profil_identitaet(payload: dict):
     except ValueError as exc:
         raise HTTPException(400, str(exc))
     except OSError as exc:
-        raise HTTPException(500, f"Ihre Profil-Datei konnte nicht gespeichert werden: {exc}. "
-                                 "Die bisherige Datei ist unverändert.")
+        raise HTTPException(500, tx("Ihre Profil-Datei konnte nicht gespeichert werden: {grund}. "
+                                    "Die bisherige Datei ist unverändert.", grund=str(exc)))
     antwort = profil_datei.lesen()
     # Hinweise zu den eingegebenen Werten (z. B. E-Mail ohne „@“, die beim Lesen als Telefon
     # erscheint) zusätzlich zu denen der frisch gelesenen Datei, ohne Doppelte.

@@ -126,6 +126,7 @@ _ABSCHNITT_BEHALTEN = [re.compile(p, re.I) for p in (
 )]
 _ABSCHNITT_VERWERFEN = [re.compile(p, re.I) for p in (
     r"^über (das unternehmen|[a-zäöü]+:)$", r"^benefits:?$", r"^erfassungs-kontext$",
+    r"^capture context$", r"^about the company$",
     r"^quellen$", r"^hinweis\b", r"^gehalt$",
 )]
 # Bekannte LinkedIn-Login-Wall-/Cookie-/Widget-Fragmente (11 von 66 Bestands-Snapshots
@@ -160,7 +161,7 @@ _RAUSCH_ZEILEN = {
 # „Volltext (unbereinigt)“ (oder knapp „Volltext“). `\b` statt `$`, weil beide Überschriften
 # einen Klammer-Zusatz tragen — anders als _ABSCHNITT_BEHALTEN oben (dort bis P2-37 exakt
 # `^volltext$`, s. 3.3) griff das nie.
-_ROHTEXT_MARKER = re.compile(r"^(volltext|anzeigentext)\b", re.I)
+_ROHTEXT_MARKER = re.compile(r"^(volltext|anzeigentext|full text|job posting text)\b", re.I)
 # Korrektur 11.09. (Abnahme, s. Moduldocstring Punkt 4): NICHT dieselben BEHALTEN-/
 # VERWERFEN-Marker wie der Abschnittsfilter zum Beenden verwenden — „Requirements“/„Aufgaben“/
 # „Key Responsibilities“/„Qualifications“/„Benefits“ stehen oft IM Anzeigentext selbst (127 von
@@ -170,7 +171,7 @@ _ROHTEXT_MARKER = re.compile(r"^(volltext|anzeigentext)\b", re.I)
 # firma-pruefen: … → Volltext → Erfassungs-Kontext) — der einzige verlässliche Endpunkt
 # (gemessen: 361/381 enden an „Erfassungs-Kontext“, 6 an „Quellen“, 8 ältere Snapshots ohne
 # beides laufen bis zum Textende — in keinem folgt danach noch eine Zusammenfassung).
-_ROHTEXT_ENDE = re.compile(r"^(erfassungs-kontext|quellen)$", re.I)
+_ROHTEXT_ENDE = re.compile(r"^(erfassungs-kontext|quellen|capture context|sources)$", re.I)
 # Gleicher Wert wie der Default von konfiguration()["min_text_zeichen"] — bewusst als eigene
 # Modulkonstante dupliziert, nicht aus konfiguration() gelesen: `rollen_relevanter_text_aus()`
 # ist eine reine Funktion ohne Config-/Dateizugriff (s. Docstring dort).

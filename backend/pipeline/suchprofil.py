@@ -36,9 +36,10 @@ _REMOTE_REGIONEN = ["Remote EMEA", "Remote DACH", "Remote Germany"]
 _DEUTSCHLANDWEIT_REGIONEN = ["Deutschland"]
 
 # Reiner Alt-Feld-Spiegel ohne Entsprechung im neuen Plan-Modell — kein Code liest ihn
-# strukturiert (Design-Entscheidung 3), deshalb kein UI-Feld dafür, sondern ein fixer,
-# historisch aus `suchprofile.yaml` geerbter Wert.
-_SENIORITY_MIN = "Manager"
+# strukturiert (Design-Entscheidung 3), deshalb kein UI-Feld dafür. Neue Installationen starten
+# leer, weil die Läufe die Datei lesen und sonst jede Stelle unterhalb von „Manager“ bemängeln.
+# Ein Wert, der schon in der Datei steht, bleibt erhalten (`schreibe_suchprofile`).
+_SENIORITY_MIN = ""
 
 _PLAN_KEYS = ("plan", "label", "aktiv", "prioritaet", "titel", "senioritaet", "branche")
 
@@ -308,6 +309,9 @@ def schreibe_suchprofile(managed: dict, pfad: Path) -> None:
             "nötig, sonst würden die manuell gepflegten Technik-Kommentare überschrieben."
         )
     tail = text[i:]
+    bisher = (yaml.safe_load(text[:i]) or {}).get("seniority_min")
+    if bisher:
+        managed = {**managed, "seniority_min": bisher}
     head = HEADER + yaml.safe_dump(managed, allow_unicode=True, sort_keys=False, width=1000)
     pfad.write_text(head + "\n" + tail, encoding="utf-8")
 

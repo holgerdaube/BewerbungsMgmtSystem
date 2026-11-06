@@ -34,6 +34,7 @@ from sqlmodel import Session
 from app.db import artefakt_pfad, engine, init_db
 from app.models import Interview, Job, Transcript
 from app.favicon import favicon_link
+from app.sprache import datum, html_lang, tx, uebersetzt
 from pipeline.bericht_stil import DRUCK_SEITENFARBE_BEHALTEN, bericht_css
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent  # Bewerbung_Mgmt_System/
@@ -59,27 +60,27 @@ def _esc(s) -> str:
 
 def _lies_rohtext(rel_path: Optional[str]) -> str:
     if not rel_path:
-        return "(kein Transkript-Rohtext hinterlegt)"
+        return tx("(kein Transkript-Rohtext hinterlegt)")
     p = artefakt_pfad(rel_path)
     # Phase 79: gemeinsame Auflösung (data/ → aktive Datenwurzel) statt PROJECT_ROOT — s. app/db.py::artefakt_pfad
     if not p.is_file():
-        return f"(Datei nicht gefunden: {rel_path})"
+        return tx("(Datei nicht gefunden: {pfad})", pfad=rel_path)
     return p.read_text(encoding="utf-8", errors="replace")
 
 
 def _datum_de(iso: Optional[str]) -> str:
-    """'YYYY-MM-DD' -> 'DD.MM.YYYY' (Referenz-Kopf-Format). Robust: nicht parsbar -> Rohwert."""
+    """'YYYY-MM-DD' -> 'DD.MM.YYYY' (Referenz-Kopf-Format; Englisch 'DD/MM/YYYY'). Robust: nicht parsbar -> Rohwert."""
     s = str(iso or "").strip()[:10]
     try:
-        return datetime.date.fromisoformat(s).strftime("%d.%m.%Y")
+        return datum(datetime.date.fromisoformat(s))
     except ValueError:
         return s
 
 
 def _sub_zeile(job: Job, iv: Optional[Interview]) -> str:
-    teile = [job.company_name or "Unbekannte Firma", f"Job {job.id}"]
+    teile = [job.company_name or tx("Unbekannte Firma"), tx("Job {id}", id=job.id)]
     if iv:
-        runde = f"Runde {iv.runde}" + (f" ({iv.art})" if iv.art else "")
+        runde = tx("Runde {nummer}", nummer=iv.runde) + (f" ({iv.art})" if iv.art else "")
         teile.append(runde)
     return " · ".join(t for t in teile if t)
 
@@ -88,16 +89,16 @@ def _meta_spalten(t: Transcript, iv: Optional[Interview], status_danach: Optiona
     """Kontakt · Art · Datum · Status danach (Typ-Tabelle, Phase 35) — leere Spalten weglassen."""
     spalten = []
     if t.kontakt:
-        spalten.append(("Kontakt", t.kontakt))
+        spalten.append((tx("Kontakt"), t.kontakt))
     art = t.gespraechsart or (iv.art if iv else None)
     if art:
-        spalten.append(("Art", art))
+        spalten.append((tx("Art"), art))
     stand = t.recorded_at or (t.created_at.date().isoformat() if t.created_at else None)
     if stand:
-        spalten.append(("Datum", _datum_de(stand)))
+        spalten.append((tx("Datum"), _datum_de(stand)))
     status = status_danach or (iv.status if iv else None)
     if status:
-        spalten.append(("Status danach", status))
+        spalten.append((tx("Status danach"), uebersetzt(status)))
     return spalten
 
 
@@ -106,7 +107,7 @@ def _badges_zusatz(t: Transcript) -> list:
     out = []
     if t.language:
         out.append(t.language.upper())
-    quelle = {"manuell": "Text eingefügt", "upload": "Datei-Upload"}.get(t.source, t.source)
+    quelle = {"manuell": tx("Text eingefügt"), "upload": tx("Datei-Upload")}.get(t.source, t.source)
     if quelle:
         out.append(quelle)
     return out
@@ -214,19 +215,21 @@ def _sanitiere_html(roh: str) -> str:
 def _sections_html(sections) -> str:
     teile = []
     for sec in sections or []:
-        titel = _esc(sec.get("title") or "Findings")
+        titel = _esc(sec.get("title") or tx("Findings"))
         inhalt = _sanitiere_html(sec.get("html") or "")
         teile.append(f'<h2 class="sec">{titel}</h2>\n<div class="card">{inhalt}</div>')
     return "\n".join(teile)
 
 
 def _build_html(job: Job, t: Transcript, iv: Optional[Interview], sections, hinweis: str,
-                eyebrow: str = "Transkript-Report", status_danach: Optional[str] = None) -> str:
+                eyebrow: Optional[str] = None, status_danach: Optional[str] = None) -> str:
     """Report-Kopf nach der Phase-35-Referenz (Debrief-Kopf als Vorbild): eyebrow → h1=ROLLE
     (nicht Firma) → sub (Firma · Job <id> · Runde (Art)) → beschriftetes Meta-Grid Kontakt/Art/
     Datum/Status danach. `eyebrow`/`status_danach` sind der einzige Unterschied Basis vs. Vollversion
     (Design-Entscheidung 3 der Spec) — Kopf-Struktur ist identisch."""
+    eyebrow = eyebrow or tx("Transkript-Report")
     titel = f"{eyebrow} · {_esc(job.company_name)}"
+    h1 = _esc(job.title) or tx("Unbekannte Rolle")
     meta_html = "".join(f'<div><p class="k">{_esc(k)}</p><p class="v">{_esc(v)}</p></div>'
                         for k, v in _meta_spalten(t, iv, status_danach))
     badges_html = "".join(f'<span class="pill">{_esc(b)}</span>' for b in _badges_zusatz(t))
@@ -234,7 +237,7 @@ def _build_html(job: Job, t: Transcript, iv: Optional[Interview], sections, hinw
     erzeugt = datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M")
     _FAVICON = favicon_link()      # P2-72: Icon des geltenden Designs, bei jedem Report frisch
     return f"""<!DOCTYPE html>
-<html lang="de">
+<html lang="{html_lang()}">
 <head>
 <meta charset="utf-8">{_FAVICON}
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -245,7 +248,7 @@ def _build_html(job: Job, t: Transcript, iv: Optional[Interview], sections, hinw
 <div class="wrap">
   <header class="head">
     <p class="eyebrow">{_esc(eyebrow)}</p>
-    <h1>{_esc(job.title) or 'Unbekannte Rolle'}</h1>
+    <h1>{h1}</h1>
     <p class="sub">{_esc(_sub_zeile(job, iv))}</p>
     <div class="meta">{meta_html}</div>
     <div class="badges">{badges_html}</div>
@@ -253,14 +256,14 @@ def _build_html(job: Job, t: Transcript, iv: Optional[Interview], sections, hinw
 
   {_sections_html(sections)}
 
-  <h2 class="sec">Volltext</h2>
+  <h2 class="sec">{tx("Volltext")}</h2>
   <details class="volltext">
-    <summary>Original-Transkript-Text anzeigen/verbergen</summary>
+    <summary>{tx("Original-Transkript-Text anzeigen/verbergen")}</summary>
     <pre>{_esc(rohtext)}</pre>
   </details>
 
   <div class="foot">
-    <span>Bewerbungs-Mgmt · erzeugt am {erzeugt}</span>
+    <span>{tx("Bewerbungs-Mgmt · erzeugt am {datum}", datum=erzeugt)}</span>
     <span>{_esc(hinweis)}</span>
   </div>
 </div>
@@ -310,12 +313,15 @@ def render_basis(transcript_id: int) -> dict:
         job = s.get(Job, t.job_id)
         iv = s.get(Interview, t.interview_id) if t.interview_id else None
         sections = [{
-            "title": "Findings",
-            "html": (f'<p>Debrief ausstehend — <b>„Debrief für Job {job.id}“</b> ausführen, um '
-                     f'Zusammenfassung, Signale &amp; Red Flags, To-dos und offene Fragen zu ergänzen.</p>'),
+            "title": tx("Findings"),
+            # &amp; steht im Text selbst: Der Satz geht ungeprüft ins Report-HTML (Platzhalter trägt <b>).
+            "html": "<p>" + tx(
+                "Debrief ausstehend — {aufruf} ausführen, um Zusammenfassung, Signale &amp; Red Flags, "
+                "To-dos und offene Fragen zu ergänzen.",
+                aufruf="<b>" + tx("„Debrief für Job {id}“", id=job.id) + "</b>") + "</p>",
         }]
-        html = _build_html(job, t, iv, sections, "Automatisch erzeugt — Debrief ausstehend",
-                           eyebrow="Transkript-Report", status_danach="Debrief ausstehend")
+        html = _build_html(job, t, iv, sections, tx("Automatisch erzeugt — Debrief ausstehend"),
+                           eyebrow=tx("Transkript-Report"), status_danach=tx("Debrief ausstehend"))
         t.report_path = _speichere(t, job, iv, html)
         s.add(t)
         s.commit()
@@ -342,9 +348,9 @@ def render_full(transcript_id: int, sections: list, summary: str, todos: Optiona
             raise SystemExit(f"Transcript {transcript_id} nicht gefunden")
         job = s.get(Job, t.job_id)
         iv = s.get(Interview, t.interview_id) if t.interview_id else None
-        alle_sections = [{"title": "Zusammenfassung", "html": f"<p>{_esc(summary)}</p>"}] + list(sections or [])
-        html = _build_html(job, t, iv, alle_sections, "Debrief abgeschlossen",
-                           eyebrow="Gesprächs-Debrief", status_danach=status_danach)
+        alle_sections = [{"title": tx("Zusammenfassung"), "html": f"<p>{_esc(summary)}</p>"}] + list(sections or [])
+        html = _build_html(job, t, iv, alle_sections, tx("Debrief abgeschlossen"),
+                           eyebrow=tx("Gesprächs-Debrief"), status_danach=status_danach)
         t.report_path = _speichere(t, job, iv, html)
         t.summary = summary
         if todos is not None:

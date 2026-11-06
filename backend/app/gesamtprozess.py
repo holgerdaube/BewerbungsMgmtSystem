@@ -35,6 +35,7 @@ from typing import Iterable, Optional
 # Modulebene ist deshalb unbedenklich (s. Spec-Punkt 1: "response_metrics darf importiert
 # werden — beides sind App-freie Kennzahl-Module").
 from app.response_metrics import response_kpis
+from app.sprache import aktuell, tx
 
 # Schwelle für "Keine Reaktion" — bewusst eine Konstante im Modul, KEIN Setting (Spec-Entscheidung
 # 2): erst bei echtem Bedarf konfigurierbar machen, nicht vorab spekulativ bauen.
@@ -296,6 +297,8 @@ def _de_prozent_prosa(p: float) -> str:
     (Tabellenzelle ohne Leerzeichen vs. Fließtext mit) — dieselbe Arbeitsteilung wie bei
     `vs_vorstufe`/`vs_start` in `stufen` (auch dort rohe floats, Formatierung liegt beim
     Konsumenten)."""
+    if aktuell() == "en":
+        return f"{p:.1f}%"
     return f"{p:.1f}".replace(".", ",") + " %"
 
 
@@ -304,10 +307,10 @@ def _de_prozent_prosa(p: float) -> str:
 # `p` ist die bereits deutsch formatierte Prozent-Prosa, `basis` die Anzahl der Vorstufe (nur
 # von der Antwortquote im Satz gebraucht: „... auf 68 Bewerbungen").
 _ENGSTELLEN_SATZ = {
-    "Relevant": lambda p, basis: f"Screening: nur {p} der gesichteten Stellen sind relevant",
-    "Beworben": lambda p, basis: f"Bewerbungsquote: {p} der relevanten Stellen wurden beworben",
-    "Antworten": lambda p, basis: f"Antwortquote {p} auf {basis} Bewerbungen",
-    "Interviews": lambda p, basis: f"Interview-Konversion: {p} der Antworten führten zum Interview",
+    "Relevant": lambda p, basis: tx("Screening: nur {p} der gesichteten Stellen sind relevant", p=p),
+    "Beworben": lambda p, basis: tx("Bewerbungsquote: {p} der relevanten Stellen wurden beworben", p=p),
+    "Antworten": lambda p, basis: tx("Antwortquote {p} auf {basis} Bewerbungen", p=p, basis=basis),
+    "Interviews": lambda p, basis: tx("Interview-Konversion: {p} der Antworten führten zum Interview", p=p),
 }
 
 
@@ -351,19 +354,21 @@ def funnel_kpi(jobs: Iterable, apps: Iterable, emails: Iterable, outreach: Itera
     ges_kpi = gespraeche_kpi(interviews, netzwerkgespraeche)
 
     avg_resp = resp["avg_response_hours"]
-    avg_teil = (f"Ø Antwortzeit {avg_resp:.1f} h" if avg_resp is not None
-                else "Ø Antwortzeit unbekannt")
+    avg_teil = (tx("Ø Antwortzeit {stunden} h", stunden=f"{avg_resp:.1f}") if avg_resp is not None
+                else tx("Ø Antwortzeit unbekannt"))
 
     _roh = [
-        ("Gesichtet", gesichtet, "Gesamter Pool aller erfassten Stellen"),
-        ("Relevant", relevant, "ohne Kein Match / nicht verfügbar / Beirat abgelehnt"),
+        ("Gesichtet", gesichtet, tx("Gesamter Pool aller erfassten Stellen")),
+        ("Relevant", relevant, tx("ohne Kein Match / nicht verfügbar / Beirat abgelehnt")),
         ("Beworben", beworben,
-         f"{bew_kpi['splits'].get('Positionsausschreibungen', 0)} Ausschreibungen + "
-         f"{bew_kpi['splits'].get('Netzwerk', 0)} über Netzwerk"),
+         tx("{ausschreibungen} Ausschreibungen + {netzwerk} über Netzwerk",
+            ausschreibungen=bew_kpi['splits'].get('Positionsausschreibungen', 0),
+            netzwerk=bew_kpi['splits'].get('Netzwerk', 0))),
         ("Antworten", antworten,
-         f"{avg_teil} · {abs_kpi['wert']} Absagen, {kr_kpi['wert']} ohne Reaktion"),
+         tx("{antwortzeit} · {absagen} Absagen, {ohne_reaktion} ohne Reaktion",
+            antwortzeit=avg_teil, absagen=abs_kpi['wert'], ohne_reaktion=kr_kpi['wert'])),
         ("Interviews", interview_jobs,
-         f"{ges_kpi['wert']} Gespräche gesamt inkl. Headhunter & Netzwerk"),
+         tx("{gespraeche} Gespräche gesamt inkl. Headhunter & Netzwerk", gespraeche=ges_kpi['wert'])),
     ]
 
     stufen = []
@@ -399,7 +404,8 @@ def funnel_kpi(jobs: Iterable, apps: Iterable, emails: Iterable, outreach: Itera
     if kandidaten:
         p_min, stufe_min, satz_min = min(kandidaten, key=lambda k: k[0])
         engstellen["groesster_verlust"] = {
-            "stufe": stufe_min, "prozent": p_min, "text": f"Größter Verlust: {satz_min}",
+            "stufe": stufe_min, "prozent": p_min,
+            "text": tx("Größter Verlust: {satz}", satz=satz_min),
         }
 
     return {"stufen": stufen, "engstellen": engstellen}

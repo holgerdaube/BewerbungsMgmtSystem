@@ -182,12 +182,13 @@ def set_coach_login(benutzer: str, passwort: str) -> None:
     (s. `tests/test_coach_settings.py`, dort auch der Beweis per `checkpw`). Datei bekommt
     GENAU EINE Zeile `benutzer:hash` — ein einziger Coach-Login ist Produktentscheidung
     (Plan-Dialog 12.08.2026)."""
+    from app.sprache import tx      # erst hier: das Kommandozeilen-Werkzeug `shell` soll app.db nicht laden
     benutzer = (benutzer or "").strip()
     if not benutzer:
-        raise ValueError("Coach-Benutzername darf nicht leer sein.")
+        raise ValueError(tx("Coach-Benutzername darf nicht leer sein."))
     pw_bytes = (passwort or "").encode("utf-8")
     if len(pw_bytes) > 72:
-        raise ValueError("Coach-Passwort ist zu lang (bcrypt erlaubt maximal 72 Byte).")
+        raise ValueError(tx("Coach-Passwort ist zu lang (bcrypt erlaubt maximal 72 Byte)."))
     hash_bytes = bcrypt.hashpw(pw_bytes, bcrypt.gensalt())
     hash_bytes = _BCRYPT_PREFIX_RE.sub(b"$2y$", hash_bytes, count=1)
     HTPASSWD_FILE.parent.mkdir(parents=True, exist_ok=True)
@@ -229,10 +230,11 @@ def fehlende_felder(data: dict) -> list:
     """Deutsche Klartext-Liste der noch fehlenden Pflichtfelder für `aktiv=true` (API-Kontrakt
     1.4). Das Coach-Passwort steht NIE in `data` (es wird nie gespeichert, s. Moduldocstring) —
     ob es gesetzt ist, wird separat über `coach_login_gesetzt()` geprüft."""
-    fehlend = [label for feld, label in _FEHLENDE_FELDER_REIHENFOLGE
+    from app.sprache import tx, uebersetzt      # erst hier, s. set_coach_login
+    fehlend = [uebersetzt(label) for feld, label in _FEHLENDE_FELDER_REIHENFOLGE
                if not str(data.get(feld) or "").strip()]
     if not coach_login_gesetzt():
-        fehlend.append("Coach-Passwort")
+        fehlend.append(tx("Coach-Passwort"))
     return fehlend
 
 
@@ -290,14 +292,15 @@ def sftp_lauf(data: dict, befehle: list, timeout: int = 60) -> str:
     (z. B. `["cls -1 /coach"]`) — Präfix (`set sftp:auto-confirm yes;`) und Suffix (`bye`) setzt
     diese Funktion selbst. Rückgabe ist STETS durch `ohne_geheimnisse()` gefiltert (I2) — auch im
     Fehlerfall. Fehlt `lftp` im PATH → `RuntimeError` mit Installationshinweis (macOS: Homebrew)."""
+    from app.sprache import tx      # erst hier, s. set_coach_login
     if shutil.which("lftp") is None:
-        raise RuntimeError("lftp fehlt — installieren mit: brew install lftp")
+        raise RuntimeError(tx("lftp fehlt — installieren mit: brew install lftp"))
     host = str(data.get("sftp_host") or "").strip()
     user = str(data.get("sftp_user") or "").strip()
     passwort = str(data.get("sftp_password") or "")
     if not host or not user:
-        raise RuntimeError("SFTP-Host und SFTP-Benutzer müssen gesetzt sein, bevor eine "
-                            "Verbindung aufgebaut werden kann.")
+        raise RuntimeError(tx("SFTP-Host und SFTP-Benutzer müssen gesetzt sein, bevor eine "
+                              "Verbindung aufgebaut werden kann."))
     kommando = "set sftp:auto-confirm yes; " + "; ".join(
         b.strip().rstrip(";") for b in befehle) + "; bye"
     cmd = ["lftp", "-u", f"{user},{passwort}", f"sftp://{host}", "-e", kommando]
@@ -305,11 +308,11 @@ def sftp_lauf(data: dict, befehle: list, timeout: int = 60) -> str:
         ergebnis = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
     except subprocess.TimeoutExpired as exc:
         text = ohne_geheimnisse((exc.stdout or "") + (exc.stderr or ""), data)
-        meldung = f"lftp-Zeitüberschreitung nach {timeout}s."
+        meldung = tx("lftp-Zeitüberschreitung nach {timeout}s.", timeout=timeout)
         raise RuntimeError(f"{meldung} {text}".strip()) from None
     ausgabe = ohne_geheimnisse((ergebnis.stdout or "") + (ergebnis.stderr or ""), data)
     if ergebnis.returncode != 0:
-        raise RuntimeError(ausgabe or f"lftp beendete sich mit Exit-Code {ergebnis.returncode}.")
+        raise RuntimeError(ausgabe or tx("lftp beendete sich mit Exit-Code {code}.", code=ergebnis.returncode))
     return ausgabe
 
 
@@ -334,12 +337,13 @@ def serverpfad_ermitteln(data: dict) -> dict:
     5. Kein Marker gefunden → `RuntimeError` (400) mit der Bitte, den Pfad manuell einzutragen.
        Nie raten — ob PHP fehlt, der Pfad falsch ist oder der Server nicht erreichbar war, spielt
        für die Nutzeraktion keine Rolle: von Hand eintragen."""
+    from app.sprache import tx      # erst hier, s. set_coach_login
     sftp_dir = str(data.get("sftp_dir") or "").strip()
     site_url = str(data.get("site_url") or "").strip().rstrip("/")
     if not sftp_dir or not site_url:
         raise RuntimeError(
-            "Serverpfad-Ermittlung braucht Adresse der Seite UND SFTP-Zielverzeichnis — bitte "
-            "beides zuerst ausfüllen und speichern."
+            tx("Serverpfad-Ermittlung braucht Adresse der Seite UND SFTP-Zielverzeichnis — bitte "
+               "beides zuerst ausfüllen und speichern.")
         )
 
     bestand = sftp_lauf(data, [f"cls -1 -a {sftp_dir}"])
@@ -347,8 +351,8 @@ def serverpfad_ermitteln(data: dict) -> dict:
     unerwartet = eintraege - _SERVERPFAD_ERLAUBT
     if unerwartet:
         raise ServerpfadKonflikt(
-            "Im Zielverzeichnis liegen bereits Dateien. Die automatische Ermittlung läuft nur "
-            "im leeren Verzeichnis; bitte den Pfad manuell eintragen — siehe Anleitung."
+            tx("Im Zielverzeichnis liegen bereits Dateien. Die automatische Ermittlung läuft nur "
+               "im leeren Verzeichnis; bitte den Pfad manuell eintragen — siehe Anleitung.")
         )
 
     remote_probe = f"{sftp_dir}/{_PROBE_DATEINAME}"
@@ -370,8 +374,8 @@ def serverpfad_ermitteln(data: dict) -> dict:
 
     if not marker:
         raise RuntimeError(
-            "Die Datei war nicht erreichbar oder PHP ist nicht aktiv — bitte den Serverpfad "
-            "manuell eintragen, siehe Anleitung."
+            tx("Die Datei war nicht erreichbar oder PHP ist nicht aktiv — bitte den Serverpfad "
+               "manuell eintragen, siehe Anleitung.")
         )
     return {"authuserfile": f"{marker}/.htpasswd", "serverpfad": marker}
 

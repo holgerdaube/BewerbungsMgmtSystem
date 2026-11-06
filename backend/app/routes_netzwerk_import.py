@@ -21,6 +21,7 @@ from sqlmodel import Session
 
 from app import netzwerk_import
 from app.db import get_session
+from app.sprache import tx, uebersetzt
 
 router = APIRouter(prefix="/api", tags=["netzwerk-import"])
 
@@ -28,12 +29,12 @@ router = APIRouter(prefix="/api", tags=["netzwerk-import"])
 def _datei_lesen(datei: UploadFile | None) -> tuple[str, bytes]:
     """Name und Inhalt der hochgeladenen Datei. Mehr als 5 MB wird nicht erst eingelesen."""
     if datei is None:
-        raise HTTPException(400, "Bitte wählen Sie eine Datei aus.")
+        raise HTTPException(400, tx("Bitte wählen Sie eine Datei aus."))
     if datei.size is not None and datei.size > netzwerk_import.MAX_BYTES:
-        raise HTTPException(413, netzwerk_import.TEXT_ZU_GROSS)
+        raise HTTPException(413, uebersetzt(netzwerk_import.TEXT_ZU_GROSS))
     inhalt = datei.file.read(netzwerk_import.MAX_BYTES + 1)
     if len(inhalt) > netzwerk_import.MAX_BYTES:
-        raise HTTPException(413, netzwerk_import.TEXT_ZU_GROSS)
+        raise HTTPException(413, uebersetzt(netzwerk_import.TEXT_ZU_GROSS))
     return datei.filename or "", inhalt
 
 

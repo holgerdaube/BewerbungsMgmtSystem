@@ -117,14 +117,14 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           tag="${GITHUB_REF#refs/tags/v}"
-          for anleitung in BMS_Install_MAC.md BMS_Install_Windows.md; do
+          for anleitung in BMS_Install_MAC.md BMS_Install_Windows.md BMS_Install_MAC.en.md BMS_Install_Windows.en.md; do
             if [ ! -f "$anleitung" ]; then
               echo "$anleitung fehlt im Checkout." >&2
               exit 1
             fi
           done
           gh release create "v$tag" "${{ runner.temp }}"/paket/*.zip "${{ runner.temp }}"/paket/*.sha256 \
-            BMS_Install_MAC.md BMS_Install_Windows.md \
+            BMS_Install_MAC.md BMS_Install_Windows.md BMS_Install_MAC.en.md BMS_Install_Windows.en.md \
             --title "BMS $tag" --notes-file "${{ runner.temp }}/notizen.md" --verify-tag
 
       - name: Paket als Artefakt hochladen (Probebau)

@@ -1,0 +1,52 @@
+{
+  "zurueck": "← Back to jobs",
+  "titel": "Add a new job",
+  "untertitel": "Record a job you found yourself — <b>New</b> = goes to the review list ·<b> To review</b> = straight into the active pipeline · <b>Applied</b> = also creates the application.",
+  "fehler": "Error: {{meldung}}",
+  "feld": {
+    "firma": "Company",
+    "rollen_titel": "Role title",
+    "url": "Job URL",
+    "portal": "Portal / source",
+    "standort": "Location",
+    "arbeitsmodell": "Work model",
+    "seniority": "Level",
+    "such_tab": "Search tab",
+    "plan": "Plan A/B/C",
+    "gehalt": "Salary (if listed)",
+    "veroeffentlicht": "Published on",
+    "fit": "Target-role fit (optional)",
+    "status": "Status",
+    "beworben_am": "Applied on",
+    "kanal": "Application channel",
+    "notizen": "Notes"
+  },
+  "platzhalter": {
+    "firma": "e.g. Example Ltd",
+    "rollen_titel": "e.g. Head of Professional Services DACH",
+    "url": "https://…",
+    "standort": "e.g. Cologne or Remote",
+    "gehalt": "e.g. 120–140k",
+    "notizen": "Where the tip came from, first impression, contacts…"
+  },
+  "fit_unbewertet": "– not rated yet –",
+  "dublette": {
+    "url": "URL already recorded in job",
+    "stelle": "Job already recorded:",
+    "zur_stelle": "Go to job →"
+  },
+  "speichern": "Saving…",
+  "anlegen": "✓ Add job",
+  "abbrechen": "Cancel",
+  "nach_anlegen": "After adding: job details → “Create documents” starts the workflow",
+  "wert": {
+    "Firmenseite": "Company website",
+    "Empfehlung": "Referral",
+    "E-Mail": "Email",
+    "Headhunter": "Headhunter",
+    "Sonstiges": "Other",
+    "Unbekannt": "Unknown",
+    "Portal": "Portal",
+    "Recruiter": "Recruiter"
+  }
+}

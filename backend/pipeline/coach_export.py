@@ -50,7 +50,9 @@ from app.models import Application, Company, CVVersion, Job
 # tabelle für die Markenwerte im CSS. P2-72: Die Skala selbst steht in pipeline/zustandsfarben.py.
 from pipeline.digest import markenwerte, score_farben
 from pipeline import absagen_bericht, design, digest, zustandsfarben
+from pipeline.bericht_stil import fassungen
 from app import favicon
+from app.sprache import datum, html_lang, tx, uebersetzt
 from app.zeit import nach_lokal
 # P2-30: die Datumsquelle ist fertig gebaut (deckt einen Großteil der Stellen ab, applied_date
 # allein deutlich weniger) — hier NICHT nachbauen, nur importieren.
@@ -124,7 +126,7 @@ def _score_badge(sc) -> str:
 
 def _status_pille(status) -> str:
     bg, text = zustandsfarben.status_farbe(status)
-    return f'<span class="status" style="background:{bg};color:{text}">{_e(status)}</span>'
+    return f'<span class="status" style="background:{bg};color:{text}">{_e(uebersetzt(status))}</span>'
 
 
 def _beworben_am_zelle(zeitpunkt, status) -> str:
@@ -134,10 +136,16 @@ def _beworben_am_zelle(zeitpunkt, status) -> str:
     if not zeitpunkt:
         return "–"
     lokal = nach_lokal(zeitpunkt)
-    text = lokal.strftime("%d.%m.%Y")
+    text = datum(lokal)
     if status in _STATUS_LAUFEND:
         tage = (datetime.datetime.now(lokal.tzinfo) - lokal).days
-        return f'{text} <span class="muted">· seit {tage} Tagen</span>'
+        # Deutsch sagt seit jeher auch „seit 1 Tagen“ und bleibt Zeichen für Zeichen so. Der zweite Schlüssel
+        # (anderer Platzhalter, gleicher deutscher Text) lässt Englisch den Singular richtig schreiben.
+        if tage == 1:
+            laufzeit = tx("· seit {tag} Tagen", tag=tage)
+        else:
+            laufzeit = tx("· seit {tage} Tagen", tage=tage)
+        return f'{text} <span class="muted">{laufzeit}</span>'
     return text
 
 
@@ -176,12 +184,14 @@ def _kopiere_mit_favicon(quelle: Path, ziel: Path) -> None:
 
 
 # Die Reiter in ihrer Anzeige-Reihenfolge (P2-79: „Tages-Digest“ neben der Übersicht).
-_NAVIGATION = (
-    ("index", "index.html", "Übersicht"),
-    ("digest", "digest.html", "Tages-Digest"),
-    ("stellen", "stellen.html", "Stellen & Bewerbungen"),
-    ("absagen", "absagen.html", "Absagen & Muster"),
-)
+def _navigation() -> tuple:
+    """Die Reiter mit Beschriftung in der Sprache, die beim Export gilt."""
+    return (
+        ("index", "index.html", tx("Übersicht")),
+        ("digest", "digest.html", tx("Tages-Digest")),
+        ("stellen", "stellen.html", tx("Stellen & Bewerbungen")),
+        ("absagen", "absagen.html", tx("Absagen & Muster")),
+    )
 
 
 def _seite(titel: str, aktiv: str, inhalt: str, stand: str, geltend=None, tages_digest: bool = True,
@@ -192,16 +202,19 @@ def _seite(titel: str, aktiv: str, inhalt: str, stand: str, geltend=None, tages_
     geltend = geltend or design.laden()      # P2-72: das Design gilt, wie es JETZT ist
     nav = "".join(
         f'<a href="{ziel}" class="{"aktiv" if key == aktiv else ""}">{label}</a>'
-        for key, ziel, label in _NAVIGATION if tages_digest or key != "digest")
+        for key, ziel, label in _navigation() if tages_digest or key != "digest")
     zusatz = f"{css_zusatz}\n" if css_zusatz else ""
-    return f"""<!doctype html><html lang="de"><head><meta charset="utf-8">
+    sub_zeile = tx("Bewerbungs-Übersicht für den Coaching-Kontext")
+    foot_stand = tx("Bewerbungs-Mgmt · Stand {stand}", stand=stand)
+    foot_hinweis = tx("Vertraulich — nur für den Coaching-Kontext · Quelle: lokale Bewerbungsdatenbank")
+    return f"""<!doctype html><html lang="{html_lang()}"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex, nofollow">{favicon.favicon_link(geltend)}<title>{_e(titel)}</title>
 <style>{_css(geltend)}{zusatz}</style></head><body><div class="wrap">
-<h1>{_e(titel)}</h1><div class="sub">Bewerbungs-Übersicht für den Coaching-Kontext</div>
+<h1>{_e(titel)}</h1><div class="sub">{sub_zeile}</div>
 <nav>{nav}</nav>
 {inhalt}
-<div class="foot"><span>Bewerbungs-Mgmt · Stand {stand}</span><span>Vertraulich — nur für den Coaching-Kontext · Quelle: lokale Bewerbungsdatenbank</span></div>
+<div class="foot"><span>{foot_stand}</span><span>{foot_hinweis}</span></div>
 </div></body></html>"""
 
 
@@ -224,11 +237,19 @@ def _lade_config() -> dict:
 # `<h2 class="sec">Erfassungs-Kontext</h2><div class="card">…</div>` — darin stehen
 # job.source_note und job.verify_note (Vier-Augen-Interna, Sperrliste!). Die Karte enthält
 # nur <p>-Absätze (kein verschachteltes div), der non-greedy Match ist daher sicher.
-_ERFASSUNG_RE = re.compile(
-    r'<h2 class="sec">Erfassungs-Kontext</h2>\s*<div class="card">.*?</div>', re.S)
+# Berichte bleiben in der Sprache, in der sie entstanden: Die Karte heißt je nach Sprache anders und wird in
+# BEIDEN Fassungen entfernt (`fassungen()`); sonst bliebe sie in einem englischen Snapshot stehen, die
+# Marker-Prüfung unten würde ihn zwar noch auffangen, aber die Datei fiele ganz aus dem Export.
+def _erfassung_re():
+    return re.compile(
+        r'<h2 class="sec">(?:' + "|".join(re.escape(f) for f in fassungen("Erfassungs-Kontext"))
+        + r')</h2>\s*<div class="card">.*?</div>', re.S)
 # "Vier-Augen" als Präfix (nicht nur "-Beleg"): Alt-Snapshots tragen Prüfvermerke auch
 # frei im Text ("Vier-Augen-Check bereits bestätigt", Live-Fund vom 10.08.).
-_ERFASSUNG_MARKER = ("Erfassungs-Kontext", "Vier-Augen")
+def _erfassung_marker() -> tuple:
+    """Spuren der Erfassungs-Interna im Text (beide Sprachen): bleibt nach dem Entfernen eine übrig, wird die Datei
+    übersprungen."""
+    return fassungen("Erfassungs-Kontext") + fassungen("Vier-Augen")
 
 
 def _snapshot_bereinigt(quelle: Path):
@@ -236,8 +257,8 @@ def _snapshot_bereinigt(quelle: Path):
     NACHWEISLICH gelungen ist (Alt-Struktur): dann wird die Datei übersprungen und gemeldet,
     nie geraten (Laufzeit-Guard zusätzlich zur Sperrlisten-Testabdeckung)."""
     html_text = quelle.read_text(encoding="utf-8", errors="replace")
-    bereinigt = _ERFASSUNG_RE.sub("", html_text)
-    if any(m in bereinigt for m in _ERFASSUNG_MARKER):
+    bereinigt = _erfassung_re().sub("", html_text)
+    if any(m in bereinigt for m in _erfassung_marker()):
         return None
     return bereinigt
 
@@ -250,7 +271,7 @@ def _artefakte_fuer_job(s: Session, job: Job, typen: list) -> list:
         if comp and comp.fit_analysis_path:
             p = _rel_datei(comp.fit_analysis_path)
             if p.is_file():
-                gefunden.append(("Company-Fit", p))
+                gefunden.append((tx("Company-Fit"), p))
     if "Match" in typen:
         cv = s.exec(select(CVVersion).where(CVVersion.job_id == job.id,
                                             CVVersion.match_dashboard_path.is_not(None))
@@ -258,14 +279,15 @@ def _artefakte_fuer_job(s: Session, job: Job, typen: list) -> list:
         if cv and cv.match_dashboard_path:
             p = _rel_datei(cv.match_dashboard_path)
             if p.is_file():
-                gefunden.append(("Match", p))
+                gefunden.append((tx("Match"), p))
     return gefunden
 
 
 def export(dry_run: bool = False) -> dict:
     init_db()
     cfg = _lade_config()
-    stand = datetime.datetime.now().strftime("%d.%m.%Y %H:%M")
+    jetzt = datetime.datetime.now()
+    stand = f"{datum(jetzt)} {jetzt:%H:%M}"
     geltend = design.laden()     # P2-72: EIN Stand des Designs für alle Seiten dieses Exports
     mit_digest = bool(cfg["tages_digest"])      # P2-79: false → weder digest.html noch Reiter
     kopien = []          # (Quelle, Zielname)
@@ -304,10 +326,10 @@ def export(dry_run: bool = False) -> dict:
                         uebersprungen.append(p.name)
                     else:
                         snapshot_texte[p.name] = bereinigt
-                        links.append(f'<a class="report" href="artefakte/{_e(p.name)}">Anzeige</a>')
+                        links.append(f'<a class="report" href="artefakte/{_e(p.name)}">{tx("Anzeige")}</a>')
             return (
                 f"<tr><td>{_score_badge(j.match_score)}</td><td><b>{_e(j.company_name)}</b></td>"
-                f"<td>{_e(j.title)}</td><td>{_e(j.seniority or '–')}</td>"
+                f"<td>{_e(j.title)}</td><td>{_e(uebersetzt(j.seniority) or '–')}</td>"
                 f"<td>{_e(j.location or '–')}</td><td>{_status_pille(j.status)}</td>"
                 f"<td>{_e(j.found_date or '–')}</td>"
                 f"<td>{_beworben_am_zelle(beworben.get(j.id), j.status)}</td>"
@@ -319,17 +341,18 @@ def export(dry_run: bool = False) -> dict:
             gruppe.sort(key=lambda j: (rang.get(j.status, 99), -(j.match_score or 0)))
             if not gruppe:
                 return (f"<section><h2>{_e(titel)} (0)</h2>"
-                        '<p class="muted" style="font-size:13px">Aktuell keine Stellen in diesen Status.</p></section>')
+                        f'<p class="muted" style="font-size:13px">{tx("Aktuell keine Stellen in diesen Status.")}</p></section>')
             zeilen = "".join(_job_zeile(j) for j in gruppe)
             return (f"<section><h2>{_e(titel)} ({len(gruppe)})</h2><table>"
-                    "<thead><tr><th>Fit</th><th>Firma</th><th>Rolle</th><th>Ebene</th><th>Standort</th>"
-                    "<th>Status</th><th>Gefunden</th><th>Beworben am</th><th>Reports</th></tr></thead>"
+                    f"<thead><tr><th>{tx('Fit')}</th><th>{tx('Firma')}</th><th>{tx('Rolle')}</th><th>{tx('Ebene')}</th>"
+                    f"<th>{tx('Standort')}</th><th>{tx('Status')}</th><th>{tx('Gefunden')}</th>"
+                    f"<th>{tx('Beworben am')}</th><th>{tx('Reports')}</th></tr></thead>"
                     f"<tbody>{zeilen}</tbody></table></section>")
 
         stellen_html = _seite(
-            "Stellen & Bewerbungen", "stellen",
-            _sektion("Aktive Bewerbungen", cfg["status_aktiv"])
-            + _sektion("Sichtung & Prüfung", cfg["status_vorstufe"]), stand, geltend, tages_digest=mit_digest)
+            tx("Stellen & Bewerbungen"), "stellen",
+            _sektion(tx("Aktive Bewerbungen"), cfg["status_aktiv"])
+            + _sektion(tx("Sichtung & Prüfung"), cfg["status_vorstufe"]), stand, geltend, tages_digest=mit_digest)
 
         # ── absagen.html ───────────────────────────────────────────────────────────
         absagen.sort(key=lambda j: (j.found_date or ""), reverse=True)
@@ -338,7 +361,7 @@ def export(dry_run: bool = False) -> dict:
             a_zeilen.append(
                 f"<tr><td>{_score_badge(j.match_score)}</td><td><b>{_e(j.company_name)}</b></td>"
                 f"<td>{_e(j.title)}</td><td>{_e(kanaele.get(j.id) or '–')}</td>"
-                f"<td class=grund>{_e(gruende.get(j.id) or '')  or '<span class=muted>kein Grund erfasst</span>'}</td></tr>")
+                f"<td class=grund>{_e(gruende.get(j.id) or '')  or '<span class=muted>' + tx('kein Grund erfasst') + '</span>'}</td></tr>")
         analyse_link = ""
         if cfg.get("absagen_analyse_report"):
             # P2-79: Der neueste Bericht und sein Datum kommen aus `absagen_bericht` (Datum aus dem
@@ -346,15 +369,16 @@ def export(dry_run: bool = False) -> dict:
             # Der Coach sieht so, wie alt die Analyse ist, die er liest.
             bericht = absagen_bericht.neuester()
             if bericht:
-                datei, datum = bericht
+                datei, berichtsdatum = bericht
                 kopien.append((datei, datei.name))
-                analyse_link = (f'<section><h2>Lost-Order-Analyse</h2><p style="font-size:13.5px">'
+                analyse_link = (f'<section><h2>{tx("Lost-Order-Analyse")}</h2><p style="font-size:13.5px">'
                                 f'<a class="report" href="artefakte/{_e(datei.name)}">'
-                                f"Vollständiger Muster-Bericht vom {datum:%d.%m.%Y}</a></p></section>")
+                                f'{tx("Vollständiger Muster-Bericht vom {datum}", datum=datum(berichtsdatum))}</a></p></section>')
         absagen_html = _seite(
-            "Absagen & Muster", "absagen",
-            f"<section><h2>Absagen ({len(absagen)})</h2><table>"
-            "<thead><tr><th>Fit</th><th>Firma</th><th>Rolle</th><th>Kanal</th><th>Absagegrund</th></tr></thead>"
+            tx("Absagen & Muster"), "absagen",
+            f"<section><h2>{tx('Absagen ({anzahl})', anzahl=len(absagen))}</h2><table>"
+            f"<thead><tr><th>{tx('Fit')}</th><th>{tx('Firma')}</th><th>{tx('Rolle')}</th><th>{tx('Kanal')}</th>"
+            f"<th>{tx('Absagegrund')}</th></tr></thead>"
             f"<tbody>{''.join(a_zeilen)}</tbody></table></section>{analyse_link}", stand, geltend, tages_digest=mit_digest)
 
         # ── index.html ─────────────────────────────────────────────────────────────
@@ -363,11 +387,11 @@ def export(dry_run: bool = False) -> dict:
             counts[j.status or "Neu"] = counts.get(j.status or "Neu", 0) + 1
         laufend = sum(counts.get(st, 0) for st in ("Beworben", "Interview", "Angebot"))
         kpis = [
-            ("Stellen gesamt", len(alle_aktiv), False),
-            ("Top-Zielstellen ≥4", sum(1 for j in alle_aktiv if (j.match_score or 0) >= 4), True),
-            ("Laufende Bewerbungen", laufend, True),
-            ("Interviews", counts.get("Interview", 0), False),
-            ("Absagen", counts.get("Absage", 0), False),
+            (tx("Stellen gesamt"), len(alle_aktiv), False),
+            (tx("Top-Zielstellen ≥4"), sum(1 for j in alle_aktiv if (j.match_score or 0) >= 4), True),
+            (tx("Laufende Bewerbungen"), laufend, True),
+            (tx("Interviews"), counts.get("Interview", 0), False),
+            (tx("Absagen"), counts.get("Absage", 0), False),
         ]
         kpi_html = "".join(
             f'<div class="kpi {"acc" if acc else ""}"><div class="n">{n}</div><div class="l">{_e(l)}</div></div>'
@@ -381,13 +405,13 @@ def export(dry_run: bool = False) -> dict:
             if not n:
                 continue
             bg, _txt = zustandsfarben.status_farbe(st)
-            reihen.append(f'<div class="balkenreihe"><span class="label">{_e(st)}</span>'
+            reihen.append(f'<div class="balkenreihe"><span class="label">{_e(uebersetzt(st))}</span>'
                           f'<div class="balken"><div style="width:{n / max_n * 100:.0f}%;background:{bg}"></div></div>'
                           f'<span class="n">{n}</span></div>')
         index_html = _seite(
-            "Bewerbungs-Übersicht", "index",
+            tx("Bewerbungs-Übersicht"), "index",
             f'<div class="kpis">{kpi_html}</div>'
-            f"<section><h2>Verteilung nach Status</h2>{''.join(reihen)}</section>",
+            f"<section><h2>{tx('Verteilung nach Status')}</h2>{''.join(reihen)}</section>",
             stand, geltend, tages_digest=mit_digest)
 
     dateien = {"index.html": index_html, "stellen.html": stellen_html,
@@ -399,8 +423,10 @@ def export(dry_run: bool = False) -> dict:
     # seine Zeilen kommt aus digest.py und wird hinter das Seiten-CSS gehängt, damit es nur dort steht.
     if mit_digest:
         dateien["digest.html"] = _seite(
-            "Tages-Digest", "digest",
-            f'<div class="sub">Digest vom {datetime.date.today():%d.%m.%Y} · wird mit jedem Tageslauf erneuert</div>'
+            tx("Tages-Digest"), "digest",
+            '<div class="sub">'
+            + tx("Digest vom {datum} · wird mit jedem Tageslauf erneuert", datum=datum(datetime.date.today()))
+            + '</div>'
             + digest.digest_inhalt(fuer_coach=True),
             stand, geltend, tages_digest=mit_digest, css_zusatz=digest.zeilen_css(geltend))
 

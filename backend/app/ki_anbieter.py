@@ -27,6 +27,7 @@ from sqlmodel import Session
 
 from app.db import DATA_DIR, engine
 from app.models import SuchEinstellung
+from app.sprache import tx, uebersetzt
 
 CLAUDE = "claude"
 CHATGPT = "chatgpt"
@@ -70,7 +71,10 @@ def aktiv(session: Optional[Session] = None) -> str:
 
 
 def modell_optionen(anbieter: str, claude_optionen: list) -> list:
-    return CODEX_MODELL_OPTIONEN if anbieter == CHATGPT else claude_optionen
+    if anbieter != CHATGPT:
+        return claude_optionen
+    # Die Beschriftung steht als deutsche Konstante (Tests vergleichen sie), übersetzt wird beim Antworten.
+    return [{"alias": o["alias"], "label": uebersetzt(o["label"])} for o in CODEX_MODELL_OPTIONEN]
 
 
 def _programm(name: str) -> Optional[str]:
@@ -192,9 +196,9 @@ class CodexAuswertung:
             u = ev.get("usage") or {}
             self.neue_token += (u.get("input_tokens") or 0) - (u.get("cached_input_tokens") or 0) + (u.get("output_tokens") or 0)
         elif typ == "turn.failed":
-            self.fehler = ((ev.get("error") or {}).get("message") or "Lauf fehlgeschlagen")
+            self.fehler = ((ev.get("error") or {}).get("message") or tx("Lauf fehlgeschlagen"))
         elif typ == "error":
-            self.fehler = ev.get("message") or "Fehler"
+            self.fehler = ev.get("message") or tx("Fehler")
 
     def ergebnis(self, rohzeile: str = "") -> dict:
         fehler = self.fehler or ("" if self.turn_fertig else rohzeile)
@@ -202,10 +206,12 @@ class CodexAuswertung:
         if fehler:
             if _ABO_LIMIT_RE.search(fehler):
                 subtype = "abo_limit"
-                fehler = f"Das Nutzungslimit Ihres ChatGPT-Abos ist erreicht. Später erneut starten. ({fehler[:200]})"
+                fehler = tx("Das Nutzungslimit Ihres ChatGPT-Abos ist erreicht. Später erneut starten. ({grund})",
+                            grund=fehler[:200])
             elif _ANMELDUNG_RE.search(fehler):
                 subtype = "anmeldung"
-                fehler = f"Die ChatGPT-Anmeldung fehlt oder ist abgelaufen: im Terminal `codex login`. ({fehler[:200]})"
+                fehler = tx("Die ChatGPT-Anmeldung fehlt oder ist abgelaufen: im Terminal `codex login`. ({grund})",
+                            grund=fehler[:200])
             else:
                 subtype = "error"
         return {"type": "result", "subtype": subtype, "is_error": bool(fehler),

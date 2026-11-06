@@ -1,0 +1,34 @@
+{
+  "lade": "Loading…",
+  "untertitel": "Next steps that are due & upcoming conversations · You set the due date in the job details · ✉️ copies the follow-up trigger",
+  "nachfass": "✉️ Follow up",
+  "naechster_schritt": "Next step:",
+  "leer": "No follow-ups set yet. Open a job (due date under “Next steps & follow-up”) or set a “Due on” action on a network contact.",
+  "tage": {
+    "heute": "due today",
+    "ueberfaellig_one": "{{count}} day overdue",
+    "ueberfaellig_other": "{{count}} days overdue",
+    "morgen": "tomorrow",
+    "in_tagen_one": "in {{count}} day",
+    "in_tagen_other": "in {{count}} days"
+  },
+  "gespraeche": {
+    "titel": "🎙️ Upcoming conversations ({{anzahl}})",
+    "gespraech": "Conversation",
+    "runde": "Round {{runde}} · {{art}}",
+    "briefing": "📋 Briefing",
+    "route": "🗺️ Route",
+    "route_titel": "Route from home (Google Maps)",
+    "termin_fehlt": "No date yet — set it in the job details"
+  },
+  "stellen": {
+    "ueberfaellig": "🔴 Jobs — overdue & today ({{anzahl}})",
+    "nichts_ueberfaellig": "Nothing overdue — all clear. 👍",
+    "anstehend": "⏳ Jobs — upcoming ({{anzahl}})",
+    "keine_anstehend": "No upcoming follow-ups."
+  },
+  "netzwerk": {
+    "titel": "🤝 Network actions ({{anzahl}})",
+    "naechste_aktion": "Next action:"
+  }
+}

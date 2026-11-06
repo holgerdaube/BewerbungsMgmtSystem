@@ -170,6 +170,13 @@ Releases nur über `release.yml`, nie von Hand hochgeladene Pakete.
 Ein Brückenpaket gibt es nicht: Sie bekommen 2.0.0 einmal als ZIP-Datei im Download-Ordner (von der
 Release-Seite) und aktualisieren sich danach selbst.
 
+## Kurzprüfung Mehrsprachigkeit
+
+Vor jeder Freigabe, zusätzlich zur Probe: `scripts/test.sh` und CI grün, `scripts/uebersetzung.sh --pruefen --alle` ohne
+Fund, `backend/tests/abnahme/design_vergleich.py` für Deutsch gegen die letzte Freigabe, dazu in einer Probe-Kopie der
+erste Start auf Englisch, der Rundgang über alle Seiten und eine Kette `firma-pruefen` bis `anschreiben-erstellen`.
+`veroeffentlichen.sh --pruefen` läuft erst auf `main`. Beschreibung und Topics des öffentlichen Repos sind englisch.
+
 ## Probebau
 
 Um den Release-Workflow selbst zu prüfen, ohne ein echtes Release zu erzeugen (z. B. nach einer
@@ -317,7 +324,7 @@ sagt, was fehlte. Das Export-Werkzeug bricht in diesem Fall ab. Kein Fund und ke
 Muster; Funde nennen Datei, Zeile und Regel mit einem gekürzten Ausschnitt der Datei.
 
 **Der Name des Autors** gilt als ganzes Wort überall als Fund, außer in der Zuschreibungsliste (`NOTICE`,
-`LICENSE`, `frontend/src/rechtliches/ueber.md` und die Abschnitte „Autor“ und „Lizenz“ der `README.md`).
+`LICENSE`, `frontend/src/rechtliches/ueber.md`, `ueber.en.md` und die Abschnitte zu Autor und Lizenz in `README.md` und `README.de.md`).
 „Daube.Tech“ zählt nicht als Nachname, und `holgerdaube/BewerbungsMgmtSystem` ist die einzig erlaubte Form
 des Kontonamens.
 

@@ -320,7 +320,7 @@ def test_paarigkeit_im_echten_docs_ordner():
     sagt in der Fehlermeldung, was zu tun ist."""
     from pipeline import docs_render
 
-    md_dateien = sorted(docs_render._DOCS_DIR.glob("*.md"))
+    md_dateien = docs_render._ziel_dateien(None)
     assert md_dateien, "keine docs/*.md gefunden — Projektstruktur/PROJECT_ROOT geprüft?"
 
     fehler = docs_render.pruefen(md_dateien)

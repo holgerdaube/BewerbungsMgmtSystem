@@ -1,40 +1,40 @@
-# Sicherheitshinweise
+# Security
 
-Das Bewerbungs-Management-System (BMS) läuft lokal auf dem Rechner der Nutzerin oder des Nutzers und
-verarbeitet persönliche Daten (Lebenslauf, Bewerbungsverlauf, E-Mails). Sicherheitslücken nehmen wir
-deshalb ernst. Danke, wenn Sie uns eine melden.
+**English** · [Deutsch](SECURITY.de.md)
 
-## Eine Sicherheitslücke melden
+BMS – Job Application Management System runs locally on the user's computer and processes personal data (CV,
+application history, emails). We therefore take security vulnerabilities seriously. Thank you for reporting one.
 
-Bitte melden Sie Sicherheitslücken **nicht** als öffentliches Issue, in einem Pull Request oder in einer
-Diskussion. Nutzen Sie stattdessen die private Sicherheitsmeldung von GitHub:
+## Reporting a vulnerability
 
-1. Öffnen Sie https://github.com/holgerdaube/BewerbungsMgmtSystem/security.
-2. Wählen Sie **Report a vulnerability** („Sicherheitslücke melden“).
-3. Beschreiben Sie das Problem. Die Meldung sehen nur Sie und die Verantwortlichen des Projekts.
+Please do **not** report vulnerabilities in a public issue, a pull request or a discussion. Use GitHub's private
+vulnerability reporting instead:
 
-Wir bestätigen den Eingang, melden uns mit einer ersten Einschätzung und stimmen mit Ihnen ab, wann ein
-Fehler öffentlich beschrieben wird. Eine feste Antwortfrist können wir nicht zusagen.
+1. Open https://github.com/holgerdaube/BewerbungsMgmtSystem/security.
+2. Choose **Report a vulnerability**.
+3. Describe the problem. Only you and the people responsible for the project can see the report.
 
-## Was in die Meldung gehört
+We confirm receipt, get back to you with a first assessment and agree with you when a bug will be described
+publicly. We cannot promise a fixed response time.
 
-- Welche Version betroffen ist (Fuß der Seitenleiste oder Datei `VERSION`) und auf welchem System (macOS
-  oder Windows) Sie sie nutzen.
-- Was passiert und was Sie erwartet hätten, möglichst mit den Schritten zum Nachstellen.
-- Welche Folgen Sie sehen, etwa welche Daten ein Angreifer lesen oder verändern könnte.
-- Wenn Sie einen Lösungsvorschlag haben, gern auch den.
+## What belongs in the report
 
-**Schicken Sie keine Zugangsdaten und keine echten persönlichen Daten mit:** keine Passwörter, Token,
-API-Schlüssel, Lebensläufe, E-Mails oder Datenbankdateien. Schwärzen Sie solche Stellen in Auszügen und
-Bildschirmfotos, oder erfinden Sie Beispielwerte, mit denen sich das Problem trotzdem zeigen lässt.
+- Which version is affected (bottom of the sidebar or the `VERSION` file) and on which system (macOS or Windows)
+  you use it.
+- What happens and what you expected, if possible with the steps to reproduce it.
+- What consequences you see, such as which data an attacker could read or change.
+- If you have a suggested fix, that too.
 
-## Unterstützte Versionen
+**Do not send any credentials or real personal data:** no passwords, tokens, API keys, CVs, emails or database
+files. Black out such parts in excerpts and screenshots, or invent sample values that still show the problem.
 
-Sicherheitskorrekturen erscheinen nur für die **neueste Version**. Prüfen Sie vor einer Meldung, ob das
-Problem dort noch auftritt. Wie Sie aktualisieren, steht in der [README](README.md), Abschnitt „Updates“.
+## Supported versions
 
-## Was nicht dazugehört
+Security fixes are released only for the **latest version**. Before reporting, check whether the problem still
+occurs there. How to update is in the [README](README.md), section “Updates”.
 
-Fehler ohne Sicherheitsbezug melden Sie bitte als normales Issue:
-https://github.com/holgerdaube/BewerbungsMgmtSystem/issues. Probleme in Diensten, die das BMS nur anbindet
-(Claude, ChatGPT, Gmail, Apify, GitHub), melden Sie bitte dem jeweiligen Anbieter.
+## What does not belong here
+
+Please report bugs without a security aspect as a normal issue:
+https://github.com/holgerdaube/BewerbungsMgmtSystem/issues. Please report problems in services that BMS only
+connects to (Claude, ChatGPT, Gmail, Apify, GitHub) to the provider concerned.

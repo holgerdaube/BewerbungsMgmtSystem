@@ -35,6 +35,7 @@ from sqlmodel import Session
 from app.db import DATA_DIR, engine, init_db
 from app.models import Job
 from app.favicon import favicon_link
+from app.sprache import html_lang, tx, uebersetzt
 from pipeline.bericht_stil import DRUCK_SEITENFARBE_BEHALTEN, bericht_css
 
 # T1-Regel (s. posting_snapshot.py): IMMER über DATA_DIR aus app.db — folgt dem Test-Override
@@ -62,7 +63,12 @@ def _esc(s) -> str:
 # SKILL.md an register() übergibt) — die Darstellung (Dot-Klasse + Label) kommt aus dem Code.
 _AMPEL_WERTE = {"gruen", "gelb", "rot"}
 _AMPEL_DOT = {"gruen": "green", "gelb": "amber", "rot": "red"}
-_AMPEL_LABEL = {"gruen": "Grün", "gelb": "Gelb", "rot": "Rot"}
+
+
+def _ampel_label(wert: str) -> str:
+    """Beschriftung der Ampel in der Sprache, die beim Erzeugen gilt (nie beim Import)."""
+    return {"gruen": tx("Grün"), "gelb": tx("Gelb"), "rot": tx("Rot")}[wert]
+
 
 # Kanon-Abschnitte mit festem Karten-Layout (die kuratierte Referenz vom 08.08.). Unbekannte Schlüssel → ValueError
 # (Tippfehler sollen knallen, nicht still verschwinden — Muster posting_snapshot).
@@ -84,8 +90,6 @@ _EINFLUSS_SCHLUESSEL = {"faktor", "wert", "warum", "relevanz"}
 _EINFLUSS_BADGE = {"pos": "+", "neu": "0", "neg": "−"}
 _QUELLEN_SCHLUESSEL = {"label", "url"}
 
-_FOOT_HINWEIS_DEFAULT = "Fakten mit Quelle · Einschätzungen als Annahme markiert"
-
 
 def _absaetze(text) -> str:
     text = "" if text is None else str(text).strip()
@@ -100,7 +104,7 @@ def _kv_absaetze(wert) -> str:
             inhalt = _absaetze(text)
             if not inhalt:
                 continue
-            teile.append(f'<p class="kv">{_esc(label)}</p>{inhalt}')
+            teile.append(f'<p class="kv">{_esc(uebersetzt(label))}</p>{inhalt}')
         return "".join(teile)
     return _absaetze(wert)
 
@@ -144,7 +148,8 @@ def _einfluss_tabelle(zeilen) -> str:
             f'<td>{_esc(z.get("warum"))}</td>\n'
             f'<td class="rel">{_esc(z.get("relevanz"))}</td>\n</tr>')
     return ('<table class="score">\n'
-            "<thead><tr><th>Faktor</th><th>Wert</th><th>Warum</th><th>Relevanz</th></tr></thead>\n"
+            f"<thead><tr><th>{tx('Faktor')}</th><th>{tx('Wert')}</th><th>{tx('Warum')}</th>"
+            f"<th>{tx('Relevanz')}</th></tr></thead>\n"
             "<tbody>\n" + "\n".join(tr) + "\n</tbody>\n</table>")
 
 
@@ -168,7 +173,7 @@ def _quellen_block(quellen) -> str:
             teile.append(_esc(label))
     if not teile:
         return ""
-    return ('<div class="sources">\n<h2>Quellen</h2>\n<p>\n      '
+    return ('<div class="sources">\n<h2>' + tx("Quellen") + '</h2>\n<p>\n      '
             + " ·\n      ".join(teile) + "\n    </p>\n  </div>")
 
 
@@ -228,21 +233,21 @@ def render_full(job_id: int, sub: str, fit_ampel: str, fit_text: str, bluf: str,
         job = s.get(Job, job_id)
         if not job:
             raise SystemExit(f"Job {job_id} nicht gefunden")
-        firma = job.company_name or "Unbekannte Firma"
+        firma = job.company_name or tx("Unbekannte Firma")
 
     heute = datetime.date.today().isoformat()
     erkannt = []
 
     # Kopf
-    eyebrow = "Company-Fit · Re-Check" if recheck_von else "Company-Fit"
-    meta = [("Fit-Ampel",
-             f'<span class="dot {_AMPEL_DOT[fit_ampel]}"></span>{_AMPEL_LABEL[fit_ampel]}'
+    eyebrow = tx("Company-Fit · Re-Check") if recheck_von else tx("Company-Fit")
+    meta = [(tx("Fit-Ampel"),
+             f'<span class="dot {_AMPEL_DOT[fit_ampel]}"></span>{_ampel_label(fit_ampel)}'
              + (f" · {_esc(fit_text)}" if str(fit_text or "").strip() else ""))]
     if str(markt_segment or "").strip():
-        meta.append(("Markt/Segment", _esc(markt_segment)))
-    meta.append(("Datum", heute))
+        meta.append((tx("Markt/Segment"), _esc(markt_segment)))
+    meta.append((tx("Datum"), heute))
     if str(quellen_kurz or "").strip():
-        meta.append(("Quellen", _esc(quellen_kurz)))
+        meta.append((tx("Quellen"), _esc(quellen_kurz)))
     meta_html = "".join(f'<div><p class="k">{k}</p><p class="v">{v}</p></div>' for k, v in meta)
     sub_html = f'\n    <p class="sub">{_esc(sub)}</p>' if str(sub or "").strip() else ""
 
@@ -258,7 +263,7 @@ def render_full(job_id: int, sub: str, fit_ampel: str, fit_text: str, bluf: str,
     if str(bluf or "").strip():
         erkannt.append("bluf")
         teile.append(f'''  <div class="bluf">
-    <p class="fitlabel">Kernaussage in einem Satz</p>
+    <p class="fitlabel">{tx("Kernaussage in einem Satz")}</p>
     <p>{_esc(bluf)}</p>
   </div>''')
 
@@ -268,36 +273,36 @@ def render_full(job_id: int, sub: str, fit_ampel: str, fit_text: str, bluf: str,
                                     "geschaeftsmodell_wettbewerber")
     karten = []
     if was_html:
-        karten.append(f'<div class="card">\n      <h3>Was &amp; für wen</h3>\n      {was_html}\n    </div>')
+        karten.append(f'<div class="card">\n      <h3>{_esc(tx("Was & für wen"))}</h3>\n      {was_html}\n    </div>')
     if wettbewerb_html:
-        karten.append('<div class="card">\n      <h3>Wettbewerber &amp; Marktstellung</h3>\n      '
+        karten.append(f'<div class="card">\n      <h3>{_esc(tx("Wettbewerber & Marktstellung"))}</h3>\n      '
                       f'{wettbewerb_html}\n    </div>')
     if karten:
         erkannt.append("geschaeftsmodell")
-        teile.append('  <h2 class="sec">Geschäftsmodell &amp; Marktposition</h2>\n'
+        teile.append(f'  <h2 class="sec">{_esc(tx("Geschäftsmodell & Marktposition"))}</h2>\n'
                      '  <div class="grid">\n    ' + "\n    ".join(karten) + "\n  </div>")
 
     # KI-/Digital-Disruption
     ki_html = _absaetze(abschnitte.get("ki_disruption"))
     if ki_html:
         erkannt.append("ki_disruption")
-        teile.append(f'  <h2 class="sec">KI-/Digital-Disruption</h2>\n  <div class="card">{ki_html}</div>')
+        teile.append(f'  <h2 class="sec">{tx("KI-/Digital-Disruption")}</h2>\n  <div class="card">{ki_html}</div>')
 
     # Einfluss dieser Rolle (Score-Tabelle)
     tabelle = _einfluss_tabelle(rollen_einfluss)
     if tabelle:
         erkannt.append("rollen_einfluss")
-        teile.append(f'  <h2 class="sec">Einfluss dieser Rolle auf das Unternehmen</h2>\n  {tabelle}')
+        teile.append(f'  <h2 class="sec">{tx("Einfluss dieser Rolle auf das Unternehmen")}</h2>\n  {tabelle}')
 
     # Arbeitgeber-Realität (4 Karten, feste Titel/Reihenfolge)
     ag_karten = []
     for schluessel, titel in _ARBEITGEBER_KARTEN:
         inhalt = _absaetze(arbeitgeber.get(schluessel))
         if inhalt:
-            ag_karten.append(f'<div class="card">\n      <h3>{_esc(titel)}</h3>\n      {inhalt}\n    </div>')
+            ag_karten.append(f'<div class="card">\n      <h3>{_esc(uebersetzt(titel))}</h3>\n      {inhalt}\n    </div>')
     if ag_karten:
         erkannt.append("arbeitgeber_realitaet")
-        teile.append('  <h2 class="sec">Arbeitgeber-Realität</h2>\n  <div class="grid">\n    '
+        teile.append(f'  <h2 class="sec">{tx("Arbeitgeber-Realität")}</h2>\n  <div class="grid">\n    '
                      + "\n    ".join(ag_karten) + "\n  </div>")
 
     # Chancen & Risiken (2 Karten)
@@ -305,12 +310,12 @@ def render_full(job_id: int, sub: str, fit_ampel: str, fit_text: str, bluf: str,
     risiken_html = _listen_items(abschnitte.get("risiken"), "risiken")
     cr_karten = []
     if chancen_html:
-        cr_karten.append(f'<div class="card">\n      <h3>Chancen</h3>\n      {chancen_html}\n    </div>')
+        cr_karten.append(f'<div class="card">\n      <h3>{tx("Chancen")}</h3>\n      {chancen_html}\n    </div>')
     if risiken_html:
-        cr_karten.append(f'<div class="card">\n      <h3>Risiken</h3>\n      {risiken_html}\n    </div>')
+        cr_karten.append(f'<div class="card">\n      <h3>{tx("Risiken")}</h3>\n      {risiken_html}\n    </div>')
     if cr_karten:
         erkannt.append("chancen_risiken")
-        teile.append('  <h2 class="sec">Chancen &amp; Risiken</h2>\n  <div class="grid">\n    '
+        teile.append(f'  <h2 class="sec">{_esc(tx("Chancen & Risiken"))}</h2>\n  <div class="grid">\n    '
                      + "\n    ".join(cr_karten) + "\n  </div>")
 
     # Klärungsfrage (.caveat) — str oder list[str]
@@ -318,7 +323,7 @@ def render_full(job_id: int, sub: str, fit_ampel: str, fit_text: str, bluf: str,
     fragen = [str(f).strip() for f in fragen if str(f or "").strip()]
     if fragen:
         erkannt.append("klaerungsfrage")
-        label = "Klärungsfragen fürs Gespräch" if len(fragen) > 1 else "Klärungsfrage fürs Gespräch"
+        label = tx("Klärungsfragen fürs Gespräch") if len(fragen) > 1 else tx("Klärungsfrage fürs Gespräch")
         inhalt = fragen[0] if len(fragen) == 1 else "</p><p>".join(_esc(f) for f in fragen)
         if len(fragen) == 1:
             teile.append(f'  <div class="caveat"><b>{label}:</b> {_esc(inhalt)}</div>')
@@ -332,21 +337,22 @@ def render_full(job_id: int, sub: str, fit_ampel: str, fit_text: str, bluf: str,
         teile.append("  " + quellen_html)
 
     # Footer
-    foot_links = f"Bewerbungs-Mgmt · erzeugt am {heute}"
+    foot_links = tx("Bewerbungs-Mgmt · erzeugt am {datum}", datum=heute)
     if recheck_von:
-        foot_links += f" · Re-Check des Dashboards vom {_esc(recheck_von)}"
+        foot_links += " · " + tx("Re-Check des Dashboards vom {datum}", datum=_esc(recheck_von))
     teile.append(f'''  <div class="foot">
     <span>{foot_links}</span>
-    <span>{_esc(foot_hinweis or _FOOT_HINWEIS_DEFAULT)}</span>
+    <span>{_esc(foot_hinweis or tx("Fakten mit Quelle · Einschätzungen als Annahme markiert"))}</span>
   </div>''')
 
     _FAVICON = favicon_link()      # P2-72: Icon des geltenden Designs, bei jedem Bericht frisch
+    titel_html = tx("Company-Fit · {firma}", firma=_esc(firma))
     html = f'''<!DOCTYPE html>
-<html lang="de">
+<html lang="{html_lang()}">
 <head>
 <meta charset="utf-8">{_FAVICON}
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Company-Fit · {_esc(firma)}</title>
+<title>{titel_html}</title>
 <style>{_css()}</style>
 </head>
 <body>

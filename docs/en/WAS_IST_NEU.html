@@ -1,0 +1,340 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAAXNSR0IArs4c6QAAAERlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAA6ABAAMAAAABAAEAAKACAAQAAAABAAAAIKADAAQAAAABAAAAIAAAAACshmLzAAAJHUlEQVRYCX1XaWxVxxX+7vYWPz8b22DAmH0pKSkqWZoSArgFkhCqKC11ACFUSJAqqiRVaBUpf/q7VZV0i6qIVkpEE4GasFRJJZCSKkVlCUmaIkNsoNitHeLt8by99b537+13Zu61DYo69t3OnJnzzXeWmWfgS9rjT72QHuj5YolbdWu/pPs2UaVShePYQEX+q7f1qY8gMKxYrNDYlOz+4OTro3cqGNMFW3c/W9dzve9goeju4cQLgcAKAkCUAnUTbQomWwDplxaoF36o/0lhKIdv29bNRNx5uyWd+vm5cyeG9Cg9t3pv27q/tW9g4K18wf2m53thfzRhCEJJo8kjoyIUIKFcvYfDIzn7Ai7DNE3EHetKfX1i+9WPT10VLVNu7e3PJ3v7+9/MFco0rmnU1PCu/6eeio9QqJU4Q6QksxkwJuXyzUaByHwurFh2V42NFo48sHV3nXRZcvNTc/fR+DOiYBgmL0Mhlnk4VE0gb9L0nS9csHoPBZPySS3NnhqvZKE+2fACzHVzhcx45j/nTVJnlErlPZ7vU2NqGvWqgISj5RH2a8NyD/W1QAEX8EpV+qLuUBZ2kAkfJdfd1d7ebtlbnvxhHY0vVZ3RTcAol4Z+nfSvKISBJ5PTp0YYneJladVqlVcFgU+vmwZs24YprLJPa+i3qhcsutRdarBHhiecwDAcURaNgMbNhgaYyaSOcDEuI6VbzaA//EIe/jizSq2OLqPBSqWM+a3zsHzFcqRqU8jeyqKzsxPDQxnE4nGty0lCt5iVcsFiAnMhBtdBlEHgcyIP5pNPobJglVI0DYdPiQtT7gqF6Tgonj2N6pGXYSdr4Xsea4GJvfv2o23zI6itm0FjJgFVMJIZxIm3juLdd96FbTlqITJN1BSA6EOeAqJCo1UzhmB4AHCrNG5pEKTCqq2DPXshS46FasWFlRDyfRx45lls3PQoiiWXq+7C2EgW8xYswszmZjz9o+dgWhZOHjtOJhLTzUEB8EmL5HF0CauGZaJw+Jfwuj6BESN9hBAU80is3YKa3S/Cyw7CKxVQZLis37geD67biBFSfvi1Qzj9znG4bpnG5+DA8y/igQcfwvade3DxwgUMDAzBEuIN5U8NYAoSheJoQUAAEtExk0FkE4DERst8xGY1wfvgTSQZbLFtu2CR6lxrK1557zzy2WGcPfVXsu8gmU7h1q0R/OGVl7B0xUrMnNWM1ffch76TJ2AlVfYrs3e4QDvHZED6jHCTSC0nDjvGgCwXEfvuD+B8by+sko84IyJOrPQqyqxdw2SiNgm09PZj8P23YTsJpNKOCsSbn/eioWkWGmfOVi6eWjA0A4oMWbm4QfWKD1gkyYAhqcaLM6L40VlUmubCrHoo0bRDdhwBwr4Y46ToFnHr8od0n6xQ5gPiiSSSNSm4FQ/5XE4zLL3aUOgC9SXGZZD0SKIQBA2BgRbYvCj3PjqDKmlOtT0BdF9G4cNTGJ/I42trv4WNj7WjXBnDmOHi83IZPuuD1IMtWx9Dw6wWFIpFXO+6Qla5GM4VFazQBXrl4oCIA0m5xJIVpJ+uIJ1l1s+Aud947zq8sOM7GLs8G0bbGqaai9/9/o/K74vvugdPH1yIT86+j2xmCMu+che+sX4zc8REV8cldHZ8ynQN64H2dsTAJGN8YV1g9RLKE7t+ApO+9coVbJrhodnxUW96mJPtQef1q0qvbcND2LF9G9J+hu6YA9euwYZtO7jr0T28hMkvGANvHPo1PNYL24kCUCNQDGh3RPQz9Xt7GPVx5rmHgJdZzGH/99dg+cw6MuGzBqzCvWu+TpoDplsFq+/+qXLRhU8/Q4EuyQyO0/cJBJ6Lf1/5F07/5ShTNINETVq8GzZtVQNgikU1gBGE4p9+C6/qKl/5LExx20Jp0xHkGxu4iVSVLnnhighGaj7TIMbqODFRQHZkDGdOHcONzg614tzEOJx4EnEal2oaNbEnTQPgh+wB4n9RisWI3mYllNLMS8rCxUtXka8YaJ7ZhFrW+dFCQWWBbVoYodGb/YO41t3LHCdLpTJGWQkTNbVI1s7QmaSM6+Ur4yETCgCt6ODToDiApZcDRCp1ngSwqs1FJuehq7sDTXVJHE3MxkrLw6KbPSgFlsrzdH0jxnJFHt9MOIkaVQsU+oj3SfrDZNMM5DSlCsRUFshAqZaKNg60GJjNzbNRRyOjY2O4r5yDVXaRbGpFy4w6OOwfHhpi5urjnIyLxk5zvKJd3SZL8QQ/xbhavWyVAkJaRAff6B7u34oZ0/IJogHLcwUEKQNJBpvUKQEoo3P5PMal4Ey2acuWOcNpo2cYAzoIpTcKDj1eA6ow0l99+RdoaGyER2a0DieWg4cgZ8mWA+fA4CCquVE0Bi6yBCRZImEnNqcWxm8ZE+KyNQG+cadhAaBYYRCaPEz0r3sY/81mUDh9TFEb8PCa2vQ4TJbm3InX4XPvr2eOH9+wCutWLsFLH1/Dz85/hoQTk6miBav38KYg2A12nZs1RiTnpndOrlJlR109rG8/gdhIBn52iK7gWKZf4pGdPD3Ngn+zF365hKVeEfevXgJ/Xivu77gG+VEhC4vK7pQBYcCo1KTtiqzcaF62/m9uJWjTINgp5zzBJxPwz2O59RYsRpAfB/p6WCrobwabMX8xkEzBv9ah4oNCHPzqQmxoSuM3XX14b6xCBnTplYooc+nGbd42zj2379H1YgbzlrftzbuV1+S0qpsosisEILXA53YsUtkXpC7Iu89DB/MUBk85YkCKVplMWEEVPo9fCepy91H6kdOFEYmXZMw+MNR99lVVmpLLkkcc0zitqYpQRk+BxFMhq5nFS+uIOcpYsEzmuylHNk5q0liS304irY0L0qjRsDQZb5vBP+Y3NB5W30rK29LVDzdza33D9YIt4ndpijKOm6JOiUNmojWFMrEVYr4dOuUhEGXcMs41pmM7b1w+0ycjo60JI4M38hvX3v3n4dEqfzj6zVxgLb0mZJNjeIw7yUBehnrKt8i1LHxyg+AB2+OJKtQPlL5lGAXbNjrjMetXcxbGf3z14t8zYlzaNI60QO7yi+WfnYMtnmumXJShE2mqf/ob0+f/9vNMxLixC5vXLek/dOgQf8Tf3v4HUVUeYJhDxDYAAAAASUVORK5CYII=">
+<title>What&#x27;s New? — Change Log (latest changes first)</title>
+<style>
+:root{
+  --ink:#0B1F3A;
+  --paper:#F4F7FB;
+  --card:#FFFFFF;
+  --line:#DCE4EE;
+  --muted:#5F6F84;
+  --accent:#00B4D8;
+  --amber:#E4A11B;
+  --radius:14px;
+  --shadow:0 1px 2px rgba(16,26,40,.06),0 8px 24px rgba(16,26,40,.06);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--paper);
+  color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:880px;margin:0 auto;padding:32px 20px 72px}
+
+header.head{background:var(--ink);color:#fff;border-radius:var(--radius);padding:28px 30px;
+  box-shadow:var(--shadow);margin-bottom:22px}
+header.head h1{font-size:26px;line-height:1.3;margin:0;font-weight:700;letter-spacing:-.01em}
+header.head h1 code{background:rgba(255,255,255,.16);color:#fff}
+header.head .intro{margin-top:10px;font-size:14.5px;color:#BFC7D5;max-width:65ch}
+header.head .intro p{margin:0 0 6px}
+header.head .intro p:last-child{margin-bottom:0}
+header.head .intro a{color:#fff}
+header.head .intro code{background:rgba(255,255,255,.16);color:#fff}
+/* Ein Zitat (Hinweis-Box) KANN vor der ersten ##-Überschrift stehen und landet dann im Intro
+   des dunklen Banners -- seine eigene helle Cremefläche braucht dunkle Schrift, sonst macht die
+   helle ".intro code/a"-Regel (höhere Selektor-Spezifität wegen zweier Klassen) Inline-Code/
+   Links darin fast unsichtbar (weiß auf Creme). Deshalb hier gezielt zurückgesetzt. */
+header.head .intro blockquote{color:#5F4A1F}
+header.head .intro blockquote a{color:var(--accent)}
+header.head .intro blockquote code{background:rgba(11,31,58,.08);color:#5F4A1F}
+
+section.card{background:var(--card);border:1px solid var(--line);border-radius:12px;
+  padding:18px 22px 22px;box-shadow:var(--shadow);margin-bottom:16px}
+section.card:last-child{margin-bottom:0}
+section.card>h2:first-child{margin-top:0}
+section.card h2{font-size:18px;margin:0 0 14px;font-weight:700;letter-spacing:-.01em;
+  padding-bottom:10px;border-bottom:2px solid var(--accent)}
+section.card h3{font-size:15.5px;margin:20px 0 8px;font-weight:700}
+section.card h3:first-child{margin-top:0}
+section.card h4{font-size:13px;margin:16px 0 6px;font-weight:700;color:var(--muted);
+  text-transform:uppercase;letter-spacing:.05em}
+section.card p{margin:0 0 12px;font-size:14.5px}
+section.card p:last-child{margin-bottom:0}
+section.card ul,section.card ol{margin:0 0 12px;padding-left:22px;font-size:14.5px}
+section.card ul ul,section.card ol ol,section.card ul ol,section.card ol ul{margin:4px 0}
+section.card li{margin-bottom:5px}
+section.card li:last-child{margin-bottom:0}
+section.card a{color:var(--accent);text-decoration:none;font-weight:600}
+section.card a:hover{text-decoration:underline}
+section.card hr{border:none;border-top:1px solid var(--line);margin:18px 0}
+
+code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.92em}
+:not(pre)>code{background:#EAF0F6;border-radius:4px;padding:1px 6px;color:var(--ink)}
+pre{background:var(--ink);color:#EAF0F6;border-radius:10px;padding:14px 16px;overflow-x:auto;
+  font-size:13px;margin:0 0 14px;line-height:1.5}
+section.card pre:last-child{margin-bottom:0}
+pre code{background:none;padding:0;color:inherit;font-size:inherit}
+
+.tablewrap{overflow-x:auto;margin:0 0 14px}
+section.card .tablewrap:last-child{margin-bottom:0}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{text-align:left;background:#EAF0F6;color:var(--ink);font-weight:700;padding:8px 12px;
+  border:1px solid var(--line);white-space:nowrap}
+td{padding:8px 12px;border:1px solid var(--line);vertical-align:top}
+
+blockquote{background:#FBF3E6;border:1px solid #ECD9B3;border-left:4px solid var(--amber);
+  border-radius:10px;padding:10px 16px;margin:0 0 14px;color:#5F4A1F;font-size:14px}
+section.card blockquote:last-child{margin-bottom:0}
+blockquote p{margin:0 0 6px;color:inherit;font-size:inherit}
+blockquote p:last-child{margin-bottom:0}
+blockquote code{background:rgba(11,31,58,.08)}
+
+@media (max-width:640px){
+  .wrap{padding:20px 14px 48px}
+  header.head{padding:20px 22px}
+}
+@media print{
+  body{background:#fff}
+  .wrap{max-width:100%;padding:10px 6px}
+  header.head,section.card{box-shadow:none}
+  section.card{page-break-inside:avoid;border-color:#ccc}
+  pre{white-space:pre-wrap;word-break:break-word}
+  a{color:inherit;text-decoration:none}
+}
+</style></head><body><div class="wrap">
+<header class="head"><h1>What's New? — Change Log (latest changes first)</h1><div class="intro"><p>This file grows with every larger build session. The latest period is always at the top, and older
+sections are kept below. Details and verifications for each item are in the author's project history
+(one ticked-off plan per build session with a "Review" paragraph; that is the source of this log).
+It is not part of the public repository.</p></div></header>
+<section class="card"><h2>13 Aug 2026 — More interview rounds, clearer names</h2><p>(Phase 84.)</p>
+<h3>For everyday work</h3>
+<ul>
+<li><strong>Any number of interview rounds, right at the transcript.</strong> In the transcript dialog, below
+  the round selection, there is now "<strong>+ Create new round…</strong>": enter the number and interview type, done.
+  No more detour through a second dialog. New here is the type "<strong>Headhunter screen</strong>" for the
+  preliminary conversation with a recruiter. The "Counterpart" field fills itself to match the type
+  (technical interview → department, headhunter screen → headhunter); if you deliberately set
+  something else, your choice stays. The round is only created when you save,
+  so if you cancel, nothing is left behind.</li>
+<li><strong>The job score is now called "target-role fit".</strong> Until now, three different ratings
+  in the system were all called "match": the rating of the <em>job</em> (1–5), the rating of your <em>CV</em> against the
+  posting (0–100) and the ATS value. The job score therefore now has its own name:
+  <strong>target-role fit</strong>. It measures the job against your target profile (situation · function · region).
+  Here is how you recognise it: dashboard tile "<strong>Top target roles (≥4)</strong>" and bar "<strong>By
+  target-role fit</strong>", in the job list the filter (<code>Zielstellen-Fit ≥ 4</code>) and sorting, the
+  tooltip on the coloured number, the field when creating a job manually, and the tile in the
+  daily digest. An overview of all three ratings is in <code>ANLEITUNG.md</code>, section 4.
+  <strong>Nothing about the rating itself has changed</strong>: the same rating grid, the same stored
+  values. The status "No match" is still called that, too.</li>
+</ul>
+<hr></section><section class="card"><h2>25 Jul–12 Aug 2026 — Coach access, more robust application tracking, uniform design</h2><p>(Phases 73–82.)</p>
+<h3>For everyday work</h3>
+<ul>
+<li><strong>Career page fallback when a portal is closed:</strong> If the company check detects that a
+  job is no longer active on the original portal, the system automatically searches
+  the company's career page for the same job. Here is how you recognise it: job detail → key facts — a new
+  "Career page" row (link) and, if applicable, a red row "Portal application:
+  closed". You can also set both by hand in edit mode.</li>
+<li><strong>Weekly applied-jobs check:</strong> For every running application (Applied/Interview), the
+  system automatically checks in the daily run whether the job is still advertised. Your application status
+  itself is never touched; that remains your decision alone. Here is how you recognise it:
+  job detail → key facts row "Availability" (with check date); job list → badge
+  "⛔ offline"; dashboard → tile "Applied jobs offline" (only visible if there are any).
+  Trigger it manually: Review page → button "Applied-jobs check".</li>
+<li><strong>Posting snapshots clearly structured again:</strong> The snapshot of a job posting now once more reliably separates
+  tasks, requirements, benefits, "About the company" and context
+  from one another, including a separate section "⚠️ Contradictions" if the posting and the captured
+  key facts diverge. Here is how you recognise it: job detail → posting snapshot (after the
+  company check).</li>
+<li><strong>Excel export with the real screening-out reason:</strong> In the "Screened out" sheet, the "Reason" column
+  now shows the actual reason (from your notes or the match rationale) instead of the always
+  empty "Next step" column. Both job sheets also show the match score as a
+  number from 0–100, and the Advisory Board column is condensed to a number + traffic-light colour. Here is how you recognise it:
+  dashboard → "⬇ Excel export".</li>
+<li><strong>AI questions about a job can be cancelled:</strong> If the answer to "Ask about this job (AI)"
+  takes too long, a new "Cancel" button ends it immediately. Even after a page reload
+  while the answer is still running, the page finds the running request again and the
+  Cancel button stays available. Here is how you recognise it: job detail → section
+  "Ask about this job (AI)".</li>
+<li><strong>New "Email check" button:</strong> The daily Gmail check can now also be
+  triggered by hand, without waiting for the next daily run. Here is how you recognise it: Review page →
+  button row, right next to "Applied-jobs check".</li>
+</ul>
+<h3>New: Coach site</h3>
+<p>An external coach can now read along, if you want, with read-only access: overview, active
+applications and screening/review (New + To review) with company fit, match and job posting
+for each job, plus rejections with reasons. The coach <strong>never</strong> gets to see emails, notes, Advisory Board checks, salaries
+and transcripts.</p>
+<ul>
+<li><strong>Fully configurable via Settings</strong> (previously it could only be set up via a local
+  configuration file): Settings → "Coach site" card — address of the site, upload target
+  (SFTP host/user/password/target directory), server path to the credentials file (button
+  "detect automatically" instead of looking up values by hand), a separate coach login (user + password,
+  hashed securely on your machine) and an on/off switch. In addition, "Test connection" and
+  "Update coach site now". Otherwise it updates itself automatically at the end of every
+  daily run.</li>
+<li><strong>Own favicon:</strong> Every coach page and every document exported for the coach now shows
+  the app icon in the browser tab instead of an empty placeholder.</li>
+<li><strong>Own guide:</strong> A step-by-step guide including an "If something doesn't
+  work" section is at <code>docs/ANLEITUNG_COACH_SITE.md</code> (linked from the Settings card)
+  and also as a printable HTML manual.</li>
+</ul>
+<h3>Under the hood</h3>
+<ul>
+<li><strong>Design brought fully in line with the style guide:</strong> The app interface and all generated
+  reports (company fit, digest, Advisory Board synthesis) now consistently use the same colour and
+  font basis (including cyan primary buttons instead of navy, real Montserrat/Inter fonts instead of the
+  browser default). You notice it as a more uniform look across the whole app and all
+  reports.</li>
+<li><strong>Workday-compatible base CVs:</strong> The base CVs (the starting point for every CV match) have been
+  rebuilt so that Workday application forms ("Autofill with Resume") read title, company and
+  period for each position correctly instead of shifting the title by one position.</li>
+<li><strong>cv-match now always rebuilds:</strong> A "CV match" or "match again" run is guaranteed to take the
+  current base CV file as its starting point and creates a fresh draft, so an older draft version is
+  never silently recycled any more.</li>
+<li><strong>Uniform sign-in for background runs:</strong> Advisory Board runs now use the same
+  sign-in route as the other skills. This prevents several background runs started at the same time
+  from locking each other out, as occasionally happened before.</li>
+</ul>
+<hr></section><section class="card"><h2>9 Jul 2026 — Walkthrough of the changes from the big expansion day</h2><p>Everything from the big expansion day: follow-ups, interviews, rejection analysis, cover letters, speculative-application workflow,
+mobile. <strong>Here is how you recognise each change in the app</strong>: just walk through the click paths.
+(Phases 6–8.)</p>
+<hr>
+<h3>1. Dashboard — http://localhost:8000</h3>
+<ul>
+<li><strong>Everything is clickable now:</strong> Every KPI tile has a → arrow and leads to the matching list
+  (jobs, top matches, running applications, companies, inbox). The funnel bars are links too.</li>
+<li><strong>The four bar tiles as well</strong> (By status / Match score / Situation / Portal, "· clickable" in the title):
+  each bar opens the job list with exactly that filter, including a filter chip to deselect it.</li>
+<li><strong>New at the top: the follow-up banner</strong> ("⏰ Follow-ups at a glance / 12 open") → leads to the new follow-up page.</li>
+<li><strong>New tile "Applications (running)"</strong>: counts only Applied/Interview/Offer, not history.</li>
+<li><strong>Numbers are cleaned up:</strong> Duplicate pairs were merged (with your approval).</li>
+</ul>
+<h3>2. Sidebar — new menu item</h3>
+<ul>
+<li><strong>"⏰ Follow-ups"</strong> between Review and Pipeline. A red badge = number of overdue follow-ups.</li>
+</ul>
+<h3>3. Follow-ups page — /followups (completely new)</h3>
+<ul>
+<li><strong>🎙️ Upcoming interviews</strong> right at the top: all scheduled interviews with a briefing link, if applicable 🗺️ Route,
+  and a "Date missing" warning (an interview without a date is flagged there).</li>
+<li><strong>🔴 Overdue &amp; today</strong> / <strong>⏳ Upcoming</strong>: all jobs with a due date. Unanswered
+  applications are scheduled automatically.</li>
+<li><strong>✉️ Follow-up chip</strong> on every row: copies "Follow-up draft for job X" — paste it into the Claude
+  session → finished Gmail draft (is NEVER sent automatically).</li>
+</ul>
+<h3>4. Job list — /jobs</h3>
+<ul>
+<li><strong>"+ Create job"</strong> (button at the top right, new): capture jobs you found manually with all their data;
+  the form is at <code>/jobs/neu</code>. Selectable status: <strong>New</strong> (Review list) · <strong>To review</strong> (active pipeline) ·
+  <strong>Applied</strong> (creates the application with its date straight away). Duplicates are detected and linked instead of being created twice.</li>
+<li>New column <strong>"Found"</strong> + sort dropdown (<strong>Date</strong>, score, company, status). Dates are now correctly
+  chronological despite mixed formats.</li>
+<li><strong>⏰ badge</strong> on the title when a follow-up is due (red = overdue).</li>
+<li>Drill-down headings: if you come from the dashboard, the page is called, for example, "Running applications"
+  (with chip + "Reset filter").</li>
+</ul>
+<h3>5. Job detail — most of the new things are here</h3>
+<p>Right-hand column, from top to bottom:</p>
+<ul>
+<li><strong>Change status:</strong> now including <strong>Interview</strong> and <strong>Offer</strong>. New below it:</li>
+<li><strong>Gut feeling ★★★★★</strong>: your subjective 1–5 score next to the rating grid score (click again to clear).</li>
+<li>For status Rejected: <strong>"❓ Ask for the reason"</strong> → polite feedback email as a draft.</li>
+<li><strong>Next steps &amp; follow-up:</strong> due date, next step, notes, directly editable;
+  an "overdue" badge also at the top in the header.</li>
+<li><strong>Interviews &amp; conversations (new):</strong> create conversations (round/type/date/interviewer), status pills,
+  <strong>📋 Open briefing</strong>, <strong>🗺️ Route</strong> (for on-site jobs),
+  the <strong>🎯 Prepare interview</strong> button, below it <strong>Paste/open transcripts</strong>.</li>
+<li><strong>Application:</strong> new <strong>"Reason for rejection"</strong> (filled from the real rejection emails) and
+  <strong>"⬇ Cover letter (.docx)"</strong>.</li>
+</ul>
+<h3>6. Network &amp; Radar — /netzwerk and /radar</h3>
+<ul>
+<li><strong>"🚀 Speculative" chip</strong> in every row (target companies tab or Radar): copies "Speculative application for
+  &lt;company&gt;" → starts the hidden-job-market workflow in the Claude session (network check first!).</li>
+<li>The target-company check shows which target companies already have a warm path (contact with status
+  "In Dialogue" or "Responded").</li>
+</ul>
+<h3>6b. Outreach — /outreach (revised)</h3>
+<ul>
+<li><strong>The Overdue tile is clickable:</strong> filters the list to overdue follow-ups (click again or ✕ to clear).</li>
+<li><strong>Every row can be expanded (▸):</strong> there you edit <strong>Next step + due date</strong> directly,
+  and keep the new <strong>activity log</strong>: status/step changes are logged automatically
+  (grey AUTO badge); you simply type your own entries (Enter). Chronological, newest first.</li>
+<li>The log lives only in the app; the Excel export (original format) remains unchanged.</li>
+</ul>
+<h3>7. Phone — new: <code>start_lan.command</code></h3>
+<p>Double-click instead of <code>start.command</code> → the terminal shows the phone address (e.g. <code>http://&lt;dein-mac&gt;.local:8000</code>).
+On mobile, navigation is at the top (swipeable), and you swipe tables sideways. ⚠️ No login — only on your own Wi-Fi.</p>
+<h3>8. The new sentences for the Claude session (the "engine")</h3>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>You say …</th>
+<th>What happens …</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Interview vorbereiten für Job &lt;id&gt;</code></td>
+<td>Call briefing (questions + STAR, questions to the company, cheat sheet) → linked at the interview</td>
+</tr>
+<tr>
+<td><code>Debrief für Job &lt;id&gt;</code></td>
+<td>Evaluate the transcript: summary, to-dos, contacts, question bank, thank-you email DRAFT</td>
+</tr>
+<tr>
+<td><code>Absagen-Analyse</code></td>
+<td>Lost-order evaluation across all rejections → report + empirical findings in profil.md</td>
+</tr>
+<tr>
+<td><code>Anschreiben für Job &lt;id&gt;</code></td>
+<td>Company-specific cover letter (.docx) → at the application ("Prepared")</td>
+</tr>
+<tr>
+<td><code>Initiativbewerbung für &lt;Firma&gt;</code></td>
+<td>Network check → speculative job → decision-maker → approach route</td>
+</tr>
+<tr>
+<td><code>welche Zielfirmen soll ich initiativ angehen</code></td>
+<td>Prioritised shortlist (warm &gt; tier &gt; signal)</td>
+</tr>
+<tr>
+<td><code>Nachfass-Entwurf für Job &lt;id&gt;</code></td>
+<td>Polite follow-up when there is radio silence (Gmail draft)</td>
+</tr>
+<tr>
+<td><code>Nach Absagegrund fragen für Job &lt;id&gt;</code></td>
+<td>Feedback request after a rejection (Gmail draft)</td>
+</tr>
+<tr>
+<td><code>Entscheider für Job &lt;id&gt;</code> / <code>wer ist der Hiring Manager bei &lt;Firma&gt;</code></td>
+<td>Research the functional decision-makers + previous holder of the role</td>
+</tr>
+<tr>
+<td><code>Angebot bewerten für Job &lt;id&gt;</code></td>
+<td>Benefits points list / offer matrix (once status is "Offer")</td>
+</tr>
+<tr>
+<td>Existing sentences (<code>Tageslauf</code>, <code>Firma prüfen…</code>, <code>CV anpassen…</code>, <code>Deep-Dive…</code>, <code>prüf mein Postfach</code>,</td>
+<td></td>
+</tr>
+<tr>
+<td><code>such nach neuen Stellen</code>) work unchanged. <code>Firma prüfen</code> now additionally delivers the</td>
+<td></td>
+</tr>
+<tr>
+<td>section <strong>"Employer reality"</strong> (kununu signal, genuinely-modern vs. claimed-modern, activity, business development),</td>
+<td></td>
+</tr>
+<tr>
+<td>and <code>CV anpassen</code> additionally delivers the <strong>weighted requirements matching</strong> (must/should/could × 1–10 with evidence).</td>
+<td></td>
+</tr>
+</tbody>
+</table></div>
+<h3>9. Reports &amp; files (retrievable via the app)</h3>
+<ul>
+<li><strong>Rejection analysis:</strong> <code>data/analysen/&lt;Datum&gt;_Absagen_Analyse.html</code> — the 5 patterns + recommendations
+  (a short version of the findings is also in <code>config/profil.md</code> → "Empirie").</li>
+<li><strong>Complete package per job:</strong> company fit + briefing (<code>data/interview_prep/…</code>) + tailored CV + cover letter
+  (<code>cv/cover/…</code>), all linked at the job detail.</li>
+</ul>
+<h3>10. How to recognise future changes</h3>
+<p>Every build session leaves in the author's project history (not part of the public repository) a
+ticked-off plan + "Review" paragraph (what, why, how verified). That is the system's change log.</p></section>
+</div></body></html>
+<!-- docs_render quelle=WAS_IST_NEU.md sha256=82cd002ba57fc3f4013d90101c582a060991e9fc597e39cb2e154a604f8c3dbc -->

@@ -4,6 +4,9 @@ import { api, apiUpload } from '../api'
 import AgentTaskButton from '../components/AgentTaskButton'
 import ProfilIdentitaet from '../components/ProfilIdentitaet'
 import { tagVon } from '../zeit'
+import { Trans } from 'react-i18next'
+import { t } from '../i18n'
+import { datum } from '../i18n/format'
 
 // Muster JobDetail.tsx::artifactUrl — bewusst lokal statt aus ui.tsx importiert (Phase-45-
 // Datei-Whitelist erlaubt ui.tsx nicht anzufassen; JobDetail.tsx hält denselben Helfer ebenso lokal).
@@ -22,6 +25,8 @@ const CAREER_ARTEN = ['Beruf', 'Ausbildung', 'Zertifizierung', 'Projekt', 'Sonst
 const CAREER_FIELDS = ['art', 'firma', 'rolle', 'ort', 'von', 'bis', 'beschreibung',
   'referenzgeber', 'referenzdatum', 'notiz']
 const FILE_KINDS = ['Zeugnis', 'Zertifikat', 'Sonstiges']
+// Anzeige für DB-Werte (Art im Werdegang, Dateiart): Deutsch ist der Wert selbst.
+const wertP = (x: string): string => t(`profil:wert.${x}`, { defaultValue: x })
 
 // ── LinkedIn-Zeile: URL, Profiltext oder PDF (KI, Vorschau), ZIP-Upload (vollständigster Weg) ────────────────
 const TASK_ACTIVE = ['queued', 'running']
@@ -29,9 +34,9 @@ const TASK_CHIP: Record<string, string> = {
   queued: 'bg-slate-100 text-slate-600', running: 'bg-indigo-100 text-indigo-800',
   done: 'bg-emerald-100 text-emerald-800', failed: 'bg-rose-100 text-rose-700', cancelled: 'bg-slate-100 text-slate-500',
 }
-const TASK_CHIP_TEXT: Record<string, string> = {
-  queued: 'wartet…', running: 'läuft…', done: '✓ fertig', failed: '✗ fehlgeschlagen', cancelled: 'abgebrochen',
-}
+const TASK_CHIP_TEXT_KEYS = ['queued', 'running', 'done', 'failed', 'cancelled']
+const taskText = (status: string): string | undefined =>
+  TASK_CHIP_TEXT_KEYS.includes(status) ? t(`profil:task.${status}`) : undefined
 
 /** Profil aus eingefügtem Text oder PDF: Die KI strukturiert, gespeichert wird erst nach der Vorschau. */
 function LinkedinText({ onSaved }: { onSaved: () => void }) {
@@ -68,7 +73,7 @@ function LinkedinText({ onSaved }: { onSaved: () => void }) {
       const { res, body } = await apiUpload('/api/profil/linkedin-einlesen', fd)
       if (!res.ok) throw new Error(body.detail || `${res.status} ${res.statusText}`)
       setTask(body.task)
-    } catch (e: any) { setErr(e?.message || 'Start fehlgeschlagen') }
+    } catch (e: any) { setErr(e?.message || t('profil:linkedin.start_fehler')) }
     finally { setBusy(false) }
   }
 
@@ -78,7 +83,7 @@ function LinkedinText({ onSaved }: { onSaved: () => void }) {
       setErgebnis(await api<any>('/profil/linkedin-vorschlag/uebernehmen', { method: 'POST' }))
       setVorschau(null); setTask(null)
       onSaved()
-    } catch (e: any) { setErr(e?.message || 'Übernehmen fehlgeschlagen') }
+    } catch (e: any) { setErr(e?.message || t('profil:linkedin.uebernehmen_fehler')) }
     finally { setBusy(false) }
   }
 
@@ -87,70 +92,71 @@ function LinkedinText({ onSaved }: { onSaved: () => void }) {
     try {
       await api('/profil/linkedin-vorschlag', { method: 'DELETE' })
       setVorschau(null); setTask(null)
-    } catch (e: any) { setErr(e?.message || 'Verwerfen fehlgeschlagen') }
+    } catch (e: any) { setErr(e?.message || t('profil:linkedin.verwerfen_fehler')) }
     finally { setBusy(false) }
   }
 
   const active = task && TASK_ACTIVE.includes(task.status)
   return (
     <div className="mt-3 border-t border-slate-100 pt-3">
-      <div className="mb-1 text-xs font-medium text-slate-500">Profil auslesen lassen</div>
+      <div className="mb-1 text-xs font-medium text-slate-500">{t('profil:linkedin.text_titel')}</div>
       <p className="mb-2 text-xs text-slate-400">
-        Öffnen Sie Ihr Profil bei LinkedIn im Browser, markieren Sie alles (Cmd/Strg + A), kopieren Sie es und fügen
-        Sie es hier ein. Oder laden Sie das PDF hoch, das LinkedIn über „Als PDF speichern“ erzeugt. Der Text geht an
-        Ihre KI, Sie prüfen das Ergebnis, bevor etwas gespeichert wird.
+        {t('profil:linkedin.text_hinweis')}
       </p>
       <textarea className={`${INPUT} w-full`} rows={4} value={text} disabled={!!pdf}
-        placeholder="Profiltext hier einfügen…" onChange={(e) => setText(e.target.value)} />
+        placeholder={t('profil:linkedin.text_platzhalter')} onChange={(e) => setText(e.target.value)} />
       <div className="mt-2 flex flex-wrap items-center gap-2">
         <input type="file" accept=".pdf" onChange={(e) => setPdf(e.target.files?.[0] || null)}
           className="text-xs text-slate-600 file:mr-2 file:rounded-lg file:border file:border-slate-300 file:bg-white file:px-2.5 file:py-1 file:text-xs file:font-medium file:text-slate-600 hover:file:bg-slate-50" />
         <button onClick={start} disabled={busy || !!active || (!pdf && !text.trim())}
           className="whitespace-nowrap rounded-lg bg-brand-cyan px-3 py-1.5 text-sm font-medium text-brand-aufAktion hover:bg-brand-cyanHover disabled:cursor-not-allowed disabled:opacity-40">
-          {active ? '⏳ Läuft…' : busy ? 'Starte…' : '▶ Profil auslesen'}
+          {active ? t('profil:linkedin.laeuft') : busy ? t('profil:linkedin.startet') : t('profil:linkedin.auslesen')}
         </button>
         {task && (
-          <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${TASK_CHIP[task.status]}`}>{TASK_CHIP_TEXT[task.status]}</span>
+          <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${TASK_CHIP[task.status]}`}>{taskText(task.status)}</span>
         )}
       </div>
       {task?.status === 'failed' && task.error && <div className="mt-2 rounded-lg bg-rose-50 p-2 text-xs text-rose-700">{task.error}</div>}
       {err && <div className="mt-1 text-xs text-rose-600">{err}</div>}
       {ergebnis && (
         <div className="mt-2 text-xs text-emerald-700">
-          ✓ Übernommen: {ergebnis.skills_neu} neue Skills · {ergebnis.werdegang_neu} neue Werdegang-Einträge
-          {ergebnis.profil_aktualisiert?.length ? ` · Profil ergänzt (${ergebnis.profil_aktualisiert.join(', ')})` : ''}
+          {t('profil:ergebnis.uebernommen', {
+            skills: t('profil:ergebnis.skills', { count: ergebnis.skills_neu }),
+            werdegang: t('profil:ergebnis.werdegang', { count: ergebnis.werdegang_neu }),
+          })}
+          {ergebnis.profil_aktualisiert?.length ? ` · ${t('profil:ergebnis.profil_ergaenzt', { felder: ergebnis.profil_aktualisiert.join(', ') })}` : ''}
           {ergebnis.task_id != null && (
-            <> · Skills werden automatisch einsortiert (<Link to="/tasks" className="text-brand-cyan hover:underline">Task-Center</Link>)</>
+            <> · <Trans i18nKey="profil:ergebnis.einsortiert" components={{ tasks: <Link to="/tasks" className="text-brand-cyan hover:underline" /> }} /></>
           )}
         </div>
       )}
       {vorschau && (
         <div className="mt-3 space-y-2 rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-700">
-          <div className="font-semibold text-brand-navy">Vorschlag prüfen</div>
+          <div className="font-semibold text-brand-navy">{t('profil:vorschau.titel')}</div>
           {vorschau.felder.map((f: any) => (
             <div key={f.label}><b>{f.label}:</b> <span className="whitespace-pre-wrap">{f.wert}</span></div>
           ))}
           {vorschau.felder_behalten.length > 0 && (
-            <div className="text-slate-400">Bleibt, wie es ist, weil schon ausgefüllt: {vorschau.felder_behalten.join(', ')}</div>
+            <div className="text-slate-400">{t('profil:vorschau.behalten', { felder: vorschau.felder_behalten.join(', ') })}</div>
           )}
           <div>
-            <b>Neue Skills ({vorschau.skills_neu.length}):</b> {vorschau.skills_neu.join(', ') || '–'}
-            {vorschau.skills_vorhanden > 0 && <span className="text-slate-400"> · {vorschau.skills_vorhanden} schon vorhanden</span>}
+            <b>{t('profil:vorschau.neue_skills', { anzahl: vorschau.skills_neu.length })}</b> {vorschau.skills_neu.join(', ') || '–'}
+            {vorschau.skills_vorhanden > 0 && <span className="text-slate-400"> · {t('profil:vorschau.schon_vorhanden', { count: vorschau.skills_vorhanden })}</span>}
           </div>
           <div>
-            <b>Neue Einträge im Werdegang ({vorschau.werdegang_neu.length}):</b>
-            {vorschau.werdegang_vorhanden > 0 && <span className="text-slate-400"> {vorschau.werdegang_vorhanden} schon vorhanden</span>}
+            <b>{t('profil:vorschau.neue_eintraege', { anzahl: vorschau.werdegang_neu.length })}</b>
+            {vorschau.werdegang_vorhanden > 0 && <span className="text-slate-400"> {t('profil:vorschau.schon_vorhanden', { count: vorschau.werdegang_vorhanden })}</span>}
             <ul className="mt-1 list-disc pl-4">
               {vorschau.werdegang_neu.map((e: any, n: number) => (
-                <li key={n}>{[e.rolle, e.firma].filter(Boolean).join(' · ')} ({e.art}{e.von || e.bis ? `, ${[e.von, e.bis].filter(Boolean).join(' – ')}` : ''})</li>
+                <li key={n}>{[e.rolle, e.firma].filter(Boolean).join(' · ')} ({wertP(e.art)}{e.von || e.bis ? `, ${[e.von, e.bis].filter(Boolean).join(' – ')}` : ''})</li>
               ))}
             </ul>
           </div>
           <div className="flex gap-2 pt-1">
             <button onClick={uebernehmen} disabled={busy}
-              className="rounded-lg bg-brand-cyan px-3 py-1.5 text-xs font-medium text-brand-aufAktion hover:bg-brand-cyanHover disabled:opacity-40">Alles Neue übernehmen</button>
+              className="rounded-lg bg-brand-cyan px-3 py-1.5 text-xs font-medium text-brand-aufAktion hover:bg-brand-cyanHover disabled:opacity-40">{t('profil:vorschau.alles_uebernehmen')}</button>
             <button onClick={verwerfen} disabled={busy}
-              className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100 disabled:opacity-40">Verwerfen</button>
+              className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100 disabled:opacity-40">{t('profil:vorschau.verwerfen')}</button>
           </div>
         </div>
       )}
@@ -184,18 +190,18 @@ function LinkedinZeile({ profile, onSaved }: { profile: any; onSaved: () => void
       setZipResult(body)
       setZipFile(null)
       onSaved()
-    } catch (e: any) { setZipErr(e?.message || 'Import fehlgeschlagen') }
+    } catch (e: any) { setZipErr(e?.message || t('profil:linkedin.zip_fehler')) }
     finally { setZipUploading(false) }
   }
 
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
       <label className="flex flex-col text-xs text-slate-500">
-        LinkedIn-Profil-URL
-        <input className={`${INPUT} mt-1`} placeholder="https://www.linkedin.com/in/…"
+        {t('profil:linkedin.profil_url')}
+        <input className={`${INPUT} mt-1`} placeholder="https://www.linkedin.com/in/…" /* i18n-ok: URL */
           value={url} onChange={(e) => setUrl(e.target.value)} onBlur={() => url !== (profile.linkedin_url || '') && saveUrl()} />
       </label>
-      {saving && <div className="mt-1 text-xs text-slate-400">Speichert URL…</div>}
+      {saving && <div className="mt-1 text-xs text-slate-400">{t('profil:linkedin.url_speichert')}</div>}
       <LinkedinText onSaved={onSaved} />
       <div className="mt-3 border-t border-slate-100 pt-3">
         <div className="flex flex-wrap items-center gap-2">
@@ -203,33 +209,32 @@ function LinkedinZeile({ profile, onSaved }: { profile: any; onSaved: () => void
             className="text-xs text-slate-600 file:mr-2 file:rounded-lg file:border file:border-slate-300 file:bg-white file:px-2.5 file:py-1 file:text-xs file:font-medium file:text-slate-600 hover:file:bg-slate-50" />
           <button onClick={uploadZip} disabled={!zipFile || zipUploading}
             className="rounded-lg border border-brand-cyan/40 px-3 py-1.5 text-xs font-medium text-brand-navy hover:bg-brand-cyan/10 disabled:cursor-not-allowed disabled:opacity-50">
-            {zipUploading ? 'Importiert…' : 'Datenexport-ZIP hochladen'}
+            {zipUploading ? t('profil:linkedin.zip_importiert') : t('profil:linkedin.zip_hochladen')}
           </button>
         </div>
         <p className="mt-1 text-xs text-slate-400">
-          LinkedIn → Einstellungen → Datenschutz → „Get a copy of your data" → oberste Option
-          „Download larger data archive" (NICHT die Schnellauswahl „Profile" — die enthält nur die
-          Positionierung). Das große Archiv umfasst Skills, Berufserfahrung, Ausbildung und
-          Zertifizierungen; Bereitstellung dauert bei LinkedIn bis zu ~24 h. Additiv: erneuter
-          Import überschreibt nichts manuell Gepflegtes.
+          {t('profil:linkedin.zip_hinweis')}
         </p>
         {zipErr && <div className="mt-1 text-xs text-rose-600">{zipErr}</div>}
         {zipResult && (
           <div className="mt-1 text-xs text-emerald-700">
-            ✓ Import: {zipResult.skills_neu} neue Skills · {zipResult.werdegang_neu} neue Werdegang-Einträge
-            {zipResult.profil_aktualisiert?.length ? ` · Profil ergänzt (${zipResult.profil_aktualisiert.join(', ')})` : ''}
+            {t('profil:ergebnis.import', {
+              skills: t('profil:ergebnis.skills', { count: zipResult.skills_neu }),
+              werdegang: t('profil:ergebnis.werdegang', { count: zipResult.werdegang_neu }),
+            })}
+            {zipResult.profil_aktualisiert?.length ? ` · ${t('profil:ergebnis.profil_ergaenzt', { felder: zipResult.profil_aktualisiert.join(', ') })}` : ''}
             {zipResult.task_id != null && (
-              <> · Skills werden automatisch einsortiert (<Link to="/tasks" className="text-brand-cyan hover:underline">Task-Center</Link>)</>
+              <> · <Trans i18nKey="profil:ergebnis.einsortiert" components={{ tasks: <Link to="/tasks" className="text-brand-cyan hover:underline" /> }} /></>
             )}
           </div>
         )}
         <div className="mt-2">
-          <AgentTaskButton kind="skills-sortieren" label="Skills neu einsortieren" subtle
+          <AgentTaskButton kind="skills-sortieren" label={t('profil:linkedin.skills_einsortieren')} subtle
             onFinished={onSaved} key={zipResult?.task_id ?? 'skills-sortieren'} />
         </div>
       </div>
       {profile.linkedin_eingelesen_am && (
-        <div className="mt-2 text-xs text-slate-400">Zuletzt eingelesen: {profile.linkedin_eingelesen_am}</div>
+        <div className="mt-2 text-xs text-slate-400">{t('profil:linkedin.eingelesen_am', { datum: profile.linkedin_eingelesen_am })}</div>
       )}
     </div>
   )
@@ -250,16 +255,16 @@ function Positionierung({ profile, onSaved }: { profile: any; onSaved: () => voi
   }
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      <div className="mb-2 text-sm font-semibold text-brand-navy">Positionierung</div>
+      <div className="mb-2 text-sm font-semibold text-brand-navy">{t('profil:positionierung.titel')}</div>
       <textarea className={`${INPUT} w-full`} rows={5}
-        placeholder="Wie stellst du dich vor? Fließtext — wird fürs Matching und die Anschreiben verwendet."
+        placeholder={t('profil:positionierung.platzhalter')}
         value={text} onChange={(e) => setText(e.target.value)} />
       <div className="mt-2 flex items-center gap-2">
         <button onClick={save} disabled={saving || !dirty}
           className="rounded-lg bg-brand-cyan px-3 py-1.5 text-sm font-medium text-brand-aufAktion hover:bg-brand-cyanHover disabled:cursor-not-allowed disabled:opacity-40">
-          {saving ? 'Speichern…' : 'Speichern'}
+          {saving ? t('profil:aktion.speichert') : t('profil:aktion.speichern')}
         </button>
-        {saved && <span className="text-sm text-emerald-600">✓ Gespeichert</span>}
+        {saved && <span className="text-sm text-emerald-600">{t('profil:aktion.gespeichert')}</span>}
       </div>
     </div>
   )
@@ -296,19 +301,19 @@ function Skills({ skills, onChanged }: { skills: Record<string, any[]>; onChange
     onChanged()
   }
   const add = async () => {
-    if (!name.trim() || !bereich.trim()) { setErr('Skill und Bereich sind Pflicht'); return }
+    if (!name.trim() || !bereich.trim()) { setErr(t('profil:skills.pflicht')); return }
     setSaving(true); setErr(null)
     try {
       await api('/profil/skills', { method: 'POST', body: JSON.stringify({ name: name.trim(), bereich: bereich.trim() }) })
       setName(''); onChanged()
-    } catch (e: any) { setErr(e?.message || 'Anlegen fehlgeschlagen') }
+    } catch (e: any) { setErr(e?.message || t('profil:skills.anlegen_fehler')) }
     finally { setSaving(false) }
   }
 
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      <div className="mb-2 text-sm font-semibold text-brand-navy">Skills{gesamt > 0 && ` (${gesamt})`}</div>
-      {bereiche.length === 0 && <div className="text-sm text-slate-400">Noch keine Skills erfasst.</div>}
+      <div className="mb-2 text-sm font-semibold text-brand-navy">{t('profil:skills.titel')}{gesamt > 0 && ` (${gesamt})`}</div>
+      {bereiche.length === 0 && <div className="text-sm text-slate-400">{t('profil:skills.leer')}</div>}
       <div className="space-y-3">
         {bereiche.map((b, i) => {
           const farbe = bereichFarbe(i)
@@ -333,13 +338,13 @@ function Skills({ skills, onChanged }: { skills: Record<string, any[]>; onChange
       </div>
       <datalist id="profil-bereiche">{bereiche.map((b) => <option key={b} value={b} />)}</datalist>
       <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3">
-        <input className={`${INPUT} min-w-[12rem] flex-1`} placeholder="Neuer Skill" value={name}
+        <input className={`${INPUT} min-w-[12rem] flex-1`} placeholder={t('profil:skills.neu')} value={name}
           onChange={(e) => setName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && add()} />
-        <input list="profil-bereiche" className={`${INPUT} w-48`} placeholder="Bereich (bestehend oder neu)"
+        <input list="profil-bereiche" className={`${INPUT} w-48`} placeholder={t('profil:skills.bereich')}
           value={bereich} onChange={(e) => setBereich(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && add()} />
         <button onClick={add} disabled={saving}
           className="rounded-lg bg-brand-cyan px-3 py-1.5 text-sm font-medium text-brand-aufAktion hover:bg-brand-cyanHover disabled:opacity-40">
-          Hinzufügen
+          {t('profil:skills.hinzufuegen')}
         </button>
       </div>
       {err && <div className="mt-1 text-xs text-rose-600">{err}</div>}
@@ -364,29 +369,29 @@ function CareerBlock({ item, onSaved }: { item: any; onSaved: () => void }) {
     } finally { setSaving(false) }
   }
   const remove = async () => {
-    if (!window.confirm(`„${item.rolle || item.firma || 'Eintrag'}" wirklich löschen?`)) return
+    if (!window.confirm(t('profil:werdegang.loeschen_frage', { name: item.rolle || item.firma || t('profil:werdegang.eintrag') }))) return
     await api(`/profil/werdegang/${item.id}`, { method: 'DELETE' })
     onSaved()
   }
   const Lab = (label: string, node: any) => <label className="flex flex-col text-xs text-slate-500">{label}<div className="mt-1">{node}</div></label>
   return (
     <div className="grid grid-cols-1 gap-3 bg-slate-50/70 px-4 py-4 md:grid-cols-2">
-      {Lab('Firma/Institution', <input className={`${INPUT} w-full`} value={f.firma} onChange={(e) => set('firma', e.target.value)} />)}
-      {Lab('Rolle/Titel', <input className={`${INPUT} w-full`} value={f.rolle} onChange={(e) => set('rolle', e.target.value)} />)}
-      {Lab('Ort', <input className={`${INPUT} w-full`} value={f.ort} onChange={(e) => set('ort', e.target.value)} />)}
+      {Lab(t('profil:werdegang.feld.firma'), <input className={`${INPUT} w-full`} value={f.firma} onChange={(e) => set('firma', e.target.value)} />)}
+      {Lab(t('profil:werdegang.feld.rolle'), <input className={`${INPUT} w-full`} value={f.rolle} onChange={(e) => set('rolle', e.target.value)} />)}
+      {Lab(t('profil:werdegang.feld.ort'), <input className={`${INPUT} w-full`} value={f.ort} onChange={(e) => set('ort', e.target.value)} />)}
       <div className="grid grid-cols-2 gap-3">
-        {Lab('Von', <input className={`${INPUT} w-full`} placeholder="z. B. 2020" value={f.von} onChange={(e) => set('von', e.target.value)} />)}
-        {Lab('Bis', <input className={`${INPUT} w-full`} placeholder="z. B. heute" value={f.bis} onChange={(e) => set('bis', e.target.value)} />)}
+        {Lab(t('profil:werdegang.feld.von'), <input className={`${INPUT} w-full`} placeholder={t('profil:werdegang.feld.von_platzhalter')} value={f.von} onChange={(e) => set('von', e.target.value)} />)}
+        {Lab(t('profil:werdegang.feld.bis'), <input className={`${INPUT} w-full`} placeholder={t('profil:werdegang.feld.bis_platzhalter')} value={f.bis} onChange={(e) => set('bis', e.target.value)} />)}
       </div>
-      <div className="md:col-span-2">{Lab('Beschreibung', <textarea className={`${INPUT} w-full`} rows={2} value={f.beschreibung} onChange={(e) => set('beschreibung', e.target.value)} />)}</div>
-      {Lab('Referenzgeber', <input className={`${INPUT} w-full`} value={f.referenzgeber} onChange={(e) => set('referenzgeber', e.target.value)} />)}
-      {Lab('Referenzdatum', <input className={`${INPUT} w-full`} value={f.referenzdatum} onChange={(e) => set('referenzdatum', e.target.value)} />)}
-      <div className="md:col-span-2">{Lab('Notiz', <input className={`${INPUT} w-full`} value={f.notiz} onChange={(e) => set('notiz', e.target.value)} />)}</div>
+      <div className="md:col-span-2">{Lab(t('profil:werdegang.feld.beschreibung'), <textarea className={`${INPUT} w-full`} rows={2} value={f.beschreibung} onChange={(e) => set('beschreibung', e.target.value)} />)}</div>
+      {Lab(t('profil:werdegang.feld.referenzgeber'), <input className={`${INPUT} w-full`} value={f.referenzgeber} onChange={(e) => set('referenzgeber', e.target.value)} />)}
+      {Lab(t('profil:werdegang.feld.referenzdatum'), <input className={`${INPUT} w-full`} value={f.referenzdatum} onChange={(e) => set('referenzdatum', e.target.value)} />)}
+      <div className="md:col-span-2">{Lab(t('profil:werdegang.feld.notiz'), <input className={`${INPUT} w-full`} value={f.notiz} onChange={(e) => set('notiz', e.target.value)} />)}</div>
       <div className="flex items-center gap-2 md:col-span-2">
-        <button onClick={save} disabled={saving || !dirty} className="rounded-lg bg-brand-cyan px-3 py-1.5 text-sm font-medium text-brand-aufAktion hover:bg-brand-cyanHover disabled:cursor-not-allowed disabled:opacity-40">{saving ? 'Speichern…' : 'Speichern'}</button>
-        {saved && <span className="text-sm text-emerald-600">✓ Gespeichert</span>}
-        {item.quelle === 'linkedin' && <span className="text-xs text-slate-400">Quelle: LinkedIn</span>}
-        <button onClick={remove} className="ml-auto rounded-lg border border-rose-200 px-3 py-1.5 text-sm font-medium text-rose-600 hover:bg-rose-50">🗑 Löschen</button>
+        <button onClick={save} disabled={saving || !dirty} className="rounded-lg bg-brand-cyan px-3 py-1.5 text-sm font-medium text-brand-aufAktion hover:bg-brand-cyanHover disabled:cursor-not-allowed disabled:opacity-40">{saving ? t('profil:aktion.speichert') : t('profil:aktion.speichern')}</button>
+        {saved && <span className="text-sm text-emerald-600">{t('profil:aktion.gespeichert')}</span>}
+        {item.quelle === 'linkedin' && <span className="text-xs text-slate-400">{t('profil:werdegang.quelle_linkedin')}</span>}
+        <button onClick={remove} className="ml-auto rounded-lg border border-rose-200 px-3 py-1.5 text-sm font-medium text-rose-600 hover:bg-rose-50">{t('profil:werdegang.loeschen')}</button>
       </div>
     </div>
   )
@@ -408,16 +413,16 @@ function CareerNew({ art, onCreated, onClose }: { art: string; onCreated: () => 
   return (
     <div className="rounded-xl border border-brand-cyan/40 bg-brand-cyan/5 p-4">
       <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-        <input className={INPUT} placeholder="Firma/Institution" value={f.firma} onChange={(e) => set('firma', e.target.value)} />
-        <input className={INPUT} placeholder="Rolle/Titel" value={f.rolle} onChange={(e) => set('rolle', e.target.value)} />
-        <input className={INPUT} placeholder="Ort" value={f.ort} onChange={(e) => set('ort', e.target.value)} />
-        <input className={INPUT} placeholder="Von" value={f.von} onChange={(e) => set('von', e.target.value)} />
-        <input className={INPUT} placeholder="Bis" value={f.bis} onChange={(e) => set('bis', e.target.value)} />
-        <textarea className={`${INPUT} md:col-span-3`} rows={2} placeholder="Beschreibung" value={f.beschreibung} onChange={(e) => set('beschreibung', e.target.value)} />
+        <input className={INPUT} placeholder={t('profil:werdegang.feld.firma')} value={f.firma} onChange={(e) => set('firma', e.target.value)} />
+        <input className={INPUT} placeholder={t('profil:werdegang.feld.rolle')} value={f.rolle} onChange={(e) => set('rolle', e.target.value)} />
+        <input className={INPUT} placeholder={t('profil:werdegang.feld.ort')} value={f.ort} onChange={(e) => set('ort', e.target.value)} />
+        <input className={INPUT} placeholder={t('profil:werdegang.feld.von')} value={f.von} onChange={(e) => set('von', e.target.value)} />
+        <input className={INPUT} placeholder={t('profil:werdegang.feld.bis')} value={f.bis} onChange={(e) => set('bis', e.target.value)} />
+        <textarea className={`${INPUT} md:col-span-3`} rows={2} placeholder={t('profil:werdegang.feld.beschreibung')} value={f.beschreibung} onChange={(e) => set('beschreibung', e.target.value)} />
       </div>
       <div className="mt-2 flex items-center gap-2">
-        <button onClick={save} disabled={saving} className="rounded-lg bg-brand-cyan px-3 py-1.5 text-sm font-medium text-brand-aufAktion hover:bg-brand-cyanHover disabled:opacity-40">{saving ? 'Anlegen…' : 'Anlegen'}</button>
-        <button onClick={onClose} className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50">Abbrechen</button>
+        <button onClick={save} disabled={saving} className="rounded-lg bg-brand-cyan px-3 py-1.5 text-sm font-medium text-brand-aufAktion hover:bg-brand-cyanHover disabled:opacity-40">{saving ? t('profil:aktion.legt_an') : t('profil:aktion.anlegen')}</button>
+        <button onClick={onClose} className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50">{t('profil:aktion.abbrechen')}</button>
       </div>
     </div>
   )
@@ -428,21 +433,21 @@ function Werdegang({ werdegang, onChanged }: { werdegang: any[]; onChanged: () =
   const [showNewFor, setShowNewFor] = useState<string | null>(null)
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      <div className="mb-2 text-sm font-semibold text-brand-navy">Werdegang</div>
+      <div className="mb-2 text-sm font-semibold text-brand-navy">{t('profil:werdegang.titel')}</div>
       <div className="space-y-4">
         {CAREER_ARTEN.map((art) => {
           const entries = werdegang.filter((w) => w.art === art)
           if (entries.length === 0 && showNewFor !== art) return (
             <div key={art} className="flex items-center justify-between text-xs text-slate-400">
-              <span className="font-medium uppercase tracking-wide">{art}</span>
-              <button onClick={() => setShowNewFor(art)} className="text-brand-cyan hover:underline">+ Eintrag</button>
+              <span className="font-medium uppercase tracking-wide">{wertP(art)}</span>
+              <button onClick={() => setShowNewFor(art)} className="text-brand-cyan hover:underline">{t('profil:werdegang.eintrag_neu')}</button>
             </div>
           )
           return (
             <div key={art}>
               <div className="mb-1 flex items-center justify-between">
-                <span className="text-xs font-medium uppercase tracking-wide text-slate-500">{art}</span>
-                {showNewFor !== art && <button onClick={() => setShowNewFor(art)} className="text-xs text-brand-cyan hover:underline">+ Eintrag</button>}
+                <span className="text-xs font-medium uppercase tracking-wide text-slate-500">{wertP(art)}</span>
+                {showNewFor !== art && <button onClick={() => setShowNewFor(art)} className="text-xs text-brand-cyan hover:underline">{t('profil:werdegang.eintrag_neu')}</button>}
               </div>
               {showNewFor === art && (
                 <div className="mb-2">
@@ -491,7 +496,7 @@ function Dateien({ dateien, onChanged }: { dateien: any[]; onChanged: () => void
       const { res, body } = await apiUpload('/api/profil/dateien', fd)
       if (!res.ok) throw new Error(body.detail || `${res.status} ${res.statusText}`)
       setFile(null); onChanged()
-    } catch (e: any) { setErr(e?.message || 'Upload fehlgeschlagen') }
+    } catch (e: any) { setErr(e?.message || t('profil:aktion.upload_fehler')) }
     finally { setUploading(false) }
   }
   const remove = async (id: number) => {
@@ -501,7 +506,7 @@ function Dateien({ dateien, onChanged }: { dateien: any[]; onChanged: () => void
 
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      <div className="mb-2 text-sm font-semibold text-brand-navy">Zertifikate und Zeugnisse</div>
+      <div className="mb-2 text-sm font-semibold text-brand-navy">{t('profil:dateien.titel')}</div>
       <div className="space-y-1">
         {dateien.map((f) => (
           <div key={f.id} className="flex items-center gap-2 border-b border-slate-100 py-2 text-sm last:border-0">
@@ -509,26 +514,26 @@ function Dateien({ dateien, onChanged }: { dateien: any[]; onChanged: () => void
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
                 <span className="truncate font-medium text-brand-navy" title={f.filename}>{f.filename}</span>
-                <span className="shrink-0 rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-600">{f.kind}</span>
+                <span className="shrink-0 rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-600">{wertP(f.kind)}</span>
               </div>
               <div className="text-xs text-slate-400">{humanSize(f.size_bytes)}{f.created_at ? ` · ${tagVon(f.created_at)}` : ''}</div>
             </div>
-            <a href={artifactUrl(f.file_path)} className="shrink-0 text-xs text-brand-cyan hover:underline">Öffnen</a>
+            <a href={artifactUrl(f.file_path)} className="shrink-0 text-xs text-brand-cyan hover:underline">{t('profil:dateien.oeffnen')}</a>
             <a href={artifactUrl(f.file_path, true)} className="shrink-0 text-xs text-brand-cyan hover:underline">⬇</a>
-            <button onClick={() => remove(f.id)} className="shrink-0 text-slate-400 hover:text-rose-600" title="In den Papierkorb">🗑</button>
+            <button onClick={() => remove(f.id)} className="shrink-0 text-slate-400 hover:text-rose-600" title={t('profil:aktion.in_papierkorb')}>🗑</button>
           </div>
         ))}
-        {dateien.length === 0 && <div className="text-sm text-slate-400">Noch keine Dateien angehängt.</div>}
+        {dateien.length === 0 && <div className="text-sm text-slate-400">{t('profil:dateien.leer')}</div>}
       </div>
       <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3">
         <input type="file" onChange={(e) => setFile(e.target.files?.[0] || null)}
           className="text-xs text-slate-600 file:mr-2 file:rounded-lg file:border file:border-slate-300 file:bg-white file:px-2.5 file:py-1 file:text-xs file:font-medium file:text-slate-600 hover:file:bg-slate-50" />
         <select className={INPUT} value={kind} onChange={(e) => setKind(e.target.value)}>
-          {FILE_KINDS.map((k) => <option key={k} value={k}>{k}</option>)}
+          {FILE_KINDS.map((k) => <option key={k} value={k}>{wertP(k)}</option>)}
         </select>
         <button onClick={upload} disabled={!file || uploading}
           className="rounded-lg bg-brand-cyan px-3 py-1.5 text-sm font-medium text-brand-aufAktion hover:bg-brand-cyanHover disabled:cursor-not-allowed disabled:opacity-40">
-          {uploading ? 'Lädt…' : 'Hochladen'}
+          {uploading ? t('profil:aktion.laedt_hoch') : t('profil:aktion.hochladen')}
         </button>
       </div>
       {err && <div className="mt-1 text-xs text-rose-600">{err}</div>}
@@ -540,10 +545,9 @@ function Dateien({ dateien, onChanged }: { dateien: any[]; onChanged: () => void
 // Sprach-Labels für die Anzeige — Vorbild `_CV_LABELS` in main.py. Ein Code, den diese Liste
 // nicht kennt (von Hand im Ordner abgelegt), zeigt einfach seinen Großbuchstaben-Code statt
 // eines Labels, statt die Karte scheitern zu lassen.
-const CV_LABELS: Record<string, string> = {
-  de: 'Deutsch', en: 'Englisch', fr: 'Französisch', es: 'Spanisch', it: 'Italienisch',
-  nl: 'Niederländisch', pt: 'Portugiesisch', pl: 'Polnisch', da: 'Dänisch', sv: 'Schwedisch',
-}
+const CV_LABEL_CODES = ['de', 'en', 'fr', 'es', 'it', 'nl', 'pt', 'pl', 'da', 'sv']
+const cvLabel = (code?: string): string | undefined =>
+  code && CV_LABEL_CODES.includes(code) ? t(`profil:cv_sprache.${code}`) : undefined
 const CV_SPRACH_OPTIONEN = ['de', 'en', 'fr', 'es', 'it', 'nl', 'pt']
 const CV_SPRACH_RE = /^[a-z]{2}$/
 
@@ -552,8 +556,7 @@ const CV_SPRACH_RE = /^[a-z]{2}$/
 // zu bemühen.
 function datumDE(iso?: string | null): string {
   const tag = tagVon(iso)
-  const teile = tag.split('-')
-  return teile.length === 3 ? `${teile[2]}.${teile[1]}.${teile[0]}` : tag
+  return tag ? datum(tag) : tag
 }
 
 function BasisCVs() {
@@ -579,10 +582,12 @@ function BasisCVs() {
     const { res, body } = await apiUpload('/api/profil/cv-basis', fd)
     if (res.status === 409) {
       const stand = body.detail || {}
-      const frage =
-        `Für ${CV_LABELS[stand.sprache] || stand.sprache?.toUpperCase() || effektiverCode} liegt ` +
-        `bereits ein CV vom ${datumDE(stand.updated_at)} (${humanSize(stand.size_bytes)}, ` +
-        `${stand.stationen ?? '?'} Stationen). Überschreiben? Die bisherige Datei wandert in den Papierkorb.`
+      const frage = t('profil:basis_cv.ueberschreiben_frage', {
+        sprache: cvLabel(stand.sprache) || stand.sprache?.toUpperCase() || effektiverCode,
+        datum: datumDE(stand.updated_at),
+        groesse: humanSize(stand.size_bytes),
+        stationen: stand.stationen ?? '?',
+      })
       if (window.confirm(frage)) await sendeUpload(true)
       return
     }
@@ -593,32 +598,30 @@ function BasisCVs() {
   const upload = async () => {
     if (!file) return
     if (!CV_SPRACH_RE.test(effektiverCode)) {
-      setErr('Sprachcode muss aus zwei Kleinbuchstaben bestehen (z. B. de, en, fr).')
+      setErr(t('profil:basis_cv.code_fehler'))
       return
     }
     setUploading(true); setErr(null)
     try {
       await sendeUpload(false)
-    } catch (e: any) { setErr(e?.message || 'Upload fehlgeschlagen') }
+    } catch (e: any) { setErr(e?.message || t('profil:aktion.upload_fehler')) }
     finally { setUploading(false) }
   }
 
   const remove = async (code: string) => {
-    if (!window.confirm(`Basis-CV ${CV_LABELS[code] || code.toUpperCase()} in den Papierkorb legen?`)) return
+    if (!window.confirm(t('profil:basis_cv.loeschen_frage', { sprache: cvLabel(code) || code.toUpperCase() }))) return
     await api(`/profil/cv-basis/${code}`, { method: 'DELETE' })
     load()
   }
 
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      <div className="mb-2 text-sm font-semibold text-brand-navy">Basis-CVs</div>
+      <div className="mb-2 text-sm font-semibold text-brand-navy">{t('profil:basis_cv.titel')}</div>
       <p className="mb-2 text-xs text-slate-500">
-        Die Vorlagen, aus denen jeder auf eine Stelle zugeschnittene Lebenslauf entsteht. Deutsch
-        und Englisch zieht das System selbst heran; andere Sprachen liegen bereit, werden aber von
-        keinem Skill automatisch benutzt.
+        {t('profil:basis_cv.hinweis')}
       </p>
       {loading ? (
-        <div className="text-sm text-slate-400">Lade…</div>
+        <div className="text-sm text-slate-400">{t('profil:aktion.lade')}</div>
       ) : (
         <div className="space-y-1">
           {liste.map((cv) => (
@@ -626,46 +629,46 @@ function BasisCVs() {
               <span className="shrink-0">📄</span>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
-                  <span className="font-medium text-brand-navy">{CV_LABELS[cv.sprache] || cv.sprache.toUpperCase()}</span>
+                  <span className="font-medium text-brand-navy">{cvLabel(cv.sprache) || cv.sprache.toUpperCase()}</span>
                   <span className="truncate text-xs text-slate-400" title={cv.filename}>{cv.filename}</span>
                   {cv.automatisch ? (
-                    <span className="shrink-0 rounded bg-emerald-50 px-1.5 py-0.5 text-xs text-emerald-700">wird automatisch verwendet</span>
+                    <span className="shrink-0 rounded bg-emerald-50 px-1.5 py-0.5 text-xs text-emerald-700">{t('profil:basis_cv.automatisch')}</span>
                   ) : (
                     <span className="shrink-0 rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-600"
-                      title="Deutsch und Englisch zieht das System selbst heran; andere Sprachen liegen bereit, werden aber von keinem Skill automatisch benutzt.">
-                      nur manuell
+                      title={t('profil:basis_cv.nur_manuell_hinweis')}>
+                      {t('profil:basis_cv.nur_manuell')}
                     </span>
                   )}
                 </div>
                 <div className="text-xs text-slate-400">
                   {humanSize(cv.size_bytes)} · {datumDE(cv.updated_at)}
-                  {cv.stationen != null ? ` · ${cv.stationen} Stationen` : ''}
+                  {cv.stationen != null ? ` · ${t('profil:basis_cv.stationen', { count: cv.stationen })}` : ''}
                 </div>
                 {cv.warnung && (
                   <div className="mt-1 rounded bg-amber-50 px-2 py-1 text-xs text-amber-800">{cv.warnung}</div>
                 )}
               </div>
               <a href={artifactUrl(cv.path, true)} className="shrink-0 text-xs text-brand-cyan hover:underline">⬇</a>
-              <button onClick={() => remove(cv.sprache)} className="shrink-0 text-slate-400 hover:text-rose-600" title="In den Papierkorb">🗑</button>
+              <button onClick={() => remove(cv.sprache)} className="shrink-0 text-slate-400 hover:text-rose-600" title={t('profil:aktion.in_papierkorb')}>🗑</button>
             </div>
           ))}
-          {liste.length === 0 && <div className="text-sm text-slate-400">Noch kein Basis-CV hochgeladen.</div>}
+          {liste.length === 0 && <div className="text-sm text-slate-400">{t('profil:basis_cv.leer')}</div>}
         </div>
       )}
       <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3">
         <input type="file" accept=".docx" onChange={(e) => setFile(e.target.files?.[0] || null)}
           className="text-xs text-slate-600 file:mr-2 file:rounded-lg file:border file:border-slate-300 file:bg-white file:px-2.5 file:py-1 file:text-xs file:font-medium file:text-slate-600 hover:file:bg-slate-50" />
         <select className={INPUT} value={sprache} onChange={(e) => setSprache(e.target.value)}>
-          {CV_SPRACH_OPTIONEN.map((c) => <option key={c} value={c}>{CV_LABELS[c]}</option>)}
-          <option value="andere">Andere…</option>
+          {CV_SPRACH_OPTIONEN.map((c) => <option key={c} value={c}>{cvLabel(c)}</option>)}
+          <option value="andere">{t('profil:basis_cv.andere')}</option>
         </select>
         {sprache === 'andere' && (
-          <input type="text" maxLength={2} placeholder="z. B. pl" value={andereCode}
+          <input type="text" maxLength={2} placeholder={t('profil:basis_cv.code_platzhalter')} value={andereCode}
             onChange={(e) => setAndereCode(e.target.value)} className={`${INPUT} w-20`} />
         )}
         <button onClick={upload} disabled={!file || uploading}
           className="rounded-lg bg-brand-cyan px-3 py-1.5 text-sm font-medium text-brand-aufAktion hover:bg-brand-cyanHover disabled:cursor-not-allowed disabled:opacity-40">
-          {uploading ? 'Lädt…' : 'Hochladen'}
+          {uploading ? t('profil:aktion.laedt_hoch') : t('profil:aktion.hochladen')}
         </button>
       </div>
       {err && <div className="mt-1 text-xs text-rose-600">{err}</div>}
@@ -681,14 +684,14 @@ export default function Profil() {
   const load = () => api<any>('/profil').then(setData).finally(() => setLoading(false))
   useEffect(() => { load() }, [])
 
-  if (loading || !data) return <div className="text-slate-400">Lade…</div>
+  if (loading || !data) return <div className="text-slate-400">{t('profil:aktion.lade')}</div>
 
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-2xl font-bold text-brand-navy">Profil</h1>
+        <h1 className="text-2xl font-bold text-brand-navy">{t('profil:seite.titel')}</h1>
         <p className="text-sm text-slate-500">
-          Positionierung, Skills, Werdegang und Zeugnisse — wird für das Matching und die Anschreiben verwendet.
+          {t('profil:seite.untertitel')}
         </p>
       </div>
       {/* P2-69: liest und schreibt config/profil.md, lädt sich selbst (eigener Endpunkt). */}

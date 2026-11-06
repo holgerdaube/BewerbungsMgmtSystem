@@ -44,7 +44,7 @@ from sqlmodel import Session, select
 
 from app.db import engine, init_db
 from app.models import Application
-from pipeline import cv_export
+from pipeline import bewerbungssprache, cv_export
 
 # Schrift/Ränder bewusst identisch zum CV (`data/cv_basis/base_*.docx`: docDefault Calibri, 21 half-pt =
 # 10,5 pt) — Anschreiben und Lebenslauf sollen beim Empfänger wie EIN Satz aussehen. Bis
@@ -76,16 +76,11 @@ _TITEL_ABSTAND_NACH = Pt(18)
 
 _JAHR = re.compile(r"\b(19|20)\d{2}\b")
 
-# Grußformeln DE/EN — nach ihnen folgt der Name, der eng darunter stehen soll (Briefkonvention).
-_GRUSSFORMEL = re.compile(
-    r"^(mit freundlichen grüßen|freundliche grüße|beste grüße|viele grüße|herzliche grüße"
-    r"|kind regards|best regards|warm regards|regards|sincerely|yours sincerely|yours faithfully)"
-    r"\s*[,.]?$",
-    re.IGNORECASE,
-)
-
-# Betreffzeile DE/EN — wird fett und leicht größer gesetzt (Überschriften-Band).
-_BETREFF = re.compile(r"^(application|bewerbung|betreff|subject|re)\b\s*[:\s]", re.IGNORECASE)
+# Grußformeln und Betreffzeile aller Sprachen (DE, EN, FR, IT, ES, PT) aus `bewerbungssprache`.
+# Nach der Grußformel folgt der Name, der eng darunter stehen soll (Briefkonvention); die
+# Betreffzeile wird fett und leicht größer gesetzt (Überschriften-Band).
+_GRUSSFORMEL = bewerbungssprache.grussformel_re()
+_BETREFF = bewerbungssprache.betreff_re()
 
 
 def _basis_layout(doc) -> None:
@@ -140,8 +135,12 @@ def _hat_briefkopf(text: str) -> bool:
     return bool(erste) and erste.casefold() == name.casefold()
 
 
-def mit_briefkopf(text: str, heute: datetime.date | None = None) -> str:
+def mit_briefkopf(text: str, heute: datetime.date | None = None, sprache: str | None = None) -> str:
     """Stellt Briefkopf und Ort-/Datumszeile voran, falls sie fehlen — sonst unveraendert.
+
+    `sprache` bestimmt das Datumsformat (`bewerbungssprache.datum_text`): `3 November 2026`,
+    `3 novembre 2026`, `3 de noviembre de 2026` usw. Ohne Sprache oder bei DE bleibt es
+    `03.11.2026` wie bisher. Eine unbekannte Sprache bekommt das ISO-Datum, nie das deutsche.
 
     Der Kopf sind reine Profildaten (`user_profile.briefkopf()`); ihn ein Modell schreiben zu
     lassen hiesse, eine Konstante jedes Mal neu zu wuerfeln. Genau das ging in der Praxis schon einmal schief.
@@ -156,19 +155,22 @@ def mit_briefkopf(text: str, heute: datetime.date | None = None) -> str:
         return text
     tag = heute or datetime.date.today()
     ort = briefkopf_ort()
-    ort_datum = (ort + ", " if ort else "") + tag.strftime("%d.%m.%Y")
+    ort_datum = (ort + ", " if ort else "") + bewerbungssprache.datum_text(tag, sprache)
     return kopf + "\n\n" + ort_datum + "\n\n" + text.lstrip()
 
 
-def render_cover_letter(text: str, out_path: Path) -> None:
+def render_cover_letter(text: str, out_path: Path, sprache: str | None = None) -> None:
     """Fließtext (Absätze durch Leerzeile getrennt) → schlichte Brief-.docx: ein Word-Absatz je
     Text-Absatz, einheitliche Schrift. Der Text trägt den kompletten Brief bereits selbst
     (Briefkopf, Ort/Datum, Betreff, Anrede, Grußformel) — diese Funktion erfindet nichts dazu
     und fügt insbesondere KEINEN eigenen Namens-/Datumskopf mehr an (das doppelte den Briefkopf).
     Layout-Zutaten: Absendername (erste Zeile) groß+fett, Betreff fett, Ort-/Datumszeile
     rechtsbündig, und nach der Grußformel kein Absatzabstand, damit der Name direkt darunter
-    steht (Briefkonvention) statt mit Leerzeile abgesetzt."""
-    text = mit_briefkopf(text)
+    steht (Briefkonvention) statt mit Leerzeile abgesetzt.
+
+    `sprache` (Sprache des Anschreibens, `DE`/`EN`/`FR`/…) gibt nur das Datumsformat der
+    ergänzten Ort-/Datumszeile vor; ohne Angabe bleibt es das deutsche."""
+    text = mit_briefkopf(text) if sprache is None else mit_briefkopf(text, sprache=sprache)
     doc = Document()
     _basis_layout(doc)
 
@@ -233,7 +235,9 @@ def render_and_export(job_id) -> dict:
 
         cover_dir = cv_export.PROJECT_ROOT / "outputs" / "anschreiben"
         raw_path = cover_dir / f"_raw_{app.id}.docx"
-        render_cover_letter(app.cover_letter_text, raw_path)
+        # Sprache wie in `cv_export.export_cover_letter`: gespeichert, sonst aus dem Text (Grußformel).
+        render_cover_letter(app.cover_letter_text, raw_path,
+                            sprache=app.cover_letter_language or cv_export._sprache_aus_text(app, raw_path))
 
         app.cover_letter_path = cv_export._rel(raw_path)
         s.add(app)

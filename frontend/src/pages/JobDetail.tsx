@@ -11,12 +11,20 @@ import { isoTag, tagVon } from '../zeit'
 import { useProfilAdresse, mapsRouteUrl } from '../profil'
 import { useSuchTabs } from '../suchbereich'
 import { SENIORITAETEN } from '../senioritaet'
+import { Trans } from 'react-i18next'
+import { t } from '../i18n'
+import { wert } from '../i18n/werte'
+import { verlaufZeile } from '../i18n/verlauf'
+import { datumZeit } from '../i18n/format'
 
-const STATUSES = ['Neu', 'Prüfen', 'Beworben', 'Interview', 'Angebot', 'Absage', 'Keine Rückmeldung', 'Kein Match', 'Beirat abgelehnt', 'Nicht verfügbar', 'Geparkt']
+/** DB-Wert (Gesprächsart, Dateiart …) für die Anzeige; was keine Übersetzung hat, bleibt, wie es ist. */
+const dbWert = (x: string | null | undefined): string => (x ? t(`jobdetail:wert.${x}`, { defaultValue: x }) : (x ?? ''))
+
+const STATUSES = ['Neu', 'Prüfen', 'Beworben', 'Interview', 'Angebot', 'Absage', 'Keine Rückmeldung', 'Kein Match', 'Beirat abgelehnt', 'Nicht verfügbar', 'Geparkt'] // i18n-ok: DB-Werte
 
 // „Headhunter-Screen" ergänzt 13.08.2026: Ein Screening über einen Personalberater ist
 // eine eigene Gesprächsform und hieß bisher notgedrungen „Sonstiges".
-const IV_ARTEN = ['HR-Screen', 'Headhunter-Screen', 'Fachgespräch', 'Hiring Manager', 'Panel', 'Final', 'Sonstiges']
+const IV_ARTEN = ['HR-Screen', 'Headhunter-Screen', 'Fachgespräch', 'Hiring Manager', 'Panel', 'Final', 'Sonstiges'] // i18n-ok: DB-Werte
 // Phase 69 (Stufe B) — Interview.gegenueber, dieselbe Werteliste wie app/gesamtprozess.py
 // (Gesamtprozess-KPI "Gespräche gesamt", Splits je Gegenüber-Typ).
 const IV_GEGENUEBER = ['Recruiter', 'Hiring Manager', 'Fachbereich', 'Headhunter', 'Sonstige']
@@ -32,7 +40,7 @@ const NEUE_RUNDE = '__neu'
 const GEGENUEBER_ZU_ART: Record<string, string> = {
   'HR-Screen': 'Recruiter',
   'Headhunter-Screen': 'Headhunter',
-  'Fachgespräch': 'Fachbereich',
+  'Fachgespräch': 'Fachbereich', // i18n-ok: DB-Wert
   'Hiring Manager': 'Hiring Manager',
   'Panel': 'Fachbereich',
   'Final': 'Hiring Manager',
@@ -45,11 +53,11 @@ const IV_STATUS_STYLE: Record<string, string> = {
 
 // Phase 74 — Anzeige-Label + Farbe für die Verfügbarkeitsprüfung (Design-Entscheidung 2/5),
 // identisch zu den Backend-Log-Labels — ein Text, zwei Stellen.
-const AVAILABILITY_LABELS: Record<string, { label: string; cls: string }> = {
-  offen: { label: 'noch ausgeschrieben', cls: 'text-emerald-600' },
-  karriereseite_offen: { label: 'Portal zu, Karriereseite offen', cls: 'text-amber-600' },
-  offline: { label: 'nicht mehr ausgeschrieben', cls: 'text-rose-600' },
-  unklar: { label: 'unklar', cls: 'text-slate-500' },
+const AVAILABILITY_LABELS: Record<string, { label: () => string; cls: string }> = {
+  offen: { label: () => t('jobdetail:verfuegbarkeit.offen'), cls: 'text-emerald-600' },
+  karriereseite_offen: { label: () => t('jobdetail:verfuegbarkeit.karriereseite_offen'), cls: 'text-amber-600' },
+  offline: { label: () => t('jobdetail:verfuegbarkeit.offline'), cls: 'text-rose-600' },
+  unklar: { label: () => t('jobdetail:verfuegbarkeit.unklar'), cls: 'text-slate-500' },
 }
 
 function artifactUrl(path: string, download = false) {
@@ -69,15 +77,15 @@ function shortUrl(u: string): string {
   }
 }
 
-const FILE_KINDS = ['Transkript', 'Stellenbeschreibung', 'Präsentation', 'Sonstiges']
-const GESPRAECHS_ARTEN = ['Telefonat', 'Video-Call', 'Vor-Ort-Gespräch']
+const FILE_KINDS = ['Transkript', 'Stellenbeschreibung', 'Präsentation', 'Sonstiges'] // i18n-ok: DB-Werte
+const GESPRAECHS_ARTEN = ['Telefonat', 'Video-Call', 'Vor-Ort-Gespräch'] // i18n-ok: DB-Werte
 
 /** kind aus der Dateiendung/-name vorschlagen (Spec B1). */
 function guessKind(name: string): string {
   const n = name.toLowerCase()
   const ext = n.includes('.') ? n.split('.').pop()! : ''
   if (['vtt', 'srt', 'txt', 'md'].includes(ext)) return 'Transkript'
-  if (['pptx', 'ppt'].includes(ext)) return 'Präsentation'
+  if (['pptx', 'ppt'].includes(ext)) return 'Präsentation' // i18n-ok: DB-Wert
   if (['pdf', 'docx'].includes(ext) && /stellen|jd|job/.test(n)) return 'Stellenbeschreibung'
   return 'Sonstiges'
 }
@@ -85,7 +93,7 @@ function guessKind(name: string): string {
 function fileIcon(kind: string, name: string): string {
   if (kind === 'Transkript') return '🎙'
   if (kind === 'Stellenbeschreibung' || kind === 'Stellenausschreibung') return '📋'
-  if (kind === 'Präsentation' || /\.pptx?$/i.test(name)) return '📊'
+  if (kind === 'Präsentation' || /\.pptx?$/i.test(name)) return '📊' // i18n-ok: DB-Wert
   return '📄'
 }
 
@@ -101,7 +109,7 @@ function logTime(iso: string) {
   // P2-20: Die API kennzeichnet ihre Zeitstempel seit 28.08.2026 als UTC (`app/zeit.py`),
   // das Anhaengen von 'Z' ist damit ueberfluessig geworden.
   const d = new Date(iso)
-  return d.toLocaleString('de-DE', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' })
+  return datumZeit(d, { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' })
 }
 
 /** Ein Schritt der Workflow-Karte „Unterlagen erstellen" (Phase 16): Nummer/✓/🔒-Kreis + Inhalt.
@@ -113,9 +121,9 @@ function WfStep({ n, done, locked, lockedTitle, optional, children }: {
   const base = 'flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs'
   const circle = done
     ? <span className={`${base} bg-emerald-500 font-bold text-white`}>✓</span>
-    : optional
+    : optional // i18n-ok: Ausdruck, kein Text
     ? <span className={`${base} border border-dashed border-slate-300`} />
-    : locked
+    : locked // i18n-ok: Ausdruck, kein Text
     ? <span className={`${base} bg-slate-100 text-slate-300`}>🔒</span>
     : <span className={`${base} bg-brand-navy font-semibold text-white`}>{n}</span>
   return (
@@ -131,10 +139,7 @@ type Pending = {
   kontakt: string; gespraechsart: string; interview_id: string; recorded_at: string; auswerten: boolean
 }
 
-const DEBRIEF_CHIP: Record<string, string> = {
-  queued: 'Auswertung wartet…', running: 'Auswertung läuft…',
-  done: '✓ ausgewertet', failed: '✗ fehlgeschlagen', cancelled: 'abgebrochen',
-}
+const debriefChip = (status: string): string => t(`jobdetail:debrief.chip_${status}`, { defaultValue: status })
 
 /** Runden-Auswahl für ein Transkript (Einfügen wie Datei-Upload nutzen dieselbe). Die Option
  *  „Neue Runde anlegen…" blendet zwei Zusatzfelder ein (NeueRundeFelder) und wird beim Speichern
@@ -150,15 +155,15 @@ function RundenWahl({ form, setForm, interviews, className }: {
     setForm({
       ...form, interview_id: NEUE_RUNDE,
       neu_runde: form.neu_runde || String((interviews?.length || 0) + 1),
-      neu_art: form.neu_art || ((interviews?.length || 0) === 0 ? 'HR-Screen' : 'Fachgespräch'),
+      neu_art: form.neu_art || ((interviews?.length || 0) === 0 ? 'HR-Screen' : 'Fachgespräch'), // i18n-ok: DB-Wert
     })
   }
   return (
     <select value={form.interview_id} onChange={(e) => waehle(e.target.value)}
       className={className || 'w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm focus:border-brand-cyan focus:outline-none'}>
-      <option value="">— ohne Zuordnung —</option>
-      {(interviews || []).map((iv: any) => <option key={iv.id} value={iv.id}>Runde {iv.runde} · {iv.art}</option>)}
-      <option value={NEUE_RUNDE}>+ Neue Runde anlegen…</option>
+      <option value="">{t('jobdetail:runde.ohne_zuordnung')}</option>
+      {(interviews || []).map((iv: any) => <option key={iv.id} value={iv.id}>{t('jobdetail:runde.runde_art', { runde: iv.runde, art: dbWert(iv.art) })}</option>)}
+      <option value={NEUE_RUNDE}>{t('jobdetail:runde.neu_anlegen')}</option>
     </select>
   )
 }
@@ -170,12 +175,12 @@ function NeueRundeFelder({ form, setForm }: { form: any; setForm: (f: any) => vo
   const feld = 'rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm focus:border-brand-cyan focus:outline-none'
   return (
     <div className="flex items-center gap-2 rounded-lg border border-brand-cyan/40 bg-white p-2">
-      <span className="text-xs text-slate-500">Neue Runde:</span>
-      <input type="number" min={1} title="Rundennummer" value={form.neu_runde}
+      <span className="text-xs text-slate-500">{t('jobdetail:runde.neue_runde')}</span>
+      <input type="number" min={1} title={t('jobdetail:runde.nummer_titel')} value={form.neu_runde}
         onChange={(e) => setForm({ ...form, neu_runde: e.target.value })} className={`${feld} w-16`} />
       <select value={form.neu_art} onChange={(e) => setForm({ ...form, neu_art: e.target.value })}
         className={`${feld} flex-1`}>
-        {IV_ARTEN.map((a) => <option key={a} value={a}>{a}</option>)}
+        {IV_ARTEN.map((a) => <option key={a} value={a}>{dbWert(a)}</option>)}
       </select>
     </div>
   )
@@ -184,14 +189,14 @@ function NeueRundeFelder({ form, setForm }: { form: any; setForm: (f: any) => vo
 /** „🧠 Auswerten"-Trigger + Status-Chip für ein Transkript (Phase 30: der Report selbst — Basis
     oder Vollversion — ist jetzt IMMER über den „📄 Report öffnen"-Link an der Transkript-Zeile
     erreichbar, s. u.; dieser Button startet/wiederholt nur den Debrief-Skill). */
-function DebriefBadge({ t, task, onStart }: { t: any; task: any; onStart: (t: any) => void }) {
+function DebriefBadge({ t: tr, task, onStart }: { t: any; task: any; onStart: (t: any) => void }) {
   const active = task && ['queued', 'running'].includes(task.status)
   return (
     <span className="flex items-center gap-2 text-xs">
-      <button onClick={() => onStart(t)} disabled={active} className="text-brand-cyan hover:underline disabled:opacity-50">
-        🧠 {t.summary ? 'Erneut auswerten' : 'Auswerten'}
+      <button onClick={() => onStart(tr)} disabled={active} className="text-brand-cyan hover:underline disabled:opacity-50">
+        🧠 {tr.summary ? t('jobdetail:debrief.erneut') : t('jobdetail:debrief.auswerten')}
       </button>
-      {task && <span className="text-slate-400">{DEBRIEF_CHIP[task.status] || task.status}</span>}
+      {task && <span className="text-slate-400">{debriefChip(task.status)}</span>}
     </span>
   )
 }
@@ -259,23 +264,23 @@ function textZuEntwurf(text: string, bloecke: any[]): { entwurf: any[] } | { feh
     // eine Zeile voraus und erwartete bereits die nächste Überschrift.
     const zeilenImBlock = String(b.text ?? '').split('\n').length
     if (idx + zeilenImBlock > zeilen.length) {
-      return { fehler: `Zeile fehlt (erwartet: „${b.text.slice(0, 40)}…") — nur Bullet-Zeilen („- ") dürfen frei hinzugefügt/entfernt werden.` }
+      return { fehler: t('jobdetail:cv.fehler_zeile_fehlt', { text: b.text.slice(0, 40) }) }
     }
     let zeile = zeilen.slice(idx, idx + zeilenImBlock).join('\n')
     const istUeberschrift = String(b.style || '').startsWith('Heading')
     if (istUeberschrift) {
       if (!zeile.startsWith('### ')) {
-        return { fehler: `Überschrift-Markierung „### " fehlt vor „${zeile.slice(0, 40)}…" — bitte nicht entfernen.` }
+        return { fehler: t('jobdetail:cv.fehler_ueberschrift', { zeile: zeile.slice(0, 40) }) }
       }
       zeile = zeile.slice(4)
     } else if (zeile.startsWith('- ') || zeile.startsWith('### ')) {
-      return { fehler: `Zeile „${zeile.slice(0, 40)}…" darf kein „- "/„### "-Präfix haben — nur Überschriften bzw. Bullet-Zeilen dürfen das. Wurde eine Überschrift/Fließzeile gelöscht?` }
+      return { fehler: t('jobdetail:cv.fehler_praefix', { zeile: zeile.slice(0, 40) }) }
     }
     entwurf.push({ i: b.i, text: zeile })
     idx += zeilenImBlock
   }
   if (zeilen.slice(idx).some((z) => z.trim())) {
-    return { fehler: 'Zusätzliche Zeile am Ende gefunden, die zu keiner Überschrift/keinem Absatz gehört — nur Bullet-Zeilen („- ") dürfen frei hinzugefügt werden.' }
+    return { fehler: t('jobdetail:cv.fehler_zusatzzeile') }
   }
   return { entwurf }
 }
@@ -314,7 +319,7 @@ function CvEntwurfFenster({ cv, jobId, onSaved }: { cv: any; jobId: number; onSa
       await api(`/cv-versions/${cv.id}/entwurf`, { method: 'PATCH', body: JSON.stringify({ entwurf_text: geparst.entwurf }) })
       setOriginal(text)
       setSaved(true); setTimeout(() => setSaved(false), 2000)
-    } catch (e: any) { setErr(e?.message || 'Speichern fehlgeschlagen') }
+    } catch (e: any) { setErr(e?.message || t('jobdetail:allgemein.speichern_fehlgeschlagen')) }
     finally { setSaving(false) }
   }
 
@@ -323,9 +328,9 @@ function CvEntwurfFenster({ cv, jobId, onSaved }: { cv: any; jobId: number; onSa
       <button onClick={() => setOpen(!open)} className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm hover:bg-slate-50">
         <span className="text-slate-400">{open ? '▾' : '▸'}</span>
         <span className="font-medium text-brand-navy">
-          {istFertig ? 'CV fertig — Word/PDF/ATS erzeugt' : 'CV-Entwurf bearbeiten'}
+          {istFertig ? t('jobdetail:cv.titel_fertig') : t('jobdetail:cv.titel_entwurf')}
         </span>
-        <span className="text-xs text-slate-400">({zeilenAnzahl} Zeilen)</span>
+        <span className="text-xs text-slate-400">{t('jobdetail:cv.zeilen', { count: zeilenAnzahl })}</span>
       </button>
       {open && (
         <div className="space-y-3 border-t border-slate-100 p-4">
@@ -334,18 +339,21 @@ function CvEntwurfFenster({ cv, jobId, onSaved }: { cv: any; jobId: number; onSa
               darüber; der Lauf darunter baut Word/PDF/ATS aus dem gespeicherten Stand neu. */}
           {istFertig && (
             <div className="flex flex-wrap gap-3 text-sm">
-              <a href={artifactUrl(cv.file_path)} className="text-brand-cyan hover:underline">Word öffnen</a>
-              <a href={artifactUrl(cv.file_path, true)} className="text-brand-cyan hover:underline">⬇ Word</a>
-              {cv.pdf_path && <a href={artifactUrl(cv.pdf_path)} className="text-brand-cyan hover:underline">PDF ansehen</a>}
-              {cv.pdf_path && <a href={artifactUrl(cv.pdf_path, true)} className="text-brand-cyan hover:underline">⬇ PDF</a>}
-              {cv.ats_scan_path && <a href={artifactUrl(cv.ats_scan_path)} className="text-brand-cyan hover:underline">ATS-Scan öffnen</a>}
+              <a href={artifactUrl(cv.file_path)} className="text-brand-cyan hover:underline">{t('jobdetail:cv.word_oeffnen')}</a>
+              <a href={artifactUrl(cv.file_path, true)} className="text-brand-cyan hover:underline">{t('jobdetail:cv.word_download')}</a>
+              {cv.pdf_path && <a href={artifactUrl(cv.pdf_path)} className="text-brand-cyan hover:underline">{t('jobdetail:cv.pdf_ansehen')}</a>}
+              {cv.pdf_path && <a href={artifactUrl(cv.pdf_path, true)} className="text-brand-cyan hover:underline">{t('jobdetail:cv.pdf_download')}</a>}
+              {cv.ats_scan_path && <a href={artifactUrl(cv.ats_scan_path)} className="text-brand-cyan hover:underline">{t('jobdetail:cv.ats_oeffnen')}</a>}
             </div>
           )}
           <div className="text-xs text-slate-400">
-            <code className="rounded bg-slate-100 px-1">### Überschrift</code> nicht entfernen · <code className="rounded bg-slate-100 px-1">- Bullet</code> frei änderbar/hinzufügbar/entfernbar · sonstige Zeilen: Fließtext (in-place)
+            <Trans i18nKey="jobdetail:cv.editor_hinweis" components={{
+              k1: <code className="rounded bg-slate-100 px-1" />,
+              k2: <code className="rounded bg-slate-100 px-1" />,
+            }} />
           </div>
           {bloecke.length === 0 ? (
-            <div className="text-sm text-slate-400">Kein editierbarer Entwurf-Text vorhanden.</div>
+            <div className="text-sm text-slate-400">{t('jobdetail:cv.kein_entwurf')}</div>
           ) : (
             <textarea value={text} onChange={(e) => setText(e.target.value)} rows={26} spellCheck={false}
               className="w-full rounded-lg border border-slate-300 px-2.5 py-2 font-mono text-xs leading-relaxed focus:border-brand-cyan focus:outline-none" />
@@ -353,19 +361,19 @@ function CvEntwurfFenster({ cv, jobId, onSaved }: { cv: any; jobId: number; onSa
           <div className="flex items-center gap-2 border-t border-slate-100 pt-3">
             <button onClick={save} disabled={saving || !dirty}
               className="rounded-lg bg-brand-cyan px-3 py-1.5 text-sm font-medium text-brand-aufAktion hover:bg-brand-cyanHover disabled:cursor-not-allowed disabled:opacity-40">
-              {saving ? 'Speichern…' : 'Speichern'}
+              {saving ? t('jobdetail:allgemein.speichern_laeuft') : t('jobdetail:allgemein.speichern')}
             </button>
-            {saved && <span className="text-sm text-emerald-600">✓ Gespeichert</span>}
+            {saved && <span className="text-sm text-emerald-600">{t('jobdetail:allgemein.gespeichert')}</span>}
           </div>
           {err && <div className="rounded-lg bg-rose-50 p-2 text-xs text-rose-700">{err}</div>}
           <div className="border-t border-slate-100 pt-3">
             {dirty ? (
               <div className="rounded-lg bg-amber-50 p-2 text-xs text-amber-800">
-                Ungespeicherte Änderungen — erst „Speichern", dann den Lauf starten.
+                {t('jobdetail:cv.ungespeichert')}
               </div>
             ) : (
               <AgentTaskButton kind="cv-erstellen" jobId={jobId} onFinished={onSaved}
-                label={istFertig ? 'CV neu erstellen (Word + PDF + ATS)' : 'CV erstellen (Word + PDF + ATS)'} />
+                label={istFertig ? t('jobdetail:cv.neu_erstellen') : t('jobdetail:cv.erstellen')} />
             )}
           </div>
         </div>
@@ -409,7 +417,7 @@ function CoverLetterEditor({ application, jobId, onSaved }: { application: any; 
       await api(`/applications/${application.id}`, { method: 'PATCH', body: JSON.stringify({ cover_letter_text: text }) })
       setOriginal(text)
       setSaved(true); setTimeout(() => setSaved(false), 2000)
-    } catch (e: any) { setErr(e?.message || 'Speichern fehlgeschlagen') }
+    } catch (e: any) { setErr(e?.message || t('jobdetail:allgemein.speichern_fehlgeschlagen')) }
     finally { setSaving(false) }
   }
 
@@ -418,7 +426,7 @@ function CoverLetterEditor({ application, jobId, onSaved }: { application: any; 
     try {
       const r = await api<{ text: string }>(`/applications/${application.id}/cover-letter-text-from-docx`)
       setText(r.text)
-    } catch (e: any) { setErr(e?.message || 'Laden fehlgeschlagen') }
+    } catch (e: any) { setErr(e?.message || t('jobdetail:allgemein.laden_fehlgeschlagen')) }
     finally { setLoadingDocx(false) }
   }
 
@@ -426,42 +434,42 @@ function CoverLetterEditor({ application, jobId, onSaved }: { application: any; 
     <div className="mt-3 rounded-xl border border-slate-200">
       <button onClick={() => setOpen(!open)} className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm hover:bg-slate-50">
         <span className="text-slate-400">{open ? '▾' : '▸'}</span>
-        <span className="font-medium text-brand-navy">Anschreiben bearbeiten</span>
+        <span className="font-medium text-brand-navy">{t('jobdetail:anschreiben.bearbeiten')}</span>
       </button>
       {open && (
         <div className="space-y-3 border-t border-slate-100 p-4">
           {!text && application.cover_letter_path && (
             <button onClick={ausDocxLaden} disabled={loadingDocx}
               className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40">
-              {loadingDocx ? 'Lädt…' : 'Text aus vorhandener .docx laden'}
+              {loadingDocx ? t('jobdetail:allgemein.laedt') : t('jobdetail:anschreiben.aus_docx')}
             </button>
           )}
           {externGeaendert && (
             <div className="flex items-center justify-between gap-2 rounded-lg bg-amber-50 p-2 text-xs text-amber-800">
-              <span>Ein neuer Lauf hat das Anschreiben ersetzt — deine ungespeicherten Änderungen stehen noch hier.</span>
+              <span>{t('jobdetail:anschreiben.extern_geaendert')}</span>
               <button onClick={uebernehmen} className="shrink-0 rounded-lg border border-amber-300 px-2 py-1 font-medium text-amber-800 hover:bg-amber-100">
-                Neuen Text übernehmen
+                {t('jobdetail:anschreiben.neuen_text')}
               </button>
             </div>
           )}
           <textarea value={text} onChange={(e) => setText(e.target.value)} rows={24}
-            placeholder="Noch kein Anschreiben-Text vorhanden."
+            placeholder={t('jobdetail:anschreiben.platzhalter')}
             className="w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm focus:border-brand-cyan focus:outline-none" />
           <div className="flex items-center gap-2 border-t border-slate-100 pt-3">
             <button onClick={save} disabled={saving || !dirty}
               className="rounded-lg bg-brand-cyan px-3 py-1.5 text-sm font-medium text-brand-aufAktion hover:bg-brand-cyanHover disabled:cursor-not-allowed disabled:opacity-40">
-              {saving ? 'Speichern…' : 'Anschreiben speichern'}
+              {saving ? t('jobdetail:allgemein.speichern_laeuft') : t('jobdetail:anschreiben.speichern')}
             </button>
-            {saved && <span className="text-sm text-emerald-600">✓ Gespeichert</span>}
+            {saved && <span className="text-sm text-emerald-600">{t('jobdetail:allgemein.gespeichert')}</span>}
             {err && <span className="text-sm text-rose-600">{err}</span>}
           </div>
           <div className="border-t border-slate-100 pt-3">
             {dirty ? (
               <div className="rounded-lg bg-amber-50 p-2 text-xs text-amber-800">
-                Ungespeicherte Änderungen — erst „Anschreiben speichern", dann „Word + PDF erzeugen".
+                {t('jobdetail:anschreiben.ungespeichert')}
               </div>
             ) : text ? (
-              <AgentTaskButton kind="cover-letter-render" jobId={jobId} label="Word + PDF erzeugen" onFinished={onSaved} />
+              <AgentTaskButton kind="cover-letter-render" jobId={jobId} label={t('jobdetail:anschreiben.word_pdf')} onFinished={onSaved} />
             ) : null}
           </div>
         </div>
@@ -470,12 +478,12 @@ function CoverLetterEditor({ application, jobId, onSaved }: { application: any; 
   )
 }
 
-function Field({ label, value, href, fallback, warn }: {
-  label: string; value: any; href?: string; fallback?: string; warn?: string
+function Field({ label, value, href, fallback, warn, fmt }: {
+  label: string; value: any; href?: string; fallback?: string; warn?: string; fmt?: (v: string) => string
 }) {
   const leer = value === null || value === undefined || value === ''
   if (leer && !fallback) return null                       // bisheriges Verhalten
-  const anzeige = leer ? fallback : String(value)
+  const anzeige = leer ? fallback : (fmt ? fmt(String(value)) : String(value))
   return (
     <div className="flex gap-2 py-1 text-sm">
       <div className="w-40 shrink-0 text-slate-400">{label}</div>
@@ -578,7 +586,7 @@ export default function JobDetail() {
         const neu = await api<any>(`/tasks/${chatTask.id}`)
         setChatTask(neu)
         if (neu.status === 'done') { setChatTask(null); await Promise.all([loadChat(), loadLog()]) }
-        if (neu.status === 'failed') setChatErr(neu.error || 'Frage fehlgeschlagen')
+        if (neu.status === 'failed') setChatErr(neu.error || t('jobdetail:chat.fehler_frage'))
       } catch { /* nächster Tick */ }
     }, 3000)
     return () => clearInterval(iv)
@@ -595,7 +603,7 @@ export default function JobDetail() {
       setChat((c) => [...c, res.user_row])
       setChatTask(res.task)
     } catch (e: any) {
-      const msg = e?.message || 'Frage konnte nicht gestellt werden'
+      const msg = e?.message || t('jobdetail:chat.fehler_stellen')
       setChatErr(msg)
       setChatInput(frage)
       // Phase 82: 409 „'job-frage' läuft für diesen Job bereits (Task <id>)" (main.py::_guard_doppellauf)
@@ -647,8 +655,8 @@ export default function JobDetail() {
   }, [])
 
   if (!data) {
-    if (err) return <div className="rounded-lg bg-rose-50 p-4 text-rose-700">Fehler: {err}</div>
-    return <div className="text-slate-400">Lade…</div>
+    if (err) return <div className="rounded-lg bg-rose-50 p-4 text-rose-700">{t('jobdetail:allgemein.fehler', { fehler: err })}</div>
+    return <div className="text-slate-400">{t('jobdetail:allgemein.lade')}</div>
   }
   const { job, company, contacts, application, emails, cv_versions, interviews, transcripts, files } = data
   const today = isoTag()
@@ -672,19 +680,19 @@ export default function JobDetail() {
   // Abschlussmeldung des AgentTaskButton. Nach onFinished/load() sind die Pfade frisch.
   const cvNeu = (cv_versions || []).reduce((a: any, b: any) => (a && a.id > b.id ? a : b), null)
   const fitLinks = company?.fit_analysis_path
-    ? [{ href: artifactUrl(company.fit_analysis_path), label: '🏢 Company-Fit-Dashboard öffnen' }]
+    ? [{ href: artifactUrl(company.fit_analysis_path), label: t('jobdetail:wf.link_fit') }]
     : undefined
   // Phase 46 Stufe B: WfStep 3 (CV-Match) liefert einen ENTWURF (noch kein Word/PDF) — der Link
   // unter der Abschlussmeldung zeigt deshalb aufs Match-Dashboard, nicht auf CV-Downloads (die
   // gibt's erst nach „CV erstellen", s. CvEntwurfFenster in „Dateien & Dokumente").
   const matchLinks = cvNeu?.match_dashboard_path
-    ? [{ href: artifactUrl(cvNeu.match_dashboard_path), label: '📊 Match-Dashboard öffnen' }]
+    ? [{ href: artifactUrl(cvNeu.match_dashboard_path), label: t('jobdetail:wf.link_match') }]
     : undefined
   const anschreibenLinks = application?.cover_letter_path
     ? [
-        { href: artifactUrl(application.cover_letter_path, true), label: '⬇ Anschreiben (.docx)', download: true },
-        ...(application.cover_letter_pdf_path ? [{ href: artifactUrl(application.cover_letter_pdf_path, true), label: '⬇ Anschreiben (.pdf)', download: true }] : []),
-        ...(application.cover_letter_pdf_path ? [{ href: artifactUrl(application.cover_letter_pdf_path), label: 'Ansehen' }] : []),
+        { href: artifactUrl(application.cover_letter_path, true), label: t('jobdetail:wf.link_docx'), download: true },
+        ...(application.cover_letter_pdf_path ? [{ href: artifactUrl(application.cover_letter_pdf_path, true), label: t('jobdetail:wf.link_pdf'), download: true }] : []),
+        ...(application.cover_letter_pdf_path ? [{ href: artifactUrl(application.cover_letter_pdf_path), label: t('jobdetail:allgemein.ansehen') }] : []),
       ]
     : undefined
 
@@ -694,7 +702,7 @@ export default function JobDetail() {
       await api(`/jobs/${id}`, { method: 'PATCH', body: JSON.stringify({ status }) })
       await load()
       refresh()
-    } catch (e: any) { setStatusErr(e?.message || 'Speichern fehlgeschlagen') }
+    } catch (e: any) { setStatusErr(e?.message || t('jobdetail:allgemein.speichern_fehlgeschlagen')) }
     finally { setSaving(false) }
   }
 
@@ -703,7 +711,7 @@ export default function JobDetail() {
     try {
       await api(`/jobs/${id}`, { method: 'PATCH', body: JSON.stringify({ gut_feeling: v }) })
       await load()
-    } catch (e: any) { setStatusErr(e?.message || 'Speichern fehlgeschlagen') }
+    } catch (e: any) { setStatusErr(e?.message || t('jobdetail:allgemein.speichern_fehlgeschlagen')) }
     finally { setSaving(false) }
   }
 
@@ -734,7 +742,7 @@ export default function JobDetail() {
       refresh()
       setFuSaved(true)
       setTimeout(() => setFuSaved(false), 2000)
-    } catch (e: any) { setFuErr(e?.message || 'Speichern fehlgeschlagen') }
+    } catch (e: any) { setFuErr(e?.message || t('jobdetail:allgemein.speichern_fehlgeschlagen')) }
     finally { setFuSaving(false) }
   }
   const fuDirty = edit.next_step !== (job.next_step || '') ||
@@ -792,8 +800,8 @@ export default function JobDetail() {
       setEckEdit(false); setEckSaved(true)
       setTimeout(() => setEckSaved(false), 2000)
     } catch (e: any) {
-      const msg = e?.message || 'Speichern fehlgeschlagen'
-      setEckErr(jobGespeichert ? `Job-Felder gespeichert — Situation nicht gespeichert: ${msg}` : msg)
+      const msg = e?.message || t('jobdetail:allgemein.speichern_fehlgeschlagen')
+      setEckErr(jobGespeichert ? t('jobdetail:eck.fehler_teilweise', { fehler: msg }) : msg)
       // Job-Felder können bereits persistiert sein — neu laden, sonst zeigt die Eckdaten-Ansicht
       // nach Abbrechen fälschlich den alten Stand, obwohl der Server schon den neuen hat.
       await load()
@@ -812,7 +820,7 @@ export default function JobDetail() {
   const eckSel = (key: string, opts: string[]) => (
     <select className={eckInp} value={eck[key] || ''} onChange={(e) => setEck({ ...eck, [key]: e.target.value })}>
       <option value="">–</option>
-      {opts.map((o) => <option key={o} value={o}>{o}</option>)}
+      {opts.map((o) => <option key={o} value={o}>{key === 'tab' ? wert('tab', o) : dbWert(o)}</option>)}
     </select>
   )
   const eckTxt = (key: string, extra: any = {}) => (
@@ -825,14 +833,14 @@ export default function JobDetail() {
     const re = /KONFLIKT\s+([^:]+):\s*([^|]+)/g
     // Feld-Name → Eckdaten-Zeilen-Label; unbekanntes Feld → Original-URL-Zeile (immer sichtbar).
     const LABEL_FUER: Record<string, string> = {
-      arbeitsmodell: 'Arbeitsmodell', 'work model': 'Arbeitsmodell',
-      seniorität: 'Seniorität', senioritaet: 'Seniorität', seniority: 'Seniorität',
+      arbeitsmodell: t('jobdetail:eck.work_model'), 'work model': t('jobdetail:eck.work_model'),
+      seniorität: t('jobdetail:eck.seniority'), senioritaet: t('jobdetail:eck.seniority'), seniority: t('jobdetail:eck.seniority'), // i18n-ok: Feldnamen aus dem Server-Hinweis
     }
     let m: RegExpExecArray | null
     while ((m = re.exec(job.verify_note)) !== null) {
       const feld = m[1].trim()
       const text = `KONFLIKT ${feld}: ${m[2].trim()}`
-      const label = LABEL_FUER[feld.toLowerCase()] || 'Original-URL'
+      const label = LABEL_FUER[feld.toLowerCase()] || t('jobdetail:eck.original_url')
       warnFuer[label] = warnFuer[label] ? `${warnFuer[label]}\n${text}` : text
     }
   }
@@ -842,7 +850,7 @@ export default function JobDetail() {
     // Erste Runde ist typischerweise ein HR-Screen, jede weitere eher ein Fachgespräch — der
     // Vorschlag spart den häufigsten Klick, ohne etwas festzulegen. `gegenueber` kommt aus der
     // Art (GEGENUEBER_ZU_ART), damit die KPI-Dimension nicht leer bleibt.
-    const art = (interviews?.length || 0) === 0 ? 'HR-Screen' : 'Fachgespräch'
+    const art = (interviews?.length || 0) === 0 ? 'HR-Screen' : 'Fachgespräch' // i18n-ok: DB-Wert
     setIvForm({ art, runde: String((interviews?.length || 0) + 1), scheduled_at: '', interviewer: '',
                 notes: '', gegenueber: GEGENUEBER_ZU_ART[art] || '', vor_ort: false })
     setShowIvForm(true)
@@ -883,7 +891,7 @@ export default function JobDetail() {
     await load()
   }
   const deleteInterview = async (ivId: number) => {
-    if (!window.confirm('Dieses Gespräch löschen? Zugeordnete Transkripte bleiben erhalten.')) return
+    if (!window.confirm(t('jobdetail:interview.confirm_loeschen'))) return
     await api(`/interviews/${ivId}`, { method: 'DELETE' })
     await load()
   }
@@ -926,7 +934,7 @@ export default function JobDetail() {
     await load()
   }
   const deleteTranscript = async (tId: number) => {
-    if (!window.confirm('Dieses Transkript löschen? Die Datei(en) wandern in den Papierkorb.')) return
+    if (!window.confirm(t('jobdetail:transkript.confirm_loeschen'))) return
     await api(`/transcripts/${tId}`, { method: 'DELETE' })
     await load()
   }
@@ -950,7 +958,7 @@ export default function JobDetail() {
       setShowTrUpload(false)
       await load()
     } catch (e: any) {
-      setTrUploadErr(e?.message || 'Upload fehlgeschlagen')
+      setTrUploadErr(e?.message || t('jobdetail:allgemein.upload_fehlgeschlagen'))
     } finally {
       setTrUploading(false)
     }
@@ -994,14 +1002,14 @@ export default function JobDetail() {
         await startDebrief({ id: body.transcript_id, kontakt: m.kontakt, gespraechsart: m.gespraechsart })
       }
     } catch (e: any) {
-      setFileErr(e?.message || 'Upload fehlgeschlagen')
+      setFileErr(e?.message || t('jobdetail:allgemein.upload_fehlgeschlagen'))
     } finally {
       setUploading(false)
     }
   }
 
   const deleteFile = async (fileId: number) => {
-    if (!window.confirm('Datei in den Papierkorb verschieben?')) return
+    if (!window.confirm(t('jobdetail:dateien.confirm_papierkorb'))) return
     await api(`/files/${fileId}`, { method: 'DELETE' })
     await load()
   }
@@ -1010,8 +1018,8 @@ export default function JobDetail() {
   const deleteVirtualFile = async (f: any) => {
     const [, quelle, pk, slot] = String(f.id).split('-')   // 'virt-<quelle>-<pk>-<slot>'
     const text = slot === 'fit'
-      ? `„${f.filename}" in den Papierkorb verschieben? Die Company-Fit-Analyse gilt für ALLE Stellen dieser Firma — sie verschwindet überall, nicht nur hier.`
-      : `„${f.filename}" in den Papierkorb verschieben?`
+      ? t('jobdetail:dateien.confirm_virtuell_fit', { name: f.filename })
+      : t('jobdetail:dateien.confirm_virtuell', { name: f.filename })
     if (!window.confirm(text)) return
     await api(`/files/virtual/${quelle}/${pk}/${slot}`, { method: 'DELETE' })
     await load()
@@ -1023,10 +1031,7 @@ export default function JobDetail() {
     const nDateien = files?.length || 0
     const nInterviews = interviews?.length || 0
     const nTranskripte = transcripts?.length || 0
-    const text = `Stelle „${job.title}" bei ${job.company_name || '–'} löschen? Mit ihr wandern `
-      + `${nDateien} Datei(en) in den Papierkorb; ${nInterviews} Interview(s), ${nTranskripte} `
-      + `Transkript(e), Bewerbung und Verlauf werden entfernt. Der Eintrag bleibt unsichtbar als `
-      + `Dublettenschutz erhalten.`
+    const text = t('jobdetail:loeschen.confirm_job', { titel: job.title, firma: job.company_name || '–', dateien: nDateien, interviews: nInterviews, transkripte: nTranskripte })
     if (!window.confirm(text)) return
     await api(`/jobs/${id}`, { method: 'DELETE' })
     navigate('/jobs')
@@ -1035,25 +1040,25 @@ export default function JobDetail() {
   // ── Gespräch-Debrief starten (Phase 11 Stufe C) ─────────────────────────────
   // Status zentral je transcript_id, damit Transkript-Liste UND Dateiliste denselben
   // laufenden Task zeigen und nicht zweimal starten (der Runner sperrt Doppelläufe je Job).
-  const startDebrief = async (t: any) => {
-    const cur = debriefTasks[t.id]
+  const startDebrief = async (tr: any) => {
+    const cur = debriefTasks[tr.id]
     if (cur && ['queued', 'running'].includes(cur.status)) return
     try {
       const r = await api<any>('/tasks', {
         method: 'POST',
         body: JSON.stringify({ kind: 'gespraech-debrief', job_id: Number(id),
-          params: { transcript_id: t.id, kontakt: t.kontakt || '', gespraechsart: t.gespraechsart || '' } }),
+          params: { transcript_id: tr.id, kontakt: tr.kontakt || '', gespraechsart: tr.gespraechsart || '' } }),
       })
-      setDebriefTasks((d) => ({ ...d, [t.id]: r.tasks ? r.tasks[0] : r }))
+      setDebriefTasks((d) => ({ ...d, [tr.id]: r.tasks ? r.tasks[0] : r }))
     } catch (e: any) {
       setFileErr(String(e?.message || e).includes('409')
-        ? 'Ein Debrief für diese Stelle läuft bereits.' : (e?.message || 'Auswertung konnte nicht starten'))
+        ? t('jobdetail:debrief.laeuft_bereits') : (e?.message || t('jobdetail:debrief.start_fehler')))
     }
   }
 
   return (
     <div className="space-y-5">
-      <Link to="/jobs" className="text-sm text-brand-cyan hover:underline">← Zurück zu Stellen</Link>
+      <Link to="/jobs" className="text-sm text-brand-cyan hover:underline">{t('jobdetail:kopf.zurueck')}</Link>
 
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-center gap-3">
@@ -1067,7 +1072,7 @@ export default function JobDetail() {
           {job.follow_up_date && (
             <span className={`whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium ${
               fuOverdue ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-700'}`}
-              title="Follow-up fällig">⏰ {job.follow_up_date}</span>
+              title={t('jobdetail:kopf.followup_faellig')}>⏰ {job.follow_up_date}</span>
           )}
           <StatusBadge status={job.status} />
           <VerifyBadge verifyNote={job.verify_note} verifiedAt={job.verified_at} />
@@ -1075,7 +1080,7 @@ export default function JobDetail() {
           <NeuausschreibungBadge verifyNote={job.verify_note} />
           {job.url && (
             <a href={job.url} target="_blank" rel="noreferrer" className="rounded-lg bg-brand-cyan px-3 py-1.5 text-sm font-medium text-brand-navy hover:brightness-95">
-              Stelle öffnen ↗
+              {t('jobdetail:kopf.stelle_oeffnen')}
             </a>
           )}
         </div>
@@ -1083,60 +1088,60 @@ export default function JobDetail() {
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-4">
-          <Section title="Bewertung">
-            <p className="whitespace-pre-wrap text-sm text-slate-700">{job.match_rationale || 'Keine Begründung erfasst.'}</p>
+          <Section title={t('jobdetail:bewertung.titel')}>
+            <p className="whitespace-pre-wrap text-sm text-slate-700">{job.match_rationale || t('jobdetail:bewertung.keine_begruendung')}</p>
           </Section>
 
-          <Section title="Eckdaten" right={!eckEdit
-            ? <button onClick={startEck} className="text-xs text-brand-cyan hover:underline">✏️ Bearbeiten</button>
+          <Section title={t('jobdetail:eck.titel')} right={!eckEdit
+            ? <button onClick={startEck} className="text-xs text-brand-cyan hover:underline">{t('jobdetail:eck.bearbeiten')}</button>
             : null}>
             {!eckEdit ? (
               <>
-                <Field label="Seniorität" value={job.seniority_raw || job.seniority} warn={warnFuer['Seniorität']} />
-                <Field label="Arbeitsmodell" value={job.work_model} warn={warnFuer['Arbeitsmodell']} />
-                <Field label="Umzug nötig?" value={job.relocation_needed} />
-                <Field label="Plan A/B/C" value={job.plan_ab} />
-                <Field label="Situation" value={company?.situation_raw || company?.situation} />
-                <Field label="Suche-Tab" value={job.tab} />
-                <Field label="Portal" value={job.portal} />
-                <Field label="Original-URL" value={job.url ? shortUrl(job.url) : null} href={job.url} fallback="–" warn={warnFuer['Original-URL']} />
-                <Field label="Karriereseite" value={job.career_url ? shortUrl(job.career_url) : null} href={job.career_url || undefined} fallback="–" />
+                <Field label={t('jobdetail:eck.seniority')} value={job.seniority_raw || job.seniority} fmt={(v) => wert('seniority', v)} warn={warnFuer[t('jobdetail:eck.seniority')]} />
+                <Field label={t('jobdetail:eck.work_model')} value={job.work_model} fmt={dbWert} warn={warnFuer[t('jobdetail:eck.work_model')]} />
+                <Field label={t('jobdetail:eck.relocation')} value={job.relocation_needed} fmt={dbWert} />
+                <Field label={t('jobdetail:eck.plan')} value={job.plan_ab} />
+                <Field label={t('jobdetail:eck.situation')} value={company?.situation_raw || company?.situation} fmt={(v) => wert('situation', v)} />
+                <Field label={t('jobdetail:eck.tab')} value={job.tab} fmt={(v) => wert('tab', v)} />
+                <Field label={t('jobdetail:eck.portal')} value={job.portal} fmt={(v) => wert('portal', v)} />
+                <Field label={t('jobdetail:eck.original_url')} value={job.url ? shortUrl(job.url) : null} href={job.url} fallback="–" warn={warnFuer[t('jobdetail:eck.original_url')]} />
+                <Field label={t('jobdetail:eck.career_url')} value={job.career_url ? shortUrl(job.career_url) : null} href={job.career_url || undefined} fallback="–" />
                 {job.portal_closed ? (
                   <div className="flex gap-2 py-1 text-sm">
-                    <div className="w-40 shrink-0 text-slate-400">Portal-Bewerbung</div>
-                    <div className="text-rose-600">geschlossen — Bewerbung ggf. über die Karriereseite</div>
+                    <div className="w-40 shrink-0 text-slate-400">{t('jobdetail:eck.portal_bewerbung')}</div>
+                    <div className="text-rose-600">{t('jobdetail:eck.portal_geschlossen_text')}</div>
                   </div>
                 ) : null}
                 {job.availability_status ? (
                   <div className="flex gap-2 py-1 text-sm">
-                    <div className="w-40 shrink-0 text-slate-400">Verfügbarkeit</div>
+                    <div className="w-40 shrink-0 text-slate-400">{t('jobdetail:eck.verfuegbarkeit')}</div>
                     <div className={AVAILABILITY_LABELS[job.availability_status]?.cls || 'text-slate-600'}>
-                      {AVAILABILITY_LABELS[job.availability_status]?.label || job.availability_status}
-                      {job.availability_checked_at && ` · geprüft ${job.availability_checked_at}`}
+                      {AVAILABILITY_LABELS[job.availability_status]?.label() || job.availability_status}
+                      {job.availability_checked_at && ` · ${t('jobdetail:eck.geprueft', { datum: job.availability_checked_at })}`}
                     </div>
                   </div>
                 ) : null}
-                <Field label="Gehalt" value={job.salary} fallback="keine Angabe" />
-                <Field label="Veröffentlicht" value={job.published_date} />
-                <Field label="Gefunden am" value={job.found_date} />
-                <Field label="Status (Original)" value={job.status_raw} />
+                <Field label={t('jobdetail:eck.gehalt')} value={job.salary} fallback={t('jobdetail:eck.keine_angabe')} />
+                <Field label={t('jobdetail:eck.veroeffentlicht')} value={job.published_date} />
+                <Field label={t('jobdetail:eck.gefunden_am')} value={job.found_date} />
+                <Field label={t('jobdetail:eck.status_original')} value={job.status_raw} />
               </>
             ) : (
               <>
-                {eckRow('Seniorität', <>
+                {eckRow(t('jobdetail:eck.seniority'), <>
                   {eckTxt('seniority', { list: 'senioritaeten-vorschlaege' })}
                   <datalist id="senioritaeten-vorschlaege">{SENIORITAETEN.map((s) => <option key={s} value={s} />)}</datalist>
                 </>)}
-                {eckRow('Arbeitsmodell', eckSel('work_model', ['Remote', 'Hybrid', 'Onsite', 'Unbekannt']))}
-                {eckRow('Umzug nötig?', eckSel('relocation_needed', ['Ja', 'Nein', 'Unklar']))}
-                {eckRow('Plan A/B/C', eckSel('plan_ab', ['A', 'B', 'C']))}
-                {eckRow('Situation', company
+                {eckRow(t('jobdetail:eck.work_model'), eckSel('work_model', ['Remote', 'Hybrid', 'Onsite', 'Unbekannt']))}
+                {eckRow(t('jobdetail:eck.relocation'), eckSel('relocation_needed', ['Ja', 'Nein', 'Unklar']))}
+                {eckRow(t('jobdetail:eck.plan'), eckSel('plan_ab', ['A', 'B', 'C']))}
+                {eckRow(t('jobdetail:eck.situation'), company
                   ? eckTxt('situation')
-                  : <span className="italic text-slate-400" title="Keine Firma verknüpft">–</span>)}
+                  : <span className="italic text-slate-400" title={t('jobdetail:eck.keine_firma')}>–</span>)}
                 {/* P2-51: der aktuelle job.tab bleibt als Option sichtbar, auch wenn er (z. B. nach
                     einer Umkreis-Umbenennung) nicht mehr in der aktuellen Liste steht. */}
-                {eckRow('Suche-Tab', eckSel('tab', job.tab && !suchTabs.includes(job.tab) ? [...suchTabs, job.tab] : suchTabs))}
-                {eckRow('Portal', <>
+                {eckRow(t('jobdetail:eck.tab'), eckSel('tab', job.tab && !suchTabs.includes(job.tab) ? [...suchTabs, job.tab] : suchTabs))}
+                {eckRow(t('jobdetail:eck.portal'), <>
                   <input className={eckInp} list="eck-portale" value={eck.portal || ''}
                     onChange={(e) => setEck({ ...eck, portal: e.target.value })} />
                   <datalist id="eck-portale">
@@ -1144,67 +1149,68 @@ export default function JobDetail() {
                       .map((p) => <option key={p} value={p} />)}
                   </datalist>
                 </>)}
-                {eckRow('Original-URL', eckTxt('url', {
+                {eckRow(t('jobdetail:eck.original_url'), eckTxt('url', {
                   type: 'url', placeholder: 'https://…',
                   onChange: (e: any) => { setEck({ ...eck, url: e.target.value }); setEckUrlErr(false) },
                 }))}
-                {eckRow('Karriereseite', eckTxt('career_url', {
+                {eckRow(t('jobdetail:eck.career_url'), eckTxt('career_url', {
                   type: 'url', placeholder: 'https://…',
                   onChange: (e: any) => { setEck({ ...eck, career_url: e.target.value }); setEckCareerUrlErr(false) },
                 }))}
-                {eckRow('Portal geschlossen?', (
+                {eckRow(t('jobdetail:eck.portal_geschlossen_frage'), (
                   <select className={eckInp} value={eck.portal_closed || '0'}
                     onChange={(e) => setEck({ ...eck, portal_closed: e.target.value })}>
-                    <option value="0">Nein</option>
-                    <option value="1">Ja</option>
+                    <option value="0">{t('jobdetail:wert.Nein')}</option>
+                    <option value="1">{t('jobdetail:wert.Ja')}</option>
                   </select>
                 ))}
-                {eckRow('Gehalt', eckTxt('salary', { placeholder: 'z. B. 90.000–110.000 € p. a.' }))}
-                {eckRow('Veröffentlicht', eckTxt('published_date', { type: 'date' }))}
-                {eckRow('Gefunden am', eckTxt('found_date', { type: 'date' }), 'Systemwert — nur bei Bedarf ändern')}
-                {eckRow('Status (Original)', eckTxt('status_raw'), 'Systemwert — Originaltext der Quelle')}
-                {eckUrlErr && <div className="mt-1 text-xs text-rose-600">URL muss mit http:// oder https:// beginnen.</div>}
-                {eckCareerUrlErr && <div className="mt-1 text-xs text-rose-600">Karriereseite: URL muss mit http(s):// beginnen.</div>}
+                {eckRow(t('jobdetail:eck.gehalt'), eckTxt('salary', { placeholder: t('jobdetail:eck.gehalt_beispiel') }))}
+                {eckRow(t('jobdetail:eck.veroeffentlicht'), eckTxt('published_date', { type: 'date' }))}
+                {eckRow(t('jobdetail:eck.gefunden_am'), eckTxt('found_date', { type: 'date' }), t('jobdetail:eck.systemwert_aendern'))}
+                {eckRow(t('jobdetail:eck.status_original'), eckTxt('status_raw'), t('jobdetail:eck.systemwert_original'))}
+                {eckUrlErr && <div className="mt-1 text-xs text-rose-600">{t('jobdetail:eck.url_fehler')}</div>}
+                {eckCareerUrlErr && <div className="mt-1 text-xs text-rose-600">{t('jobdetail:eck.karriere_url_fehler')}</div>}
                 {urlGeaendert && job.verified_at &&
-                  <div className="mt-1 text-xs text-amber-700">URL geändert — Verifikations-Badge wird zurückgesetzt.</div>}
+                  <div className="mt-1 text-xs text-amber-700">{t('jobdetail:eck.url_geaendert')}</div>}
                 <div className="mt-2 flex gap-2">
                   <button onClick={saveEck} disabled={eckSaving || !eckDirty}
                     className="rounded-lg bg-brand-cyan px-3 py-1.5 text-sm font-semibold text-brand-aufAktion transition hover:bg-brand-cyanHover disabled:cursor-not-allowed disabled:opacity-50">
-                    {eckSaving ? 'Speichert…' : 'Speichern'}
+                    {eckSaving ? t('jobdetail:allgemein.speichert') : t('jobdetail:allgemein.speichern')}
                   </button>
                   <button onClick={() => setEckEdit(false)}
-                    className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50">Abbrechen</button>
+                    className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50">{t('jobdetail:allgemein.abbrechen')}</button>
                 </div>
               </>
             )}
             {eckErr && <div className="mt-1 rounded-lg bg-rose-50 p-2 text-xs text-rose-700">{eckErr}</div>}
-            {eckSaved && <div className="mt-1 text-xs text-emerald-600">✓ Gespeichert</div>}
+            {eckSaved && <div className="mt-1 text-xs text-emerald-600">{t('jobdetail:allgemein.gespeichert')}</div>}
             <div className="mt-3 border-t border-slate-100 pt-3 text-right">
-              <button onClick={deleteJob} className="text-xs text-slate-400 hover:text-rose-600">🗑 Stelle löschen</button>
+              <button onClick={deleteJob} className="text-xs text-slate-400 hover:text-rose-600">{t('jobdetail:eck.stelle_loeschen')}</button>
             </div>
           </Section>
 
-          <Section title={`Notizen & Verlauf (${log.length})`}>
+          <Section title={t('jobdetail:notizen.titel', { anzahl: log.length })}>
             <div className="mb-3 flex gap-2">
               <input className="flex-1 rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm focus:border-brand-cyan focus:outline-none"
-                     value={logInput} placeholder="Notiz hinzufügen…"
+                     value={logInput} placeholder={t('jobdetail:notizen.platzhalter')}
                      onChange={(e) => setLogInput(e.target.value)}
                      onKeyDown={(e) => { if (e.key === 'Enter') addLogEntry() }} />
               <button onClick={addLogEntry} disabled={!logInput.trim()}
                       className="rounded-lg border border-brand-cyan/40 px-3 py-1.5 text-sm font-medium text-brand-navy hover:bg-brand-cyan/10 disabled:opacity-40">
-                Hinzufügen
+                {t('jobdetail:allgemein.hinzufuegen')}
               </button>
             </div>
             {log.length === 0 ? (
-              <div className="text-sm text-slate-400">Noch keine Einträge — Änderungen an Status/Follow-up erscheinen hier automatisch.</div>
+              <div className="text-sm text-slate-400">{t('jobdetail:notizen.leer')}</div>
             ) : (
               <div className="max-h-72 space-y-1.5 overflow-y-auto pr-1">
                 {log.map((l) => {
-                  const lang = l.eintrag.length > 160 || (l.eintrag.match(/\n/g) || []).length > 1
+                  const eintrag = verlaufZeile(l.eintrag, l.art)
+                  const lang = eintrag.length > 160 || (eintrag.match(/\n/g) || []).length > 1
                   const isChat = l.art === 'ki-chat'
-                  const firstLine = l.eintrag.split('\n')[0]
+                  const firstLine = eintrag.split('\n')[0]
                   const summary = (isChat ? '💬 ' : '') + (firstLine.length > 100 ? firstLine.slice(0, 100) + '…' : firstLine)
-                  const badge = <span className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase ${l.art === 'auto' ? 'bg-slate-100 text-slate-500' : 'bg-brand-cyan/15 text-brand-navy'}`}>{l.art}</span>
+                  const badge = <span className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase ${l.art === 'auto' ? 'bg-slate-100 text-slate-500' : 'bg-brand-cyan/15 text-brand-navy'}`}>{dbWert(l.art)}</span>
                   const zeit = <span className="shrink-0 whitespace-nowrap tabular-nums text-xs text-slate-400">{logTime(l.created_at)}</span>
                   return (
                     <div key={l.id} className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-sm">
@@ -1213,11 +1219,11 @@ export default function JobDetail() {
                           <summary className="flex cursor-pointer items-start gap-2">
                             {zeit}{badge}<span className="text-slate-700">{summary}</span>
                           </summary>
-                          <div className="mt-1.5 whitespace-pre-wrap pl-1 text-slate-700">{l.eintrag}</div>
+                          <div className="mt-1.5 whitespace-pre-wrap pl-1 text-slate-700">{eintrag}</div>
                         </details>
                       ) : (
                         <div className="flex items-start gap-2">
-                          {zeit}{badge}<span className="whitespace-pre-wrap text-slate-700">{l.eintrag}</span>
+                          {zeit}{badge}<span className="whitespace-pre-wrap text-slate-700">{eintrag}</span>
                         </div>
                       )}
                     </div>
@@ -1227,9 +1233,9 @@ export default function JobDetail() {
             )}
           </Section>
 
-          <Section title="Stelle fragen (KI)">
+          <Section title={t('jobdetail:chat.titel')}>
             {chat.length === 0 && !chatTask ? (
-              <div className="text-sm text-slate-400">Stell eine Frage zu dieser Stelle — die KI antwortet aus den vorliegenden Analysen und Daten.</div>
+              <div className="text-sm text-slate-400">{t('jobdetail:chat.leer')}</div>
             ) : (
               <div className="max-h-96 space-y-2 overflow-y-auto pr-1">
                 {chat.map((c) => (
@@ -1242,10 +1248,10 @@ export default function JobDetail() {
                 ))}
                 {chatAktiv && (
                   <div className="flex items-center justify-start gap-2">
-                    <div className="max-w-[80%] rounded-lg bg-slate-50 px-3 py-2 text-sm italic text-slate-400">KI antwortet…</div>
+                    <div className="max-w-[80%] rounded-lg bg-slate-50 px-3 py-2 text-sm italic text-slate-400">{t('jobdetail:chat.antwortet')}</div>
                     <button onClick={cancelChat}
                       className="shrink-0 rounded-lg border border-slate-300 px-2.5 py-2 text-xs text-slate-600 hover:bg-slate-50">
-                      Abbrechen
+                      {t('jobdetail:allgemein.abbrechen')}
                     </button>
                   </div>
                 )}
@@ -1254,12 +1260,12 @@ export default function JobDetail() {
             {chatErr && <div className="mt-2 text-sm text-rose-600">{chatErr}</div>}
             <div className="mt-3 flex gap-2">
               <input className="flex-1 rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm focus:border-brand-cyan focus:outline-none"
-                     value={chatInput} placeholder="Frage zu dieser Stelle…"
+                     value={chatInput} placeholder={t('jobdetail:chat.platzhalter')}
                      onChange={(e) => setChatInput(e.target.value)}
                      onKeyDown={(e) => { if (e.key === 'Enter') askChat() }} />
               <button onClick={askChat} disabled={!chatInput.trim() || chatAktiv}
                       className="rounded-lg border border-brand-cyan/40 px-3 py-1.5 text-sm font-medium text-brand-navy hover:bg-brand-cyan/10 disabled:opacity-40">
-                Fragen
+                {t('jobdetail:chat.fragen')}
               </button>
             </div>
             {chat.length > 0 && (
@@ -1268,15 +1274,15 @@ export default function JobDetail() {
                     also mit dem Sonnet, das die CLI gerade bereitstellt; eine feste Modellnummer würde hier veralten.
                     P2-86: Unter ChatGPT steht die Beschriftung, die der Server für diese Stufe liefert. Kosten in
                     USD gibt es dort nicht, statt „$0.000“ stehen die Token. */}
-                Modell: {anbieter === 'chatgpt' ? (modellLabel('sonnet') || 'ChatGPT') : 'Sonnet'}
+                {t('jobdetail:chat.modell', { name: anbieter === 'chatgpt' ? (modellLabel('sonnet') || 'ChatGPT') : 'Sonnet' })}
                 {chatKosten ? ` · ${chatKosten}` : ''}
               </div>
             )}
           </Section>
 
-          <Section title={`E-Mail-Verlauf (${emails?.length || 0})`}>
+          <Section title={t('jobdetail:mail.titel', { anzahl: emails?.length || 0 })}>
             {(!emails || emails.length === 0)
-              ? <div className="text-sm text-slate-400">Noch keine zugeordneten E-Mails. Wird über den Gmail-Check (Phase 3) gefüllt.</div>
+              ? <div className="text-sm text-slate-400">{t('jobdetail:mail.leer')}</div>
               : emails.map((e: any) => {
                 const isOpen = openEmail === e.id
                 return (
@@ -1285,11 +1291,11 @@ export default function JobDetail() {
                          className={`cursor-pointer py-2 text-sm hover:bg-brand-cyan/5 ${isOpen ? 'bg-brand-cyan/5' : ''}`}>
                       <div className="flex justify-between">
                         <span className="font-medium">{e.subject}</span>
-                        <span className="text-slate-400">{e.category}</span>
+                        <span className="text-slate-400">{e.category && wert('mail_kategorie', e.category)}</span>
                       </div>
                       <div className="text-slate-500">
                         {e.from_addr} · {e.received_at} {e.response_time_hours != null && `· ${e.response_time_hours}h`}
-                        {e.reply_draft_at && <span className="ml-2 rounded-full bg-slate-200 px-1.5 py-0.5 text-[10px] font-bold text-slate-600">Entwurf</span>}
+                        {e.reply_draft_at && <span className="ml-2 rounded-full bg-slate-200 px-1.5 py-0.5 text-[10px] font-bold text-slate-600">{t('jobdetail:mail.entwurf')}</span>}
                       </div>
                     </div>
                     {isOpen && <EmailDetail email={e} jobId={job.id} onChanged={load} />}
@@ -1298,7 +1304,7 @@ export default function JobDetail() {
               })}
           </Section>
 
-          <Section title={`Dateien & Dokumente (${files?.length || 0})`}>
+          <Section title={t('jobdetail:dateien.titel', { anzahl: files?.length || 0 })}>
             <div
               onDragOver={(e) => { e.preventDefault(); setDragActive(true) }}
               onDragLeave={() => setDragActive(false)}
@@ -1307,7 +1313,7 @@ export default function JobDetail() {
               className={`cursor-pointer rounded-lg border-2 border-dashed p-4 text-center text-sm transition ${
                 dragActive ? 'border-brand-cyan bg-brand-cyan/5 text-brand-navy' : 'border-slate-300 text-slate-400 hover:border-slate-400'}`}
             >
-              Dateien hierher ziehen oder <span className="font-medium text-brand-cyan">auswählen</span> (PDF, PPT, DOCX, Transkript …)
+              <Trans i18nKey="jobdetail:dateien.dropzone" components={{ b: <span className="font-medium text-brand-cyan" /> }} />
               <input ref={fileInput} type="file" multiple className="hidden"
                 onChange={(e) => { queueFiles(e.target.files); e.target.value = '' }} />
             </div>
@@ -1322,12 +1328,12 @@ export default function JobDetail() {
                 </div>
                 <select value={m.kind} onChange={(e) => setPend(i, { kind: e.target.value })}
                   className="w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm focus:border-brand-cyan focus:outline-none">
-                  {FILE_KINDS.map((k) => <option key={k} value={k}>{k}</option>)}
+                  {FILE_KINDS.map((k) => <option key={k} value={k}>{dbWert(k)}</option>)}
                 </select>
                 {m.kind === 'Transkript' && (
                   <div className="space-y-2">
                     <div className="flex gap-2">
-                      <input list={`kontakte-${i}`} placeholder="Gesprächspartner…" value={m.kontakt}
+                      <input list={`kontakte-${i}`} placeholder={t('jobdetail:transkript.gespraechspartner')} value={m.kontakt}
                         onChange={(e) => setPend(i, { kontakt: e.target.value })}
                         className="flex-1 rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm focus:border-brand-cyan focus:outline-none" />
                       <datalist id={`kontakte-${i}`}>
@@ -1335,14 +1341,14 @@ export default function JobDetail() {
                       </datalist>
                       <select value={m.gespraechsart} onChange={(e) => setPend(i, { gespraechsart: e.target.value })}
                         className="rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm focus:border-brand-cyan focus:outline-none">
-                        {GESPRAECHS_ARTEN.map((a) => <option key={a} value={a}>{a}</option>)}
+                        {GESPRAECHS_ARTEN.map((a) => <option key={a} value={a}>{dbWert(a)}</option>)}
                       </select>
                     </div>
                     <div className="flex gap-2">
                       <select value={m.interview_id} onChange={(e) => setPend(i, { interview_id: e.target.value })}
                         className="flex-1 rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm focus:border-brand-cyan focus:outline-none">
-                        <option value="">— Gespräch zuordnen (optional) —</option>
-                        {(interviews || []).map((iv: any) => <option key={iv.id} value={iv.id}>Runde {iv.runde} · {iv.art}</option>)}
+                        <option value="">{t('jobdetail:dateien.zuordnen')}</option>
+                        {(interviews || []).map((iv: any) => <option key={iv.id} value={iv.id}>{t('jobdetail:runde.runde_art', { runde: iv.runde, art: dbWert(iv.art) })}</option>)}
                       </select>
                       <input type="date" value={m.recorded_at} onChange={(e) => setPend(i, { recorded_at: e.target.value })}
                         className="rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm focus:border-brand-cyan focus:outline-none" />
@@ -1350,16 +1356,16 @@ export default function JobDetail() {
                     <label className="flex items-center gap-2 text-xs text-slate-500">
                       <input type="checkbox" checked={m.auswerten} onChange={(e) => setPend(i, { auswerten: e.target.checked })}
                         className="h-4 w-4 rounded border-slate-300 accent-brand-cyan" />
-                      nach Upload auswerten
+                      {t('jobdetail:dateien.nach_upload_auswerten')}
                     </label>
                   </div>
                 )}
                 <div className="flex gap-2">
                   <button onClick={() => uploadPend(i)} disabled={uploading}
                     className="rounded-lg bg-brand-cyan px-3 py-1.5 text-sm font-medium text-brand-aufAktion hover:bg-brand-cyanHover disabled:opacity-40">
-                    {uploading ? 'Lädt…' : 'Hochladen'}
+                    {uploading ? t('jobdetail:allgemein.laedt') : t('jobdetail:allgemein.hochladen')}
                   </button>
-                  <button onClick={() => dropPend(i)} className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50">Verwerfen</button>
+                  <button onClick={() => dropPend(i)} className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50">{t('jobdetail:allgemein.verwerfen')}</button>
                 </div>
               </div>
             ))}
@@ -1380,7 +1386,7 @@ export default function JobDetail() {
                         const generiert = f.virtual || f.kind === 'Beirats-Check'
                         return (
                           <span className={`shrink-0 rounded px-1.5 py-0.5 text-xs ${generiert ? 'bg-brand-cyan/15 text-brand-navy' : 'bg-slate-100 text-slate-600'}`}
-                            title={generiert ? f.note : undefined}>{f.kind}{generiert ? ' · generiert' : ''}</span>
+                            title={generiert ? f.note : undefined}>{dbWert(f.kind)}{generiert ? ` · ${t('jobdetail:dateien.generiert')}` : ''}</span>
                         )
                       })()}
                     </div>
@@ -1390,13 +1396,13 @@ export default function JobDetail() {
                       return lt ? <div className="mt-0.5"><DebriefBadge t={lt} task={debriefTasks[lt.id]} onStart={startDebrief} /></div> : null
                     })()}
                   </div>
-                  <a href={artifactUrl(f.file_path)} className="shrink-0 text-xs text-brand-cyan hover:underline">Öffnen</a>
+                  <a href={artifactUrl(f.file_path)} className="shrink-0 text-xs text-brand-cyan hover:underline">{t('jobdetail:allgemein.oeffnen')}</a>
                   <a href={artifactUrl(f.file_path, true)} className="shrink-0 text-xs text-brand-cyan hover:underline">⬇</a>
                   <button onClick={() => (f.virtual ? deleteVirtualFile(f) : deleteFile(f.id))}
-                    className="shrink-0 text-slate-400 hover:text-rose-600" title="In den Papierkorb">🗑</button>
+                    className="shrink-0 text-slate-400 hover:text-rose-600" title={t('jobdetail:allgemein.papierkorb')}>🗑</button>
                 </div>
               ))}
-              {(!files || files.length === 0) && <div className="text-sm text-slate-400">Noch keine Dateien angehängt.</div>}
+              {(!files || files.length === 0) && <div className="text-sm text-slate-400">{t('jobdetail:dateien.leer')}</div>}
             </div>
 
             {/* Phase 46 Stufe B: Editier-Checkpoint — sobald ein CV-Match gelaufen ist (Entwurf
@@ -1414,7 +1420,7 @@ export default function JobDetail() {
         </div>
 
         <div className="space-y-4">
-          <Section title="Status ändern">
+          <Section title={t('jobdetail:statusbox.titel')}>
             <div className="flex flex-wrap gap-2">
               {STATUSES.map((s) => (
                 <button
@@ -1425,18 +1431,18 @@ export default function JobDetail() {
                     job.status === s ? 'bg-brand-cyan text-brand-aufAktion hover:bg-brand-cyanHover' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                   }`}
                 >
-                  {s}
+                  {wert('status', s)}
                 </button>
               ))}
             </div>
             <div className="mt-3 border-t border-slate-100 pt-3">
-              <div className="mb-1 text-xs font-medium text-slate-500">Bauchgefühl <span className="font-normal text-slate-400">· subjektiv, ergänzt den Zielstellen-Fit</span></div>
+              <div className="mb-1 text-xs font-medium text-slate-500">{t('jobdetail:statusbox.bauchgefuehl')} <span className="font-normal text-slate-400">{t('jobdetail:statusbox.bauchgefuehl_hint')}</span></div>
               <div className="flex items-center gap-0.5">
                 {[1, 2, 3, 4, 5].map((n) => (
                   <button key={n} disabled={saving}
                     onClick={() => setGutFeeling(job.gut_feeling === n ? null : n)}
                     className={`text-xl leading-none transition ${(job.gut_feeling || 0) >= n ? 'text-amber-400' : 'text-slate-200 hover:text-amber-200'}`}
-                    title={`${n}/5${job.gut_feeling === n ? ' — erneut klicken zum Löschen' : ''}`}>
+                    title={job.gut_feeling === n ? t('jobdetail:statusbox.gut_loeschen', { n }) : `${n}/5`}>
                     ★
                   </button>
                 ))}
@@ -1446,16 +1452,18 @@ export default function JobDetail() {
             {statusErr && <div className="mt-3 rounded-lg bg-rose-50 p-2 text-xs text-rose-700">{statusErr}</div>}
             {job.status === 'Absage' && (
               <div className="mt-3 border-t border-slate-100 pt-3">
-                <CopyChip phrase={`Nach Absagegrund fragen für Job ${job.id}`} label="❓ Nach Grund fragen (Mail-Entwurf)" />
-                <p className="mt-1 text-xs text-slate-400">Höfliche Feedback-Nachfrage als Gmail-Entwurf — füllt den Absagegrund mit echten Signalen.</p>
+                <CopyChip
+                  phrase={t('common:ausloeser.absagegrund', { id: job.id })}
+                  label={t('jobdetail:statusbox.nach_grund_fragen')} />
+                <p className="mt-1 text-xs text-slate-400">{t('jobdetail:statusbox.nach_grund_hint')}</p>
               </div>
             )}
           </Section>
 
-          <Section title="Nächste Schritte & Follow-up">
+          <Section title={t('jobdetail:followup.titel')}>
             <div className="space-y-3">
               <div>
-                <label className="mb-1 block text-xs font-medium text-slate-500">Fälligkeitsdatum</label>
+                <label className="mb-1 block text-xs font-medium text-slate-500">{t('jobdetail:followup.faelligkeit')}</label>
                 <div className="flex items-center gap-2">
                   <input
                     type="date"
@@ -1465,29 +1473,29 @@ export default function JobDetail() {
                   />
                   {edit.follow_up_date && (
                     <button onClick={() => setEdit({ ...edit, follow_up_date: '' })}
-                            className="text-xs text-slate-400 hover:text-slate-600">✕ löschen</button>
+                            className="text-xs text-slate-400 hover:text-slate-600">{t('jobdetail:allgemein.loeschen_klein')}</button>
                   )}
                   {fuOverdue && (
-                    <span className="rounded-full bg-rose-100 px-2 py-0.5 text-xs font-medium text-rose-700">überfällig</span>
+                    <span className="rounded-full bg-rose-100 px-2 py-0.5 text-xs font-medium text-rose-700">{t('jobdetail:followup.ueberfaellig')}</span>
                   )}
                 </div>
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-slate-500">Nächster Schritt</label>
+                <label className="mb-1 block text-xs font-medium text-slate-500">{t('jobdetail:followup.naechster_schritt')}</label>
                 <input
                   type="text"
                   value={edit.next_step}
-                  placeholder="z. B. Recruiter nachfassen, Interview vorbereiten…"
+                  placeholder={t('jobdetail:followup.schritt_platzhalter')}
                   onChange={(e) => setEdit({ ...edit, next_step: e.target.value })}
                   className="w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm focus:border-brand-cyan focus:outline-none"
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-slate-500">Notizen / Zwischenstände</label>
+                <label className="mb-1 block text-xs font-medium text-slate-500">{t('jobdetail:followup.notizen')}</label>
                 <textarea
                   value={edit.notes}
                   rows={4}
-                  placeholder="Gesprächsnotizen, Ansprechpartner, offene Punkte…"
+                  placeholder={t('jobdetail:followup.notizen_platzhalter')}
                   onChange={(e) => setEdit({ ...edit, notes: e.target.value })}
                   className="w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm focus:border-brand-cyan focus:outline-none"
                 />
@@ -1498,43 +1506,43 @@ export default function JobDetail() {
                   disabled={fuSaving || !fuDirty}
                   className="rounded-lg bg-brand-cyan px-3 py-1.5 text-sm font-medium text-brand-aufAktion hover:bg-brand-cyanHover disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                  {fuSaving ? 'Speichern…' : 'Speichern'}
+                  {fuSaving ? t('jobdetail:allgemein.speichern_laeuft') : t('jobdetail:allgemein.speichern')}
                 </button>
-                {fuSaved && <span className="text-sm text-emerald-600">✓ Gespeichert</span>}
+                {fuSaved && <span className="text-sm text-emerald-600">{t('jobdetail:allgemein.gespeichert')}</span>}
               </div>
               {fuErr && <div className="rounded-lg bg-rose-50 p-2 text-xs text-rose-700">{fuErr}</div>}
             </div>
           </Section>
 
-          <Section title={`Kontakte (${contacts?.length || 0})`}>
+          <Section title={t('jobdetail:kontakte.titel', { anzahl: contacts?.length || 0 })}>
             {(!contacts || contacts.length === 0)
-              ? <div className="text-sm text-slate-400">Keine Kontakte erfasst.</div>
+              ? <div className="text-sm text-slate-400">{t('jobdetail:kontakte.leer')}</div>
               : contacts.map((c: any) => (
                 <div key={c.id} className="border-b border-slate-100 py-2 text-sm last:border-0">
-                  <div className="font-medium text-slate-700">{c.name || 'Unbenannt'}</div>
+                  <div className="font-medium text-slate-700">{c.name || t('jobdetail:kontakte.unbenannt')}</div>
                   <div className="text-slate-500">{[c.role, c.email, c.phone].filter(Boolean).join(' · ') || '–'}</div>
                 </div>
               ))}
             <div className="mt-3 border-t border-slate-100 pt-3">
-              <AgentTaskButton kind="entscheider-recherche" jobId={job.id} label="Entscheider recherchieren" subtle onFinished={load} />
-              <p className="mt-1 text-xs text-slate-400">Fachentscheider statt HR — nur öffentliche Quellen.</p>
+              <AgentTaskButton kind="entscheider-recherche" jobId={job.id} label={t('jobdetail:kontakte.recherchieren')} subtle onFinished={load} />
+              <p className="mt-1 text-xs text-slate-400">{t('jobdetail:kontakte.hint')}</p>
             </div>
           </Section>
 
           {/* Unterlagen erstellen — Workflow (Phase 16, ersetzt „Firma prüfen") */}
-          <Section title="Unterlagen erstellen">
+          <Section title={t('jobdetail:wf.titel')}>
             <div className="space-y-1">
               <WfStep n="1" done={fitDa}>
                 {fitDa ? (
                   <>
-                    <div className="text-sm">Company-Fit geprüft</div>
+                    <div className="text-sm">{t('jobdetail:wf.fit_geprueft')}</div>
                     <div className="mt-1 flex flex-wrap items-center gap-3 text-xs">
-                      <a href={artifactUrl(company.fit_analysis_path)} className="text-brand-cyan hover:underline">Dashboard öffnen</a>
-                      <AgentTaskButton kind="firma-pruefen" jobId={job.id} subtle label="neu erzeugen" onFinished={load} resultLinks={fitLinks} />
+                      <a href={artifactUrl(company.fit_analysis_path)} className="text-brand-cyan hover:underline">{t('jobdetail:wf.dashboard_oeffnen')}</a>
+                      <AgentTaskButton kind="firma-pruefen" jobId={job.id} subtle label={t('jobdetail:wf.neu_erzeugen')} onFinished={load} resultLinks={fitLinks} />
                     </div>
                   </>
                 ) : (
-                  <AgentTaskButton kind="firma-pruefen" jobId={job.id} label="1 · Company-Fit prüfen" onFinished={load} resultLinks={fitLinks} />
+                  <AgentTaskButton kind="firma-pruefen" jobId={job.id} label={t('jobdetail:wf.fit_pruefen')} onFinished={load} resultLinks={fitLinks} />
                 )}
               </WfStep>
 
@@ -1542,14 +1550,14 @@ export default function JobDetail() {
               <WfStep optional done={beiratDa}>
                 {beiratDa ? (
                   <>
-                    <div className="text-sm">Beirat: {beiratNeu.note}</div>
+                    <div className="text-sm">{t('jobdetail:wf.beirat_note', { note: beiratNeu.note })}</div>
                     <div className="mt-1 flex flex-wrap items-center gap-3 text-xs">
-                      <a href={artifactUrl(beiratNeu.file_path)} className="text-brand-cyan hover:underline">Dashboard öffnen</a>
-                      <BeiratCheckButton jobId={job.id} onFinished={load} subtle label="neu prüfen" />
+                      <a href={artifactUrl(beiratNeu.file_path)} className="text-brand-cyan hover:underline">{t('jobdetail:wf.dashboard_oeffnen')}</a>
+                      <BeiratCheckButton jobId={job.id} onFinished={load} subtle label={t('jobdetail:wf.neu_pruefen')} />
                       {beiratNeu.note?.startsWith('🔴') && job.status !== 'Beirat abgelehnt' && (
                         <button onClick={() => setStatus('Beirat abgelehnt')} disabled={saving}
                           className="rounded-lg border border-violet-200 px-2.5 py-1 font-medium text-violet-700 hover:bg-violet-50 disabled:opacity-50">
-                          Status auf „Beirat abgelehnt" setzen
+                          {t('jobdetail:wf.beirat_status_setzen', { status: wert('status', 'Beirat abgelehnt') })}
                         </button>
                       )}
                     </div>
@@ -1557,12 +1565,12 @@ export default function JobDetail() {
                 ) : (
                   <>
                     <div className="text-sm">
-                      Stelle prüfen (Beirat)
-                      <span className="ml-2 rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-slate-500">optional</span>
+                      {t('jobdetail:wf.beirat_pruefen')}
+                      <span className="ml-2 rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-slate-500">{t('jobdetail:allgemein.optional')}</span>
                     </div>
-                    <p className="mt-1 text-xs text-slate-400">Empfohlen vor dem CV-Aufwand — nutzt den Company-Fit, wenn er vorliegt.</p>
+                    <p className="mt-1 text-xs text-slate-400">{t('jobdetail:wf.beirat_hint')}</p>
                     <div className="mt-1">
-                      <BeiratCheckButton jobId={job.id} onFinished={load} subtle label="▶ Stelle prüfen (Beirat)" />
+                      <BeiratCheckButton jobId={job.id} onFinished={load} subtle label={t('jobdetail:wf.beirat_pruefen_button')} />
                     </div>
                   </>
                 )}
@@ -1570,16 +1578,16 @@ export default function JobDetail() {
 
               {/* Pflichtkern-Reihenfolge bleibt Firma → CV-Match → CV erstellen; die Sperre hängt
                   seit P2-41 wieder an fitDa statt am (jetzt optionalen) Beirat. */}
-              <WfStep n="2" done={cvDa} locked={!fitDa} lockedTitle="Erst Company-Fit prüfen">
+              <WfStep n="2" done={cvDa} locked={!fitDa} lockedTitle={t('jobdetail:wf.erst_fit_pruefen')}>
                 {cvDa ? (
                   <>
-                    <div className="text-sm">CV-Match erledigt{cvFertigDa ? '' : ' — Entwurf wartet auf Bearbeitung/Erstellung'}</div>
-                    <div className="mt-1"><AgentTaskButton kind="cv-match" jobId={job.id} subtle label="neu matchen" onFinished={load} resultLinks={matchLinks} /></div>
+                    <div className="text-sm">{cvFertigDa ? t('jobdetail:wf.cv_match_erledigt') : t('jobdetail:wf.cv_match_entwurf')}</div>
+                    <div className="mt-1"><AgentTaskButton kind="cv-match" jobId={job.id} subtle label={t('jobdetail:wf.neu_matchen')} onFinished={load} resultLinks={matchLinks} /></div>
                   </>
                 ) : !fitDa ? (
-                  <div className="text-sm">CV-Match (Match-Dashboard + Entwurf)</div>
+                  <div className="text-sm">{t('jobdetail:wf.cv_match_vorschau')}</div>
                 ) : (
-                  <AgentTaskButton kind="cv-match" jobId={job.id} label="2 · CV-Match" onFinished={load} resultLinks={matchLinks} />
+                  <AgentTaskButton kind="cv-match" jobId={job.id} label={t('jobdetail:wf.cv_match_button')} onFinished={load} resultLinks={matchLinks} />
                 )}
               </WfStep>
 
@@ -1587,18 +1595,18 @@ export default function JobDetail() {
               <WfStep optional done={anschreibenDa}>
                 {anschreibenDa ? (
                   <>
-                    <div className="text-sm">Anschreiben erstellt</div>
-                    <div className="mt-1"><AgentTaskButton kind="anschreiben-erstellen" jobId={job.id} subtle label="neu erzeugen" onFinished={load} resultLinks={anschreibenLinks} /></div>
+                    <div className="text-sm">{t('jobdetail:wf.anschreiben_erstellt')}</div>
+                    <div className="mt-1"><AgentTaskButton kind="anschreiben-erstellen" jobId={job.id} subtle label={t('jobdetail:wf.neu_erzeugen')} onFinished={load} resultLinks={anschreibenLinks} /></div>
                   </>
                 ) : (
                   <>
                     <div className="text-sm">
-                      Anschreiben
-                      <span className="ml-2 rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-slate-500">optional</span>
+                      {t('jobdetail:wf.anschreiben')}
+                      <span className="ml-2 rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-slate-500">{t('jobdetail:allgemein.optional')}</span>
                     </div>
-                    <p className="mt-1 text-xs text-slate-400">Nutzt den angepassten CV, sobald er fertig ist — sonst den Basis-CV.</p>
+                    <p className="mt-1 text-xs text-slate-400">{t('jobdetail:wf.anschreiben_hint')}</p>
                     <div className="mt-1">
-                      <AgentTaskButton kind="anschreiben-erstellen" jobId={job.id} subtle label="Anschreiben generieren" onFinished={load} resultLinks={anschreibenLinks} />
+                      <AgentTaskButton kind="anschreiben-erstellen" jobId={job.id} subtle label={t('jobdetail:wf.anschreiben_generieren')} onFinished={load} resultLinks={anschreibenLinks} />
                     </div>
                   </>
                 )}
@@ -1606,15 +1614,15 @@ export default function JobDetail() {
             </div>
 
             <div className="mt-3 border-t border-slate-100 pt-2">
-              <div className="mb-1 text-xs font-medium text-slate-500">Bewerbungspaket — Pflichtkern Firma → CV-Match → CV erstellen. Der Beirat läuft in-server und ist kein Kettenglied.</div>
+              <div className="mb-1 text-xs font-medium text-slate-500">{t('jobdetail:wf.paket_hint')}</div>
               <label className="mb-2 flex items-center gap-2 text-xs text-slate-600">
                 <input type="checkbox" checked={mitAnschreiben} onChange={(e) => setMitAnschreiben(e.target.checked)} />
-                mit Anschreiben
+                {t('jobdetail:wf.mit_anschreiben')}
               </label>
               <AgentTaskButton
                 kind="bewerbungspaket"
                 jobId={job.id}
-                label={mitAnschreiben ? 'Bewerbungspaket (Firma → CV → Anschreiben)' : 'Bewerbungspaket (Firma → CV)'}
+                label={mitAnschreiben ? t('jobdetail:wf.paket_mit') : t('jobdetail:wf.paket_ohne')}
                 params={{ mit_anschreiben: mitAnschreiben }}
                 watchKinds={['firma-pruefen', 'cv-match', 'cv-erstellen', 'anschreiben-erstellen']}
                 subtle
@@ -1623,41 +1631,43 @@ export default function JobDetail() {
             </div>
 
             <details className="mt-2 text-xs text-slate-400">
-              <summary className="cursor-pointer hover:text-slate-600">Alternativ: in {kiName}-Session ausführen</summary>
+              <summary className="cursor-pointer hover:text-slate-600">{t('jobdetail:wf.alternativ', { name: kiName })}</summary>
               <div className="mt-2">
-                <CopyTrigger phrase={`Firma prüfen für Job ${job.id}`} label="📋 Auslöser kopieren" />
+                <CopyTrigger
+                  phrase={t('common:ausloeser.firma', { id: job.id })}
+                  label={t('jobdetail:wf.ausloeser_kopieren')} />
               </div>
             </details>
           </Section>
 
           {/* Bewerbung (rutscht hoch: erst bewerben, dann Gespräche) */}
           {application && (
-            <Section title="Bewerbung">
-              <Field label="Status" value={application.status} />
-              <Field label="Beworben am" value={application.applied_date} />
-              <Field label="Kanal" value={application.channel} />
-              <Field label="Absagegrund" value={application.rejection_reason} />
+            <Section title={t('jobdetail:bewerbung.titel')}>
+              <Field label={t('jobdetail:bewerbung.status')} value={application.status} fmt={(v) => wert('status', v)} />
+              <Field label={t('jobdetail:bewerbung.beworben_am')} value={application.applied_date} />
+              <Field label={t('jobdetail:bewerbung.kanal')} value={application.channel} />
+              <Field label={t('jobdetail:bewerbung.absagegrund')} value={application.rejection_reason} />
               {application.cover_letter_path && (
                 <div className="flex gap-2 py-1 text-sm">
-                  <div className="w-40 shrink-0 text-slate-400">Anschreiben</div>
+                  <div className="w-40 shrink-0 text-slate-400">{t('jobdetail:bewerbung.anschreiben')}</div>
                   <div className="flex flex-wrap gap-3">
-                    <a href={artifactUrl(application.cover_letter_path, true)} className="text-brand-cyan hover:underline">⬇ Anschreiben (.docx)</a>
-                    {application.cover_letter_pdf_path && <a href={artifactUrl(application.cover_letter_pdf_path, true)} className="text-brand-cyan hover:underline">⬇ Anschreiben (.pdf)</a>}
-                    {application.cover_letter_pdf_path && <a href={artifactUrl(application.cover_letter_pdf_path)} className="text-brand-cyan hover:underline">Ansehen</a>}
+                    <a href={artifactUrl(application.cover_letter_path, true)} className="text-brand-cyan hover:underline">{t('jobdetail:wf.link_docx')}</a>
+                    {application.cover_letter_pdf_path && <a href={artifactUrl(application.cover_letter_pdf_path, true)} className="text-brand-cyan hover:underline">{t('jobdetail:wf.link_pdf')}</a>}
+                    {application.cover_letter_pdf_path && <a href={artifactUrl(application.cover_letter_pdf_path)} className="text-brand-cyan hover:underline">{t('jobdetail:allgemein.ansehen')}</a>}
                   </div>
                 </div>
               )}
-              <Field label="Notiz" value={application.notes} />
+              <Field label={t('jobdetail:bewerbung.notiz')} value={application.notes} />
             </Section>
           )}
 
-          <Section title={`Interviews & Gespräche (${interviews?.length || 0})`}>
+          <Section title={t('jobdetail:interview.titel', { anzahl: interviews?.length || 0 })}>
             <div className="space-y-2">
               {(interviews || []).map((iv: any) => (
                 <div key={iv.id} className="rounded-lg border border-slate-200 p-2.5 text-sm">
                   <div className="flex items-center justify-between">
-                    <span className="font-medium text-brand-navy">Runde {iv.runde} · {iv.art || 'Gespräch'}</span>
-                    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${IV_STATUS_STYLE[iv.status] || 'bg-slate-100 text-slate-500'}`}>{iv.status}</span>
+                    <span className="font-medium text-brand-navy">{t('jobdetail:runde.runde_art', { runde: iv.runde, art: iv.art ? dbWert(iv.art) : t('jobdetail:interview.gespraech') })}</span>
+                    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${IV_STATUS_STYLE[iv.status] || 'bg-slate-100 text-slate-500'}`}>{dbWert(iv.status)}</span>
                   </div>
                   {(iv.scheduled_at || iv.interviewer) && (
                     <div className="mt-0.5 text-xs text-slate-500">
@@ -1670,93 +1680,93 @@ export default function JobDetail() {
                   <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs">
                     <select value={iv.gegenueber || ''} onChange={(e) => setIvGegenueber(iv.id, e.target.value)}
                             className="rounded-lg border border-slate-300 px-2 py-1 text-xs focus:border-brand-cyan focus:outline-none">
-                      <option value="">Gegenüber…</option>
-                      {IV_GEGENUEBER.map((g) => <option key={g} value={g}>{g}</option>)}
+                      <option value="">{t('jobdetail:interview.gegenueber')}</option>
+                      {IV_GEGENUEBER.map((g) => <option key={g} value={g}>{dbWert(g)}</option>)}
                     </select>
                     <label className="flex items-center gap-1 text-slate-500">
                       <input type="checkbox" checked={!!iv.vor_ort} onChange={() => toggleIvVorOrt(iv)} />
-                      vor Ort
+                      {t('jobdetail:interview.vor_ort')}
                     </label>
                   </div>
                   <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs">
-                    {iv.prep_path && <a href={artifactUrl(iv.prep_path)} className="text-brand-cyan hover:underline">📋 Briefing öffnen</a>}
-                    {routeUrl && <a href={routeUrl} target="_blank" rel="noreferrer" className="text-brand-cyan hover:underline" title="Route von zu Hause (Google Maps)">🗺️ Route</a>}
-                    {iv.status !== 'Absolviert' && <button onClick={() => setIvStatus(iv.id, 'Absolviert')} className="text-slate-500 hover:text-emerald-700">Absolviert</button>}
-                    {iv.status !== 'Abgesagt' && <button onClick={() => setIvStatus(iv.id, 'Abgesagt')} className="text-slate-500 hover:text-slate-700">Abgesagt</button>}
-                    <button onClick={() => deleteInterview(iv.id)} className="ml-auto text-slate-400 hover:text-rose-600" title="Gespräch löschen">✕</button>
+                    {iv.prep_path && <a href={artifactUrl(iv.prep_path)} className="text-brand-cyan hover:underline">{t('jobdetail:interview.briefing_oeffnen')}</a>}
+                    {routeUrl && <a href={routeUrl} target="_blank" rel="noreferrer" className="text-brand-cyan hover:underline" title={t('jobdetail:interview.route_titel')}>{t('jobdetail:interview.route')}</a>}
+                    {iv.status !== 'Absolviert' && <button onClick={() => setIvStatus(iv.id, 'Absolviert')} className="text-slate-500 hover:text-emerald-700">{dbWert('Absolviert')}</button>}
+                    {iv.status !== 'Abgesagt' && <button onClick={() => setIvStatus(iv.id, 'Abgesagt')} className="text-slate-500 hover:text-slate-700">{dbWert('Abgesagt')}</button>}
+                    <button onClick={() => deleteInterview(iv.id)} className="ml-auto text-slate-400 hover:text-rose-600" title={t('jobdetail:interview.loeschen_titel')}>✕</button>
                   </div>
                 </div>
               ))}
-              {(!interviews || interviews.length === 0) && <div className="text-sm text-slate-400">Noch keine Gespräche erfasst.</div>}
+              {(!interviews || interviews.length === 0) && <div className="text-sm text-slate-400">{t('jobdetail:interview.leer')}</div>}
             </div>
 
             {showIvForm ? (
               <div className="mt-3 space-y-2 rounded-lg border border-slate-200 bg-slate-50 p-2.5">
                 <div className="flex gap-2">
                   <select value={ivForm.art} onChange={(e) => artWechsel(ivForm, setIvForm, e.target.value)} className="flex-1 rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm focus:border-brand-cyan focus:outline-none">
-                    {IV_ARTEN.map((a) => <option key={a} value={a}>{a}</option>)}
+                    {IV_ARTEN.map((a) => <option key={a} value={a}>{dbWert(a)}</option>)}
                   </select>
-                  <input type="number" min={1} value={ivForm.runde} onChange={(e) => setIvForm({ ...ivForm, runde: e.target.value })} className="w-20 rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm focus:border-brand-cyan focus:outline-none" title="Runde" />
+                  <input type="number" min={1} value={ivForm.runde} onChange={(e) => setIvForm({ ...ivForm, runde: e.target.value })} className="w-20 rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm focus:border-brand-cyan focus:outline-none" title={t('jobdetail:interview.runde_titel')} />
                 </div>
                 <input type="datetime-local" value={ivForm.scheduled_at} onChange={(e) => setIvForm({ ...ivForm, scheduled_at: e.target.value })} className="w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm focus:border-brand-cyan focus:outline-none" />
-                <input type="text" placeholder="Interviewer (Name, Rolle)…" value={ivForm.interviewer} onChange={(e) => setIvForm({ ...ivForm, interviewer: e.target.value })} className="w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm focus:border-brand-cyan focus:outline-none" />
+                <input type="text" placeholder={t('jobdetail:interview.interviewer_platzhalter')} value={ivForm.interviewer} onChange={(e) => setIvForm({ ...ivForm, interviewer: e.target.value })} className="w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm focus:border-brand-cyan focus:outline-none" />
                 <div className="flex items-center gap-2">
                   <select value={ivForm.gegenueber} onChange={(e) => setIvForm({ ...ivForm, gegenueber: e.target.value })} className="flex-1 rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm focus:border-brand-cyan focus:outline-none">
-                    <option value="">Gegenüber…</option>
-                    {IV_GEGENUEBER.map((g) => <option key={g} value={g}>{g}</option>)}
+                    <option value="">{t('jobdetail:interview.gegenueber')}</option>
+                    {IV_GEGENUEBER.map((g) => <option key={g} value={g}>{dbWert(g)}</option>)}
                   </select>
                   <label className="flex items-center gap-1.5 whitespace-nowrap text-sm text-slate-600">
                     <input type="checkbox" checked={ivForm.vor_ort} onChange={(e) => setIvForm({ ...ivForm, vor_ort: e.target.checked })} />
-                    vor Ort
+                    {t('jobdetail:interview.vor_ort')}
                   </label>
                 </div>
-                <textarea rows={2} placeholder="Notizen…" value={ivForm.notes} onChange={(e) => setIvForm({ ...ivForm, notes: e.target.value })} className="w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm focus:border-brand-cyan focus:outline-none" />
+                <textarea rows={2} placeholder={t('jobdetail:interview.notizen_platzhalter')} value={ivForm.notes} onChange={(e) => setIvForm({ ...ivForm, notes: e.target.value })} className="w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm focus:border-brand-cyan focus:outline-none" />
                 <div className="flex gap-2">
-                  <button onClick={createInterview} className="rounded-lg bg-brand-cyan px-3 py-1.5 text-sm font-medium text-brand-aufAktion hover:bg-brand-cyanHover disabled:opacity-40">Anlegen</button>
-                  <button onClick={() => setShowIvForm(false)} className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50">Abbrechen</button>
+                  <button onClick={createInterview} className="rounded-lg bg-brand-cyan px-3 py-1.5 text-sm font-medium text-brand-aufAktion hover:bg-brand-cyanHover disabled:opacity-40">{t('jobdetail:allgemein.anlegen')}</button>
+                  <button onClick={() => setShowIvForm(false)} className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50">{t('jobdetail:allgemein.abbrechen')}</button>
                 </div>
               </div>
             ) : (
-              <button onClick={openIvForm} className="mt-2 text-sm text-brand-cyan hover:underline">+ Gespräch anlegen</button>
+              <button onClick={openIvForm} className="mt-2 text-sm text-brand-cyan hover:underline">{t('jobdetail:interview.anlegen')}</button>
             )}
 
             <div className="mt-3">
-              <AgentTaskButton kind="interview-vorbereiten" jobId={job.id} label="Interview vorbereiten (Briefing)" onFinished={load} />
+              <AgentTaskButton kind="interview-vorbereiten" jobId={job.id} label={t('jobdetail:interview.vorbereiten')} onFinished={load} />
             </div>
 
-            <div className="mt-3 text-xs font-medium text-slate-500">Transkripte ({transcripts?.length || 0})</div>
+            <div className="mt-3 text-xs font-medium text-slate-500">{t('jobdetail:transkript.titel', { anzahl: transcripts?.length || 0 })}</div>
             <div className="mt-1 space-y-2">
-              {(transcripts || []).map((t: any) => {
+              {(transcripts || []).map((tr: any) => {
                 // Phase 30: rechts nur noch Summary (3–5 Sätze) + Meta-Zeile + Report-Link + Rohtext-Link
                 // — der bisherige Volltext-/Langkontext ist raus (steht jetzt vollständig im Report selbst).
-                const iv = (interviews || []).find((x: any) => x.id === t.interview_id)
-                const reportHref = t.report_path || t.debrief_path   // Fallback: Altbestand ohne report_path
-                const metaTeile = [t.recorded_at, t.kontakt, iv ? `Runde ${iv.runde}` : null].filter(Boolean)
+                const iv = (interviews || []).find((x: any) => x.id === tr.interview_id)
+                const reportHref = tr.report_path || tr.debrief_path   // Fallback: Altbestand ohne report_path
+                const metaTeile = [tr.recorded_at, tr.kontakt, iv ? t('jobdetail:transkript.runde', { runde: iv.runde }) : null].filter(Boolean)
                 return (
-                  <div key={t.id} className="rounded-lg border border-slate-200 p-2.5 text-sm">
+                  <div key={tr.id} className="rounded-lg border border-slate-200 p-2.5 text-sm">
                     <div className="flex items-center justify-between">
-                      <span className="font-medium text-brand-navy">{t.title || 'Transkript'}</span>
-                      <span className="rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-500">{t.source}</span>
+                      <span className="font-medium text-brand-navy">{tr.title || t('jobdetail:transkript.standard_titel')}</span>
+                      <span className="rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-500">{tr.source}</span>
                     </div>
                     <div className="mt-0.5 text-xs text-slate-500">{metaTeile.length ? metaTeile.join(' · ') : '–'}</div>
                     <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs">
-                      {reportHref && <a href={artifactUrl(reportHref)} className="text-brand-cyan hover:underline">📄 Report öffnen</a>}
-                      {t.file_path && <a href={artifactUrl(t.file_path)} className="text-slate-400 hover:underline" title="Original-Rohtext">Rohtext</a>}
-                      <DebriefBadge t={t} task={debriefTasks[t.id]} onStart={startDebrief} />
-                      <button onClick={() => deleteTranscript(t.id)} className="ml-auto text-slate-400 hover:text-rose-600" title="Zuordnung löschen (Datei bleibt)">✕</button>
+                      {reportHref && <a href={artifactUrl(reportHref)} className="text-brand-cyan hover:underline">{t('jobdetail:transkript.report_oeffnen')}</a>}
+                      {tr.file_path && <a href={artifactUrl(tr.file_path)} className="text-slate-400 hover:underline" title={t('jobdetail:transkript.rohtext_titel')}>{t('jobdetail:transkript.rohtext')}</a>}
+                      <DebriefBadge t={tr} task={debriefTasks[tr.id]} onStart={startDebrief} />
+                      <button onClick={() => deleteTranscript(tr.id)} className="ml-auto text-slate-400 hover:text-rose-600" title={t('jobdetail:transkript.zuordnung_loeschen')}>✕</button>
                     </div>
-                    {t.summary && <div className="mt-1 text-xs text-slate-500">{t.summary}</div>}
+                    {tr.summary && <div className="mt-1 text-xs text-slate-500">{tr.summary}</div>}
                   </div>
                 )
               })}
-              {(!transcripts || transcripts.length === 0) && <div className="text-sm text-slate-400">Noch keine Transkripte.</div>}
+              {(!transcripts || transcripts.length === 0) && <div className="text-sm text-slate-400">{t('jobdetail:transkript.leer')}</div>}
             </div>
 
             {showTrForm ? (
               <div className="mt-2 space-y-2 rounded-lg border border-slate-200 bg-slate-50 p-2.5">
-                <input type="text" placeholder="Titel (z. B. 1. Gespräch — HR-Screen)" value={trForm.title} onChange={(e) => setTrForm({ ...trForm, title: e.target.value })} className="w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm focus:border-brand-cyan focus:outline-none" />
+                <input type="text" placeholder={t('jobdetail:transkript.titel_platzhalter')} value={trForm.title} onChange={(e) => setTrForm({ ...trForm, title: e.target.value })} className="w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm focus:border-brand-cyan focus:outline-none" />
                 <div className="flex gap-2">
-                  <input list="kontakte-paste" placeholder="Gesprächspartner…" value={trForm.kontakt} onChange={(e) => setTrForm({ ...trForm, kontakt: e.target.value })} className="flex-1 rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm focus:border-brand-cyan focus:outline-none" />
+                  <input list="kontakte-paste" placeholder={t('jobdetail:transkript.gespraechspartner')} value={trForm.kontakt} onChange={(e) => setTrForm({ ...trForm, kontakt: e.target.value })} className="flex-1 rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm focus:border-brand-cyan focus:outline-none" />
                   <datalist id="kontakte-paste">
                     {(contacts || []).map((c: any) => <option key={c.id} value={c.name} />)}
                   </datalist>
@@ -1770,16 +1780,16 @@ export default function JobDetail() {
                   </select>
                 </div>
                 <NeueRundeFelder form={trForm} setForm={setTrForm} />
-                <textarea rows={8} placeholder="Transkript hier einfügen (aus Teams/Zoom/Notizen)…" value={trForm.content} onChange={(e) => setTrForm({ ...trForm, content: e.target.value })} className="w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm focus:border-brand-cyan focus:outline-none" />
+                <textarea rows={8} placeholder={t('jobdetail:transkript.einfuegen_platzhalter')} value={trForm.content} onChange={(e) => setTrForm({ ...trForm, content: e.target.value })} className="w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm focus:border-brand-cyan focus:outline-none" />
                 <div className="flex gap-2">
-                  <button onClick={createTranscript} disabled={!trForm.content.trim()} className="rounded-lg bg-brand-cyan px-3 py-1.5 text-sm font-medium text-brand-aufAktion hover:bg-brand-cyanHover disabled:opacity-40">Einfügen</button>
-                  <button onClick={() => setShowTrForm(false)} className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50">Abbrechen</button>
+                  <button onClick={createTranscript} disabled={!trForm.content.trim()} className="rounded-lg bg-brand-cyan px-3 py-1.5 text-sm font-medium text-brand-aufAktion hover:bg-brand-cyanHover disabled:opacity-40">{t('jobdetail:allgemein.einfuegen')}</button>
+                  <button onClick={() => setShowTrForm(false)} className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50">{t('jobdetail:allgemein.abbrechen')}</button>
                 </div>
               </div>
             ) : !showTrUpload && (
               <div className="mt-2 flex gap-3">
-                <button onClick={() => setShowTrForm(true)} className="text-sm text-brand-cyan hover:underline">+ Transkript einfügen</button>
-                <button onClick={() => setShowTrUpload(true)} className="text-sm text-brand-cyan hover:underline">+ Datei hochladen</button>
+                <button onClick={() => setShowTrForm(true)} className="text-sm text-brand-cyan hover:underline">{t('jobdetail:transkript.einfuegen_link')}</button>
+                <button onClick={() => setShowTrUpload(true)} className="text-sm text-brand-cyan hover:underline">{t('jobdetail:transkript.datei_link')}</button>
               </div>
             )}
 
@@ -1788,10 +1798,10 @@ export default function JobDetail() {
                 <input type="file" accept=".txt,.md,.vtt"
                   onChange={(e) => setTrUpload({ ...trUpload, file: e.target.files?.[0] || null })}
                   className="w-full rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-sm focus:border-brand-cyan focus:outline-none" />
-                <p className="text-xs text-slate-400">.txt, .md oder .vtt (Teams/Zoom-Untertitel — Zeitstempel werden automatisch entfernt), max. 5 MB.</p>
-                <input type="text" placeholder="Titel (optional)" value={trUpload.title} onChange={(e) => setTrUpload({ ...trUpload, title: e.target.value })} className="w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm focus:border-brand-cyan focus:outline-none" />
+                <p className="text-xs text-slate-400">{t('jobdetail:transkript.upload_hint')}</p>
+                <input type="text" placeholder={t('jobdetail:transkript.titel_optional')} value={trUpload.title} onChange={(e) => setTrUpload({ ...trUpload, title: e.target.value })} className="w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm focus:border-brand-cyan focus:outline-none" />
                 <div className="flex gap-2">
-                  <input list="kontakte-upload" placeholder="Gesprächspartner…" value={trUpload.kontakt} onChange={(e) => setTrUpload({ ...trUpload, kontakt: e.target.value })} className="flex-1 rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm focus:border-brand-cyan focus:outline-none" />
+                  <input list="kontakte-upload" placeholder={t('jobdetail:transkript.gespraechspartner')} value={trUpload.kontakt} onChange={(e) => setTrUpload({ ...trUpload, kontakt: e.target.value })} className="flex-1 rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm focus:border-brand-cyan focus:outline-none" />
                   <datalist id="kontakte-upload">
                     {(contacts || []).map((c: any) => <option key={c.id} value={c.name} />)}
                   </datalist>
@@ -1802,9 +1812,9 @@ export default function JobDetail() {
                 {trUploadErr && <div className="text-xs text-rose-600">{trUploadErr}</div>}
                 <div className="flex gap-2">
                   <button onClick={uploadTranscriptFile} disabled={!trUpload.file || trUploading} className="rounded-lg bg-brand-cyan px-3 py-1.5 text-sm font-medium text-brand-aufAktion hover:bg-brand-cyanHover disabled:opacity-40">
-                    {trUploading ? 'Lädt…' : 'Hochladen'}
+                    {trUploading ? t('jobdetail:allgemein.laedt') : t('jobdetail:allgemein.hochladen')}
                   </button>
-                  <button onClick={() => { setShowTrUpload(false); setTrUploadErr(null) }} className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50">Abbrechen</button>
+                  <button onClick={() => { setShowTrUpload(false); setTrUploadErr(null) }} className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50">{t('jobdetail:allgemein.abbrechen')}</button>
                 </div>
               </div>
             )}
@@ -1813,20 +1823,20 @@ export default function JobDetail() {
           {/* „Firma prüfen" → jetzt in der Workflow-Karte „Unterlagen erstellen" (oben). */}
 
           {/* Angepasster CV — nur Fakten (letzte Karte); Downloads liegen in „Dateien & Dokumente". */}
-          <Section title="Angepasster CV">
+          <Section title={t('jobdetail:cv.karte_titel')}>
             {cv_versions && cv_versions.length > 0 ? (
               <div className="space-y-2">
                 {cv_versions.map((c: any) => (
                   <div key={c.id} className="rounded-lg border border-slate-200 p-2.5 text-sm">
                     <div className="flex items-center justify-between">
-                      <span className="font-medium text-brand-navy">Angepasster CV · {({ DE: 'Deutsch', EN: 'Englisch' } as any)[(c.language || '').toUpperCase()] ?? c.language}</span>
+                      <span className="font-medium text-brand-navy">{t('jobdetail:cv.eintrag', { sprache: ({ DE: t('jobdetail:cv.sprache_de'), EN: t('jobdetail:cv.sprache_en') } as any)[(c.language || '').toUpperCase()] ?? c.language })}</span>
                       <div className="flex gap-1.5">
-                        {c.status === 'entwurf' && <span className="rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-800">Entwurf</span>}
-                        {c.match_score100 != null && <span className="rounded bg-brand-cyan/15 px-1.5 py-0.5 text-xs text-brand-navy">Match {c.match_score100}</span>}
-                        {c.ats_score != null && <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-xs text-emerald-800">ATS {c.ats_score}</span>}
+                        {c.status === 'entwurf' && <span className="rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-800">{t('jobdetail:cv.entwurf')}</span>}
+                        {c.match_score100 != null && <span className="rounded bg-brand-cyan/15 px-1.5 py-0.5 text-xs text-brand-navy">{t('jobdetail:cv.match', { wert: c.match_score100 })}</span>}
+                        {c.ats_score != null && <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-xs text-emerald-800">{t('jobdetail:cv.ats', { wert: c.ats_score })}</span>}
                       </div>
                     </div>
-                    <div className="mt-1 text-xs text-slate-400">{tagVon(c.created_at)} · Dateien unter „Dateien &amp; Dokumente"</div>
+                    <div className="mt-1 text-xs text-slate-400">{t('jobdetail:cv.dateien_hinweis', { datum: tagVon(c.created_at) })}</div>
                   </div>
                 ))}
               </div>
@@ -1834,11 +1844,11 @@ export default function JobDetail() {
               // P2-41: der CV-Match wartet nur noch auf den Company-Fit — der Beirats-Check ist
               // ein optionaler Baustein und kein Vorschritt mehr.
               <div className="rounded-lg bg-slate-50 p-3 text-sm text-slate-500">
-                <b>Schritt 2</b> in „Unterlagen erstellen": CV-Match, ATS-Scan und angepasster CV (DE/EN).
+                <Trans i18nKey="jobdetail:cv.schritt2" components={{ b: <b /> }} />
               </div>
             ) : (
               <div className="rounded-lg bg-slate-50 p-3 text-sm text-slate-500">
-                <b>Erst Schritt 1</b> in „Unterlagen erstellen" (Company-Fit prüfen). Danach folgen hier Match &amp; ATS.
+                <Trans i18nKey="jobdetail:cv.schritt1" components={{ b: <b /> }} />
               </div>
             )}
           </Section>

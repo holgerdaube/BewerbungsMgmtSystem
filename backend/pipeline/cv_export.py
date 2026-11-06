@@ -63,6 +63,7 @@ from sqlmodel import Session
 from app import naming
 from app.db import engine, init_db
 from app.models import Application, Company, CVVersion, Job
+from pipeline import bewerbungssprache
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent  # Bewerbung_Mgmt_System/
 
@@ -380,16 +381,11 @@ def _add_field(paragraph, instr: str, fallback: str) -> None:
         r.font.size = _FUSSZEILE_PT
 
 
-_FUSSZEILE_LABELS = {           # (Präfix vor der Seitenzahl, Trenner vor der Gesamtzahl)
-    "DE": ("Seite ", " von "),
-    "EN": ("Page ", " of "),
-}
-
-
 def _fusszeilen_labels(language: Optional[str]) -> tuple:
-    """Sprache der CVVersion („DE"/„EN") → Fußzeilen-Wörter. Alles außer einem klaren EN fällt
-    auf Deutsch zurück (Default der Vorlagen); tolerant gegen None/Kleinschreibung/„en-US"."""
-    return _FUSSZEILE_LABELS["EN" if (language or "").strip().upper().startswith("EN") else "DE"]
+    """Sprache der CVVersion („DE“, „EN“, „FR“ …) → Fußzeilen-Wörter aus `bewerbungssprache`.
+    Tolerant gegen Kleinschreibung und Zusätze („fr“, „en-US“). Fehlt die Sprache ganz (None, leer),
+    bleibt es Deutsch (Altbestand). Eine unbekannte Sprache bekommt „x / y“, nicht Deutsch."""
+    return bewerbungssprache.fusszeilen_labels(language)
 
 
 def _fusszeile_setzen(doc, name: str, language: Optional[str] = None) -> None:
@@ -399,8 +395,9 @@ def _fusszeile_setzen(doc, name: str, language: Optional[str] = None) -> None:
     Section ggf. eine leere Vorlagen-Fußzeile statt der eigenen.
 
     Die Wörter richten sich nach der CV-Sprache (Vorgabe 23.07.2026): englischer Lebenslauf →
-    „Page X of Y“, deutscher → „Seite X von Y“. Nur die Wörter sind sprachabhängig; die
-    PAGE/NUMPAGES-Feldcodes bleiben identisch."""
+    „Page X of Y“, deutscher → „Seite X von Y“, französischer → „Page X sur Y“ (Tabelle in
+    `pipeline.bewerbungssprache`). Nur die Wörter sind sprachabhängig; die PAGE/NUMPAGES-Feldcodes
+    bleiben identisch."""
     seite_wort, von_wort = _fusszeilen_labels(language)
     for section in doc.sections:
         footer = section.footer
@@ -430,7 +427,7 @@ def _nachbearbeiten(docx_path: Path, language: Optional[str] = None) -> tuple:
     STILLEN Ausfall des Seitenumbruch-Schutzes (0 erkannte Stationen — z. B. eine Vorlage
     ohne die erwarteten Tab-Ankerzeilen), ohne den Export zu blockieren.
 
-    `language` steuert nur die Fußzeilen-Wörter (DE „Seite/von" vs. EN „Page/of")."""
+    `language` steuert nur die Fußzeilen-Wörter (DE „Seite/von", EN „Page/of", FR, IT, ES, PT)."""
     from pipeline.user_profile import user_name
     try:
         doc = Document(str(docx_path))
@@ -447,18 +444,8 @@ def _nachbearbeiten(docx_path: Path, language: Optional[str] = None) -> tuple:
 
 
 # --- P2-9: Anschreiben-Sprache aus dem TATSÄCHLICHEN Text ableiten -------------------------
-# Englische Schluss-Grußformel — dieselbe EN-Liste wie `cover_letter_render._GRUSSFORMEL`
-# (bewusst hier dupliziert, nicht importiert: cover_letter_render importiert bereits cv_export,
-# ein Rückimport wäre zirkulär; die Liste ist mit 7 festen Phrasen stabil genug, dass eine
-# zweite Kopie kein Pflegeproblem ist — s. Modul-Docstring-Präzedenzfall `_in_papierkorb` in
-# `pipeline/cleanup.py`, dort exakt dieselbe Begründung für main.py).
-_EN_GRUSSFORMEL = re.compile(
-    r"^(kind regards|best regards|warm regards|regards|sincerely|yours sincerely|yours faithfully)"
-    r"\s*[,.]?$",
-    re.IGNORECASE,
-)
-
-
+# Die Grußformeln aller Sprachen stehen in `pipeline.bewerbungssprache` (eine Quelle, vorher je
+# eine EN-Kopie hier und in `cover_letter_render`).
 def _sprache_aus_text(app: Application, docx_path: Path) -> str:
     """Anschreiben-Sprache aus dem TATSÄCHLICHEN Text ableiten (P2-9-Fix) — wird nur erreicht,
     wenn weder ein expliziter Parameter noch `cover_letter_language` gesetzt sind (Aufrufer
@@ -467,20 +454,19 @@ def _sprache_aus_text(app: Application, docx_path: Path) -> str:
     Bevorzugt `Application.cover_letter_text` (DB-Feld, exakt der Text, den
     `cover_letter_render.render_cover_letter` gerendert hat — keine Datei-I/O nötig). Ohne dieses
     Feld (z. B. Altbestand ohne Phase-48-Text) wird der Absatztext der tatsächlichen .docx
-    gelesen. Sucht darin zeilenweise die englische Schluss-Grußformel; kein Treffer → Default
-    „DE“ — unverändert ggü. dem bisherigen Systemverhalten, das ebenfalls Deutsch als Normalfall
-    behandelt (s. `_fusszeilen_labels`). Best effort: JEDE Exception beim Datei-Lesen (kaputte/
-    fehlende .docx) fällt ebenfalls auf „DE“ zurück statt `export_cover_letter` abzubrechen."""
+    gelesen. Sucht darin zeilenweise die Schluss-Grußformel aller Sprachen aus
+    `pipeline.bewerbungssprache` (DE, EN, FR, IT, ES, PT; dieselbe Liste wie
+    `cover_letter_render._GRUSSFORMEL`, nur noch an einem Ort); kein Treffer → Default „DE“ —
+    unverändert ggü. dem bisherigen Systemverhalten, das Deutsch als Normalfall behandelt.
+    Best effort: JEDE Exception beim Datei-Lesen (kaputte/fehlende .docx) fällt ebenfalls auf „DE“
+    zurück statt `export_cover_letter` abzubrechen."""
     text = app.cover_letter_text
     if not text:
         try:
             text = "\n\n".join(p.text for p in Document(str(docx_path)).paragraphs if p.text.strip())
         except Exception:  # noqa: BLE001 — Erkennung ist best effort, darf export() nie brechen
             return "DE"
-    for zeile in text.splitlines():
-        if _EN_GRUSSFORMEL.match(zeile.strip()):
-            return "EN"
-    return "DE"
+    return bewerbungssprache.sprache_aus_grussformel(text) or "DE"
 
 
 # --- P2-10: alte PDF aufräumen, wenn sich der Zieldateiname ändert ------------------------
@@ -847,7 +833,7 @@ if __name__ == "__main__":
         import argparse
         ap = argparse.ArgumentParser(prog="pipeline.cv_export cover")
         ap.add_argument("application_id", type=int)
-        ap.add_argument("--language", choices=["DE", "EN"], default=None)
+        ap.add_argument("--language", choices=list(bewerbungssprache.CODES), default=None)
         a = ap.parse_args(args[1:])
         result = export_cover_letter(a.application_id, a.language)
     elif args and args[0] == "entwurf-schreiben":
@@ -858,7 +844,7 @@ if __name__ == "__main__":
         result = export(int(args[0]))
     else:
         sys.exit("Nutzung: python -m pipeline.cv_export <cv_version_id>  |  "
-                 "cover <application_id> [--language DE|EN]  |  "
+                 "cover <application_id> [--language DE|EN|FR|IT|ES|PT]  |  "
                  "entwurf-schreiben <cv_version_id>")
     print(json.dumps(result, ensure_ascii=False, indent=2))
     if result.get("pdf_fehler"):

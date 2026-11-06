@@ -5,11 +5,31 @@ import {
 } from '../api'
 import { Stat, BarList, SITU_COLORS, STATUS_FARBEN, SCORE_COLORS } from '../components/ui'
 import AgentTaskButton from '../components/AgentTaskButton'
-import { deDatum, isoTag } from '../zeit'
+import { isoTag } from '../zeit'
+import { t } from '../i18n'
+import { wert } from '../i18n/werte'
+import { datum, zahl } from '../i18n/format'
+
+// Anzeige für Werte aus dem Server, die keine Status sind (Kanal, Trichterstufe, Gesprächspartner, Portal).
+// Der Wert bleibt der DB-Wert, nur die Anzeige wird übersetzt; Unbekanntes kommt unverändert zurück.
+const anzeigeWert = (x: string): string => t(`dashboard:wert.${x}`, { defaultValue: x })
 
 // Stand der Lost-Order-Analyse (P2-79, GET /api/absagen-analyse) — der Typ steht bewusst lokal hier
 // (Muster BeispieldatenBanner): neuester Bericht mit Datum und Link, oder `datei: null`.
 type AbsagenStand = { datei: string | null; datum?: string; url?: string }
+
+// Balken mit übersetzter Beschriftung: Die Anzeige-Namen werden zu Schlüsseln, `db()` liefert den DB-Wert
+// zurück (für Farbe und Link). Fällt eine Übersetzung mit einer anderen zusammen, bleibt der DB-Wert stehen.
+function beschriftet(data: Record<string, number>, anzeige: (k: string) => string) {
+  const neu: Record<string, number> = {}
+  const zurueck: Record<string, string> = {}
+  for (const [k, v] of Object.entries(data)) {
+    const label = anzeige(k) in neu ? k : anzeige(k)
+    neu[label] = v
+    zurueck[label] = k
+  }
+  return { data: neu, db: (label: string): string => zurueck[label] ?? label }
+}
 
 // Heute + 7 Tage als ISO-Datum — Basis für den Dashboard-Button "Wiedervorlage +7 Tage"
 // (Phase 69, Stufe B).
@@ -33,7 +53,7 @@ function KeineReaktionListe({ title, rows, busyId, onWiedervorlage }: {
       </summary>
       <div className="divide-y divide-slate-100 border-t border-slate-100">
         {rows.length === 0 ? (
-          <div className="px-3 py-2 text-xs text-slate-400">Keine Einträge.</div>
+          <div className="px-3 py-2 text-xs text-slate-400">{t('dashboard:keine_reaktion.leer')}</div>
         ) : rows.map((r) => (
           <div key={`${r.kanal}-${r.id}`} className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 text-sm">
             <div className="min-w-0">
@@ -41,14 +61,14 @@ function KeineReaktionListe({ title, rows, busyId, onWiedervorlage }: {
                     className="font-medium text-brand-navy hover:underline">
                 {r.label || '–'}
               </Link>
-              <span className="ml-2 text-xs text-slate-400">{r.kanal}</span>
+              <span className="ml-2 text-xs text-slate-400">{anzeigeWert(r.kanal)}</span>
             </div>
             <div className="flex shrink-0 items-center gap-2">
-              <span className="whitespace-nowrap text-xs font-medium text-rose-600">{r.tage} Tage</span>
+              <span className="whitespace-nowrap text-xs font-medium text-rose-600">{t('dashboard:keine_reaktion.tage', { count: r.tage })}</span>
               {r.kanal === 'Netzwerk' && onWiedervorlage && (
                 <button onClick={() => onWiedervorlage(r)} disabled={busyId === r.id}
                         className="whitespace-nowrap rounded-lg border border-brand-cyan/40 px-2 py-1 text-xs font-medium text-brand-navy hover:bg-brand-cyan/10 disabled:cursor-not-allowed disabled:opacity-40">
-                  {busyId === r.id ? 'Speichert…' : 'Wiedervorlage +7 Tage'}
+                  {busyId === r.id ? t('dashboard:keine_reaktion.speichert') : t('dashboard:keine_reaktion.wiedervorlage')}
                 </button>
               )}
             </div>
@@ -68,7 +88,7 @@ function KeineReaktionListe({ title, rows, busyId, onWiedervorlage }: {
 // auch unter einem anderen Design stehen und steht deshalb als Literal hier (Positivliste des Wächters).
 const FUNNEL_FARBEN: { bg: string; text: string }[] = [
   { bg: '#0B1F3A', text: '#ffffff' },                                       // 1 Gesichtet (brand-navy)
-  { bg: STATUS_FARBEN['Prüfen'].bg, text: STATUS_FARBEN['Prüfen'].text },     // 2 Relevant
+  { bg: STATUS_FARBEN['Prüfen'].bg, text: STATUS_FARBEN['Prüfen'].text },     // 2 Relevant // i18n-ok: DB-Wert
   { bg: STATUS_FARBEN['Beworben'].bg, text: STATUS_FARBEN['Beworben'].text }, // 3 Beworben
   { bg: STATUS_FARBEN['Geparkt'].bg, text: STATUS_FARBEN['Geparkt'].text },   // 4 Antworten
   { bg: STATUS_FARBEN['Angebot'].bg, text: STATUS_FARBEN['Angebot'].text },   // 5 Interviews
@@ -79,7 +99,7 @@ const FUNNEL_FARBLEITER = FUNNEL_FARBEN.map((f) => f.bg)
 // Deutsches Prozent-Fließtextformat ("37,3 %", mit Leerzeichen vor %) — Pendant zu
 // export_excel.py::_de_pct_prosa, dieselbe Konvention wie im Excel-Export.
 function dePercentProsa(p: number | null): string {
-  return p == null ? '—' : `${p.toFixed(1).replace('.', ',')} %`
+  return p == null ? '—' : t('dashboard:prozent', { wert: zahl(p, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) })
 }
 
 // Je Nicht-Gewinner-Stufe (2-5) der feste Satzbaustein fürs Engstellen-Panel — wortgleich zu
@@ -89,10 +109,10 @@ const ENGSTELLEN_ZEILEN: {
   key: 'screening' | 'bewerbungsquote' | 'antwortquote' | 'interview_konversion'
   text: (p: string, basis: number) => string
 }[] = [
-  { stufe: 'Relevant', key: 'screening', text: (p) => `Screening: nur ${p} der gesichteten Stellen sind relevant` },
-  { stufe: 'Beworben', key: 'bewerbungsquote', text: (p) => `Bewerbungsquote: ${p} der relevanten Stellen wurden beworben` },
-  { stufe: 'Antworten', key: 'antwortquote', text: (p, basis) => `Antwortquote ${p} auf ${basis} Bewerbungen` },
-  { stufe: 'Interviews', key: 'interview_konversion', text: (p) => `Interview-Konversion: ${p} der Antworten führten zum Interview` },
+  { stufe: 'Relevant', key: 'screening', text: (p) => t('dashboard:engstellen.screening', { prozent: p }) },
+  { stufe: 'Beworben', key: 'bewerbungsquote', text: (p) => t('dashboard:engstellen.bewerbungsquote', { prozent: p }) },
+  { stufe: 'Antworten', key: 'antwortquote', text: (p, basis) => t('dashboard:engstellen.antwortquote', { prozent: p, count: basis }) },
+  { stufe: 'Interviews', key: 'interview_konversion', text: (p) => t('dashboard:engstellen.interview_konversion', { prozent: p }) },
 ]
 
 // Zeile 1 (2/3 Breite): der Trichter selbst — 5 horizontal zentrierte Balken, Breite proportional
@@ -108,16 +128,16 @@ function ProzessTrichter({ funnel }: { funnel: GesamtprozessFunnel }) {
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm lg:col-span-2">
       <h3 className="mb-3 text-sm font-semibold text-brand-navy">
-        Funnel <span className="font-normal text-slate-400">· vom Sichten zum Interview</span>
+        {t('dashboard:trichter.titel')} <span className="font-normal text-slate-400">{t('dashboard:trichter.untertitel')}</span>
       </h3>
       <div className="space-y-2.5">
         {stufen.map((stufe, i) => {
           const farbe = FUNNEL_FARBEN[i]
           const pct = Math.max(0, (stufe.anzahl / maxAnzahl) * 100)
-          const rechtsText = i === 0 ? '100 %' : `${dePercentProsa(stufe.vs_vorstufe)} der Vorstufe`
+          const rechtsText = i === 0 ? t('dashboard:prozent', { wert: 100 }) : t('dashboard:trichter.der_vorstufe', { prozent: dePercentProsa(stufe.vs_vorstufe) })
           const inhalt = (
             <div className="flex items-center gap-3">
-              <div className="w-32 shrink-0 text-sm text-slate-600">{i + 1} · {stufe.stufe}</div>
+              <div className="w-32 shrink-0 text-sm text-slate-600">{i + 1} · {anzeigeWert(stufe.stufe)}</div>
               <div className="flex flex-1 justify-center">
                 <div
                   className="flex items-center justify-center rounded-lg px-3 py-2 text-sm font-bold tabular-nums"
@@ -152,16 +172,20 @@ function EngstellenPanel({ funnel }: { funnel: GesamtprozessFunnel }) {
   const zeilen = ENGSTELLEN_ZEILEN.map(({ stufe, key, text }) => {
     if (gv && gv.stufe === stufe) return { text: gv.text, rot: true }
     const p = engstellen[key]
-    if (p == null) return { text: `${stufe}: keine Daten`, rot: false }
+    if (p == null) return { text: t('dashboard:engstellen.keine_daten', { stufe: anzeigeWert(stufe) }), rot: false }
     const idx = idxByStufe.get(stufe)!
     const basis = stufen[idx - 1].anzahl
     return { text: text(dePercentProsa(p), basis), rot: false }
   })
-  const endeZuEnde = `Ende-zu-Ende: ${dePercentProsa(engstellen.ende_zu_ende)} — ${stufen[0].anzahl} Stellen → ${stufen[4].anzahl} Interviews`
+  const endeZuEnde = t('dashboard:engstellen.ende_zu_ende', {
+    prozent: dePercentProsa(engstellen.ende_zu_ende),
+    stellen: t('dashboard:engstellen.n_stellen', { count: stufen[0].anzahl }),
+    interviews: t('dashboard:engstellen.n_interviews', { count: stufen[4].anzahl }),
+  })
 
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      <h3 className="mb-3 text-sm font-semibold text-brand-navy">Engstellen im Funnel</h3>
+      <h3 className="mb-3 text-sm font-semibold text-brand-navy">{t('dashboard:engstellen.titel')}</h3>
       <div className="space-y-2 text-sm">
         {zeilen.map((z, i) => (
           <div key={i} className={z.rot ? 'font-bold' : 'text-slate-600'} style={z.rot ? { color: '#E5484D' } : undefined}>
@@ -186,12 +210,12 @@ function SplitChips({ splits }: { splits: Record<string, number> }) {
       {entries.map(([label, value], i) => (
         <span key={label} className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">
           <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ backgroundColor: FUNNEL_FARBLEITER[i % FUNNEL_FARBLEITER.length] }} />
-          {LABEL_UEBERSCHREIBUNG[label] ?? label} {value}
+          {anzeigeWert(LABEL_UEBERSCHREIBUNG[label] ?? label)} {value}
         </span>
       ))}
       {vorOrt != null && (
         <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">
-          📍 vor Ort {vorOrt}
+          {t('dashboard:chips.vor_ort', { anzahl: vorOrt })}
         </span>
       )}
     </div>
@@ -224,7 +248,7 @@ function GesamtprozessSection({ d, onReload }: { d: DashboardData; onReload: () 
 
   return (
     <div className="space-y-4">
-      <h2 className="text-lg font-semibold text-brand-navy">Gesamtprozess seit Beginn</h2>
+      <h2 className="text-lg font-semibold text-brand-navy">{t('dashboard:gesamtprozess.titel')}</h2>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <ProzessTrichter funnel={gp.funnel} />
@@ -233,27 +257,27 @@ function GesamtprozessSection({ d, onReload }: { d: DashboardData; onReload: () 
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="text-xs font-medium uppercase tracking-wide text-slate-500">Bewerbungen gesamt</div>
+          <div className="text-xs font-medium uppercase tracking-wide text-slate-500">{t('dashboard:gesamtprozess.bewerbungen')}</div>
           <div className="mt-1 text-3xl font-bold text-brand-navy">{gp.bewerbungen.wert}</div>
           <SplitChips splits={gp.bewerbungen.splits} />
         </div>
         <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="text-xs font-medium uppercase tracking-wide text-slate-500">Gespräche gesamt</div>
+          <div className="text-xs font-medium uppercase tracking-wide text-slate-500">{t('dashboard:gesamtprozess.gespraeche')}</div>
           <div className="mt-1 text-3xl font-bold text-brand-navy">{gp.gespraeche.wert}</div>
           <SplitChips splits={gp.gespraeche.splits} />
         </div>
         <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="text-xs font-medium uppercase tracking-wide text-slate-500">Absagen gesamt</div>
+          <div className="text-xs font-medium uppercase tracking-wide text-slate-500">{t('dashboard:gesamtprozess.absagen')}</div>
           <div className="mt-1 text-3xl font-bold text-brand-navy">{gp.absagen.wert}</div>
           <SplitChips splits={gp.absagen.splits} />
         </div>
         <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="text-xs font-medium uppercase tracking-wide text-slate-500">Keine Reaktion</div>
+          <div className="text-xs font-medium uppercase tracking-wide text-slate-500">{t('dashboard:gesamtprozess.keine_reaktion')}</div>
           <div className="mt-1 text-3xl font-bold text-rose-600">{gp.keine_reaktion.wert}</div>
           <SplitChips splits={gp.keine_reaktion.splits} />
           <div className="mt-2 space-y-1.5">
-            <KeineReaktionListe title="Ausschreibungen" rows={ausschreibungRows} />
-            <KeineReaktionListe title="Netzwerk" rows={netzwerkRows} busyId={busy} onWiedervorlage={wiedervorlage} />
+            <KeineReaktionListe title={t('dashboard:gesamtprozess.ausschreibungen')} rows={ausschreibungRows} />
+            <KeineReaktionListe title={t('dashboard:gesamtprozess.netzwerk')} rows={netzwerkRows} busyId={busy} onWiedervorlage={wiedervorlage} />
           </div>
         </div>
       </div>
@@ -269,12 +293,12 @@ function Funnel({ data }: { data: Record<string, number> }) {
   const max = Math.max(1, ...entries.map(([, v]) => v))
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm lg:col-span-2">
-      <h3 className="mb-3 text-sm font-semibold text-brand-navy">Pipeline-Funnel <span className="font-normal text-slate-400">· Klick öffnet die Stellen</span></h3>
+      <h3 className="mb-3 text-sm font-semibold text-brand-navy">{t('dashboard:pipeline_funnel.titel')} <span className="font-normal text-slate-400">{t('dashboard:pipeline_funnel.untertitel')}</span></h3>
       <div className="space-y-2">
         {entries.map(([stage, v]) => (
           <Link key={stage} to={`/jobs?status=${encodeURIComponent(stage)}`}
                 className="flex items-center gap-2 rounded text-sm transition hover:bg-slate-50">
-            <div className="w-20 shrink-0 text-slate-600">{stage}</div>
+            <div className="w-20 shrink-0 text-slate-600">{wert('status', stage)}</div>
             <div className="relative h-6 flex-1 overflow-hidden rounded" style={{ backgroundColor: 'var(--spur-farbe)' /* ui.track.bar = Rolle spur */ }}>
               <div className="absolute inset-y-0 left-0 rounded"
                    style={{ width: `${Math.max((v / max) * 100, v ? 3 : 0)}%`, backgroundColor: STATUS_FARBEN[stage]?.bg || '#94A3B8' }} />
@@ -294,8 +318,8 @@ function FollowUpBanner({ overdue, open, nOverdue, nOpen }: { overdue: number; o
         <div className="flex items-center gap-3">
           <span className="text-2xl">⏰</span>
           <div>
-            <div className="text-sm font-semibold text-brand-navy">Follow-ups</div>
-            <div className="text-xs text-slate-500">Keine offenen Aktionen — setz Fälligkeitsdaten in Job-Details oder bei Netzwerk-Kontakten.</div>
+            <div className="text-sm font-semibold text-brand-navy">{t('dashboard:followup.titel')}</div>
+            <div className="text-xs text-slate-500">{t('dashboard:followup.leer')}</div>
           </div>
         </div>
         <span className="text-slate-300 transition group-hover:text-brand-cyan">→</span>
@@ -312,11 +336,15 @@ function FollowUpBanner({ overdue, open, nOverdue, nOpen }: { overdue: number; o
         <span className="text-2xl">{danger ? '🔴' : '⏰'}</span>
         <div>
           <div className="text-sm font-semibold text-brand-navy">
-            {danger ? `${totalOverdue} Aktion${totalOverdue > 1 ? 'en' : ''} fällig/überfällig` : 'Follow-ups im Blick'}
+            {danger ? t('dashboard:followup.faellig', { count: totalOverdue }) : t('dashboard:followup.im_blick')}
           </div>
           <div className="text-xs text-slate-500">
-            Stellen: {open} offen{overdue > 0 ? ` · ${overdue} fällig` : ''}
-            {nOpen > 0 ? ` · Netzwerk: ${nOpen} offen${nOverdue > 0 ? ` · ${nOverdue} fällig` : ''}` : ''}
+            {[
+              t('dashboard:followup.stellen_offen', { anzahl: open }),
+              overdue > 0 && t('dashboard:followup.faellig_n', { anzahl: overdue }),
+              nOpen > 0 && t('dashboard:followup.netzwerk_offen', { anzahl: nOpen }),
+              nOpen > 0 && nOverdue > 0 && t('dashboard:followup.faellig_n', { anzahl: nOverdue }),
+            ].filter(Boolean).join(' · ')}
           </div>
         </div>
       </div>
@@ -339,7 +367,7 @@ function BeispieldatenBanner() {
   return (
     <Link to="/einstellungen"
           className="flex items-center justify-between rounded-lg border border-amber-300 bg-amber-50 px-4 py-2.5 text-sm text-amber-800 shadow-sm transition hover:border-amber-400">
-      <span>Sie sehen Beispieldaten von {name}. Entfernen Sie sie in den Einstellungen, bevor Sie eigene Daten eintragen.</span>
+      <span>{t('dashboard:beispieldaten', { name })}</span>
       <span className="text-amber-400">→</span>
     </Link>
   )
@@ -381,50 +409,53 @@ export default function Dashboard() {
   const load = () => api<DashboardData>('/dashboard').then(setD).catch((e) => setErr(String(e)))
   useEffect(() => { load() }, [])
 
-  if (err) return <div className="rounded-lg bg-rose-50 p-4 text-rose-700">Fehler: {err}</div>
-  if (!d) return <div className="text-slate-400">Lade Dashboard…</div>
+  if (err) return <div className="rounded-lg bg-rose-50 p-4 text-rose-700">{t('dashboard:fehler', { meldung: err })}</div>
+  if (!d) return <div className="text-slate-400">{t('dashboard:lade')}</div>
 
-  const t = d.totals
+  const tot = d.totals
   // Gemeinsamer Maßstab über die drei Plan-Karten — sonst sähe Plan C (oft nur 1 Job) mit
   // seinem kartenlokalen Maximum wie ein Vollbalken aus und würde neben Plan A täuschen.
   const planMax = Math.max(1, ...(['A', 'B', 'C'] as const).flatMap((p) => Object.values(d.by_situation_plan[p])))
+  // BarList zeigt den Schlüssel selbst als Beschriftung; Farben und Links brauchen weiter den DB-Wert.
+  const nachStatus = beschriftet(d.by_status, (k) => wert('status', k))
+  const nachPortal = beschriftet(d.by_portal, (p) => wert('portal', p))
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-brand-navy">Dashboard</h1>
-          <p className="text-sm text-slate-500">Überblick über deine Pipeline · Kacheln sind klickbar · Quelle: zentrale SQLite-DB</p>
+          <h1 className="text-2xl font-bold text-brand-navy">{t('common:nav.dashboard')}</h1>
+          <p className="text-sm text-slate-500">{t('dashboard:untertitel')}</p>
         </div>
         <div className="flex flex-wrap items-center justify-end gap-2">
           {absagen?.datei && absagen.url && (
-            <a href={absagen.url} title="Neuester Muster-Bericht der Absagen-Analyse"
+            <a href={absagen.url} title={t('dashboard:absagen.titel')}
                className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50">
-              📉 Absagen-Analyse · {deDatum(absagen.datum)}
+              {t('dashboard:absagen.link', { datum: datum(absagen.datum) })}
             </a>
           )}
-          <AgentTaskButton kind="absagen-analyse" label="Absagen-Analyse neu erstellen" subtle
+          <AgentTaskButton kind="absagen-analyse" label={t('dashboard:absagen.neu')} subtle
                            statusTarget={laufBereich} onFinished={ladeAbsagen} />
-          <a href="/api/digest" className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50">📄 Tages-Digest</a>
-          <a href="/api/export/excel" className="rounded-lg bg-brand-cyan px-3 py-1.5 text-sm font-medium text-brand-aufAktion hover:bg-brand-cyanHover">⬇ Excel-Export</a>
+          <a href="/api/digest" className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50">{t('dashboard:digest')}</a>
+          <a href="/api/export/excel" className="rounded-lg bg-brand-cyan px-3 py-1.5 text-sm font-medium text-brand-aufAktion hover:bg-brand-cyanHover">{t('dashboard:excel_export')}</a>
         </div>
       </div>
       <div ref={setLaufBereich} className="space-y-2 empty:hidden" />
 
       <BeispieldatenBanner />
       <SicherungBanner />
-      <FollowUpBanner overdue={t.followups_overdue} open={t.followups_open} nOverdue={t.netzwerk_overdue} nOpen={t.netzwerk_open} />
+      <FollowUpBanner overdue={tot.followups_overdue} open={tot.followups_open} nOverdue={tot.netzwerk_overdue} nOpen={tot.netzwerk_open} />
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        <Stat label="Stellen gesamt" value={t.jobs} to="/jobs?sort=found" />
-        <Stat label="Top-Zielstellen (≥4)" value={t.top_matches} accent to="/jobs?min_score=4&sort=found" />
-        <Stat label="Bewerbungen (laufend)" value={t.active_applications} sub={`${t.applications} gesamt erfasst`} to="/jobs?statuses=Beworben,Interview,Angebot&sort=found" />
-        {t.applied_offline > 0 && <Stat label="Beworbene offline" value={t.applied_offline} danger to="/jobs?availability_status=offline" />}
+        <Stat label={t('dashboard:stat.stellen')} value={tot.jobs} to="/jobs?sort=found" />
+        <Stat label={t('dashboard:stat.top')} value={tot.top_matches} accent to="/jobs?min_score=4&sort=found" />
+        <Stat label={t('dashboard:stat.bewerbungen')} value={tot.active_applications} sub={t('dashboard:stat.bewerbungen_sub', { anzahl: tot.applications })} to="/jobs?statuses=Beworben,Interview,Angebot&sort=found" />
+        {tot.applied_offline > 0 && <Stat label={t('dashboard:stat.offline')} value={tot.applied_offline} danger to="/jobs?availability_status=offline" />}
       </div>
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        <Stat label="E-Mails erfasst" value={t.emails} to="/inbox" />
-        <Stat label="Antworten" value={t.responses} to="/inbox" />
-        <Stat label="Ø Antwortzeit" value={t.avg_response_hours != null ? `${t.avg_response_hours} h` : '–'} />
-        <Stat label="Antwortquote" value={t.response_rate != null ? `${t.response_rate}%` : '–'} accent />
+        <Stat label={t('dashboard:stat.emails')} value={tot.emails} to="/inbox" />
+        <Stat label={t('dashboard:stat.antworten')} value={tot.responses} to="/inbox" />
+        <Stat label={t('dashboard:stat.antwortzeit')} value={tot.avg_response_hours != null ? `${tot.avg_response_hours} h` : '–'} />
+        <Stat label={t('dashboard:stat.antwortquote')} value={tot.response_rate != null ? t('dashboard:prozent_kompakt', { wert: tot.response_rate }) : '–'} accent />
       </div>
 
       <GesamtprozessSection d={d} onReload={load} />
@@ -432,21 +463,24 @@ export default function Dashboard() {
       <Funnel data={d.funnel} />
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <div className="space-y-4">
-          <BarList title="Nach Status" data={d.by_status} colorFn={(k) => STATUS_FARBEN[k]?.bg || '#94A3B8'}
-                   linkFn={(k) => `/jobs?status=${encodeURIComponent(k)}`} />
-          <BarList title="Nach Zielstellen-Fit" data={d.by_score} colorFn={(k) => SCORE_COLORS[Number(k)] || '#94A3B8'}
+          <BarList title={t('dashboard:balken.status')} data={nachStatus.data} colorFn={(k) => STATUS_FARBEN[nachStatus.db(k)]?.bg || '#94A3B8'}
+                   linkFn={(k) => `/jobs?status=${encodeURIComponent(nachStatus.db(k))}`} />
+          <BarList title={t('dashboard:balken.fit')} data={d.by_score} colorFn={(k) => SCORE_COLORS[Number(k)] || '#94A3B8'}
                    linkFn={(k) => `/jobs?score=${k === '—' ? 'none' : encodeURIComponent(k)}`} />
-          <BarList title="Nach Portal" data={d.by_portal} linkFn={(k) => `/jobs?portal=${encodeURIComponent(k)}`} />
+          <BarList title={t('dashboard:balken.portal')} data={nachPortal.data} linkFn={(k) => `/jobs?portal=${encodeURIComponent(nachPortal.db(k))}`} />
         </div>
         <div className="space-y-4">
-          {(['A', 'B', 'C'] as const).map((p) => (
-            <BarList key={p} title={`Nach Situation (Plan ${p})`} data={d.by_situation_plan[p]}
-                     colorFn={(k) => SITU_COLORS[k] || 'var(--aktion-farbe)'} maxValue={planMax}
-                     linkFn={(k) => `/jobs?situation=${encodeURIComponent(k)}&plan=${p}`} />
-          ))}
+          {(['A', 'B', 'C'] as const).map((p) => {
+            const nachSituation = beschriftet(d.by_situation_plan[p], (k) => wert('situation', k))
+            return (
+              <BarList key={p} title={t('dashboard:balken.situation', { plan: p })} data={nachSituation.data}
+                       colorFn={(k) => SITU_COLORS[nachSituation.db(k)] || 'var(--aktion-farbe)'} maxValue={planMax}
+                       linkFn={(k) => `/jobs?situation=${encodeURIComponent(nachSituation.db(k))}&plan=${p}`} />
+            )
+          })}
           {Object.keys(d.by_situation_plan.ohne).length > 0 && (
             <Link to="/jobs?plan=none" className="block px-1 text-xs text-slate-400 hover:text-brand-cyan">
-              {Object.values(d.by_situation_plan.ohne).reduce((a, b) => a + b, 0)} Stellen ohne Plan-Zuordnung
+              {t('dashboard:balken.ohne_plan', { count: Object.values(d.by_situation_plan.ohne).reduce((a, b) => a + b, 0) })}
             </Link>
           )}
         </div>

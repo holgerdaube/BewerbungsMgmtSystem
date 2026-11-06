@@ -188,10 +188,21 @@ def _charset_of(payload: dict) -> "str | None":
 
 
 def _decode(data: str, charset: "str | None" = None) -> str:
-    """Base64url-Rohbytes mit dem MIME-Charset des Teils dekodieren (P2-12) — UTF-8 nur als
-    Fallback, wenn kein Charset angegeben ist ODER Python ihn nicht kennt/er sonst scheitert
-    (kaputte/exotische Angabe darf nie zum Absturz führen, s. Modul-Review)."""
+    """Base64url-Rohbytes eines Teils dekodieren: zuerst streng als UTF-8, sonst mit dem
+    MIME-Charset des Teils (P2-12), zuletzt UTF-8 mit Ersatzzeichen.
+
+    Warum UTF-8 zuerst (gemessen am echten Postfach, 05.11.2026): Die Gmail-API liefert
+    `body.data` bei `format=full` bereits nach UTF-8 umkodiert, laesst den Content-Type-Header
+    des Teils aber unveraendert (`charset="iso-8859-1"`, in der Rohform steht `Ol=E1`, in
+    `body.data` `Ol\\xc3\\xa1`). Alle 18 Teile mit ISO-8859-1 oder Windows-1252 im Kopf aus
+    100 Bewerbungsmails waren so; mit dem Kopf dekodiert wurde aus „ä“ ein „Ã¤“. Echte
+    Latin-1-Bytes mit Umlauten sind dagegen fast nie gueltiges UTF-8, fallen also weiter auf
+    den Charset des Teils zurueck. Kaputte/exotische Angaben fuehren nie zum Absturz."""
     raw = base64.urlsafe_b64decode(data.encode("utf-8"))
+    try:
+        return raw.decode("utf-8")
+    except UnicodeDecodeError:
+        pass   # keine UTF-8-Bytes: echter Fremd-Charset, der Kopf des Teils gilt
     if charset:
         try:
             return raw.decode(charset, errors="replace")

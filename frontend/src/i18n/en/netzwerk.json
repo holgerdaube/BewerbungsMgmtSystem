@@ -1,0 +1,243 @@
+{
+  "lade": "Loading…",
+  "untertitel": "Target companies, headhunters and network contacts that you maintain here. The target-company sweep and the headhunter search check the first two lists in turn for suitable jobs.",
+  "tab": {
+    "targets": "Target companies",
+    "hh": "Headhunters",
+    "nc": "Network contacts"
+  },
+  "knopf": {
+    "abbrechen": "Cancel",
+    "anlegen": "Add",
+    "anlegen_laeuft": "Adding…",
+    "speichern": "Save",
+    "speichern_laeuft": "Saving…",
+    "gespeichert": "✓ Saved",
+    "loeschen": "🗑 Delete",
+    "schliessen": "Close"
+  },
+  "fehler": {
+    "speichern": "Saving failed",
+    "anlegen": "Adding failed",
+    "wiederherstellen": "Restoring failed",
+    "name_pflicht": "Name is required",
+    "firma_pflicht": "Company is required",
+    "datum_pflicht": "Date is required",
+    "import_abgelehnt": "The server did not accept the file (status {{status}}).",
+    "import_unerwartet": "The server sent an unexpected response.",
+    "anfrage_netz": "The request failed. The server is not responding, or the file was changed after you selected it. If so, select the file again.",
+    "anfrage": "The request failed."
+  },
+  "loeschen_bestaetigung": "Really delete “{{name}}”? (The entry will disappear from all lists and will no longer be checked.)",
+  "feld": {
+    "company": "Company",
+    "industry": "Industry",
+    "size_ma": "Size (employees)",
+    "revenue": "Revenue",
+    "location_hq": "HQ",
+    "ownership": "Ownership",
+    "tier": "Tier",
+    "scenario": "Scenario",
+    "key_contact": "Key contact",
+    "connection_status": "Status",
+    "website": "Website",
+    "karriere_url": "Careers page",
+    "wachstumssignal": "Growth signal",
+    "ki_readiness": "AI readiness",
+    "einschaetzung": "Assessment",
+    "ranking": "Ranking",
+    "last_update": "Last updated",
+    "firma": "Company",
+    "ansprechpartner": "Contact person",
+    "fokus": "Focus",
+    "region": "Region",
+    "kanal": "Channel",
+    "linkedin_gefolgt": "Followed on LinkedIn",
+    "letzter_kontakt": "Last contact",
+    "status": "Status",
+    "webseite": "Website",
+    "notizen": "Notes",
+    "name": "Name",
+    "beziehung": "Relationship",
+    "unternehmen": "Company",
+    "rolle": "Role",
+    "prioritaet": "Priority",
+    "next_action": "Next action",
+    "next_action_date": "Due date",
+    "source": "Source"
+  },
+  "form": {
+    "groesse": "Size",
+    "website": "Website",
+    "faellig_default": "Due date (default: +10 working days)"
+  },
+  "platzhalter": {
+    "name_pflicht": "Name *",
+    "firma_pflicht": "Company *",
+    "prioritaet": "Priority…",
+    "tier": "Tier…",
+    "szenario": "Scenario…",
+    "webseite_hh": "Website (https://… — basis for the search for assignments)",
+    "person": "Person",
+    "notiz": "Note…",
+    "gegenueber": "Counterpart…"
+  },
+  "wert": {
+    "Hoch": "High",
+    "Mittel": "Medium",
+    "Niedrig": "Low",
+    "Netzwerk": "Network",
+    "Recruiter": "Recruiter",
+    "Hiring Manager": "Hiring manager",
+    "Fachbereich": "Department",
+    "Headhunter": "Headhunter",
+    "Sonstige": "Other",
+    "LinkedIn": "LinkedIn",
+    "E-Mail": "Email",
+    "Telefon": "Phone",
+    "Persönlich": "In person",
+    "Offen": "Open"
+  },
+  "nc": {
+    "neu_titel": "Add a new contact",
+    "anlegen": "+ Add contact",
+    "zaehler_one": "{{count}} contact · click a row to edit",
+    "zaehler_other": "{{count}} contacts · click a row to edit",
+    "leer": "No contacts yet."
+  },
+  "tc": {
+    "neu_titel": "Add a new target company",
+    "anlegen": "+ Add target company",
+    "zaehler_one": "{{count}} target company · click a row to edit",
+    "zaehler_other": "{{count}} target companies · click a row to edit"
+  },
+  "hh": {
+    "neu_titel": "Add a new headhunter",
+    "anlegen": "+ Add headhunter",
+    "zaehler_one": "{{count}} headhunter entry · click a row to edit",
+    "zaehler_other": "{{count}} headhunter entries · click a row to edit",
+    "zaehler_blatt_one": "{{count}} headhunter entry · click a row to edit (‘Blatt’ only)",
+    "zaehler_blatt_other": "{{count}} headhunter entries · click a row to edit (‘Blatt’ only)"
+  },
+  "zeile_outreach_tooltip": "Outreach row — manage it under /outreach",
+  "eintraege_one": "{{count}} entry",
+  "eintraege_other": "{{count}} entries",
+  "karriere": {
+    "pruefung": "Careers check: {{datum}}",
+    "zielfirmen_sweep": "(maintained by the target-company sweep, not editable here)",
+    "headhunter_suche": "(maintained by the headhunter search, not editable here)"
+  },
+  "papierkorb": {
+    "titel": "🗑 Bin ({{anzahl}})",
+    "hinweis": "deleted entries — can be restored",
+    "geloescht": "deleted {{datum}}",
+    "wiederherstellen_laeuft": "Restoring…",
+    "wiederherstellen": "↩ Restore"
+  },
+  "gespraech": {
+    "titel": "Conversations ({{anzahl}})",
+    "erfassen": "🎙 Log conversation",
+    "vor_ort_titel": "Met in person",
+    "loeschen_titel": "Delete",
+    "vor_ort": "in person",
+    "loeschen_bestaetigung": "Really delete this conversation?"
+  },
+  "import": {
+    "titel_zielfirmen": "Import target companies from a file",
+    "titel_headhunter": "Import headhunters from a file",
+    "titel_kontakte": "Import network contacts from a file",
+    "info": "Upload a CSV or Excel file. Columns are recognised by their headings. You will see a preview first. Existing entries are only filled in where fields are empty, and entries deleted in the app stay deleted.",
+    "info_kontakte": "Upload a CSV or Excel file. Columns are recognised by their headings. You can also use the Connections.csv file from your LinkedIn data export. You will see a preview first. Existing entries are only filled in where fields are empty, and entries deleted in the app stay deleted.",
+    "knopf": "Import from file",
+    "datei_waehlen": "Choose file",
+    "keine_datei": "No file chosen",
+    "vorlage": "Template:",
+    "vorlage_csv": "Download template as CSV file",
+    "vorlage_excel": "Download template as Excel file",
+    "pruefen": "Checking file…",
+    "erkannt": "Detected: <fett>{{format}}</fett>",
+    "datenzeilen_one": "{{zahl}} data row",
+    "datenzeilen_other": "{{zahl}} data rows",
+    "spalten_erkannt": "Detected columns",
+    "spalten_keine": "No columns detected.",
+    "spalten_ignoriert": "Unused columns",
+    "keine_datenzeilen": "The file contains no data rows. Add entries below the header row.",
+    "gekuerzt": "Further rows with nothing noteworthy are not listed.",
+    "importieren": "Import",
+    "importieren_mit": "Import ({{teile}})",
+    "importiert_laufend": "Backing up and importing…",
+    "nichts_zu_importieren": "There is nothing to import: all rows already exist, were deleted in the app or contain errors.",
+    "fehler_nicht_importiert": "Rows with errors will not be imported."
+  },
+  "format": {
+    "linkedin": "LinkedIn export (Connections.csv)",
+    "xlsx_blatt": "Excel file, sheet ‘{{blatt}}’",
+    "xlsx": "Excel file",
+    "csv": "CSV file"
+  },
+  "tabelle": {
+    "caption": "Rows in the file with action and note",
+    "zeile": "Row",
+    "eintrag": "Entry",
+    "aktion": "Action",
+    "hinweis": "Note",
+    "ohne_angabe": "not specified",
+    "ergaenzt": "Updated: {{felder}}",
+    "geloescht_standard": "Deleted in the app, will not be created again."
+  },
+  "aktion": {
+    "neu": "New",
+    "ergaenzt": "Updated",
+    "unveraendert": "Unchanged",
+    "geloescht": "Deleted",
+    "fehler": "Error"
+  },
+  "zaehler": {
+    "neu": {
+      "label": "New",
+      "hilfe": "will be created"
+    },
+    "ergaenzt": {
+      "label": "Updated",
+      "hilfe": "empty fields will be filled in"
+    },
+    "unveraendert": {
+      "label": "Unchanged",
+      "hilfe": "already there, nothing to add"
+    },
+    "geloescht": {
+      "label": "Deleted, skipped",
+      "hilfe": "deleted in the app, stay deleted"
+    },
+    "fehler": {
+      "label": "Errors",
+      "hilfe": "will not be imported"
+    }
+  },
+  "teil": {
+    "angelegt": "{{zahl}} created",
+    "ergaenzt": "{{zahl}} updated",
+    "unveraendert": "{{zahl}} unchanged",
+    "in_app_geloescht": "{{zahl}} deleted in the app",
+    "mit_fehlern_one": "{{zahl}} with an error",
+    "mit_fehlern_other": "{{zahl}} with errors",
+    "neu": "{{zahl}} new",
+    "geloescht": "{{zahl}} deleted",
+    "fehler_one": "{{zahl}} error",
+    "fehler_other": "{{zahl}} errors",
+    "ergaenzen": "{{zahl}} to update"
+  },
+  "ergebnis": {
+    "satz": "{{inhalt}}.",
+    "nichts": "Nothing created or updated",
+    "sicherung": "Backed up beforehand: <code>{{sicherung}}</code>",
+    "uebersprungen": "Skipped: {{teile}}."
+  },
+  "ansage": {
+    "pruefen": "Checking file.",
+    "import": "Import in progress.",
+    "sicherung": "{{ergebnis}} Backed up beforehand: {{sicherung}}.",
+    "vorschau": "Preview ready: {{teile}}.",
+    "keine_datenzeilen": "no data rows"
+  }
+}

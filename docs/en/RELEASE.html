@@ -1,0 +1,478 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><link rel="icon" type="image/png" href="data:image/png;base64,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">
+<title>Release — Versions and Sign-off (internal, P2-51, P2-82, P2-84)</title>
+<style>
+:root{
+  --ink:#0B1F3A;
+  --paper:#F4F7FB;
+  --card:#FFFFFF;
+  --line:#DCE4EE;
+  --muted:#5F6F84;
+  --accent:#00B4D8;
+  --amber:#E4A11B;
+  --radius:14px;
+  --shadow:0 1px 2px rgba(16,26,40,.06),0 8px 24px rgba(16,26,40,.06);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--paper);
+  color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:880px;margin:0 auto;padding:32px 20px 72px}
+
+header.head{background:var(--ink);color:#fff;border-radius:var(--radius);padding:28px 30px;
+  box-shadow:var(--shadow);margin-bottom:22px}
+header.head h1{font-size:26px;line-height:1.3;margin:0;font-weight:700;letter-spacing:-.01em}
+header.head h1 code{background:rgba(255,255,255,.16);color:#fff}
+header.head .intro{margin-top:10px;font-size:14.5px;color:#BFC7D5;max-width:65ch}
+header.head .intro p{margin:0 0 6px}
+header.head .intro p:last-child{margin-bottom:0}
+header.head .intro a{color:#fff}
+header.head .intro code{background:rgba(255,255,255,.16);color:#fff}
+/* Ein Zitat (Hinweis-Box) KANN vor der ersten ##-Überschrift stehen und landet dann im Intro
+   des dunklen Banners -- seine eigene helle Cremefläche braucht dunkle Schrift, sonst macht die
+   helle ".intro code/a"-Regel (höhere Selektor-Spezifität wegen zweier Klassen) Inline-Code/
+   Links darin fast unsichtbar (weiß auf Creme). Deshalb hier gezielt zurückgesetzt. */
+header.head .intro blockquote{color:#5F4A1F}
+header.head .intro blockquote a{color:var(--accent)}
+header.head .intro blockquote code{background:rgba(11,31,58,.08);color:#5F4A1F}
+
+section.card{background:var(--card);border:1px solid var(--line);border-radius:12px;
+  padding:18px 22px 22px;box-shadow:var(--shadow);margin-bottom:16px}
+section.card:last-child{margin-bottom:0}
+section.card>h2:first-child{margin-top:0}
+section.card h2{font-size:18px;margin:0 0 14px;font-weight:700;letter-spacing:-.01em;
+  padding-bottom:10px;border-bottom:2px solid var(--accent)}
+section.card h3{font-size:15.5px;margin:20px 0 8px;font-weight:700}
+section.card h3:first-child{margin-top:0}
+section.card h4{font-size:13px;margin:16px 0 6px;font-weight:700;color:var(--muted);
+  text-transform:uppercase;letter-spacing:.05em}
+section.card p{margin:0 0 12px;font-size:14.5px}
+section.card p:last-child{margin-bottom:0}
+section.card ul,section.card ol{margin:0 0 12px;padding-left:22px;font-size:14.5px}
+section.card ul ul,section.card ol ol,section.card ul ol,section.card ol ul{margin:4px 0}
+section.card li{margin-bottom:5px}
+section.card li:last-child{margin-bottom:0}
+section.card a{color:var(--accent);text-decoration:none;font-weight:600}
+section.card a:hover{text-decoration:underline}
+section.card hr{border:none;border-top:1px solid var(--line);margin:18px 0}
+
+code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.92em}
+:not(pre)>code{background:#EAF0F6;border-radius:4px;padding:1px 6px;color:var(--ink)}
+pre{background:var(--ink);color:#EAF0F6;border-radius:10px;padding:14px 16px;overflow-x:auto;
+  font-size:13px;margin:0 0 14px;line-height:1.5}
+section.card pre:last-child{margin-bottom:0}
+pre code{background:none;padding:0;color:inherit;font-size:inherit}
+
+.tablewrap{overflow-x:auto;margin:0 0 14px}
+section.card .tablewrap:last-child{margin-bottom:0}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{text-align:left;background:#EAF0F6;color:var(--ink);font-weight:700;padding:8px 12px;
+  border:1px solid var(--line);white-space:nowrap}
+td{padding:8px 12px;border:1px solid var(--line);vertical-align:top}
+
+blockquote{background:#FBF3E6;border:1px solid #ECD9B3;border-left:4px solid var(--amber);
+  border-radius:10px;padding:10px 16px;margin:0 0 14px;color:#5F4A1F;font-size:14px}
+section.card blockquote:last-child{margin-bottom:0}
+blockquote p{margin:0 0 6px;color:inherit;font-size:inherit}
+blockquote p:last-child{margin-bottom:0}
+blockquote code{background:rgba(11,31,58,.08)}
+
+@media (max-width:640px){
+  .wrap{padding:20px 14px 48px}
+  header.head{padding:20px 22px}
+}
+@media print{
+  body{background:#fff}
+  .wrap{max-width:100%;padding:10px 6px}
+  header.head,section.card{box-shadow:none}
+  section.card{page-break-inside:avoid;border-color:#ccc}
+  pre{white-space:pre-wrap;word-break:break-word}
+  a{color:inherit;text-decoration:none}
+}
+</style></head><body><div class="wrap">
+<header class="head"><h1>Release — Versions and Sign-off (internal, P2-51, P2-82, P2-84)</h1><div class="intro"><p>How you sign off a new BMS version and publish it as a package in a GitHub release. The
+BMS is open source (Apache-2.0): since P2-82 there is no licence file and no package service any more.
+Users find new versions in the GitHub release of the public repo
+<code>holgerdaube/BewerbungsMgmtSystem</code>. This documentation is for the project lead, not for users, and it is
+not shipped (<code>docs/RELEASE.md</code> is dropped from every package by the documentation allow list in
+<code>pipeline/kundenpaket.py::DOKU_ERLAUBT</code>).</p>
+<p><strong>Two repositories.</strong> Development happens in a non-public development repository; the public
+repo is created from an export of the checked state (section "Publishing" below). A sign-off
+(<code>freigeben</code>) creates the version, CHANGELOG, commit and tag in the development repo; no release is created
+there: <code>release.yml</code> runs on a tag push only in the public repo (both jobs check the repo name).
+The trial build via <code>workflow_dispatch</code> runs in every repo. The update button and update tool always ask the
+public repo; if there is no release there yet, they find nothing ("No version has been
+published yet." or a connection error).</p>
+<p>Short version, details below:</p>
+<pre><code class="language-sh">scripts/release.sh freigeben patch --probe        # nur pruefen
+scripts/release.sh freigeben patch                # Entwicklungs-Repo: Version, CHANGELOG, Commit, Tag, Push
+scripts/veroeffentlichen.sh --ziel &lt;Arbeitskopie&gt; --ref v1.1.0   # geprueften Stand in die Arbeitskopie des oeffentlichen Repos
+# … committen, pushen, CI abwarten, taggen, Tag pushen (Abschnitt „Veröffentlichen“): das Tag startet das Release …
+scripts/release.sh abholen 1.1.0                  # laedt ZIP + .sha256 aus dem Release (nur zum Pruefen)
+# … Das GitHub-Release im öffentlichen Repo ist die Veroeffentlichung, danach folgt kein weiterer Schritt (Schritt 5 unten) …
+</code></pre>
+<p><code>scripts/release.sh</code> and <code>scripts/veroeffentlichen.sh</code> pass all arguments 1:1 on to <code>python -m pipeline.release</code>
+and <code>python -m pipeline.veroeffentlichung</code> respectively (from <code>backend/</code>). The examples below use the scripts.</p></div></header>
+<section class="card"><h2>Version scheme</h2><p>SemVer; the source is the file <code>VERSION</code> in the project root (one line <code>MAJOR.MINOR.PATCH</code>). <code>0.0.0</code>
+means "no sign-off yet". Only <code>pipeline/release.py::freigeben()</code> writes this file; never
+touch it by hand. Every sign-off additionally creates an annotated Git tag <code>vX.Y.Z</code>; the tag and
+<code>VERSION</code> must always match (<code>release.yml</code> checks this once more on
+every tag push).</p>
+<p>Rule of thumb for the level:</p>
+<ul>
+<li><strong>patch</strong> — bug fix, no visible new function.</li>
+<li><strong>minor</strong> — new function, nothing existing breaks.</li>
+<li><strong>major</strong> — something that a user could experience as a break (2.0.0: the licence requirement was dropped and
+  a new update route via GitHub, see P2-82).</li>
+</ul>
+<p><code>scripts/release.sh freigeben &lt;X.Y.Z|patch|minor|major&gt;</code> accepts both: a fixed version or
+a level that is counted up from the current <code>VERSION</code>.</p></section><section class="card"><h2>CHANGELOG rules</h2><p><code>CHANGELOG.md</code> is user text (formal "Sie" form) and ships with every package. Structure:</p>
+<pre><code># Änderungen
+
+&lt;Einleitung&gt;
+
+## Unveröffentlicht
+
+- Punkt, der mit der nächsten Freigabe ausgeliefert wird
+
+## 1.2.0 (28.09.2026)
+
+- Punkt
+</code></pre>
+<p><strong>Every phase with a customer-visible change adds to the section "## Unveröffentlicht"</strong> one
+to two sentences from the user's point of view, right at the change itself (not collected
+retrospectively at sign-off). Rules for the entries:</p>
+<ul>
+<li>Formal "Sie" form, no filler phrases, the most important thing first. The same customer-text rules as the rest of the
+  customer documentation.</li>
+<li><strong>No phase numbers</strong> (P2-51, Phase 90 … are internal references, not customer information) and
+  <strong>no company names</strong> from your application history.</li>
+<li>One place, no changelog for internal rebuilds (refactorings, test coverage, comments);
+  only what a customer actually notices.</li>
+</ul>
+<p><code>pipeline/changelog.py</code> is the only place that knows the format: <code>version_tupel(s)</code>,
+<code>abschnitte(text)</code>, <code>abschnitt(text, version | None)</code>, <code>pruefen(text)</code> (format errors as a list,
+empty = fine), <code>freigeben(text, version, datum)</code> (turns "Unveröffentlicht" into the
+version section and creates a new empty "Unveröffentlicht" section). The same API is also read
+by <code>app/version.py</code> for the Program version card in Settings. A wrongly formatted
+section is not noticed there, but only at the next sign-off (<code>freigeben</code> then refuses
+with an exact message about which heading line does not fit).</p></section><section class="card"><h2>Release procedure</h2><p><strong>1. Trial run.</strong> Shows the planned version, the resulting CHANGELOG section and the tag,
+changes nothing:</p>
+<pre><code class="language-sh">scripts/release.sh freigeben patch --probe
+</code></pre>
+<p>A whole series of checks runs BEFORE any change, each with its own message on rejection:
+branch <code>main</code>; no changed, versioned working tree (unversioned files are only a
+hint, not an abort); <code>git fetch origin</code> and HEAD == <code>origin/main</code>; a completed,
+successful CI run (<code>ci.yml</code>) for exactly this commit (<code>gh run list --commit &lt;full SHA&gt;</code>);
+the new version greater than <code>VERSION</code>; the tag <code>vX.Y.Z</code> exists neither locally nor on <code>origin</code>;
+<code>CHANGELOG.md</code> correctly formatted and "Unveröffentlicht" not empty; the customer package check for HEAD
+without findings (on your machine it automatically runs WITH the company-name rule, see below; in CI the
+local database is missing, so the check runs there without that one rule).</p>
+<p><strong>2. Real sign-off.</strong> The same checks, after which the tool writes <code>VERSION</code> and
+<code>CHANGELOG.md</code>, commits "Release X.Y.Z", creates the annotated tag <code>vX.Y.Z</code> (message =
+version text + the CHANGELOG section) and pushes first <code>main</code>, then the tag:</p>
+<pre><code class="language-sh">scripts/release.sh freigeben patch
+</code></pre>
+<p>The push goes to the development repo (<code>origin</code>). The final message names the next step:
+<code>scripts/veroeffentlichen.sh --ziel &lt;Arbeitskopie&gt; --ref vX.Y.Z</code>. No release is created there (see "Two
+repositories").</p>
+<p>If a step fails AFTER the commit (network, the tag already exists after all, push rejected),
+the tool <strong>reverts nothing automatically</strong>, as that could delete objects that have already been
+fetched elsewhere. Instead it prints the exact <code>git</code> commands with which you
+continue by hand.</p>
+<p><strong>3. CI builds the customer package (in the public repo).</strong> The tag push in the public repo
+(section "Publishing") triggers <code>.github/workflows/release.yml</code>; in the development repo both
+jobs stay skipped. The job <code>tests</code> calls <code>ci.yml</code> as a complete test run against exactly this state (<code>secret-scan</code> deliberately does not run
+again there: the commit was already scanned on the push to <code>main</code>, and a
+tag push gives the gitleaks action no commit list anyway). The job <code>paket</code> then builds the ZIP with
+<code>python -m pipeline.kundenpaket --ref HEAD --ziel-ordner …</code>, creates a <code>.sha256</code> file
+(<code>sha256sum</code> format), fetches the release notes via <code>pipeline.release notizen</code> and
+publishes a GitHub release <code>vX.Y.Z</code> with the ZIP, checksum and the two installation guides
+(<code>BMS_Install_MAC.en.md</code>, <code>BMS_Install_Windows.en.md</code> from the checkout; if one is missing, the step fails) as
+attachments. You can see progress on the Actions page of the public repo. <strong>With this release the
+version is published.</strong></p>
+<p><strong>4. Fetch the package (optional).</strong> The release is already the publication; you only need to fetch it
+to check the package yourself (for example for the update trial below) or to pass it on as a ZIP. As soon as the
+release is green:</p>
+<pre><code class="language-sh">scripts/release.sh abholen 1.1.0
+</code></pre>
+<p>Downloads the attachments of release <code>v1.1.0</code> from the public repo (<code>gh release download --repo …</code>, not
+from the development repo) to <code>outputs/kundenpaket/</code> (override with <code>--ziel DIR</code>), checks <code>BMS_1.1.0.zip</code>
+against <code>BMS_1.1.0.zip.sha256</code> and prints the path.</p>
+<p><strong>5. Nothing more to do.</strong> There is no server on which a package is placed. The update button and
+update tool find the version via <code>releases/latest</code> of the repo <code>holgerdaube/BewerbungsMgmtSystem</code>
+(GitHub returns only published releases there, no drafts and no pre-releases):</p>
+<ul>
+<li><strong>The "Check for updates" button</strong> (Settings, "Program version" card): <code>GET /api/version/neueste</code>
+  in <code>app/update_pruefen.py</code>, shows the version, date and the release notes (text from <code>CHANGELOG.md</code>, only
+  "- " lines are kept). It installs nothing.</li>
+<li><strong>Update tool</strong> (<code>update.command</code>, <code>update_windows.bat</code>): downloads <code>BMS_&lt;Version&gt;.zip</code> from the
+  release and compares it with the <code>digest</code> of the asset (fallback: the asset <code>BMS_&lt;Version&gt;.zip.sha256</code>;
+  if both are missing, nothing is installed).</li>
+<li><strong>Installation guides</strong> (<code>BMS_Install_MAC.en.md</code>, <code>BMS_Install_Windows.en.md</code>): first ask
+  <code>releases/latest</code> (step 4a) and then download <code>releases/download/vVERSION/BMS_VERSION.zip</code>; <code>VERSION</code>
+  is read by Claude from <code>tag_name</code> in the response. Checksum: the <code>digest</code> of the asset (step 4c). The user
+  downloads the guides themselves as an attachment of the release (README, step 1); that is why
+  <code>release.yml</code> attaches them.</li>
+</ul>
+<p><code>release.yml</code> must produce the names <code>BMS_&lt;Version&gt;.zip</code> and <code>BMS_&lt;Version&gt;.zip.sha256</code> exactly like this,
+otherwise the button and the tool will not find the package. Do not change anything about file names in the workflow without
+also updating <code>scripts/bms_update.py</code> and the guides.</p>
+<p><strong>The trust anchor is your GitHub account.</strong> Whoever takes it over could publish a release with foreign code;
+<code>digest</code> and manifest would then come from the same place. Protection: two-factor sign-in and
+releases only via <code>release.yml</code>, never packages uploaded by hand.</p>
+<p><strong>Old installations up to 1.7.0</strong> keep asking the former package service and never learn about 2.0.0 there.
+There is no bridge package: they get 2.0.0 once as a ZIP file in the download folder (from the
+release page) and update themselves from then on.</p></section><section class="card"><h2>Short language check</h2><p>Before every release, in addition to the dry run: <code>scripts/test.sh</code> and CI green, <code>scripts/uebersetzung.sh --pruefen --alle</code>
+without findings, <code>backend/tests/abnahme/design_vergleich.py</code> for German against the last release, plus in a test copy the
+first start in English, the tour of all pages and one chain from <code>firma-pruefen</code> to <code>anschreiben-erstellen</code>.
+<code>veroeffentlichen.sh --pruefen</code> only runs on <code>main</code>. The description and topics of the public repo are in English.</p></section><section class="card"><h2>Trial build</h2><p>To check the release workflow itself without creating a real release (for example after a
+change to <code>kundenpaket.py</code>, <code>release.py</code> or <code>release.yml</code>, or once before the very first
+real sign-off): <code>workflow_dispatch</code> on <code>release.yml</code>, with an optional <code>ref</code> (empty = the
+current state of <code>main</code>). It runs the same two jobs (<code>tests</code> + <code>paket</code>), also in the development repo,
+but without a tag and without a GitHub release. The finished ZIP including checksum ends up as a
+workflow artefact instead:</p>
+<pre><code class="language-sh">gh workflow run release.yml
+gh workflow run release.yml -f ref=&lt;commit-oder-branch&gt;
+</code></pre></section><section class="card"><h2>Testing the update before distribution</h2><p>Before a user actually receives an update, a dry run with the real
+update tool is worthwhile, not just the test suite: install an older version in a throwaway folder
+(own port, so that it does not disturb an existing installation), create a little test data,
+change an Advisory Board persona via the interface, then install the new <code>BMS_&lt;Version&gt;.zip</code> using
+<code>update.command</code> and check: the data and the changed persona are still there, the
+Program version card shows the new version, and <code>--zurueck</code> cleanly undoes the update. You
+pass the ZIP as a path: then there is no contact with GitHub; without a path and without
+<code>--offline</code> the tool queries online. Exactly
+this scenario was an acceptance step in the build spec of P2-51 (section "Abnahme", point 6)
+and is the yardstick for every future sign-off that touches the update mechanism itself. For
+a pure feature sign-off without changes to <code>bms_update.py</code>/<code>kundenpaket.py</code>, the
+test suite is enough.</p></section><section class="card"><h2>Withdrawal</h2><p>A pushed tag should <strong>never</strong> be deleted retroactively once someone could already have downloaded
+the ZIP: the update tool expects ascending versions, and a release changed after the fact would
+have no effect anyway for a user who already has it and would only cause confusion. If, however, an error is found AFTER the tag push but BEFORE anyone can have downloaded the ZIP
+(the release is offered immediately via <code>releases/latest</code>, so only a short window remains), then:</p>
+<pre><code class="language-sh">gh release delete v1.1.0 --repo holgerdaube/BewerbungsMgmtSystem --cleanup-tag --yes
+</code></pre>
+<p>deletes the GitHub release including the tag in the public repo (the tag in the development repo stays, as does the
+commit "BMS 1.1.0" in the public repo). Fix the error in the development repo, then sign off
+and publish with a new version number (section "Publishing"): the public repo gets one more
+commit.</p>
+<p>If the ZIP has already been downloaded or installed, the rule is different: do not delete a tag, but sign off a new
+patch with the fix. The update tool on the user's machine installs the fix like any
+other update.</p>
+<p><strong>Stop offering a version.</strong> If a faulty version should no longer be offered, you set
+the release on GitHub to "Draft" (edit the release, or
+<code>gh release edit v1.1.0 --repo holgerdaube/BewerbungsMgmtSystem --draft</code>).
+<code>releases/latest</code> returns only published releases, so the button and tool then offer the
+previous version again. This has not been tested; try it out on a test release in a
+separate trial repo before it is needed in earnest. Anyone who has already downloaded or installed the faulty version keeps it. For
+them, the new patch from above applies.</p></section><section class="card"><h2>Building the customer package</h2><p>A customer package is a ZIP with the delivery state of a revision, without development files and without
+personal data, with a few neutralised files (<code>README.md</code>, <code>config/profil_struktur.md</code>,
+<code>automation/agent_settings.json</code>) plus a manifest <code>bms_manifest.json</code> (path → SHA-256 of every
+delivered file, version, whether it is a sign-off):</p>
+<pre><code class="language-sh">scripts/kundenpaket.sh
+</code></pre>
+<p>The script builds from the last commit (<code>HEAD</code>), applies the exclusion and replacement rules, then checks the
+result for personal data. If the check finds even a single hit, <strong>no</strong> ZIP is created
+(fail-closed). It places the finished package under <code>outputs/kundenpaket/</code> (gitignored, like the rest of
+<code>outputs/</code>). The file name carries the version (<code>BMS_1.1.0.zip</code> for a sign-off, otherwise additionally the date and
+short SHA).</p>
+<ul>
+<li><code>--pruefen</code> — only check and print the findings, without writing a ZIP.</li>
+<li><code>--arbeitsbaum</code> — the source is the current working tree instead of <code>HEAD</code> (preview before the next commit,
+  including new files that have not yet been added; the test suite also checks this way). Produces
+  <code>BMS_VORSCHAU_&lt;Datum&gt;.zip</code>.</li>
+<li><code>--ziel-ordner DIR</code> / <code>--ref REF</code> — a different target folder or a different revision.</li>
+</ul>
+<p>If <code>data/bewerbung.sqlite</code> exists locally, the company-name rule runs as well. In CI without
+a data set it is missing accordingly, and the output says so.</p>
+<p><strong>Customer packages are created exclusively through this script.</strong> Never copy the project folder and never
+issue a GitHub invitation to the development repository: both would hand over personal data and the
+development history.</p></section><section class="card"><h2>Customer package check rules</h2><p><code>pipeline/kundenpaket.py</code> builds every package fail-closed: a finding means <strong>no</strong> ZIP, however
+small. The rules themselves are in <code>pipeline/personendaten.py</code>; the same module checks the export for the
+public repo (section "Publishing"). All delivered text files are checked for:</p>
+<ul>
+<li><strong>Anschrift</strong>, <strong>Private Kontaktdaten</strong>, <strong>Dritte Personen</strong> and <strong>Name des Nutzers</strong>. Their patterns are
+  not in the code, but come from local sources (section "Check patterns" below).</li>
+<li><strong>E-Mail-Adressen</strong> (except the domains in <code>ERLAUBTE_DOMAINS</code>, the endings reserved for examples
+  <code>.example</code>/<code>.invalid</code>/<code>.test</code>/<code>.localhost</code> and the individual addresses in <code>ERLAUBTE_ADRESSEN</code>),
+  <strong>Telefonnummern</strong> (except the one example number in <code>BMS_Install_MAC.en.md</code> and
+  <code>BMS_Install_Windows.en.md</code>).</li>
+<li>In the scope "paket" (customer package), the user's name applies in only three places, each with its own
+  rule name: <strong>"Name des Nutzers in Kundentexten"</strong> (documentation/interface/skills, see <code>NAME_KUNDENTEXT_PFADE</code>),
+  <strong>"Name des Nutzers im Python-Programmtext"</strong> (string literals, docstrings excluded) and
+  <strong>"Name des Nutzers im TS/TSX-Programmtext"</strong> (code without comments). In the scope "oeffentlich" (export),
+  the single rule <strong>"Name des Nutzers"</strong> applies instead: everywhere, including in comments and docstrings.</li>
+<li><strong>Bestands-IDs</strong> (inventory IDs) — in EVERY delivered text file: every pattern
+  "Job/Jobs/Task/Tasks/Mail/Mails/Lauf/Bewerbung/Firma + at least two digits".</li>
+<li><strong>Firmennamen from the installation's application history</strong> (ONLY locally against the real
+  <code>data/bewerbung.sqlite</code>, read-only): company names from <code>company</code>/<code>job</code>/<code>targetcompany</code>/
+  <code>headhunter</code> are reduced to their core form (legal form removed) and
+  searched for as a whole word, case-sensitively. <code>ERLAUBTE_FIRMENNAMEN</code> excludes functional
+  mentions (portals, ATS, infrastructure such as LinkedIn, Workday, Google …), each entry with a
+  justification in the code. In CI (no data set in the checkout) this one rule does not run;
+  the output says so explicitly.</li>
+<li><strong>Zeilenenden</strong> (line endings): <code>.bat</code> files need CRLF, <code>.command</code>/<code>.sh</code>/<code>.py</code> must not contain CR.</li>
+</ul>
+<p>In addition there are two package-wide rules: <strong>Pflichtdateien fehlen</strong> (mandatory files missing) and <strong>Import eines ausgeschlossenen
+Moduls</strong> (a delivered <code>.py</code> imports something that was dropped during exclusion), and
+since P2-51 <strong>Startdatei nicht ausführbar</strong> (start file not executable; <code>update.command</code> counts here).</p>
+<p><strong>One exception per path</strong> (<code>_FREMDER_WORTLAUT</code>, P2-77): In <code>frontend/src/rechtliches/drittlizenzen_texte.txt</code>
+exactly the rules "E-Mail-Adressen", "Firmennamen" and (on export) the user's name are dropped, because the
+wording of third-party licences with author addresses and copyright lines must not be altered; all other
+rules continue to apply there.</p>
+<h3>Check patterns: from local sources only</h3>
+<p>The code contains neither an address nor an email address nor names. <code>personendaten.muster_laden</code> builds the patterns
+at runtime from:</p>
+<ol>
+<li><code>config/profil.md</code> (not in Git), read with the app's parser (<code>pipeline/profil_datei.py</code>): name,
+   location as address (from it street and postcode as separate patterns), contact (email, phone)
+   and LinkedIn profile.</li>
+<li>the local database <code>data/bewerbung.sqlite</code>, read-only: the company names (rule "Firmennamen") and
+   the names of the contacts (rule "Dritte Personen").</li>
+<li>optionally <code>pruefmuster.txt</code> in the secrets folder (<code>~/.bewerbung_mgmt_secrets/</code>, override
+   <code>BMS_SECRETS_DIR</code>): one term per line, <code>#</code> at the start of a line = comment. For former addresses and
+   names that appear nowhere else. A term is assigned to a rule according to its form: with <code>@</code>,
+   <code>linkedin.</code> or <code>://</code> = Private Kontaktdaten, with a digit or street ending = Anschrift, everything
+   else = Dritte Personen.</li>
+</ol>
+<p>If the profile or database is missing (for example in CI), the personal rules are silently dropped; the general ones
+(email with exceptions, phone format, inventory IDs, absolute user paths) continue to run, and the output
+says what was missing. In this case the export tool aborts. No finding and no test output shows a
+pattern; findings name the file, line and rule with a shortened excerpt of the file.</p>
+<p><strong>The author's name</strong> counts as a finding as a whole word everywhere, except in the attribution list (<code>NOTICE</code>,
+<code>LICENSE</code>, <code>frontend/src/rechtliches/ueber.md</code>, <code>ueber.en.md</code> and the author and licence sections of <code>README.md</code> and <code>README.de.md</code>).
+"Daube.Tech" does not count as a surname, and <code>holgerdaube/BewerbungsMgmtSystem</code> is the only permitted form
+of the account name.</p>
+<p><strong>On a finding:</strong> never post-process the ZIP by hand. Fix the cause in the real source
+(neutralise the comment/example or, if it is a legitimate functional mention,
+add the entry with a justification to the appropriate exception list:
+<code>ERLAUBTE_DOMAINS</code>/<code>ERLAUBTE_ADRESSEN</code>/<code>ERLAUBTE_FIRMENNAMEN</code>/<code>_PERSONA_PFADE</code> in
+<code>pipeline/personendaten.py</code>, depending on which rule triggered), then check again locally before you
+even think of <code>freigeben</code>. Tests should contain invented values (<code>beispiel.de</code>, <code>example.org</code>,
+<code>*.example</code>); if a real provider domain carries the test logic (detecting freemail, portal or
+ATS senders), only the single test address goes into <code>ERLAUBTE_ADRESSEN</code>, never a whole freemail domain:</p>
+<pre><code class="language-sh">cd backend &amp;&amp; ~/.bewerbung_mgmt_venv/bin/python -m pipeline.kundenpaket --arbeitsbaum --pruefen
+</code></pre>
+<p><code>--arbeitsbaum</code> checks the current state (including unversioned, new files) before you
+commit; the company-name rule runs automatically as soon as <code>data/bewerbung.sqlite</code>
+exists locally.</p></section><section class="card"><h2>Publishing</h2><p>The public repo <code>holgerdaube/BewerbungsMgmtSystem</code> never gets the history of the development repository,
+but one checked state per version as <strong>one</strong> commit "BMS X.Y.Z" with the tag <code>vX.Y.Z</code>. Development
+continues in the development repo; in the public repo something changes only at a sign-off.
+<code>scripts/veroeffentlichen.sh</code> (calls <code>python -m pipeline.veroeffentlichung</code>) creates the state in a
+local working copy of the public repo:</p>
+<pre><code class="language-sh">scripts/veroeffentlichen.sh --ziel &lt;Arbeitskopie des öffentlichen Repos&gt; [--ref &lt;Commit&gt;] [--pruefen]
+</code></pre>
+<p>How the tool proceeds:</p>
+<ol>
+<li><code>--ref</code> (default <code>HEAD</code>) must be contained in <code>main</code>. If <code>HEAD</code> has unsaved changes, the
+   tool warns: the commit is exported, not the working tree.</li>
+<li>The entries come from the commit via <code>git archive</code> (as in the package build), minus the short
+   exclusion list <code>NICHT_OEFFENTLICH</code> (<code>tasks/</code>, <code>.claude/launch.json</code>). There is no second,
+   separately maintained tree and no replacement files on export: what must not be public is cleaned up in the
+   development repo.</li>
+<li>The check uses the rules of <code>pipeline/personendaten.py</code> in the scope "oeffentlich" (all files, no
+   path exceptions apart from the third-party wording and the attribution list) with the local check patterns from above,
+   plus a quick search for secrets (API keys, GitHub tokens, OAuth client secrets,
+   private keys). If the profile or database is missing, the tool aborts: "Without a profile and database
+   it is not possible to check whether personal data is in the export." Every finding is output as in the
+   package check (file, line, rule, shortened excerpt), the result is exit code 1, and
+   nothing is written.</li>
+<li><code>--pruefen</code> ends here.</li>
+<li>The target must be a folder with <code>.git</code> whose <code>origin</code> points to <code>github.com/holgerdaube/BewerbungsMgmtSystem</code>
+   (https or ssh), without unsaved changes and with a GitHub noreply address as the
+   commit identity (section "Once only" below). Otherwise the tool aborts without writing anything.</li>
+<li>Mirroring: all files in the target except <code>.git/</code> are deleted, and the entries are written with their permissions
+   (executable yes/no). Files deleted in the development repo thus also disappear in the target.</li>
+<li>Output: the number of files, the target's <code>git status --short</code> (shortened) and the next steps with
+   the real target and real version: review, commit, push <code>main</code>, wait for CI, tag, push the tag,
+   check the release (the commands from "Per version" below).</li>
+</ol>
+<p><strong>The tool never commits or pushes.</strong> Commit, tag and push are done by hand following "Per version".</p>
+<h3>Once only: account, working copy and commit identity</h3>
+<p>Without this setup, your private email address would appear in every public commit and tag. That is why
+<code>veroeffentlichen.sh</code> checks it before mirroring and otherwise aborts.</p>
+<p><strong>Account</strong> (GitHub → Settings → Emails): switch on "Keep my email addresses private" and show no
+public email address in the profile. Do not switch on "Block command line pushes that expose my email": GitHub
+would otherwise also reject pushes to the development repo, whose commits carry the private address.</p>
+<p><strong>Clone the working copy</strong>, outside an iCloud folder (it can be cloned again at any time):</p>
+<pre><code class="language-sh">git clone https://github.com/holgerdaube/BewerbungsMgmtSystem &lt;Arbeitskopie&gt;
+</code></pre>
+<p><strong>Set the identity</strong>, in the working copy only (in the development repo it stays with your usual address),
+and verify:</p>
+<pre><code class="language-sh">git -C &lt;Arbeitskopie&gt; config user.name &quot;&lt;Anzeigename&gt;&quot;
+git -C &lt;Arbeitskopie&gt; config user.email &lt;ID&gt;+&lt;Konto&gt;@users.noreply.github.com
+git -C &lt;Arbeitskopie&gt; config user.email
+</code></pre>
+<p><code>&lt;ID&gt;</code> is the account number (<code>gh api user --jq .id</code>), <code>&lt;Konto&gt;</code> the account name. The last command shows the
+address that has been set.</p>
+<p>What is checked is the <strong>effective</strong> identity, as <code>git commit</code> and <code>git tag</code> use it
+(<code>git var GIT_AUTHOR_IDENT</code> and <code>GIT_COMMITTER_IDENT</code>): local and global configuration and the
+environment variables <code>GIT_AUTHOR_EMAIL</code>, <code>GIT_COMMITTER_EMAIL</code> and <code>EMAIL</code>, which take precedence over the setting.
+Both addresses must match <code>&lt;ID&gt;+&lt;Konto&gt;@users.noreply.github.com</code> or <code>&lt;Konto&gt;@users.noreply.github.com</code>.
+In addition, all existing commits (author and committer, all branches) and annotated tags
+(tagger) must carry a noreply address or one of GitHub's own addresses (the general
+sender address for commits from the web interface, the bot form of Dependabot and co.). An empty repo
+passes this check.</p>
+<ul>
+<li>"The working copy's commit address is not a GitHub noreply address": set the address as above. If an
+  environment variable is behind it, the message names it; remove it.</li>
+<li>"A commit or tag in the target carries an address other than the GitHub noreply address": the history of the
+  working copy is tainted. Clone the working copy again; if the address is already in the history on GitHub, delete and recreate the
+  repo (section "The first time").</li>
+</ul>
+<p>Neither message ever names the address found.</p>
+<h3>Per version</h3>
+<pre><code class="language-sh">scripts/release.sh freigeben &lt;Stufe&gt;
+scripts/veroeffentlichen.sh --ziel &lt;Arbeitskopie&gt; --ref vX.Y.Z
+git -C &lt;Arbeitskopie&gt; add -A
+git -C &lt;Arbeitskopie&gt; commit -s -m &quot;BMS X.Y.Z&quot;
+git -C &lt;Arbeitskopie&gt; push origin main
+# … CI im öffentlichen Repo abwarten, sie muss grün sein …
+git -C &lt;Arbeitskopie&gt; tag -a vX.Y.Z -m &quot;BMS X.Y.Z&quot;
+git -C &lt;Arbeitskopie&gt; push origin vX.Y.Z
+scripts/release.sh abholen X.Y.Z
+</code></pre>
+<ol>
+<li><code>freigeben</code> in the development repo (section "Release procedure"): version, CHANGELOG, commit, tag,
+   push. No release is created.</li>
+<li><code>veroeffentlichen.sh --ref vX.Y.Z</code> exports exactly the signed-off state into the working copy. Use
+   <code>git -C &lt;Arbeitskopie&gt; status</code> and <code>diff</code> to review what changes compared with the last version.</li>
+<li>One commit with <code>-s</code> (adds "Signed-off-by" with the noreply address), message "BMS X.Y.Z".</li>
+<li>Push <code>main</code> first and wait for CI: <code>ci.yml</code> tests the state before a tag triggers the release.</li>
+<li>Then set and push the annotated tag. The tag push starts <code>release.yml</code> in the public repo: test,
+   package build, release with ZIP, checksum and both installation guides.</li>
+<li>Check the release: <code>scripts/release.sh abholen X.Y.Z</code> downloads from the public repo and compares the
+   checksum. On GitHub, the release page shows the notes from the CHANGELOG and four attachments.</li>
+</ol>
+<h3>Third-party contributions</h3>
+<p>A pull request is <strong>never merged in the public repo</strong>: the next export would overwrite it. It goes through
+the development repo:</p>
+<ol>
+<li>Take it into the development repo as a patch:
+   <code>gh pr diff &lt;Nr&gt; --repo holgerdaube/BewerbungsMgmtSystem | git apply</code>.</li>
+<li>Commit with the trailers <code>Co-authored-by</code> and <code>Signed-off-by</code> of the contributor (name and address are
+   in the pull request).</li>
+<li>The contribution appears with the next version. Close the pull request with a note about this
+   (<code>gh pr close &lt;Nr&gt; --repo holgerdaube/BewerbungsMgmtSystem --comment "…"</code>).</li>
+</ol>
+<h3>The first time</h3>
+<p>The repo is first created as <strong>private</strong> and filled using the procedure above (export, commit, CI, tag, release).
+Then comes the review on GitHub: home page, file list (no <code>tasks/</code>), release with all attachments,
+Actions, and in the commit view the <code>.patch</code> file (the "From" line names only the noreply address). If
+something has slipped through, the repo is deleted and recreated, not patched up: the release,
+Actions logs and tags would keep the old state. Only after that is it made public; after that
+nothing can be taken back.</p>
+<p>When switching, the security features are added that are not available, or only to a limited extent, for private repos on the free plan:
+private security reporting (<code>SECURITY.md</code> points to it),
+Dependabot alerts, secret scanning with push protection, a ruleset for <code>main</code> (no force push, no
+deletion) and one for the tags <code>v*</code> (no moving, no deletion), read-only workflow permissions and the
+approval of workflow runs for all external contributors. Wiki and Projects stay off, Issues on.</p>
+<p><strong>Honest limit:</strong> The check finds only what it knows. The profile, database and <code>pruefmuster.txt</code> cover today's
+data; a name that appears nowhere slips through. That is why reviewing the export before the first switch of the repo to
+public remains mandatory.</p></section>
+</div></body></html>
+<!-- docs_render quelle=RELEASE.md sha256=faa2cb93690dc07b03c1e5a29cdd0a7b14773f4522ee0e921e5855b39e3868e4 -->

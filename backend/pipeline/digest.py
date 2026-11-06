@@ -8,6 +8,7 @@ from sqlmodel import Session, select
 
 from app.db import engine
 from app import favicon, zeit
+from app.sprache import datum, html_lang, tx, uebersetzt
 from app.models import Application, Company, Email, Job, JobLog
 from pipeline import design, zustandsfarben
 
@@ -145,7 +146,9 @@ BEWORBEN_MARKE = "→ Beworben"
 
 # Wochentagskuerzel fuer die Tagesmarke — bewusst eine eigene Liste statt strftime("%a"):
 # Letzteres haengt an der Locale des Prozesses und liefert unter der C-Locale „Sat“ statt „Sa“.
-_WOCHENTAGE = ("Mo", "Di", "Mi", "Do", "Fr", "Sa", "So")
+def _wochentage():
+    """Kürzel Montag bis Sonntag in der Sprache, die beim Erzeugen gilt."""
+    return (tx("Mo"), tx("Di"), tx("Mi"), tx("Do"), tx("Fr"), tx("Sa"), tx("So"))
 
 
 def _e(x):
@@ -175,10 +178,10 @@ def _zeitpunkt(wann_utc):
     if tage_her <= 0:
         marke = ""
     elif tage_her == 1:
-        marke = "gestern, "
+        marke = tx("gestern") + ", "
     else:
-        marke = _WOCHENTAGE[lokal.weekday()] + ", "
-    return marke + lokal.strftime("%H:%M") + " Uhr"
+        marke = _wochentage()[lokal.weekday()] + ", "
+    return marke + tx("{zeit} Uhr", zeit=lokal.strftime("%H:%M"))
 
 
 def beworben_im_fenster(logs, job_map, jetzt_utc):
@@ -299,7 +302,7 @@ def aenderung_anzeige(job, logs_heute, nur_auto=False):
     kette = status_kette(logs_heute)
     if kette is not None:
         vorher, nachher = kette
-        text = f"{vorher} → {nachher}"
+        text = f"{uebersetzt(vorher)} → {uebersetzt(nachher)}"
         return text, _chg_suffix(nachher)
 
     # Bei `nur_auto` ist die Liste leer: der Filter oben hat alles ausser „auto“ entfernt.
@@ -312,7 +315,7 @@ def aenderung_anzeige(job, logs_heute, nur_auto=False):
             text = text[:60] + "…"
         return text, "neutral"
 
-    return job.status, "neutral"
+    return uebersetzt(job.status), "neutral"
 
 
 def digest_inhalt(fuer_coach: bool = False) -> str:
@@ -349,12 +352,11 @@ def digest_inhalt(fuer_coach: bool = False) -> str:
     to_reply = [] if fuer_coach else [e for e in emails if e.needs_reply]
     responses = [e for e in emails if e.is_response and e.response_time_hours is not None]
     avg = round(sum(e.response_time_hours for e in responses) / len(responses), 1) if responses else None
-    changed_today = [j for j in jobs if j.updated_at and j.updated_at.date() == today]
+    # „Heute“ ist der lokale Tag des Nutzers, gespeichert ist naives UTC: siehe `zeit.lokales_datum`.
+    changed_today = [j for j in jobs if j.updated_at and zeit.lokales_datum(j.updated_at) == today]
 
     # Logs nach Job gruppieren — einmal fuer beide Abschnitte (§1 Beworben, §2 Heute geaendert).
-    # `logs_heute` filtert lokal wie `changed_today` selbst ueber `updated_at.date() == today`:
-    # beide Werte sind naives UTC, die Ungenauigkeit ist bestehend und wird hier nicht
-    # mitgeaendert (ausserhalb des Scopes dieser Erweiterung).
+    # `logs_heute` nimmt denselben lokalen Tag wie `changed_today`.
     logs_je_job = {}
     for log in logs:
         logs_je_job.setdefault(log.job_id, []).append(log)
@@ -363,7 +365,7 @@ def digest_inhalt(fuer_coach: bool = False) -> str:
     # beeinflussen. `aenderung_anzeige(nur_auto=…)` hält dieselbe Regel noch einmal selbst ein.
     logs_heute_je_job = {
         job_id: [l for l in job_logs
-                 if l.created_at.date() == today and (not fuer_coach or l.art == "auto")]
+                 if zeit.lokales_datum(l.created_at) == today and (not fuer_coach or l.art == "auto")]
         for job_id, job_logs in logs_je_job.items()
     }
 
@@ -425,10 +427,10 @@ def digest_inhalt(fuer_coach: bool = False) -> str:
         return "".join(out)
 
     kpis = [
-        ("Stellen", len(jobs), False), ("Top-Zielstellen ≥4", sum(1 for j in jobs if (j.match_score or 0) >= 4), True),
-        ("Bewerbungen", len(apps), False), ("Antworten", len(responses), False),
-        ("Ø Antwortzeit", f"{avg} h" if avg is not None else "–", False),
-        ("Neu zu sichten", len(neu), True),
+        (tx("Stellen"), len(jobs), False), (tx("Top-Zielstellen ≥4"), sum(1 for j in jobs if (j.match_score or 0) >= 4), True),
+        (tx("Bewerbungen"), len(apps), False), (tx("Antworten"), len(responses), False),
+        (tx("Ø Antwortzeit"), f"{avg} h" if avg is not None else "–", False),
+        (tx("Neu zu sichten"), len(neu), True),
     ]
     kpi_html = "".join(
         f'<div class="kpi {"acc" if acc else ""}"><div class="n">{v}</div><div class="l">{_e(l)}</div></div>'
@@ -445,49 +447,53 @@ def digest_inhalt(fuer_coach: bool = False) -> str:
         if stunden is None:
             return None
         if stunden < 48:
-            return "nach " + str(round(stunden)) + " h"
+            return tx("nach {stunden} h", stunden=round(stunden))
         tage = round(stunden / 24)
-        return "nach " + str(tage) + " Tag" + ("en" if tage != 1 else "")
+        if tage == 1:
+            return tx("nach {tage} Tag", tage=tage)
+        return tx("nach {tage} Tagen", tage=tage)
 
     def absage_rows(items):
         if not items:
-            return ('<div class="empty">In den letzten ' + str(ABSAGEN_FENSTER_STUNDEN)
-                    + " Stunden keine Absagen.</div>")
+            return ('<div class="empty">'
+                    + tx("In den letzten {stunden} Stunden keine Absagen.", stunden=ABSAGEN_FENSTER_STUNDEN)
+                    + "</div>")
         out = []
         for e in items:
             job = job_map.get(e.job_id)
-            firma = (job.company_name if job else None) or firmen.get(e.company_id) or "Firma unbekannt"
-            stelle = (job.title if job else None) or "ohne Stellenzuordnung"
+            firma = (job.company_name if job else None) or firmen.get(e.company_id) or tx("Firma unbekannt")
+            stelle = (job.title if job else None) or tx("ohne Stellenzuordnung")
             details = [_zeitpunkt(e.received_at)]
             wartezeit = _wartezeit(e.response_time_hours)
             if wartezeit:
                 details.append(wartezeit)
-            out.append('<div class="row"><span class="tag">Absage</span>'
+            out.append('<div class="row"><span class="tag">' + tx("Absage") + '</span>'
                        + "<b>" + _e(firma) + "</b><span>" + _e(stelle) + "</span>"
                        + '<span class="muted">· ' + _e(" · ".join(details)) + "</span></div>")
         return "".join(out)
 
     def beworben_rows(items):
         if not items:
-            return ('<div class="empty">In den letzten ' + str(BEWORBEN_FENSTER_STUNDEN)
-                    + " Stunden keine Bewerbungen.</div>")
+            return ('<div class="empty">'
+                    + tx("In den letzten {stunden} Stunden keine Bewerbungen.", stunden=BEWORBEN_FENSTER_STUNDEN)
+                    + "</div>")
         out = []
         for log, job in items[:15]:
-            firma = (job.company_name if job else None) or "Firma unbekannt"
-            stelle = (job.title if job else None) or "ohne Stellenzuordnung"
+            firma = (job.company_name if job else None) or tx("Firma unbekannt")
+            stelle = (job.title if job else None) or tx("ohne Stellenzuordnung")
             out.append('<div class="row">' + score_badge(job.match_score if job else None)
                        + "<b>" + _e(firma) + "</b><span>" + _e(stelle) + "</span>"
                        + '<span class="muted">· ' + _e(_zeitpunkt(log.created_at)) + "</span></div>")
         rest = len(items) - 15
         if rest > 0:
-            out.append(f'<div class="empty">… und {rest} weitere</div>')
+            out.append(f'<div class="empty">{tx("… und {anzahl} weitere", anzahl=rest)}</div>')
         return "".join(out)
 
     def geaendert_rows(items, logs_nach_job):
         # `job_rows` bleibt fuer „Neue Treffer" und „Offene Aktionen" unangetastet — die
         # bleiben einspaltig. Diese Funktion bedient ausschliesslich „Heute geaendert".
         if not items:
-            return '<div class="empty">Heute noch keine Änderungen.</div>'
+            return '<div class="empty">' + tx("Heute noch keine Änderungen.") + '</div>'
 
         def juengstes_log(j):
             job_logs = logs_nach_job.get(j.id) or []
@@ -512,42 +518,42 @@ def digest_inhalt(fuer_coach: bool = False) -> str:
             )
         rest = len(sortiert) - 15
         if rest > 0:
-            out.append(f'<div class="empty">… und {rest} weitere</div>')
+            out.append(f'<div class="empty">{tx("… und {anzahl} weitere", anzahl=rest)}</div>')
         return "".join(out)
 
     # Einordnung unter den Absagen: die einzige Groessenordnung im Bericht. Sie beantwortet,
     # ob diese vier Tage viel oder wenig waren. Eine Zeile „Gestern: n“ gaebe es hier nicht mehr
     # sinnvoll — sie laege mitten im Fenster und zaehlte dieselben Mails ein zweites Mal.
-    absagen_kontext = "Letzte 7 Tage: " + str(len(absagen_woche))
+    absagen_kontext = tx("Letzte 7 Tage: {anzahl}", anzahl=len(absagen_woche))
     # Dieselbe Einordnung fuer den Beworben-Abschnitt — beantwortet: viel oder wenig fuer diese Woche?
-    beworben_kontext = "Letzte 7 Tage: " + str(len(beworben_woche))
+    beworben_kontext = tx("Letzte 7 Tage: {anzahl}", anzahl=len(beworben_woche))
 
     # Die Abschnitte als Liste, damit die Coach-Fassung zwei davon einfach auslaesst (P2-79). Ohne
     # Auslassung ergibt `"\n".join(...)` genau den Text, den die frühere durchgehende Vorlage hatte.
     abschnitte = [
         f'<div class="kpis">{kpi_html}</div>',
-        f'<section><h2>✨ Neue Treffer zum Sichten ({len(neu)})</h2>{job_rows(neu, "Keine neuen Treffer.")}</section>',
+        f'<section><h2>{tx("✨ Neue Treffer zum Sichten ({anzahl})", anzahl=len(neu))}</h2>{job_rows(neu, tx("Keine neuen Treffer."))}</section>',
     ]
     if not fuer_coach:
         reply_html = "".join(
-            f'<div class="row"><span class="tag">Antwort</span><b>{_e(e.from_addr)}</b><span>{_e(e.subject)}</span></div>'
+            f'<div class="row"><span class="tag">{tx("Antwort")}</span><b>{_e(e.from_addr)}</b><span>{_e(e.subject)}</span></div>'
             for e in to_reply[:15]
-        ) or '<div class="empty">Keine offenen Antworten.</div>'
-        abschnitte.append(f'<section><h2>📧 Zu beantworten ({len(to_reply)})</h2>{reply_html}</section>')
+        ) or '<div class="empty">' + tx("Keine offenen Antworten.") + '</div>'
+        abschnitte.append(f'<section><h2>{tx("📧 Zu beantworten ({anzahl})", anzahl=len(to_reply))}</h2>{reply_html}</section>')
     abschnitte += [
-        f'''<section><h2>🚫 Absagen der letzten {ABSAGEN_FENSTER_STUNDEN} Stunden ({len(absagen_fenster)})</h2>{absage_rows(absagen_fenster)}
+        f'''<section><h2>{tx("🚫 Absagen der letzten {stunden} Stunden ({anzahl})", stunden=ABSAGEN_FENSTER_STUNDEN, anzahl=len(absagen_fenster))}</h2>{absage_rows(absagen_fenster)}
 <div class="muted" style="font-size:12px;margin-top:10px">{_e(absagen_kontext)}</div></section>''',
-        f'''<section><h2>📤 Beworben bei — letzte {BEWORBEN_FENSTER_STUNDEN} Stunden ({len(beworben)})</h2>{beworben_rows(beworben)}
+        f'''<section><h2>{tx("📤 Beworben bei — letzte {stunden} Stunden ({anzahl})", stunden=BEWORBEN_FENSTER_STUNDEN, anzahl=len(beworben))}</h2>{beworben_rows(beworben)}
 <div class="muted" style="font-size:12px;margin-top:10px">{_e(beworben_kontext)}</div></section>''',
     ]
     if not fuer_coach:
         steps_html = "".join(
             f'<div class="row">{score_badge(j.match_score)}<b>{_e(j.company_name)}</b><span class="muted">{_e(j.next_step)}</span></div>'
             for j in pruefen[:15]
-        ) or '<div class="empty">Keine offenen Aktionen.</div>'
-        abschnitte.append(f'<section><h2>🎯 Offene Aktionen (in Prüfung)</h2>{steps_html}</section>')
+        ) or '<div class="empty">' + tx("Keine offenen Aktionen.") + '</div>'
+        abschnitte.append(f'<section><h2>{tx("🎯 Offene Aktionen (in Prüfung)")}</h2>{steps_html}</section>')
     abschnitte.append(
-        f'<section><h2>🔄 Heute geändert ({len(changed_today)})</h2>'
+        f'<section><h2>{tx("🔄 Heute geändert ({anzahl})", anzahl=len(changed_today))}</h2>'
         f'{geaendert_rows(changed_today, logs_heute_je_job)}</section>')
     return "\n".join(abschnitte)
 
@@ -565,13 +571,17 @@ def build_digest_html(zurueck_zu: str | None = None) -> str:
     zurueck = ""
     if zurueck_zu:
         css += _CSS_ZURUECK.substitute(markenwerte(geltend)) + "\n"
-        zurueck = f'<a class="zurueck" href="{_e(zurueck_zu)}">← Zurück zum Dashboard</a>\n'
-    return f"""<!doctype html><html lang="de"><head><meta charset="utf-8">{favicon.favicon_link(geltend)}
-<meta name="viewport" content="width=device-width,initial-scale=1"><title>Tages-Digest {today}</title>
+        zurueck = f'<a class="zurueck" href="{_e(zurueck_zu)}">{tx("← Zurück zum Dashboard")}</a>\n'
+    titel = tx("Tages-Digest {datum}", datum=today)
+    kopf_titel = tx("Bewerbungs-Digest")
+    foot = tx("Bewerbungs-Mgmt · erzeugt am {datum}", datum=today.strftime("%Y-%m-%d"))
+    foot_quelle = tx("Automatischer Tages-Digest · Quelle: bewerbung.sqlite")
+    return f"""<!doctype html><html lang="{html_lang()}"><head><meta charset="utf-8">{favicon.favicon_link(geltend)}
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>{titel}</title>
 <style>{css}</style></head><body><div class="wrap">
-{zurueck}<h1>Bewerbungs-Digest</h1><div class="sub">{_e(user_name())} · {today.strftime("%d.%m.%Y")}</div>
+{zurueck}<h1>{kopf_titel}</h1><div class="sub">{_e(user_name())} · {datum(today)}</div>
 {digest_inhalt()}
-<div class="foot"><span>Bewerbungs-Mgmt · erzeugt am {today.strftime("%Y-%m-%d")}</span><span>Automatischer Tages-Digest · Quelle: bewerbung.sqlite</span></div>
+<div class="foot"><span>{foot}</span><span>{foot_quelle}</span></div>
 </div></body></html>"""
 
 

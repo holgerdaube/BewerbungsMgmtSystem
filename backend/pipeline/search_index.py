@@ -292,7 +292,8 @@ def meta() -> dict:
             "SELECT built_at, dokumente, hinweis FROM suchindex_meta WHERE id=1"
         ).first()
     if not row:
-        return {"built_at": None, "dokumente": 0, "hinweis": "Index noch nicht gebaut"}
+        from app.sprache import tx
+        return {"built_at": None, "dokumente": 0, "hinweis": tx("Index noch nicht gebaut")}
     return {"built_at": row[0], "dokumente": row[1], "hinweis": row[2]}
 
 

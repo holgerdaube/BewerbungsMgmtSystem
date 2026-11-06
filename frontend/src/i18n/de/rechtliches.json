@@ -1,0 +1,18 @@
+{
+  "titel": "Rechtliches",
+  "einleitung": "Herausgeber, Lizenz des Programms, Hinweise zum Datenschutz und die Lizenzen der Open-Source-Bestandteile.",
+  "tab": {
+    "ueber": "Über dieses Programm",
+    "lizenz": "Open-Source-Lizenz",
+    "datenschutz": "Datenschutz",
+    "drittlizenzen": "Drittanbieter-Lizenzen"
+  },
+  "lizenztexte": {
+    "anzeigen": "Lizenztexte anzeigen",
+    "ausblenden": "Lizenztexte ausblenden",
+    "laedt": "Lädt …",
+    "fehler": "Die Lizenztexte konnten nicht geladen werden. Den Wortlaut enthält die Datei {{datei}} im Programmordner.",
+    "aria": "Lizenztexte der Open-Source-Bestandteile"
+  },
+  "lizenz_aria": "Wortlaut der Apache License 2.0"
+}

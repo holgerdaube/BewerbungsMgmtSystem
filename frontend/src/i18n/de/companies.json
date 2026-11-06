@@ -1,0 +1,19 @@
+{
+  "loeschen_frage": "„{{name}}\" wirklich löschen? (Contacts der Firma werden mitgelöscht, die Company-Fit-Datei wandert in den Papierkorb.)",
+  "loeschen_fehlgeschlagen": "Löschen fehlgeschlagen",
+  "loeschen_titel": "Firma löschen",
+  "anzahl_radar_one": "{{count}} Firmen mit Umbau-/Layoff-Signal",
+  "anzahl_radar_other": "{{count}} Firmen mit Umbau-/Layoff-Signal",
+  "anzahl_one": "{{count}} Firmen in der Datenbank",
+  "anzahl_other": "{{count}} Firmen in der Datenbank",
+  "lade": "Lade…",
+  "spalte": {
+    "firma": "Firma",
+    "situation": "Situation",
+    "signal": "Signal",
+    "rebuild_abbau": "Rebuild/Abbau",
+    "rolle_offen": "Rolle offen?",
+    "branche": "Branche",
+    "region": "Region"
+  }
+}

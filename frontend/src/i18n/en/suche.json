@@ -1,0 +1,24 @@
+{
+  "quelle": {
+    "stelle": "Job",
+    "stellenbeschreibung": "Job description",
+    "company-fit": "Company fit",
+    "transkript": "Transcript",
+    "debrief": "Debrief",
+    "briefing": "Briefing",
+    "verlauf": "History"
+  },
+  "index_nicht_ladbar": "Index status could not be loaded",
+  "fehlgeschlagen": "Search failed",
+  "untertitel": "Full-text search across jobs, job descriptions, company fit, transcripts, debriefs, briefings and history — the result is always a job.",
+  "platzhalter": "Search term — company, place, keyword from a job description or a company fit dashboard…",
+  "sucht": "Searching…",
+  "index_nicht_gebaut": "Index not built yet",
+  "baut_index": "Building index…",
+  "index_jetzt_bauen": "Build index now",
+  "index_stand_one": "Index status: {{stand}} · {{count}} document",
+  "index_stand_other": "Index status: {{stand}} · {{count}} documents",
+  "index_aktualisieren": "↻ Update index",
+  "mindestens_zwei": "Enter at least 2 characters…",
+  "keine_stelle": "No job found for “{{q}}” — check the index status?"
+}

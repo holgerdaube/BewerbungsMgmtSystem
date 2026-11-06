@@ -377,7 +377,8 @@ Unter **Einstellungen**, in dieser Reihenfolge:
    **Diese Felder sind nach der Installation leer** und müssen ausgefüllt werden — vorher findet
    die Jobsuche nichts, weil sie nicht weiß, wonach sie suchen soll.
 3. **Suchportale** — sechs Portale sind vorbelegt und aktiv; bei Bedarf einzelne abschalten oder
-   zwei eigene ergänzen. Die Schaltfläche zum Prüfen zeigt, welche antworten.
+   zwei eigene ergänzen. Die Schaltfläche zum Prüfen zeigt, welche antworten. Die Portale sind auf
+   Deutschland ausgerichtet; außerhalb helfen die freien Zeilen, LinkedIn-Alerts und die Zielfirmen.
 4. **KI-Modelle je Funktion** — Voreinstellung ist überall Sonnet. Das kann so bleiben.
 
 Nach dem ersten Speichern schreibt die Anwendung `config/suchprofile.yaml` neu und trägt die
@@ -552,4 +553,4 @@ Secrets-Verzeichnis werden nicht mehr gelesen und dürfen gelöscht werden.
 | `docs/RELEASE.md` | Versions- und Freigabeworkflow (nur relevant, wer selbst Pakete freigibt) |
 | `CONTRIBUTING.md` | Regeln für Beiträge (Lizenz, Sprache, Tests) |
 | `SECURITY.md` | Sicherheitslücken melden |
-| `README.md` | Projektüberblick für Anwender: Installation, Updates, Datenschutz, Lizenz |
+| `README.md`, `README.de.md` | Projektüberblick für Anwender auf Englisch und Deutsch: Installation, Updates, Datenschutz, Lizenz |

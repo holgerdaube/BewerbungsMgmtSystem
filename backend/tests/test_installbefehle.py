@@ -223,7 +223,7 @@ def _ausgelieferte_dokumente() -> list[str]:
     den Einträgen früherer Versionen und im neuen Eintrag absichtlich."""
     from pipeline import kundenpaket as kp
     return (sorted(f"docs/{name}.md" for name in kp.DOKU_ERLAUBT)
-            + list(DATEIEN.values()) + ["README.md"])
+            + list(DATEIEN.values()) + ["README.md", "README.de.md"])
 
 
 def test_alte_anleitungen_gibt_es_nicht_mehr(projekt_root):

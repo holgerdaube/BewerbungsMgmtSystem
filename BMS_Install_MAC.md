@@ -874,7 +874,8 @@ Reihenfolge durch:
    Auffangebene. Diese Felder sind nach der Installation leer. Solange sie leer sind, findet die
    Jobsuche nichts, weil sie nicht weiß, wonach sie suchen soll.
 3. „Suchportale“: Sechs gängige Portale sind vorbelegt und eingeschaltet. Sie können einzelne
-   abschalten oder zwei eigene ergänzen.
+   abschalten oder zwei eigene ergänzen. Die Portale sind auf Deutschland ausgerichtet; außerhalb helfen
+   die freien Zeilen, LinkedIn-Alerts und die Zielfirmen.
 4. „KI-Modell je Funktion“: Zur Wahl stehen Opus 5.5, Sonnet 5.5 und Haiku 4.5, voreingestellt ist
    Sonnet 5.5. Die Voreinstellung passt für den Alltag, hier müssen Sie nichts ändern. Das Modell
    Fable bietet das BMS bewusst nicht an, weil es zu teuer ist: Es kostet das Zweieinhalbfache von
@@ -938,6 +939,8 @@ Ein KI-Lauf wie die Firmenprüfung dauert etwa zehn Minuten. Solange er läuft, 
 weiterarbeiten.
 
 ## Aktualisierungen einspielen
+
+Meldungen im Terminalfenster folgen der Sprache Ihres Systems: Deutsch auf einem deutschen System, sonst Englisch.
 
 Neue Versionen erscheinen auf GitHub (https://github.com/holgerdaube/BewerbungsMgmtSystem/releases).
 Ein eigenes Werkzeug lädt sie, prüft sie, sichert Ihren Stand und spielt sie ein. Ihre Daten,

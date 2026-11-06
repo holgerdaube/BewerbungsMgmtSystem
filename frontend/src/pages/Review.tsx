@@ -4,17 +4,19 @@ import { api } from '../api'
 import { ScoreBadge, VerifyBadge, DubletteBadge, parseDubletteVerdacht, NeuausschreibungBadge } from '../components/ui'
 import AgentTaskButton from '../components/AgentTaskButton'
 import { useReviewCount } from '../context/ReviewCount'
+import { t } from '../i18n'
+import { wert } from '../i18n/werte'
+import { datumZeit } from '../i18n/format'
 
-const SUCH_KIND_LABEL: Record<string, string> = {
-  'jobsuche': 'Jobsuche (WebSearch)', 'jobsuche-apify': 'Jobsuche + Apify', 'mail-jobsuche': 'Mail-Jobsuche',
-  'zielfirmen-sweep': 'Zielfirmen-Sweep', 'headhunter-suche': 'Headhunter-Suche', 'beworben-check': 'Beworben-Check',
-}
-const SUCH_KINDS = Object.keys(SUCH_KIND_LABEL).join(',')
+// Die Task-Arten bleiben Werte; die Anzeige-Namen stehen in der Sprachdatei (`review:kind.<art>`).
+const SUCH_KIND_LISTE = ['jobsuche', 'jobsuche-apify', 'mail-jobsuche', 'zielfirmen-sweep', 'headhunter-suche', 'beworben-check']
+const suchKindLabel = (kind: string): string => t(`review:kind.${kind}`, { defaultValue: kind })
+const SUCH_KINDS = SUCH_KIND_LISTE.join(',')
 function suchZeit(iso: string) {
   // P2-20: Die API kennzeichnet ihre Zeitstempel seit 28.08.2026 als UTC (`app/zeit.py`),
   // das Anhaengen von 'Z' ist damit ueberfluessig geworden.
   const d = new Date(iso)
-  return d.toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
+  return datumZeit(d, { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
 }
 
 export default function Review() {
@@ -52,19 +54,19 @@ export default function Review() {
   const parkenAlsDublette = async (job: any) => {
     const treffer = parseDubletteVerdacht(job.verify_note)
     if (!treffer) return
-    const begruendung = `Dublette von Job ${treffer.jobId} — Text-Ähnlichkeit ${treffer.prozent} %`
+    const begruendung = t('review:log.begruendung', { jobId: treffer.jobId, prozent: treffer.prozent })
     setJobs((js) => js.filter((j) => j.id !== job.id)) // optimistic — verlässt die Review-Liste
     try {
       await api(`/jobs/${job.id}`, {
         method: 'PATCH', body: JSON.stringify({ status: 'Geparkt', next_step: begruendung }),
       })
       await api(`/jobs/${job.id}/log`, {
-        method: 'POST', body: JSON.stringify({ eintrag: `Als Dublette geparkt: ${begruendung}` }),
+        method: 'POST', body: JSON.stringify({ eintrag: t('review:log.geparkt', { begruendung }) }),
       })
       // Querverweis auch an der vermuteten Original-Stelle (Muster vom 20.07., von Hand).
       await api(`/jobs/${treffer.jobId}/log`, {
         method: 'POST',
-        body: JSON.stringify({ eintrag: `Job ${job.id} („${job.title}") wurde als vermutete Dublette dieser Stelle geparkt.` }),
+        body: JSON.stringify({ eintrag: t('review:log.querverweis', { jobId: job.id, titel: job.title }) }),
       })
       refresh()
     } catch {
@@ -78,7 +80,7 @@ export default function Review() {
     setJobs((js) => js.map((j) => (j.id === job.id ? { ...j, verify_note: bereinigt } : j))) // optimistic
     try {
       await api(`/jobs/${job.id}`, { method: 'PATCH', body: JSON.stringify({ verify_note: bereinigt }) })
-      await api(`/jobs/${job.id}/log`, { method: 'POST', body: JSON.stringify({ eintrag: 'Dublette-Verdacht verneint.' }) })
+      await api(`/jobs/${job.id}/log`, { method: 'POST', body: JSON.stringify({ eintrag: t('review:log.verneint') }) })
     } catch {
       load()
     }
@@ -87,20 +89,20 @@ export default function Review() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-2xl font-bold text-brand-navy">Neu / Review</h1>
+        <h1 className="text-2xl font-bold text-brand-navy">{t('common:nav.review')}</h1>
         <p className="text-sm text-slate-500">
-          {loading ? 'Lade…' : `${jobs.length} neue Treffer aus der Jobsuche · annehmen (→ Prüfen) oder verwerfen (→ Kein Match)`}
+          {loading ? t('review:lade') : t('review:untertitel', { count: jobs.length })}
         </p>
       </div>
 
       <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-        <div className="mb-2 text-sm font-semibold text-brand-navy">Neue Jobsuche starten</div>
+        <div className="mb-2 text-sm font-semibold text-brand-navy">{t('review:neue_suche')}</div>
         {letzterLauf && (
           <div className="mb-2 truncate text-xs text-slate-500" title={letzterLauf.result || ''}>
-            <span className="font-medium text-slate-600">Letzter Suchlauf:</span>{' '}
+            <span className="font-medium text-slate-600">{t('review:letzter_lauf')}</span>{' '}
             <span className="tabular-nums">{suchZeit(letzterLauf.created_at)}</span>
-            {' · '}{SUCH_KIND_LABEL[letzterLauf.kind] || letzterLauf.kind}
-            {letzterLauf.chain_id ? ' · aus Tageslauf' : ''}
+            {' · '}{suchKindLabel(letzterLauf.kind)}
+            {letzterLauf.chain_id ? ` · ${t('review:aus_tageslauf')}` : ''}
             {letzterLauf.result ? ` · ${letzterLauf.result.slice(0, 100)}` : ''}
           </div>
         )}
@@ -108,18 +110,17 @@ export default function Review() {
           {/* Beide Jobsuchen gleich aufgebaut (14.10.2026): großer Knopf, darunter Status,
               Kosten und Abschlussmeldung. Vorher war „+ Apify" `subtle` und zeigte nach dem Lauf nichts.
               `zweizeilig` hält den Kopf beider Spalten gleich hoch, die Meldungen stehen auf einer Höhe. */}
-          <div className="min-w-0 flex-1"><AgentTaskButton kind="jobsuche" label="Jobsuche (WebSearch)" zweizeilig onFinished={() => { load(); refresh() }} /></div>
-          <div className="min-w-0 flex-1"><AgentTaskButton kind="jobsuche-apify" label="Jobsuche + Apify" zweizeilig onFinished={() => { load(); refresh() }} /></div>
+          <div className="min-w-0 flex-1"><AgentTaskButton kind="jobsuche" label={t('review:kind.jobsuche')} zweizeilig onFinished={() => { load(); refresh() }} /></div>
+          <div className="min-w-0 flex-1"><AgentTaskButton kind="jobsuche-apify" label={t('review:kind.jobsuche-apify')} zweizeilig onFinished={() => { load(); refresh() }} /></div>
         </div>
         <p className="mt-2 text-xs text-slate-400">
-          Läuft headless im Hintergrund (einige Minuten). „+ Apify" nutzt zusätzlich die Portal-Scraper —
-          kostet Apify-Credits (durch das Budget gedeckelt); WebSearch ist kostenlos.
+          {t('review:hinweis_suche')}
         </p>
         <div className="mt-3 flex flex-col gap-2 border-t border-slate-100 pt-3 sm:flex-row">
-          <div className="min-w-0 flex-1"><AgentTaskButton kind="zielfirmen-sweep" statusTarget={laufBereich} label="Zielfirmen-Sweep" subtle onFinished={() => { load(); refresh() }} /></div>
-          <div className="min-w-0 flex-1"><AgentTaskButton kind="headhunter-suche" statusTarget={laufBereich} label="Headhunter-Suche" subtle onFinished={() => { load(); refresh() }} /></div>
-          <div className="min-w-0 flex-1"><AgentTaskButton kind="beworben-check" statusTarget={laufBereich} label="Beworben-Check" subtle onFinished={() => { load(); refresh() }} /></div>
-          <div className="min-w-0 flex-1"><AgentTaskButton kind="email-check" statusTarget={laufBereich} label="E-Mail-Check" subtle onFinished={() => { load(); refresh() }} /></div>
+          <div className="min-w-0 flex-1"><AgentTaskButton kind="zielfirmen-sweep" statusTarget={laufBereich} label={t('review:kind.zielfirmen-sweep')} subtle onFinished={() => { load(); refresh() }} /></div>
+          <div className="min-w-0 flex-1"><AgentTaskButton kind="headhunter-suche" statusTarget={laufBereich} label={t('review:kind.headhunter-suche')} subtle onFinished={() => { load(); refresh() }} /></div>
+          <div className="min-w-0 flex-1"><AgentTaskButton kind="beworben-check" statusTarget={laufBereich} label={t('review:kind.beworben-check')} subtle onFinished={() => { load(); refresh() }} /></div>
+          <div className="min-w-0 flex-1"><AgentTaskButton kind="email-check" statusTarget={laufBereich} label={t('review:knopf.email_check')} subtle onFinished={() => { load(); refresh() }} /></div>
         </div>
         {/* Gemeinsame Lauf-Anzeige der vier Schaltflaechen darueber (P2-18). Vorher rendert
             jeder Button Status und Log in seine eigene `flex-1`-Spalte; eine lange Log-Zeile
@@ -128,16 +129,13 @@ export default function Review() {
             `empty:hidden` laesst den Bereich verschwinden, solange nichts laeuft. */}
         <div ref={setLaufBereich} className="mt-3 space-y-2 empty:hidden" />
         <p className="mt-2 text-xs text-slate-400">
-          Rotierende Karriereseiten-Prüfung (Phase 26) — je Lauf ein Ausschnitt der Zielfirmen bzw.
-          Headhunter, kostenlos (WebFetch). Beworben-Check: prüft wöchentlich, ob beworbene Stellen
-          noch ausgeschrieben sind. E-Mail-Check: liest nur das Postfach (Antworten, Absagen,
-          Termine) und ordnet Mails den Bewerbungen zu — ohne Jobsuche.
+          {t('review:hinweis_pruefungen')}
         </p>
       </div>
 
       {!loading && jobs.length === 0 && (
         <div className="rounded-xl border border-dashed border-slate-300 bg-white p-10 text-center text-slate-400">
-          Keine neuen Treffer. Starte oben eine Jobsuche — neue Treffer landen hier zur Sichtung.
+          {t('review:keine_treffer')}
         </div>
       )}
 
@@ -156,10 +154,10 @@ export default function Review() {
                 </div>
                 <div className="mt-0.5 flex flex-wrap gap-2 text-xs text-slate-500">
                   {j.location && <span>📍 {j.location}</span>}
-                  {j.seniority && <span>· {j.seniority}</span>}
-                  {j.portal && <span>· {j.portal}</span>}
-                  {j.tab && <span>· {j.tab}</span>}
-                  {j.plan_ab && <span>· Plan {j.plan_ab}</span>}
+                  {j.seniority && <span>· {wert('seniority', j.seniority)}</span>}
+                  {j.portal && <span>· {wert('portal', j.portal)}</span>}
+                  {j.tab && <span>· {wert('tab', j.tab)}</span>}
+                  {j.plan_ab && <span>· {t('review:plan', { plan: j.plan_ab })}</span>}
                   {j.salary && <span>· 💶 {j.salary}</span>}
                 </div>
                 {j.match_rationale && (
@@ -168,20 +166,20 @@ export default function Review() {
               </div>
               <div className="flex shrink-0 flex-col items-stretch gap-2">
                 {j.url && (
-                  <a href={j.url} target="_blank" rel="noreferrer" className="rounded-lg border border-slate-300 px-3 py-1 text-center text-xs text-slate-600 hover:bg-slate-50">Öffnen ↗</a>
+                  <a href={j.url} target="_blank" rel="noreferrer" className="rounded-lg border border-slate-300 px-3 py-1 text-center text-xs text-slate-600 hover:bg-slate-50">{t('review:oeffnen')}</a>
                 )}
-                <button onClick={() => act(j.id, 'approve')} className="rounded-lg bg-brand-cyan px-3 py-1 text-xs font-semibold text-brand-navy hover:brightness-95">✓ Annehmen</button>
-                <button onClick={() => act(j.id, 'discard')} className="rounded-lg bg-slate-100 px-3 py-1 text-xs font-medium text-slate-500 hover:bg-rose-50 hover:text-rose-600">✕ Verwerfen</button>
+                <button onClick={() => act(j.id, 'approve')} className="rounded-lg bg-brand-cyan px-3 py-1 text-xs font-semibold text-brand-navy hover:brightness-95">{t('review:annehmen')}</button>
+                <button onClick={() => act(j.id, 'discard')} className="rounded-lg bg-slate-100 px-3 py-1 text-xs font-medium text-slate-500 hover:bg-rose-50 hover:text-rose-600">{t('review:verwerfen')}</button>
                 {parseDubletteVerdacht(j.verify_note) && (
                   <>
                     <button onClick={() => parkenAlsDublette(j)}
-                      title="Setzt Status auf Geparkt + Querverweis-Notiz an beiden Stellen. Regel: die weiter fortgeschrittene Stelle bleibt."
+                      title={t('review:dublette.parken_titel')}
                       className="rounded-lg border border-amber-300 px-3 py-1 text-xs font-medium text-amber-700 hover:bg-amber-50">
-                      Als Dublette parken
+                      {t('review:dublette.parken')}
                     </button>
                     <button onClick={() => keineDublette(j)}
                       className="rounded-lg border border-slate-300 px-3 py-1 text-xs text-slate-500 hover:bg-slate-50">
-                      Keine Dublette
+                      {t('review:dublette.keine')}
                     </button>
                   </>
                 )}

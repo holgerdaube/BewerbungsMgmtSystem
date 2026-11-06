@@ -1,6 +1,6 @@
 ---
 name: tageslauf
-description: Der tägliche Morgenlauf für das Bewerbungs-Management-System des Nutzers — bündelt Jobsuche, Gmail-Check und Ansichten-Refresh zu einem Durchlauf und präsentiert eine kompakte Morgen-Zusammenfassung. Nutze diesen Skill bei "Tageslauf", "mach den Morgenlauf", "neuer Tag neues Glück", "check alles", "was ist heute wichtig", "täglicher Bewerbungs-Check".
+description: Der tägliche Morgenlauf für das Bewerbungs-Management-System des Nutzers — bündelt Jobsuche, Gmail-Check und Ansichten-Refresh zu einem Durchlauf und präsentiert eine kompakte Morgen-Zusammenfassung. Nutze diesen Skill bei "Tageslauf", "Daily run", "mach den Morgenlauf", "neuer Tag neues Glück", "check alles", "was ist heute wichtig", "täglicher Bewerbungs-Check".
 ---
 
 # Tageslauf (Claude-in-the-Loop)

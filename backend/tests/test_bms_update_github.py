@@ -1710,7 +1710,8 @@ def test_unbekanntes_zertifikat_wird_abgelehnt_und_nichts_gesendet(tmp_path, mon
 # ═════════════════════════════════════════════════════════════════════════════════════════════
 # Waechter im Quelltext von bms_update.py
 # ═════════════════════════════════════════════════════════════════════════════════════════════
-_ERLAUBTE_UMGEBUNGSNAMEN = {"PORT", "BMS_DATA_DIR"}
+# P2-95: Die Terminal-Sprache liest eine eigene Variable und die drei Standardvariablen der Systemsprache.
+_ERLAUBTE_UMGEBUNGSNAMEN = {"PORT", "BMS_DATA_DIR", "BMS_TERMINAL_SPRACHE", "LC_ALL", "LC_MESSAGES", "LANG"}
 
 
 def _importierte_module(quelltext: str) -> set[str]:
@@ -1793,7 +1794,7 @@ def test_waechter_repo_und_adressen_sind_feste_https_konstanten_ohne_umgebungsva
 def test_waechter_umgebungsvariablen_nur_die_bekannten_namen():
     namen, uebrige = _umgebungszugriffe(_QUELLTEXT)
     assert namen == _ERLAUBTE_UMGEBUNGSNAMEN, f"Unerwartete Umgebungsvariablen: {namen ^ _ERLAUBTE_UMGEBUNGSNAMEN}"
-    assert uebrige == 1, "genau ein Zugriff auf os.environ als Ganzes (Umgebung des Selbsttests) erlaubt"
+    assert uebrige == 2, "nur zwei Zugriffe auf os.environ als Ganzes erlaubt (Selbsttest und Übergabe an die Fassung im Paket)"
 
 
 def test_waechter_nur_importe_aus_der_standardbibliothek():

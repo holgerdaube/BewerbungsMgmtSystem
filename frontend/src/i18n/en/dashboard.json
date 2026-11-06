@@ -1,0 +1,105 @@
+{
+  "untertitel": "Overview of your pipeline · Tiles are clickable · Source: central SQLite database",
+  "lade": "Loading dashboard…",
+  "fehler": "Error: {{meldung}}",
+  "prozent": "{{wert}}%",
+  "prozent_kompakt": "{{wert}}%",
+  "digest": "📄 Daily digest",
+  "excel_export": "⬇ Excel export",
+  "absagen": {
+    "titel": "Latest pattern report from the rejection analysis",
+    "link": "📉 Rejection analysis · {{datum}}",
+    "neu": "Regenerate rejection analysis"
+  },
+  "beispieldaten": "You are viewing sample data for {{name}}. Remove it in Settings before you enter your own data.",
+  "followup": {
+    "titel": "Follow-ups",
+    "leer": "No open actions — set due dates in the job details or on network contacts.",
+    "faellig_one": "{{count}} action due/overdue",
+    "faellig_other": "{{count}} actions due/overdue",
+    "im_blick": "Follow-ups at a glance",
+    "stellen_offen": "Jobs: {{anzahl}} open",
+    "faellig_n": "{{anzahl}} due",
+    "netzwerk_offen": "Network: {{anzahl}} open"
+  },
+  "stat": {
+    "stellen": "Jobs in total",
+    "top": "Top target jobs (≥4)",
+    "bewerbungen": "Applications (active)",
+    "bewerbungen_sub": "{{anzahl}} recorded in total",
+    "offline": "Applied jobs offline",
+    "emails": "Emails recorded",
+    "antworten": "Responses",
+    "antwortzeit": "Ø response time",
+    "antwortquote": "Response rate"
+  },
+  "gesamtprozess": {
+    "titel": "Overall process since the start",
+    "bewerbungen": "Applications in total",
+    "gespraeche": "Conversations in total",
+    "absagen": "Rejections in total",
+    "keine_reaktion": "No response",
+    "ausschreibungen": "Job postings",
+    "netzwerk": "Network"
+  },
+  "keine_reaktion": {
+    "leer": "No entries.",
+    "tage_one": "{{count}} day",
+    "tage_other": "{{count}} days",
+    "speichert": "Saving…",
+    "wiedervorlage": "Follow-up in 7 days"
+  },
+  "trichter": {
+    "titel": "Funnel",
+    "untertitel": "· from screening to interview",
+    "der_vorstufe": "{{prozent}} of the previous stage"
+  },
+  "engstellen": {
+    "titel": "Bottlenecks in the funnel",
+    "screening": "Screening: only {{prozent}} of the screened jobs are relevant",
+    "bewerbungsquote": "Application rate: {{prozent}} of the relevant jobs were applied for",
+    "antwortquote_one": "Response rate {{prozent}} from {{count}} application",
+    "antwortquote_other": "Response rate {{prozent}} from {{count}} applications",
+    "interview_konversion": "Interview conversion: {{prozent}} of the responses led to an interview",
+    "keine_daten": "{{stufe}}: no data",
+    "ende_zu_ende": "End to end: {{prozent}} — {{stellen}} → {{interviews}}",
+    "n_stellen_one": "{{count}} job",
+    "n_stellen_other": "{{count}} jobs",
+    "n_interviews_one": "{{count}} interview",
+    "n_interviews_other": "{{count}} interviews"
+  },
+  "chips": {
+    "vor_ort": "📍 on site {{anzahl}}"
+  },
+  "pipeline_funnel": {
+    "titel": "Pipeline funnel",
+    "untertitel": "· Click to open the jobs"
+  },
+  "balken": {
+    "status": "By status",
+    "fit": "By target-role fit",
+    "portal": "By portal",
+    "situation": "By situation (plan {{plan}})",
+    "ohne_plan_one": "{{count}} job without plan assigned",
+    "ohne_plan_other": "{{count}} jobs without plan assigned"
+  },
+  "wert": {
+    "Ausschreibung": "Job posting",
+    "Ausschreibungen": "Job postings",
+    "Netzwerk": "Network",
+    "Gesichtet": "Screened",
+    "Relevant": "Relevant",
+    "Beworben": "Applied",
+    "Antworten": "Responses",
+    "Interviews": "Interviews",
+    "Headhunter": "Headhunter",
+    "Recruiter (Firma)": "Recruiter (company)",
+    "Hiring Manager": "Hiring manager",
+    "Fachbereich/Sonstige": "Department/other",
+    "Unbekannt": "Unknown",
+    "Firmenseite": "Company website",
+    "Empfehlung": "Referral",
+    "Sonstiges": "Other",
+    "E-Mail": "Email"
+  }
+}

@@ -1,0 +1,626 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><link rel="icon" type="image/png" href="data:image/png;base64,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">
+<title>Installation — BMS Job Application Management System</title>
+<style>
+:root{
+  --ink:#0B1F3A;
+  --paper:#F4F7FB;
+  --card:#FFFFFF;
+  --line:#DCE4EE;
+  --muted:#5F6F84;
+  --accent:#00B4D8;
+  --amber:#E4A11B;
+  --radius:14px;
+  --shadow:0 1px 2px rgba(16,26,40,.06),0 8px 24px rgba(16,26,40,.06);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--paper);
+  color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:880px;margin:0 auto;padding:32px 20px 72px}
+
+header.head{background:var(--ink);color:#fff;border-radius:var(--radius);padding:28px 30px;
+  box-shadow:var(--shadow);margin-bottom:22px}
+header.head h1{font-size:26px;line-height:1.3;margin:0;font-weight:700;letter-spacing:-.01em}
+header.head h1 code{background:rgba(255,255,255,.16);color:#fff}
+header.head .intro{margin-top:10px;font-size:14.5px;color:#BFC7D5;max-width:65ch}
+header.head .intro p{margin:0 0 6px}
+header.head .intro p:last-child{margin-bottom:0}
+header.head .intro a{color:#fff}
+header.head .intro code{background:rgba(255,255,255,.16);color:#fff}
+/* Ein Zitat (Hinweis-Box) KANN vor der ersten ##-Überschrift stehen und landet dann im Intro
+   des dunklen Banners -- seine eigene helle Cremefläche braucht dunkle Schrift, sonst macht die
+   helle ".intro code/a"-Regel (höhere Selektor-Spezifität wegen zweier Klassen) Inline-Code/
+   Links darin fast unsichtbar (weiß auf Creme). Deshalb hier gezielt zurückgesetzt. */
+header.head .intro blockquote{color:#5F4A1F}
+header.head .intro blockquote a{color:var(--accent)}
+header.head .intro blockquote code{background:rgba(11,31,58,.08);color:#5F4A1F}
+
+section.card{background:var(--card);border:1px solid var(--line);border-radius:12px;
+  padding:18px 22px 22px;box-shadow:var(--shadow);margin-bottom:16px}
+section.card:last-child{margin-bottom:0}
+section.card>h2:first-child{margin-top:0}
+section.card h2{font-size:18px;margin:0 0 14px;font-weight:700;letter-spacing:-.01em;
+  padding-bottom:10px;border-bottom:2px solid var(--accent)}
+section.card h3{font-size:15.5px;margin:20px 0 8px;font-weight:700}
+section.card h3:first-child{margin-top:0}
+section.card h4{font-size:13px;margin:16px 0 6px;font-weight:700;color:var(--muted);
+  text-transform:uppercase;letter-spacing:.05em}
+section.card p{margin:0 0 12px;font-size:14.5px}
+section.card p:last-child{margin-bottom:0}
+section.card ul,section.card ol{margin:0 0 12px;padding-left:22px;font-size:14.5px}
+section.card ul ul,section.card ol ol,section.card ul ol,section.card ol ul{margin:4px 0}
+section.card li{margin-bottom:5px}
+section.card li:last-child{margin-bottom:0}
+section.card a{color:var(--accent);text-decoration:none;font-weight:600}
+section.card a:hover{text-decoration:underline}
+section.card hr{border:none;border-top:1px solid var(--line);margin:18px 0}
+
+code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.92em}
+:not(pre)>code{background:#EAF0F6;border-radius:4px;padding:1px 6px;color:var(--ink)}
+pre{background:var(--ink);color:#EAF0F6;border-radius:10px;padding:14px 16px;overflow-x:auto;
+  font-size:13px;margin:0 0 14px;line-height:1.5}
+section.card pre:last-child{margin-bottom:0}
+pre code{background:none;padding:0;color:inherit;font-size:inherit}
+
+.tablewrap{overflow-x:auto;margin:0 0 14px}
+section.card .tablewrap:last-child{margin-bottom:0}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{text-align:left;background:#EAF0F6;color:var(--ink);font-weight:700;padding:8px 12px;
+  border:1px solid var(--line);white-space:nowrap}
+td{padding:8px 12px;border:1px solid var(--line);vertical-align:top}
+
+blockquote{background:#FBF3E6;border:1px solid #ECD9B3;border-left:4px solid var(--amber);
+  border-radius:10px;padding:10px 16px;margin:0 0 14px;color:#5F4A1F;font-size:14px}
+section.card blockquote:last-child{margin-bottom:0}
+blockquote p{margin:0 0 6px;color:inherit;font-size:inherit}
+blockquote p:last-child{margin-bottom:0}
+blockquote code{background:rgba(11,31,58,.08)}
+
+@media (max-width:640px){
+  .wrap{padding:20px 14px 48px}
+  header.head{padding:20px 22px}
+}
+@media print{
+  body{background:#fff}
+  .wrap{max-width:100%;padding:10px 6px}
+  header.head,section.card{box-shadow:none}
+  section.card{page-break-inside:avoid;border-color:#ccc}
+  pre{white-space:pre-wrap;word-break:break-word}
+  a{color:inherit;text-decoration:none}
+}
+</style></head><body><div class="wrap">
+<header class="head"><h1>Installation — BMS Job Application Management System</h1><div class="intro"><p>This guide describes a <strong>new installation from scratch</strong> on your own computer: a fresh
+repository, an empty database, your own person. It is written for someone who has
+never seen the system and assumes no knowledge of the project, but it does assume you are willing to
+open a terminal (macOS) or PowerShell (Windows) once.</p>
+<p><strong>No data transfer:</strong> If you want to move an existing installation to another computer,
+you follow the same technical steps, but you skip Part 3 and instead copy
+<code>data/</code>, the personal <code>config/</code> files and the secrets directory from the old
+computer. This guide assumes that nothing is carried over.</p>
+<p><strong>For users</strong> there is a separate version for each system without project internals: <code>BMS_Install_MAC.en.md</code>
+(macOS) and <code>BMS_Install_Windows.en.md</code> (Windows) in the main folder. From the user's point of view (with
+Claude), they walk through the same steps, download the program package from the GitHub release of the public
+repo instead of from the repository, and add updating. The BMS does not need a licence file
+(open source under Apache-2.0).</p></div></header>
+<section class="card"><h2>What the system is — and what it needs</h2><p>A local web application for your own job search: capture and rate jobs, check companies,
+create CVs and cover letters, track application emails. It runs
+entirely on your own computer (FastAPI + SQLite + React); there is no server service on the
+internet that you sign in to.</p>
+<p>The substantive work — research, text drafts, matching — is done by <strong>Claude Code</strong> as a
+subprocess, or alternatively by OpenAI's <strong>Codex CLI</strong> (ChatGPT, preview, see 3.7). Without an active
+Claude or ChatGPT account, the basic functions (capturing, managing,
+evaluating, exporting) work, but all AI-assisted processes do not. A licence file is not needed: all
+functions are available without a licence.</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Requirement</th>
+<th>Version</th>
+<th>Used for</th>
+<th>Mandatory?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Python</td>
+<td><strong>3.12</strong></td>
+<td>Backend/server</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>Node.js</td>
+<td><strong>24</strong></td>
+<td>Building the frontend (once)</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>Git</td>
+<td>current</td>
+<td>Getting the repository</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>Claude Code (CLI)</td>
+<td>current</td>
+<td>All AI functions</td>
+<td>effectively yes</td>
+</tr>
+<tr>
+<td>LibreOffice</td>
+<td>current</td>
+<td>Converting Word files to PDF</td>
+<td>for PDF output</td>
+</tr>
+<tr>
+<td>Claude account</td>
+<td>Subscription or API</td>
+<td>Running the AI functions</td>
+<td>for AI functions</td>
+</tr>
+<tr>
+<td>Codex CLI (instead of Claude Code)</td>
+<td>current</td>
+<td>AI functions with ChatGPT</td>
+<td>only with ChatGPT</td>
+</tr>
+<tr>
+<td>ChatGPT account</td>
+<td>Plus or Pro</td>
+<td>Running the AI functions with ChatGPT</td>
+<td>only with ChatGPT</td>
+</tr>
+</tbody>
+</table></div>
+<p>Time needed: about 30–45 minutes for the technical part (Part 1 or 2), then one to two hours for
+the personal setup (Part 3). For the LinkedIn data export that Part 3 recommends, you should
+start the download at LinkedIn <strong>a day beforehand</strong>; it can take up to
+24 hours to be made available there.</p>
+<p><strong>Access to the repository:</strong> The project is in the public GitHub repository
+<code>holgerdaube/BewerbungsMgmtSystem</code>. You do not need a GitHub account to clone it; you only need one
+when you want to submit changes (see <code>CONTRIBUTING.md</code>).</p>
+<hr>
+<h1>Part 1 — Steps on Windows</h1>
+<p>The backend test suite runs regularly on <code>windows-latest</code> in the project's automation. On
+a real Windows computer, the installation has not been tested so far, and some areas are restricted
+on Windows (see Part 5).</p></section><section class="card"><h2>1.1 Install the requirements</h2><p>In PowerShell, one after the other:</p>
+<pre><code class="language-powershell">winget install Python.Python.3.12
+winget install OpenJS.NodeJS.LTS
+winget install Git.Git
+winget install TheDocumentFoundation.LibreOffice
+</code></pre>
+<p>Two points decide later between success and troubleshooting:</p>
+<ul>
+<li>In the Python installer, tick <strong>"Add python.exe to PATH"</strong> (with <code>winget</code> this happens
+  automatically). Check with <code>py -3.12 --version</code>; the <code>py</code> launcher unambiguously picks
+  version 3.12, even if several Pythons are installed.</li>
+<li>Leave LibreOffice <strong>at the default path</strong> (<code>C:\Program Files\LibreOffice\</code>). The app looks for
+  <code>soffice.exe</code> exactly there; if it is installed elsewhere, it does not find it and cannot create
+  PDFs.</li>
+</ul>
+<p>Then Claude Code:</p>
+<pre><code class="language-powershell">winget install -e --id Anthropic.ClaudeCode
+</code></pre>
+<p>Check: <code>claude --version</code>. Then start <code>claude</code> once and sign in; otherwise
+all AI runs later fail with an authentication error.</p></section><section class="card"><h2>1.2 Get the repository</h2><pre><code class="language-powershell">git clone https://github.com/holgerdaube/BewerbungsMgmtSystem C:\BMS
+cd C:\BMS
+</code></pre>
+<p>The target folder is up to you; <code>C:\BMS</code> keeps the paths short. Do <strong>not</strong> put it in a
+live-synchronised cloud folder (OneDrive, Dropbox): the database is a single
+file that is written to constantly, and cloud sync causes conflicts there.</p></section><section class="card"><h2>1.3 Create the Python environment</h2><p>Deliberately <strong>outside</strong> the project folder, so that thousands of package files are not in the project:</p>
+<pre><code class="language-powershell">py -3.12 -m venv $env:USERPROFILE\.bewerbung_mgmt_venv
+&amp; &quot;$env:USERPROFILE\.bewerbung_mgmt_venv\Scripts\pip.exe&quot; install -r backend\requirements-lock.txt
+New-Item -ItemType Junction -Path &quot;$env:USERPROFILE\.bewerbung_mgmt_venv\bin&quot; -Target &quot;$env:USERPROFILE\.bewerbung_mgmt_venv\Scripts&quot;
+</code></pre>
+<p><code>requirements-lock.txt</code> pins exact versions. If you want to run the test suite,
+additionally install <code>backend\requirements-dev.txt</code>.</p>
+<p>The third line creates a directory junction <code>bin</code> → <code>Scripts</code>. The skills call Python
+throughout as <code>~/.bewerbung_mgmt_venv/bin/python</code> (macOS form), and so does the path guard in
+<code>automation/agent_settings.json</code>. On Windows, Claude Code runs these commands in Git Bash,
+which resolves the junction and finds <code>python.exe</code>. Without it, every database
+access fails in AI runs. That is why Git for Windows (1.1) is mandatory here: without Git Bash, Claude Code
+falls back to PowerShell, in which the skills' heredoc commands do not run. On real Windows hardware
+this route has not been tested yet.</p></section><section class="card"><h2>1.4 Build the interface</h2><pre><code class="language-powershell">cd frontend
+npm.cmd ci
+npm.cmd run build
+cd ..
+</code></pre>
+<p>This creates <code>frontend/dist/</code>. <strong>Without this step, the server does start, but shows a
+blank page</strong>; it serves the interface only if this directory exists. The
+script <code>frontend/build.sh</code> is a macOS workaround and is not used on Windows.</p>
+<p><code>npm.cmd</code> instead of <code>npm</code> is deliberate: on many computers Windows PowerShell blocks the script
+<code>npm.ps1</code> (execution policy), and <code>npm.cmd</code> is not affected by that.</p></section><section class="card"><h2>1.5 Start</h2><p>Double-click <code>start_windows.bat</code> (or run <code>.\start_windows.bat</code> in PowerShell). After about two seconds,
+the browser opens <code>http://localhost:8000</code>, and the server window stays open.</p>
+<p>On the very first start, the application creates what it is missing: the <code>data/</code> directory,
+the empty database and a starter version of <code>config/suchprofile.yaml</code>.</p>
+<p><strong>To stop:</strong> <code>Ctrl+C</code> in the server window. If the window is closed or no longer responds,
+<code>stop_windows.bat</code> helps. It ends the process on port 8000 and asks first if
+AI runs are currently active.</p></section><section class="card"><h2>1.6 Continue with Part 3</h2><p>The application is running now, but is still empty and does not know you yet. Continue at
+<strong>Part 3 — First setup</strong>.</p>
+<hr>
+<h1>Part 2 — Steps on macOS</h1>
+<p>macOS is the project's reference platform: everything is tested here in everyday use.</p></section><section class="card"><h2>2.1 Install the requirements</h2><p><a href="https://brew.sh">Homebrew</a> is assumed (if you do not have it, take the install command from there):</p>
+<pre><code class="language-sh">brew install python@3.12 node git
+brew install --cask libreoffice
+</code></pre>
+<p>Then Claude Code:</p>
+<pre><code class="language-sh">npm install -g @anthropic-ai/claude-code
+</code></pre>
+<p>Check with <code>claude --version</code>, then start <code>claude</code> once and sign in.</p></section><section class="card"><h2>2.2 Get the repository</h2><pre><code class="language-sh">git clone https://github.com/holgerdaube/BewerbungsMgmtSystem ~/Projekte/BewerbungsMgmtSystem
+cd ~/Projekte/BewerbungsMgmtSystem
+</code></pre>
+<p><strong>About iCloud Drive:</strong> The project <em>can</em> live in iCloud (for example as a backup of the working copy), but this
+requires two additional measures: the frontend build in section 2.4 and a relocated Git directory
+(<code>.git.nosync</code>, see <code>docs/DOKUMENTATION.md</code>, section "Project structure and storage locations"). If you do not
+need that, simply put the project outside iCloud; this guide assumes that.</p></section><section class="card"><h2>2.3 Create the Python environment</h2><pre><code class="language-sh">/opt/homebrew/bin/python3.12 -m venv ~/.bewerbung_mgmt_venv
+~/.bewerbung_mgmt_venv/bin/pip install -r backend/requirements-lock.txt
+</code></pre>
+<p>On Intel Macs, Homebrew is at <code>/usr/local/bin/python3.12</code>. For the test suite, additionally
+install <code>backend/requirements-dev.txt</code>.</p></section><section class="card"><h2>2.4 Build the interface</h2><p>If the project is <strong>outside</strong> iCloud (the normal case):</p>
+<pre><code class="language-sh">cd frontend &amp;&amp; npm ci &amp;&amp; npm run build &amp;&amp; cd ..
+</code></pre>
+<p>If the project is <strong>in iCloud Drive</strong>, use this instead:</p>
+<pre><code class="language-sh">cd frontend &amp;&amp; ./build.sh &amp;&amp; cd ..
+</code></pre>
+<p>The difference has a concrete reason: iCloud keeps re-materialising <code>node_modules</code>
+and in doing so destroys the symlinks that the build needs. <code>build.sh</code> therefore works around this by moving to
+<code>~/.bewerbung_mgmt_node/</code> and copies only the finished <code>dist/</code> back. Outside iCloud
+this detour is unnecessary.</p></section><section class="card"><h2>2.5 Start</h2><p>Double-click <code>start.command</code> in Finder, or in the terminal:</p>
+<pre><code class="language-sh">./start.command
+</code></pre>
+<p>The browser opens <code>http://localhost:8000</code>. As on Windows, the first start creates <code>data/</code>, the
+empty database and a starter version of <code>config/suchprofile.yaml</code> by itself.</p>
+<p>For access from your own Wi-Fi (for example from a tablet) there is <code>start_lan.command</code>.
+<strong>To stop:</strong> <code>Ctrl+C</code> in the server window, otherwise <code>stop.command</code>.</p>
+<hr>
+<h1>Part 3 — First setup (both platforms)</h1>
+<p>The application is running now, but knows nothing about the person who is applying. This part is
+the real core of a new installation. The order is deliberate: steps 3.1 and
+3.2 are manual work on files, and everything else goes through the interface.</p>
+<blockquote>
+<p><strong>Windows paths:</strong> Where <code>data/cv_basis/</code> appears below, <code>data\cv_basis\</code> is meant on Windows,
+relative to the project folder, so for example <code>C:\BMS\data\cv_basis\</code>.</p>
+</blockquote></section><section class="card"><h2>3.1 Create the profile file (mandatory)</h2><p><code>config/profil.md</code> is the personal master file: name, address, contact details and the search strategy.
+It is deliberately not in the repository. Since P2-69, the easiest way to maintain it is in the interface:
+the <strong>Profile</strong> page, first card "Identity and search strategy". Saving writes the file and leaves
+everything the card does not know about untouched. The route with a text editor below still works.</p>
+<p>Without this file the system does run, but every CV it creates is then called
+<code>CV_Bewerber_…</code> instead of carrying your own name, and cover letters have <strong>no letterhead</strong> (the
+system deliberately invents nothing at this point).</p>
+<p>Create a new file <code>config/profil.md</code> with this content and replace the values:</p>
+<pre><code class="language-markdown"># Kandidatenprofil — Max Mustermann
+
+## Identität
+- **Name:** Max Mustermann
+- **Positionierung:** Service Delivery Leader · DACH
+- **Standort:** Musterweg 3, 12345 Musterstadt
+- **Kontakt:** max.mustermann@example.com · +49 170 1234567
+- **LinkedIn:** https://www.linkedin.com/in/max-mustermann/
+- **Aktuell:** Manager Professional Services @ Beispiel GmbH, seit 2024
+
+## Kurzprofil
+Zwei bis vier Sätze zur eigenen Person — diese dienen als Tonvorlage für Anschreiben.
+
+## Zielrolle
+- **Ebene:** Director / Head
+- **Funktion Plan A:** Professional-Services- / Service-Delivery-Leitung
+- **Funktion Plan B:** Head of Customer Success
+- **Branche:** Enterprise Software, IT-Services
+- **Region:** DACH
+- **Zieltermin:** neue Rolle bis 31.12.2026
+
+## Harte Rahmenbedingungen
+- Kein Umzug, kein dauerhafter Zweitwohnsitz.
+- Mindestens 100 Mitarbeiter beim Zielunternehmen.
+- Reine Vertriebsrollen ohne Führungsverantwortung sind kein Fit.
+
+## Sprachen / CV-Fassungen
+- **Deutsch:** `data/cv_basis/base_de.docx`
+- **Englisch:** `data/cv_basis/base_en.docx`
+
+## Bekannte Skill-Gaps / Red Flags
+- (noch keine)
+
+## Empirie aus dem Bewerbungsverlauf
+- (wird automatisch gepflegt — Überschrift bitte unverändert stehen lassen)
+</code></pre>
+<p>Three format rules that are actually evaluated:</p>
+<ul>
+<li><strong>Standort</strong> (location) in the format <code>Straße Nr, PLZ Ort</code> (street no., postcode, town). For the place line in the cover letter, the last
+  comma segment is taken and the postcode is split off; other formats produce a
+  crooked line.</li>
+<li><strong>Kontakt</strong> (contact): separate email and phone with <code>·</code>. In the letterhead this automatically becomes <code>|</code>.</li>
+<li>The four fields <strong>Name, Standort, Kontakt, LinkedIn</strong> are recognised by their bold formatting
+  (<code>**Name:**</code>). The asterisks must stay; the order does not matter.</li>
+</ul>
+<p>The remaining text (short profile, target role, constraints) is not parsed by machine,
+but read as context by the AI processes. It can therefore be worded freely, but should
+be specific.</p></section><section class="card"><h2>3.2 Provide a base CV (mandatory for all CV functions)</h2><p>The system does not invent a CV. It takes an existing one as its basis and adapts it for each
+job. <strong>Exactly two files with fixed names</strong> are expected:</p>
+<ul>
+<li><code>data/cv_basis/base_de.docx</code> — German version</li>
+<li><code>data/cv_basis/base_en.docx</code> — English version</li>
+</ul>
+<p>Both are Word files (<code>.docx</code>, not PDF). Since P2-27 they are uploaded through the
+interface: <strong>Profile → Base CVs</strong>, choose the language, choose the file, "Upload". The upload counts
+the positions it recognises and warns, without rejecting, if the structure does not fit; before
+overwriting, it asks first, and the old version goes to the bin. If you only search in German,
+upload both anyway (the English one may be a copy), otherwise English-language
+runs abort.</p>
+<p><strong>The structure is not arbitrary.</strong> The adaptation logic recognises the career positions by a
+fixed pattern; if the file does not follow it, positions are not found or are merged
+incorrectly:</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Element</th>
+<th>Requirement</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Section headings</td>
+<td>Paragraph style <strong>Heading 1</strong>, in capital letters</td>
+</tr>
+<tr>
+<td>Name of the experience section</td>
+<td><code>BERUFSERFAHRUNG</code> (German) or <code>PROFESSIONAL EXPERIENCE</code> (English)</td>
+</tr>
+<tr>
+<td>Start of a position</td>
+<td>Paragraph style <strong>Normal</strong>, structure <code>Company</code> → <strong>tab</strong> → <code>Period</code></td>
+</tr>
+<tr>
+<td>Line directly below</td>
+<td>Job title, Normal style, <strong>bold</strong>, 11 pt, without a tab</td>
+</tr>
+<tr>
+<td>After that</td>
+<td>Italic company description (one to two lines)</td>
+</tr>
+<tr>
+<td>After that</td>
+<td>Achievements as a bullet list in the <strong>List Paragraph</strong> style</td>
+</tr>
+<tr>
+<td>Spacing before each position</td>
+<td>at least 20 pt "Spacing before" on the tab line</td>
+</tr>
+</tbody>
+</table></div>
+<p>The tab between company and period is the decisive recognition feature and must <strong>not occur
+anywhere else</strong> in the document. In other sections (education, certificates), separate
+with <code>•</code>, not with a tab.</p>
+<p>In practice: open an existing CV in Word, set the section headings to
+"Heading 1", insert one <code>Company⇥Period</code> line per position and format the bullet lists
+as List Paragraph.</p></section><section class="card"><h2>3.3 Import the LinkedIn data export (recommended)</h2><p>The fastest way to fill in your career history and skills without typing everything.</p>
+<p>At LinkedIn: <strong>Settings → Data privacy → "Get a copy of your data"</strong> and choose the
+<strong>top</strong> option ("larger data archive") there. The quick selection "Profile" contains only the
+short description and is not enough. LinkedIn makes the archive available within up to 24 hours
+and sends an email.</p>
+<p>Then upload the ZIP you receive in the application under <strong>Profile</strong>. The import takes over
+the short description, location, skills, career positions, education and certificates. The import
+works purely mechanically, only adds and overwrites nothing that already exists. Afterwards,
+a background run automatically sorts the imported skills into topic areas.</p>
+<p>Then review and supplement the profile in the interface: sharpen the positioning,
+complete the career positions, attach references and certificates.</p>
+<blockquote>
+<p><strong>Note:</strong> The file <code>config/profil_struktur.md</code> is not part of the repository. The application creates it
+itself from the data on the Profile page (at startup if it is missing, and on every save, including through
+the ZIP import). It is the "substance" that the system draws on for cover letters and CVs, and
+is not edited by hand.</p>
+</blockquote></section><section class="card"><h2>3.4 Set the settings in the interface</h2><p>Under <strong>Settings</strong>, in this order:</p>
+<ol>
+<li><strong>Search area and company size</strong> — Remote, Germany-wide and/or city with local area;
+   minimum number of employees. The local area internally creates a category such as <code>Musterstadt +50km</code>,
+   which later appears on every job. If you change the city or radius again later, the
+   application automatically switches existing jobs to the new label.</li>
+<li><strong>Plans A/B/C</strong> — the target roles: title, level and industry for each plan. Plan A is the
+   actual goal, Plan B the realistic alternative, Plan C optional as a fallback level.
+   <strong>These fields are empty after installation</strong> and must be filled in; until then
+   the job search finds nothing, because it does not know what to look for.</li>
+<li><strong>Search portals</strong> — six portals are pre-filled and active; switch individual ones off if needed or
+   add two of your own. The button for checking shows which ones respond. The portals are aimed at
+   Germany; outside Germany, use the free rows, LinkedIn alerts and the target companies.</li>
+<li><strong>AI models per function</strong> — the default is Sonnet everywhere. That can stay as it is.</li>
+</ol>
+<p>After the first save, the application rewrites <code>config/suchprofile.yaml</code> and enters
+your inputs there.</p></section><section class="card"><h2>3.5 Adapt the target profile</h2><p>A file in the repository contains an example target profile and is read by the search processes. If you
+do not adapt it, you get ratings according to the criteria of the example:</p>
+<p><strong><code>config/scoring_rubrik.md</code></strong>, section <em>Dimension 2 — Function</em>: the description of
+Plan A, B and C (in the example "PS or service delivery leadership" and "Head of Customer
+Success"). The rating scale 1–5 and the situation codes (BUILD, CARVE-OUT, POST-MERGER …)
+are generally valid and remain unchanged.</p>
+<p>The region itself no longer has to be adapted by hand anywhere: as soon as city and
+local area are set in step 3.4, the job list, filters and the search processes (<code>jobsuche</code>,
+<code>mail-jobsuche</code>, <code>angebot-vergleich</code>) take over the label automatically from the settings.</p></section><section class="card"><h2>3.6 Connect an email account (optional, but recommended)</h2><p>Without an email connection, the daily mailbox comparison and the evaluation of
+job notifications do not apply. Under <strong>Settings → Email account</strong>; the recommended route is IMAP with
+an <strong>app password</strong> from the mail provider (not the normal password). Host and port for the
+common providers, as well as the alternative Gmail route, are described in <code>docs/SETUP-EMAIL.md</code>.</p>
+<p>The system <strong>never sends emails itself</strong>. It only creates drafts, which you
+check and send yourself.</p></section><section class="card"><h2>3.7 Enable automatic runs (optional)</h2><p>For processes that start in the background (daily job search, company check, mailbox comparison),
+the server needs its own access token for Claude Code. Create it with:</p>
+<pre><code class="language-sh">claude setup-token
+</code></pre>
+<p>Write the token that is output into a file <code>agent.env</code> in the secrets directory, as one line
+<code>CLAUDE_CODE_OAUTH_TOKEN=…</code>. The directory is deliberately outside the project:</p>
+<ul>
+<li>macOS: <code>~/.bewerbung_mgmt_secrets/agent.env</code></li>
+<li>Windows: <code>%USERPROFILE%\.bewerbung_mgmt_secrets\agent.env</code></li>
+</ul>
+<p><code>automation/agent.env.example</code> serves as a template. Take care when copying: if the token wraps over
+several lines, the parts belong back on one line; a line without <code>=</code> is the
+continuation of the previous one. Restart the server after creating it.</p>
+<p><strong>With ChatGPT instead of Claude (preview):</strong> Install the Codex CLI (<code>npm install -g @openai/codex</code>,
+on macOS also <code>brew install --cask codex</code>), sign in once with the ChatGPT account (<code>codex login</code>,
+check with <code>codex login status</code>, expected "Logged in using ChatGPT") and choose ChatGPT in the Settings,
+in the "AI" card (or <code>PATCH /api/einstellungen</code> with <code>{"ki_anbieter":"chatgpt"}</code>). A
+token and <code>agent.env</code> are not needed for this. The contents of the AI runs then go to OpenAI instead of to
+Anthropic. On Windows, use <code>npm.cmd</code> and <code>codex.cmd</code>; according to OpenAI, Codex's preferred sandbox needs
+a one-time administrator setup there, and this route has not been tested on Windows.</p>
+<p>In addition, the allow list <code>automation/agent_settings.json</code> must match the path to the Python of the virtual
+environment. It names it in the <code>~</code> form (<code>~/.bewerbung_mgmt_venv/bin/python</code>); if your environment is
+elsewhere, enter the actual path. A placeholder is not enough at this point: the
+entry must match the path exactly. If the venv path differs, also adapt the hook command in the <code>hooks</code> block of the same
+file (it checks Write/Edit targets against the project root, see <code>docs/DOKUMENTATION.md</code> section 8); it calls the same venv Python installation as the allow list. If you develop on the project itself with
+Claude Code and use the preview, create your own <code>.claude/launch.json</code> for it; it
+is not part of the repository.</p>
+<p>Create the secrets file like this on macOS (Windows: correspondingly in the user folder):</p>
+<pre><code class="language-sh">mkdir -p ~/.bewerbung_mgmt_secrets &amp;&amp; chmod 700 ~/.bewerbung_mgmt_secrets
+cp automation/agent.env.example ~/.bewerbung_mgmt_secrets/agent.env
+chmod 600 ~/.bewerbung_mgmt_secrets/agent.env
+</code></pre>
+<p>The Gmail credentials (<code>gmail_credentials.json</code>, <code>gmail_token.json</code>, only for the Gmail API route from
+<code>docs/SETUP-EMAIL.md</code>) end up in the same directory. The location can be changed via <code>BMS_SECRETS_DIR</code>.</p></section><section class="card"><h2>3.8 Cosmetics</h2><p>The browser tab shows the product name, followed by the name from <code>config/profil.md</code>; the sidebar also reads
+the name dynamically and is correct automatically after step 3.1. The product name comes from the
+design (<code>docs/DOKUMENTATION.md</code>, section "Design from one source"); the static <code>&lt;title&gt;</code> in
+<code>frontend/index.html</code> is only the initial value until the design is loaded.</p></section><section class="card"><h2>3.9 Optional environment variables and development tools</h2><p><code>.env.example</code> lists the settings that may deviate from the default: server port and address,
+<code>BMS_DATA_DIR</code>, <code>BMS_SECRETS_DIR</code> and the limits for AI runs. The program reads them exclusively from
+the environment; it does not load a <code>.env</code> file itself. Set the values therefore in the shell that starts the
+server, for example <code>PORT=8010 ./start.command</code>.</p>
+<p>If you work on the source code, install <code>backend/requirements-dev.txt</code> once, and the secret guard
+(<code>scripts/install_hooks.sh</code>, checks for tokens before every commit). The tests run with <code>scripts/test.sh</code>
+against a throwaway database. Details and the rules for contributions are in
+<code>docs/DOKUMENTATION.md</code> (section "Tests &amp; CI") and in <code>CONTRIBUTING.md</code>.</p>
+<hr>
+<h1>Part 4 — Checking that everything is in place</h1>
+<p>This short round uncovers the typical installation errors:</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Check</th>
+<th>Expectation</th>
+<th>If not</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Open <code>http://localhost:8000</code></td>
+<td>Interface with menu appears</td>
+<td>Frontend not built (step 1.4 / 2.4)</td>
+</tr>
+<tr>
+<td>Open the <strong>Settings</strong> page</td>
+<td>Cards are displayed, no error</td>
+<td>Restart the server; read the message in the server window</td>
+</tr>
+<tr>
+<td><strong>Program version</strong> card, button "Check for updates"</td>
+<td>The button shows the latest version or an error text (if no release has been published yet: "No version has been published yet.")</td>
+<td>Check the internet connection and access to GitHub (company network, proxy)</td>
+</tr>
+<tr>
+<td>Open the <strong>Profile</strong> page</td>
+<td>Your own name in the header</td>
+<td>Check <code>config/profil.md</code> (spelling <code>**Name:**</code>)</td>
+</tr>
+<tr>
+<td>Create a job by hand</td>
+<td>Entry appears in the list</td>
+<td>Check the server window for error messages</td>
+</tr>
+<tr>
+<td><strong>Tasks</strong> page, start a run</td>
+<td>Run starts and ends with a result</td>
+<td>Check the Claude sign-in and token (step 3.7)</td>
+</tr>
+<tr>
+<td>Create a CV for a job</td>
+<td>Word and PDF files are created</td>
+<td>Check the base CV (3.2) and the LibreOffice path</td>
+</tr>
+</tbody>
+</table></div>
+<p>If you want to secure the technical basis completely, you can run the test suite (requires
+<code>requirements-dev.txt</code>):</p>
+<pre><code class="language-sh">cd backend &amp;&amp; ~/.bewerbung_mgmt_venv/bin/python -m pytest tests -q
+</code></pre>
+<p>On Windows, use <code>%USERPROFILE%\.bewerbung_mgmt_venv\Scripts\python.exe</code> correspondingly. Some
+tests skip themselves there by design, because they test Unix peculiarities. That is not an error.</p>
+<p>On your own installation, individual tests can also turn out differently from in CI: as soon as
+<code>config/profil.md</code> and the base CVs under <code>data/cv_basis</code> exist, some tests also check against
+these local files. That is not an installation error; CI runs without these files and is the
+yardstick.</p>
+<hr>
+<h1>Part 5 — Limits and common stumbling blocks</h1>
+<p><strong>Not available on Windows</strong> (details in <code>docs/SETUP-WINDOWS.md</code>):</p>
+<ul>
+<li><strong>Timed automation.</strong> The daily run at a fixed time is macOS-specific; on
+  Windows you start it via the button in the interface.</li>
+<li><strong>Three collective functions</strong> — "Update views" (Excel export, daily digest,
+  search index), "Render cover letters" and the coach site upload — call a Unix script internally
+  and report "Binary not found" on Windows. The Python modules behind them can
+  be called directly.</li>
+<li><strong>The helper scripts in <code>scripts/</code></strong> assume the Unix directory structure of the virtual environment
+  and do not run unchanged even in Git Bash.</li>
+</ul>
+<p><strong>On both platforms:</strong></p>
+<ul>
+<li><strong>No auto-reload.</strong> After changes to backend files, the server has to be restarted.</li>
+<li><strong>The database is a single file</strong> (<code>data/bewerbung.sqlite</code>). The BMS backs it up
+  automatically: once a day as a ZIP to <code>data/backups/auto</code>, with fixed retention
+  (settings in the interface under "Data backup"). Before particularly risky actions,
+  additionally make a copy of your own; on macOS there is <code>scripts/backup_db.sh</code> for that.</li>
+<li><strong>Two installations do not synchronise with each other.</strong> If you run the system on two computers,
+  you keep two separate sets of data; merging them is manual work.</li>
+<li><strong>The Excel export of the contact list</strong> falls back on a template file that does not exist in a
+  new installation; this one function then reports an error. All other
+  exports are unaffected.</li>
+<li><strong>Costs arise from the AI runs.</strong> The Budget page shows usage and slows things down when the limit is
+  exceeded; defaults are created automatically on first access.</li>
+</ul>
+<p><strong>Legal:</strong> The BMS is under the Apache License 2.0 (<code>LICENSE</code>, <code>NOTICE</code>) and needs no
+licence file. Up to version 1.7.0 there was a licence requirement; it was removed in P2-82 (background
+and technology: <code>docs/DOKUMENTATION.md</code>, section "Licence — removed"). Older licence files in the
+secrets directory are no longer read and may be deleted.</p>
+<hr>
+<h1>Part 6 — Further material</h1>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>File</th>
+<th>Content</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>docs/ANLEITUNG.md</code></td>
+<td>Everyday use — the best starting point after the installation</td>
+</tr>
+<tr>
+<td><code>docs/SETUP-EMAIL.md</code></td>
+<td>Email connection in detail (IMAP and Gmail)</td>
+</tr>
+<tr>
+<td><code>docs/SETUP-WINDOWS.md</code></td>
+<td>Windows specifics, limits, support matrix</td>
+</tr>
+<tr>
+<td><code>docs/DOKUMENTATION.md</code></td>
+<td>System structure, everyday operation (starting, stopping, backup), tests and development status</td>
+</tr>
+<tr>
+<td><code>docs/RELEASE.md</code></td>
+<td>Version and release workflow (only relevant if you release packages yourself)</td>
+</tr>
+<tr>
+<td><code>CONTRIBUTING.md</code></td>
+<td>Rules for contributions (licence, language, tests)</td>
+</tr>
+<tr>
+<td><code>SECURITY.md</code></td>
+<td>Reporting security vulnerabilities</td>
+</tr>
+<tr>
+<td><code>README.md</code>, <code>README.de.md</code></td>
+<td>Project overview for users in English and German: installation, updates, data protection, licence</td>
+</tr>
+</tbody>
+</table></div></section>
+</div></body></html>
+<!-- docs_render quelle=INSTALLATION.md sha256=e15a981149e39238652bf5efdce1498d0351b455c294c0cf5f7f3d009b151599 -->

@@ -41,6 +41,7 @@ import threading
 from collections import deque
 from typing import Optional
 
+from app.sprache import tx, uebersetzt
 from pipeline import user_profile
 
 # ── Konstanten ───────────────────────────────────────────────────────────────────────────────────
@@ -50,6 +51,7 @@ STANDARD_ZIELROLLE = ("Zieltermin",)
 MAX_EINZEILIG = 300      # Zeichen je einzeiligem Feld
 MAX_FREITEXT = 5000      # Zeichen je Freitext-Abschnitt
 
+# Deutscher Text als Konstante; übersetzt wird beim Auslösen (`uebersetzt(STAND_VERALTET_TEXT)`).
 STAND_VERALTET_TEXT = ("Die Profil-Datei wurde inzwischen geändert. Bitte laden Sie die Karte neu und "
                        "tragen Sie Ihre Änderung noch einmal ein.")
 
@@ -358,9 +360,9 @@ def _hinweise(anschrift: str, email: str) -> list[str]:
     hinweise = []
     ort = _ohne_klammerzusatz(anschrift)
     if ort and ("," not in ort or not re.search(r"(?<!\d)\d{4,5}(?!\d)", ort)):
-        hinweise.append("Die Ortszeile Ihrer Anschreiben entsteht aus ‚Straße Nr, PLZ Ort‘.")
+        hinweise.append(tx("Die Ortszeile Ihrer Anschreiben entsteht aus ‚Straße Nr, PLZ Ort‘."))
     if (email or "").strip() and "@" not in email:
-        hinweise.append("Die E-Mail-Adresse enthält kein ‚@‘. Bitte prüfen Sie die Schreibweise.")
+        hinweise.append(tx("Die E-Mail-Adresse enthält kein ‚@‘. Bitte prüfen Sie die Schreibweise."))
     return hinweise
 
 
@@ -372,33 +374,34 @@ def hinweise_fuer(daten: dict) -> list[str]:
 
 # ── Prüfen und Normalisieren (Eingabe der Maske) ─────────────────────────────────────────────────
 def _format_fehler(label: str) -> ValueError:
-    return ValueError(f"Die Angabe zu ‚{label}‘ hat ein unerwartetes Format. Bitte laden Sie die Karte "
-                      "neu und versuchen Sie es noch einmal.")
+    return ValueError(tx("Die Angabe zu ‚{label}‘ hat ein unerwartetes Format. Bitte laden Sie die Karte "
+                         "neu und versuchen Sie es noch einmal.", label=uebersetzt(label)))
 
 
 def _einzeilig(label: str, wert, pflicht: bool = False) -> Optional[str]:
     """`None` bleibt `None` (= nicht übergeben, Datei bleibt unverändert); sonst getrimmter Text."""
     if wert is None:
         if pflicht:
-            raise ValueError("Bitte tragen Sie Ihren Namen ein. Er erscheint im Briefkopf Ihrer "
-                             "Anschreiben und in den Dateinamen.")
+            raise ValueError(tx("Bitte tragen Sie Ihren Namen ein. Er erscheint im Briefkopf Ihrer "
+                                "Anschreiben und in den Dateinamen."))
         return None
     if not isinstance(wert, str):
         raise _format_fehler(label)
     if any(c in wert for c in _ZEILENTRENNER):
-        raise ValueError(f"Das Feld ‚{label}‘ darf nur eine Zeile enthalten. Bitte entfernen Sie den "
-                         "Zeilenumbruch.")
+        raise ValueError(tx("Das Feld ‚{label}‘ darf nur eine Zeile enthalten. Bitte entfernen Sie den "
+                            "Zeilenumbruch.", label=uebersetzt(label)))
     wert = wert.strip()
     if pflicht and not wert:
-        raise ValueError("Bitte tragen Sie Ihren Namen ein. Er erscheint im Briefkopf Ihrer "
-                         "Anschreiben und in den Dateinamen.")
+        raise ValueError(tx("Bitte tragen Sie Ihren Namen ein. Er erscheint im Briefkopf Ihrer "
+                            "Anschreiben und in den Dateinamen."))
     return wert
 
 
 def _laenge_pruefen(label: str, wert: str, grenze: int) -> None:
     if len(wert) > grenze:
-        raise ValueError(f"Das Feld ‚{label}‘ ist zu lang. Erlaubt sind höchstens {grenze} Zeichen, "
-                         f"Ihre Eingabe hat {len(wert)}.")
+        raise ValueError(tx("Das Feld ‚{label}‘ ist zu lang. Erlaubt sind höchstens {grenze} Zeichen, "
+                            "Ihre Eingabe hat {laenge}.", label=uebersetzt(label), grenze=grenze,
+                            laenge=len(wert)))
 
 
 def _freitext(label: str, wert) -> Optional[str]:
@@ -415,8 +418,9 @@ def _freitext(label: str, wert) -> Optional[str]:
         zeilen.pop()
     for z in zeilen:
         if z.startswith("## "):
-            raise ValueError(f"Im Feld ‚{label}‘ darf keine Zeile mit ‚## ‘ beginnen, denn damit beginnt in "
-                             "der Profil-Datei ein neuer Abschnitt. Bitte ändern Sie den Zeilenanfang.")
+            raise ValueError(tx("Im Feld ‚{label}‘ darf keine Zeile mit ‚## ‘ beginnen, denn damit beginnt in "
+                                "der Profil-Datei ein neuer Abschnitt. Bitte ändern Sie den Zeilenanfang.",
+                                label=uebersetzt(label)))
     return "\n".join(zeilen)
 
 
@@ -442,8 +446,8 @@ def _normalisieren(daten) -> dict:
     """Prüft die Eingabe der Maske und liefert sie getrimmt. `None` heißt „nicht übergeben“ und lässt
     die Datei an dieser Stelle unberührt; nur der Name ist Pflicht."""
     if not isinstance(daten, dict):
-        raise ValueError("Die Angaben haben ein unerwartetes Format. Bitte laden Sie die Karte neu und "
-                         "versuchen Sie es noch einmal.")
+        raise ValueError(tx("Die Angaben haben ein unerwartetes Format. Bitte laden Sie die Karte neu und "
+                            "versuchen Sie es noch einmal."))
     ident = daten.get("identitaet")
     if ident is None:
         ident = {}
@@ -479,9 +483,9 @@ def _feld_anhaengen(a: Abschnitt, schluessel: str, wert: str, eol: str) -> None:
 
 
 def _unbekanntes_feld(schluessel: str) -> ValueError:
-    return ValueError(f"Das Feld ‚{schluessel}‘ gibt es in Ihrer Profil-Datei nicht und kann hier nicht "
-                      "neu angelegt werden. Ergänzen Sie es bei Bedarf von Hand in der Datei "
-                      "config/profil.md.")
+    return ValueError(tx("Das Feld ‚{schluessel}‘ gibt es in Ihrer Profil-Datei nicht und kann hier nicht "
+                         "neu angelegt werden. Ergänzen Sie es bei Bedarf von Hand in der Datei "
+                         "config/profil.md.", schluessel=schluessel))
 
 
 def _liste_anwenden(a: Abschnitt, eintraege: list[tuple[str, str]], standard: dict[str, str],
@@ -693,9 +697,9 @@ def _dekodieren(inhalt: bytes) -> str:
     try:
         return inhalt.decode("utf-8")
     except UnicodeDecodeError:
-        raise DateiNichtLesbar("Ihre Profil-Datei config/profil.md ist nicht als UTF-8 gespeichert und "
-                               "kann deshalb hier nicht bearbeitet werden. Bitte speichern Sie die Datei "
-                               "im Texteditor als UTF-8.") from None
+        raise DateiNichtLesbar(tx("Ihre Profil-Datei config/profil.md ist nicht als UTF-8 gespeichert und "
+                                  "kann deshalb hier nicht bearbeitet werden. Bitte speichern Sie die Datei "
+                                  "im Texteditor als UTF-8.")) from None
 
 
 def lesen() -> dict:
@@ -705,7 +709,7 @@ def lesen() -> dict:
     daten = lesen_aus_text(None if roh is None else _dekodieren(roh))
     unveraendert = daten.pop("unveraendert")
     return {"vorhanden": roh is not None, "stand": stand_von(roh), **daten,
-            "unveraendert": unveraendert, "hinweise": hinweise_fuer(daten)}
+            "unveraendert": [uebersetzt(u) for u in unveraendert], "hinweise": hinweise_fuer(daten)}
 
 
 def _papierkorb_ordner():
@@ -777,7 +781,7 @@ def schreiben(daten: dict, stand: str) -> dict:
     with _SPERRE:
         roh = _bytes_lesen(pfad)
         if stand_von(roh) != stand:
-            raise StandVeraltet(STAND_VERALTET_TEXT)
+            raise StandVeraltet(uebersetzt(STAND_VERALTET_TEXT))
         neu = anwenden(None if roh is None else _dekodieren(roh), daten).encode("utf-8")
         n = _normalisieren(daten)
         hinweise = _hinweise(n["anschrift"] or "", n["email"] or "")

@@ -31,6 +31,7 @@ import io
 
 from fastapi import APIRouter, HTTPException
 
+from app.sprache import tx
 from pipeline import gmail_client, imap_mail
 
 router = APIRouter(prefix="/api/settings/mail", tags=["mail-settings"])
@@ -62,7 +63,7 @@ def _rufe_mit_stderr_abgefangen(fn, fehler_praefix: str):
     except SystemExit:
         raise HTTPException(400, puffer.getvalue().strip() or fehler_praefix)
     except Exception as exc:                 # noqa: BLE001 — nie 500, immer lesbarer Hinweis
-        raise HTTPException(400, f"{fehler_praefix}: {exc}")
+        raise HTTPException(400, tx("{praefix}: {grund}", praefix=fehler_praefix, grund=str(exc)))
 
 
 @router.get("")
@@ -75,11 +76,12 @@ def put_mail_settings(payload: dict):
     editierbar = {"provider", "host", "port", "security", "username", "password", "drafts_folder"}
     unbekannt = set(payload) - editierbar
     if unbekannt:
-        raise HTTPException(422, f"Nicht editierbare Felder: {', '.join(sorted(unbekannt))}")
+        raise HTTPException(422, tx("Nicht editierbare Felder: {felder}", felder=", ".join(sorted(unbekannt))))
 
     provider = str(payload.get("provider") or "").strip().lower()
     if provider not in _ALLOWED_PROVIDERS:
-        raise HTTPException(422, f"provider muss 'gmail' oder 'imap' sein, nicht {payload.get('provider')!r}")
+        raise HTTPException(422, tx("provider muss 'gmail' oder 'imap' sein, nicht {wert}",
+                                    wert=repr(payload.get("provider"))))
 
     if provider == "gmail":
         imap_mail.save_settings({"provider": "gmail"})
@@ -91,18 +93,19 @@ def put_mail_settings(payload: dict):
     fehlend = [name for name, wert in (("host", host), ("username", username),
                                         ("drafts_folder", drafts_folder)) if not wert]
     if fehlend:
-        raise HTTPException(422, f"Pflichtfeld(er) fehlen: {', '.join(fehlend)}")
+        raise HTTPException(422, tx("Pflichtfeld(er) fehlen: {felder}", felder=", ".join(fehlend)))
 
     security = str(payload.get("security") or "ssl").strip().lower()
     if security not in _ALLOWED_SECURITY:
-        raise HTTPException(422, f"security muss 'ssl' oder 'starttls' sein, nicht {payload.get('security')!r}")
+        raise HTTPException(422, tx("security muss 'ssl' oder 'starttls' sein, nicht {wert}",
+                                    wert=repr(payload.get("security"))))
 
     try:
         port = int(payload.get("port") or 993)
     except (TypeError, ValueError):
-        raise HTTPException(422, "port muss eine Zahl sein")
+        raise HTTPException(422, tx("port muss eine Zahl sein"))
     if not (0 < port <= 65535):
-        raise HTTPException(422, "port muss zwischen 1 und 65535 liegen")
+        raise HTTPException(422, tx("port muss zwischen 1 und 65535 liegen"))
 
     bestehend = imap_mail.load_settings()
     neues_passwort = payload.get("password")
@@ -111,7 +114,7 @@ def put_mail_settings(payload: dict):
     elif bestehend.get("provider") == "imap" and bestehend.get("password"):
         passwort = bestehend["password"]      # leeres Feld = vorhandenes behalten (Spec-Vorgabe)
     else:
-        raise HTTPException(422, "password fehlt")
+        raise HTTPException(422, tx("password fehlt"))
 
     neue_settings = {
         "provider": "imap", "host": host, "port": port, "security": security,
@@ -136,9 +139,9 @@ def test_mail_settings(payload: dict | None = None):
             creds = gmail_client._creds()
             with gmail_client._client(creds) as cl:
                 konto = gmail_client._get(cl, "/profile").get("emailAddress")
-            return {"ok": True, "meldung": f"Gmail verbunden ({konto})."}
+            return {"ok": True, "meldung": tx("Gmail verbunden ({konto}).", konto=konto)}
 
-        return _rufe_mit_stderr_abgefangen(_gmail_check, "Gmail-Verbindung fehlgeschlagen")
+        return _rufe_mit_stderr_abgefangen(_gmail_check, tx("Gmail-Verbindung fehlgeschlagen"))
 
     test_settings = {
         "host": payload.get("host") or bestehend.get("host"),
@@ -154,4 +157,4 @@ def test_mail_settings(payload: dict | None = None):
         test_settings["password"] = bestehend.get("password")
 
     return _rufe_mit_stderr_abgefangen(lambda: imap_mail.test_connection(test_settings),
-                                        "IMAP-Verbindung fehlgeschlagen")
+                                        tx("IMAP-Verbindung fehlgeschlagen"))

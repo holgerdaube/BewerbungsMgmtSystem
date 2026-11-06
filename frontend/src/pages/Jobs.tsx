@@ -5,25 +5,27 @@ import { ScoreBadge, StatusBadge, STATUS_FARBEN, STATUS_FARBE_UNBEKANNT, Dublett
   parseDubletteVerdacht, parseNeuausschreibung } from '../components/ui'
 import { isoTag } from '../zeit'
 import { useSuchTabs } from '../suchbereich'
+import { t } from '../i18n'
+import { wert } from '../i18n/werte'
 
-const STATUSES = ['', 'Neu', 'Prüfen', 'Beworben', 'Absage', 'Keine Rückmeldung', 'Kein Match', 'Beirat abgelehnt', 'Nicht verfügbar', 'Geparkt']
+const STATUSES = ['', 'Neu', 'Prüfen', 'Beworben', 'Absage', 'Keine Rückmeldung', 'Kein Match', 'Beirat abgelehnt', 'Nicht verfügbar', 'Geparkt'] // i18n-ok: DB-Werte
 const STATUS_REIHENFOLGE = Object.keys(STATUS_FARBEN)
 
 // Überschrift je nach aktivem Drill-down (vom Dashboard verlinkt)
 function heading(sp: URLSearchParams): { title: string; hint?: string } {
-  if (sp.get('statuses')) return { title: 'Laufende Bewerbungen', hint: 'Beworben · Interview · Angebot' }
-  if (sp.get('score')) return { title: sp.get('score') === 'none' ? 'Stellen · ohne Zielstellen-Fit' : `Stellen · Zielstellen-Fit ${sp.get('score')}/5` }
+  if (sp.get('statuses')) return { title: t('jobs:titel.laufend'), hint: t('jobs:titel.laufend_hint') }
+  if (sp.get('score')) return { title: sp.get('score') === 'none' ? t('jobs:titel.ohne_fit') : t('jobs:titel.fit', { score: sp.get('score') }) }
   if (sp.get('situation')) {
     const plan = sp.get('plan')
-    return { title: `Stellen · Situation ${sp.get('situation')}${plan ? ` · Plan ${plan}` : ''}` }
+    return { title: t(plan ? 'jobs:titel.situation_plan' : 'jobs:titel.situation', { situation: wert('situation', sp.get('situation') as string), plan }) }
   }
-  if (sp.get('plan') === 'none') return { title: 'Stellen · ohne Plan-Zuordnung' }
-  if (sp.get('plan')) return { title: `Stellen · Plan ${sp.get('plan')}` }
-  if (sp.get('portal')) return { title: `Stellen · Portal ${sp.get('portal')}` }
-  if (sp.get('availability_status')) return { title: `Beworbene Stellen · ${sp.get('availability_status')}` }
-  if (Number(sp.get('min_score')) >= 4) return { title: 'Top-Zielstellen', hint: 'Zielstellen-Fit ≥ 4' }
-  if (sp.get('status')) return { title: `Stellen · ${sp.get('status')}` }
-  return { title: 'Stellen' }
+  if (sp.get('plan') === 'none') return { title: t('jobs:titel.ohne_plan') }
+  if (sp.get('plan')) return { title: t('jobs:titel.plan', { plan: sp.get('plan') }) }
+  if (sp.get('portal')) return { title: t('jobs:titel.portal', { portal: sp.get('portal') }) }
+  if (sp.get('availability_status')) return { title: t('jobs:titel.verfuegbarkeit', { status: wert('verfuegbarkeit', sp.get('availability_status') as string) }) }
+  if (Number(sp.get('min_score')) >= 4) return { title: t('jobs:titel.top'), hint: t('jobs:titel.top_hint') }
+  if (sp.get('status')) return { title: t('jobs:titel.status', { status: wert('status', sp.get('status') as string) }) }
+  return { title: t('jobs:titel.stellen') }
 }
 
 export default function Jobs() {
@@ -111,19 +113,19 @@ export default function Jobs() {
         <div>
           <h1 className="text-2xl font-bold text-brand-navy">{h.title}</h1>
           <p className="text-sm text-slate-500">
-            {jobs.length} Treffer{h.hint ? ` · ${h.hint}` : ''} · Klick auf eine Zeile öffnet die Details
+            {[t('jobs:treffer', { count: jobs.length }), h.hint, t('jobs:klick_hinweis')].filter(Boolean).join(' · ')}
           </p>
         </div>
         <div className="flex items-center gap-2">
           {filtered && (
             <button onClick={() => setSp(new URLSearchParams(), { replace: true })}
                     className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50">
-              ✕ Filter zurücksetzen
+              {t('jobs:filter_zuruecksetzen')}
             </button>
           )}
           <button onClick={() => nav('/jobs/neu')}
                   className="rounded-lg bg-brand-cyan px-3 py-1.5 text-sm font-medium text-brand-aufAktion hover:bg-brand-cyanHover">
-            + Stelle anlegen
+            {t('jobs:stelle_anlegen')}
           </button>
         </div>
       </div>
@@ -132,60 +134,60 @@ export default function Jobs() {
         <input
           value={q}
           onChange={(e) => upd({ q: e.target.value })}
-          placeholder="Suche Firma / Titel…"
+          placeholder={t('jobs:filter.suche')}
           className="w-56 rounded-lg border border-slate-300 px-3 py-1.5 text-sm focus:border-brand-cyan focus:outline-none"
         />
         <select value={status} onChange={(e) => upd({ status: e.target.value, statuses: '' })} className="rounded-lg border border-slate-300 px-2 py-1.5 text-sm">
-          {STATUSES.map((s) => <option key={s} value={s}>{s || 'Alle Status'}</option>)}
+          {STATUSES.map((s) => <option key={s} value={s}>{s ? wert('status', s) : t('jobs:filter.alle_status')}</option>)}
         </select>
         <select value={tab} onChange={(e) => upd({ tab: e.target.value })} className="rounded-lg border border-slate-300 px-2 py-1.5 text-sm">
-          {tabOptions.map((s) => <option key={s} value={s}>{s || 'Alle Tabs'}</option>)}
+          {tabOptions.map((s) => <option key={s} value={s}>{s ? wert('tab', s) : t('jobs:filter.alle_tabs')}</option>)}
         </select>
         <select value={minScore} onChange={(e) => upd({ min_score: e.target.value === '0' ? '' : e.target.value })} className="rounded-lg border border-slate-300 px-2 py-1.5 text-sm">
-          {[0, 3, 4, 5].map((s) => <option key={s} value={s}>{s ? `Zielstellen-Fit ≥ ${s}` : 'Alle Fit-Werte'}</option>)}
+          {[0, 3, 4, 5].map((s) => <option key={s} value={s}>{s ? t('jobs:filter.fit_min', { wert: s }) : t('jobs:filter.alle_fit')}</option>)}
         </select>
         <div className="ml-auto flex items-center gap-1.5 text-sm text-slate-500">
-          <span>Sortieren:</span>
+          <span>{t('jobs:filter.sortieren')}</span>
           <select value={sort} onChange={(e) => upd({ sort: e.target.value })} className="rounded-lg border border-slate-300 px-2 py-1.5 text-sm">
-            <option value="score">Zielstellen-Fit</option>
-            <option value="found">Datum (neueste zuerst)</option>
-            <option value="company">Firma</option>
-            <option value="status">Status</option>
+            <option value="score">{t('jobs:filter.sort_score')}</option>
+            <option value="found">{t('jobs:filter.sort_found')}</option>
+            <option value="company">{t('jobs:filter.sort_company')}</option>
+            <option value="status">{t('jobs:filter.sort_status')}</option>
           </select>
         </div>
         {statuses && (
           <span className="inline-flex items-center gap-1 rounded-full bg-brand-cyan/15 px-2.5 py-1 text-xs font-medium text-brand-navy">
-            Laufende Bewerbungen
+            {t('jobs:chip.laufend')}
             <button onClick={() => upd({ statuses: '' })} className="text-brand-navy/60 hover:text-brand-navy">✕</button>
           </span>
         )}
         {score && (
           <span className="inline-flex items-center gap-1 rounded-full bg-brand-cyan/15 px-2.5 py-1 text-xs font-medium text-brand-navy">
-            {score === 'none' ? 'ohne Zielstellen-Fit' : `Zielstellen-Fit = ${score}`}
+            {score === 'none' ? t('jobs:chip.ohne_fit') : t('jobs:chip.fit', { score })}
             <button onClick={() => upd({ score: '' })} className="text-brand-navy/60 hover:text-brand-navy">✕</button>
           </span>
         )}
         {situation && (
           <span className="inline-flex items-center gap-1 rounded-full bg-brand-cyan/15 px-2.5 py-1 text-xs font-medium text-brand-navy">
-            Situation: {situation}
+            {t('jobs:chip.situation', { wert: wert('situation', situation) })}
             <button onClick={() => upd({ situation: '' })} className="text-brand-navy/60 hover:text-brand-navy">✕</button>
           </span>
         )}
         {plan && (
           <span className="inline-flex items-center gap-1 rounded-full bg-brand-cyan/15 px-2.5 py-1 text-xs font-medium text-brand-navy">
-            Plan: {plan === 'none' ? 'ohne Zuordnung' : plan}
+            {t('jobs:chip.plan', { wert: plan === 'none' ? t('jobs:chip.plan_ohne') : plan })}
             <button onClick={() => upd({ plan: '' })} className="text-brand-navy/60 hover:text-brand-navy">✕</button>
           </span>
         )}
         {portal && (
           <span className="inline-flex items-center gap-1 rounded-full bg-brand-cyan/15 px-2.5 py-1 text-xs font-medium text-brand-navy">
-            Portal: {portal}
+            {t('jobs:chip.portal', { wert: portal })}
             <button onClick={() => upd({ portal: '' })} className="text-brand-navy/60 hover:text-brand-navy">✕</button>
           </span>
         )}
         {availabilityStatus && (
           <span className="inline-flex items-center gap-1 rounded-full bg-brand-cyan/15 px-2.5 py-1 text-xs font-medium text-brand-navy">
-            Verfügbarkeit: {availabilityStatus}
+            {t('jobs:chip.verfuegbarkeit', { wert: wert('verfuegbarkeit', availabilityStatus) })}
             <button onClick={() => upd({ availability_status: '' })} className="text-brand-navy/60 hover:text-brand-navy">✕</button>
           </span>
         )}
@@ -200,12 +202,12 @@ export default function Jobs() {
             const farbe = STATUS_FARBEN[s] || STATUS_FARBE_UNBEKANNT
             const aktiv = status === s
             const gedimmt = status !== '' && !aktiv
-            const label = anteil >= 10 ? `${s} ${n}` : anteil >= 4 ? `${n}` : ''
+            const label = anteil >= 10 ? `${wert('status', s)} ${n}` : anteil >= 4 ? `${n}` : ''
             return (
               <button
                 key={s}
                 onClick={() => upd({ status: aktiv ? '' : s, statuses: '' })}
-                title={`${s}: ${n} (${Math.round(anteil)} %)`}
+                title={t('jobs:segment_titel', { status: wert('status', s), anzahl: n, prozent: Math.round(anteil) })}
                 style={{
                   flexGrow: n, minWidth: 14,
                   backgroundColor: farbe.bg, color: farbe.text,
@@ -225,21 +227,21 @@ export default function Jobs() {
         <table className="w-full text-sm">
           <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
             <tr>
-              <th className="px-3 py-2">Fit</th>
-              <th className="px-3 py-2">Firma</th>
-              <th className="px-3 py-2">Rolle</th>
-              <th className="px-3 py-2">Ebene</th>
-              <th className="px-3 py-2">Standort</th>
-              <th className="px-3 py-2">Gefunden</th>
-              <th className="px-3 py-2">Status</th>
+              <th className="px-3 py-2">{t('jobs:spalte.fit')}</th>
+              <th className="px-3 py-2">{t('jobs:spalte.firma')}</th>
+              <th className="px-3 py-2">{t('jobs:spalte.rolle')}</th>
+              <th className="px-3 py-2">{t('jobs:spalte.ebene')}</th>
+              <th className="px-3 py-2">{t('jobs:spalte.standort')}</th>
+              <th className="px-3 py-2">{t('jobs:spalte.gefunden')}</th>
+              <th className="px-3 py-2">{t('jobs:spalte.status')}</th>
               <th className="px-3 py-2"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
             {loading ? (
-              <tr><td colSpan={8} className="px-3 py-8 text-center text-slate-400">Lade…</td></tr>
+              <tr><td colSpan={8} className="px-3 py-8 text-center text-slate-400">{t('jobs:lade')}</td></tr>
             ) : jobs.length === 0 ? (
-              <tr><td colSpan={8} className="px-3 py-8 text-center text-slate-400">Keine Treffer</td></tr>
+              <tr><td colSpan={8} className="px-3 py-8 text-center text-slate-400">{t('jobs:keine_treffer')}</td></tr>
             ) : (
               jobs.map((j) => (
                 <tr key={j.id} className="cursor-pointer hover:bg-brand-cyan/5" onClick={() => nav(`/jobs/${j.id}`)}>
@@ -250,11 +252,11 @@ export default function Jobs() {
                     {j.follow_up_date && (
                       <span className={`ml-2 whitespace-nowrap rounded px-1.5 py-0.5 text-[11px] font-medium ${
                         j.follow_up_date <= today ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-700'}`}
-                        title="Follow-up fällig">⏰ {j.follow_up_date}</span>
+                        title={t('jobs:follow_up_faellig')}>⏰ {j.follow_up_date}</span>
                     )}
                     {j.availability_status === 'offline' && (
                       <span className="ml-2 whitespace-nowrap rounded bg-rose-100 px-1.5 py-0.5 text-[11px] font-medium text-rose-700"
-                        title={`Verfügbarkeit geprüft am ${j.availability_checked_at || '–'}`}>⛔ offline</span>
+                        title={t('jobs:verfuegbarkeit_geprueft', { datum: j.availability_checked_at || '–' })}>⛔ {wert('verfuegbarkeit', 'offline')}</span>
                     )}
                     {/* P2-42: dieselben Etiketten wie in Review und Job-Detail (der Hinweis stand im
                         Vermerk, die Liste zeigte ihn bislang nicht). stopPropagation: ein Klick aufs
@@ -266,7 +268,7 @@ export default function Jobs() {
                       </span>
                     )}
                   </td>
-                  <td className="px-3 py-2 text-slate-500">{j.seniority || '–'}</td>
+                  <td className="px-3 py-2 text-slate-500">{j.seniority ? wert('seniority', j.seniority) : '–'}</td>
                   <td className="px-3 py-2 text-slate-500">{j.location || '–'}</td>
                   <td className="px-3 py-2 whitespace-nowrap text-slate-500 tabular-nums">{j.found_date || '–'}</td>
                   <td className="px-3 py-2"><StatusBadge status={j.status} /></td>

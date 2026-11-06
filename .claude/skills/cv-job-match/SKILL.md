@@ -58,20 +58,29 @@ Glaubwürdigkeit der Unterlagen.
 ## Sprachregeln (strikte Trennung, gelten für jeden Schritt)
 
 Die Stellensprache (Schritt 0) bestimmt die Sprache **aller bewerbungsrelevanten Artefakte**. Ein
-englischer Prozess bleibt durchgehend englisch, ein deutscher durchgehend deutsch. Niemals mischen:
+englischer Prozess bleibt durchgehend englisch, ein deutscher durchgehend deutsch, ein französischer,
+italienischer, spanischer oder portugiesischer ebenso. Niemals mischen:
 
 **Folgt der Stellensprache:**
 - Der Input-CV (passende Sprachfassung wählen, siehe Schritt 0)
 - Alle umgeschriebenen XYZ-Bullets und die Summary (Schritt 3): englische Stelle heißt englische Bullets,
-  deutsche Stelle deutsche Bullets
+  deutsche Stelle deutsche Bullets, französische Stelle französische Bullets usw.
 - Die bearbeitete `.docx` (Schritt 4), inklusive Abschnittsüberschriften des CV
 - Die Vorher/Nachher-Zitate im Änderungsprotokoll (Schritt 5): beide Seiten zitieren den CV wörtlich, also
   in dessen Sprache
 
-**Bleibt Deutsch (Sprache des Systems):**
+**Folgt der Ausgabesprache (Vorgabe im Auftrag, ohne Vorgabe Deutsch):**
 - Die Kommunikation im Chat (Zusammenfassung, Klärungsfragen, Einordnung)
 - Erklärende Meta-Texte (Begründungen, Lösungshinweise, Score-Herleitung). CV-Zitate darin bleiben in der
   CV-Sprache.
+
+**Sprachwahl für den Basis-CV.** Der Basis-CV ist `data/cv_basis/base_<sprache>.docx` mit dem kleingeschriebenen
+Kürzel der Stellensprache (`de`, `en`, `fr`, `it`, `es`, `pt`). Bei gemischten Anzeigen zählt die dominante Sprache
+des Fließtexts. Die Stellensprache folgt der Anzeige, nie der Sprache der Oberfläche. Fehlt bei einer französischen,
+italienischen, spanischen oder portugiesischen Stelle die Fassung dieser Sprache: nichts übersetzen, zuerst
+`base_en.docx` nehmen, falls vorhanden, sonst `base_de.docx`, und den Sprachbruch melden. Das Sprachkürzel der
+CV-Version (`language`) wird großgeschrieben angegeben (`DE`, `EN`, `FR`, `IT`, `ES`, `PT`) und nennt die Sprache der
+Fassung, die tatsächlich benutzt wurde.
 
 **Keywords werden NIE übersetzt.** Ein Keyword wird exakt in der Schreibweise eingebaut, in der es in der
 Stellenanzeige steht, auch wenn das in einem deutschen CV ein englischer Begriff ist ("Professional
@@ -83,9 +92,10 @@ Anzeigensprache nehmen.
 
 Der Kandidat ist der Nutzer des Systems. Nichts annehmen, was nicht in seinen Dateien steht:
 
-- **Basis-CV:** `data/cv_basis/base_de.docx` (Deutsch) bzw. `data/cv_basis/base_en.docx` (Englisch). Welche
-  Fassungen es gibt, steht in `config/profil.md` im Abschnitt "Sprachen / CV-Fassungen". Genutzt wird je
-  Lauf **nur eine** Fassung, passend zur Sprache der Stelle (Schritt 0).
+- **Basis-CV:** `data/cv_basis/base_<sprache>.docx`, also `base_de.docx` (Deutsch), `base_en.docx` (Englisch) und,
+  falls vorhanden, `base_fr.docx`, `base_it.docx`, `base_es.docx`, `base_pt.docx`. Welche Fassungen es gibt,
+  steht in `config/profil.md` im Abschnitt "Sprachen / CV-Fassungen" und im Ordner `data/cv_basis/`. Genutzt wird
+  je Lauf **nur eine** Fassung, passend zur Sprache der Stelle (Sprachwahl oben, Schritt 0).
 - **Substanz und Positionierung:** `config/profil_struktur.md` (strukturierter Werdegang, Skills,
   Zertifikate), falls der Aufrufer sie nicht ohnehin mitgibt.
 - **Rahmenbedingungen:** `config/profil.md`, Abschnitte "Harte Rahmenbedingungen" (Region, Umzug,
@@ -95,7 +105,7 @@ Der Kandidat ist der Nutzer des Systems. Nichts annehmen, was nicht in seinen Da
 **Zwei CV-Varianten, am Dateinamen oder an der Angabe des Aufrufers erkennbar:**
 - **Design-Variante** (ohne `_ATS` im Namen): mit Foto und Layout, für menschliche Leser. Hier gilt der
   Bild- und Layout-Erhalt aus Schritt 4 uneingeschränkt.
-- **ATS-Variante** (`_ATS` im Dateinamen, im Projekt auch die Basis-CVs `base_de.docx` und `base_en.docx`
+- **ATS-Variante** (`_ATS` im Dateinamen, im Projekt auch die Basis-CVs `base_<sprache>.docx`
   laut `cv-match`): schlicht, einspaltig, **bereits für ATS-Parser gebaut**. Struktur und Layout sind
   fertig. Der Skill baut hier ausschließlich Text ein (Keywords, XYZ-Bullets) und fasst die Struktur nicht
   an: kein Umbau der Rubriken, keine Änderung der Zeilenfolge einer Station, keine ATS-"Verbesserung".
@@ -114,14 +124,17 @@ Match-Analyse), den entsprechenden Schritt isoliert ausführen.
   nicht selbst und recherchiert nicht im Netz. Ist der Text nur eine Teilquelle (Zusammenfassung, nur Titel
   und Firma), das im Ergebnis ausweisen (Zeile "Quellenlage" in Schritt 6) und den Score entsprechend
   vorsichtig herleiten.
-- **Sprache der Stelle bestimmen** (Deutsch oder Englisch). Bei gemischten Anzeigen (deutscher Text mit
+- **Sprache der Stelle bestimmen** (Deutsch, Englisch, Französisch, Italienisch, Spanisch oder Portugiesisch). Bei
+  gemischten Anzeigen (deutscher Text mit
   englischem Titel oder englischen Fachbegriffen, der Normalfall im DACH-Raum) entscheidet die **dominante
   Sprache des Fließtexts**. Die Stellensprache steuert, welche CV-Fassung als Input dient: deutsche Stelle,
-  deutscher Lebenslauf; englische Stelle, englischer Lebenslauf.
+  deutscher Lebenslauf; englische Stelle, englischer Lebenslauf; ebenso für Französisch, Italienisch, Spanisch
+  und Portugiesisch (`base_<sprache>.docx`, Sprachwahl in den Sprachregeln).
 - **Liegt nur die falsche Sprachfassung vor** (z. B. englische Stelle, aber nur ein deutscher CV): nicht
   stillschweigend weitermachen. Interaktiv fragen, ob die fehlende Fassung als neue Version entstehen soll
   (wahrheitstreue Übersetzung, gleiche Substanz) oder ob die vorhandene bewusst genutzt wird. Ohne
-  Rückkanal: mit der vorhandenen Fassung arbeiten, nichts übersetzen und den Sprachbruch ausdrücklich unter
+  Rückkanal: mit der vorhandenen Fassung arbeiten (bei einer französischen, italienischen, spanischen oder
+  portugiesischen Stelle zuerst die englische, sonst die deutsche), nichts übersetzen und den Sprachbruch ausdrücklich unter
   "Offene Punkte" in Schritt 6 melden. Nur die Analyse (Score, Lücken) darf sprachübergreifend laufen.
 - **Genau einen Lebenslauf** lesen: die zur Stellensprache passende Fassung (Text mit python-docx, siehe
   Schritt 4). Liegt der CV nur als PDF vor, mit dem Lese-Werkzeug der Umgebung lesen (es kann PDF), nicht
@@ -135,7 +148,8 @@ Match-Analyse), den entsprechenden Schritt isoliert ausführen.
 
 ### Schritt 1 – Match-Analyse
 
-Inhalt (ein Ergebnis in Textform, die Gestaltung übernimmt der Aufrufer):
+Inhalt (ein Ergebnis in Textform, die Gestaltung übernimmt der Aufrufer). Aufgerufen aus `cv-match` ist dieses Ergebnis
+kein Abschluss des Laufs: `cv-match` macht danach sofort mit Dashboard und Registrierung weiter.
 
 - **Match-Score 0–100**, gewichtet aus diesen Default-Dimensionen (bei Bedarf an die Stelle anpassen, aber
   die Gewichte offenlegen): fachliche Eignung 35 % · Führung/Scope 25 % · Region/Arbeitsmodell 15 % ·
@@ -191,6 +205,7 @@ selbst eine Kopie anlegen (Python statt `cp`, `cp` ist im Hintergrundlauf nicht 
 ```sh
 ~/.bewerbung_mgmt_venv/bin/python -c "import pathlib, shutil; z = pathlib.Path('data/cv_basis/entwuerfe'); z.mkdir(parents=True, exist_ok=True); shutil.copy('data/cv_basis/base_<lang>.docx', z / '<arbeitsname>.docx')"
 ```
+`<lang>` ist das Kürzel der Fassung, die nach der Sprachwahl benutzt wird (`de`, `en`, `fr`, `it`, `es`, `pt`).
 
 **Ablage nur in einem freigegebenen Ordner:** Standard ist `data/cv_basis/entwuerfe/`. Nennt der Aufrufer
 einen anderen freigegebenen Zielordner (`job-deepdive`: `outputs/cv/`), gilt dieser. Die Oberfläche öffnet
@@ -321,7 +336,7 @@ Pfad der Datei. Soll daraus ein gestalteter Bericht werden, ist das der Weg übe
 - Den Match-Score aus dem Bauch vergeben statt entlang der offengelegten Gewichte.
 - Harte K.-o.-Lücken (Abschluss, Pflicht-Zertifikat) verschweigen oder kaschieren.
 - Sprachen im CV mischen: englische Stelle heißt durchgehend englischer CV samt Bullets und Überschriften,
-  deutsche Stelle durchgehend deutscher CV.
+  deutsche Stelle durchgehend deutscher CV, ebenso für Französisch, Italienisch, Spanisch und Portugiesisch.
 - Keywords aus der Stellenanzeige übersetzen. Sie werden im Original-Wortlaut eingebaut, sonst matcht das
   ATS nicht.
 - Bei fehlender Sprachfassung stillschweigend die falsche verwenden. Interaktiv erst fragen, im

@@ -39,7 +39,7 @@ import contextlib
 import datetime
 import importlib
 
-from app import ki_anbieter, zeit
+from app import ki_anbieter, sprache, zeit
 import json
 import os
 import signal
@@ -51,8 +51,9 @@ from typing import Optional
 
 from sqlmodel import Session, select
 
-from app.db import DATA_DIR, engine
-from app.models import AgentTask, BudgetLimit, SuchEinstellung
+from app.db import DATA_DIR, artefakt_pfad, engine
+from app.models import AgentTask, Application, BudgetLimit, Company, CVVersion, Job, SuchEinstellung
+from app.terminal import tt
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent   # Bewerbung_Mgmt_System/
 SETTINGS_FILE = PROJECT_ROOT / "automation" / "agent_settings.json"
@@ -174,7 +175,9 @@ PROMPTS = {
         "template": (
             "CV-Match für Job {job_id}"
             "\n\nRahmen (Pflicht): Baue Match-Dashboard und CV-Entwurf IMMER neu aus der "
-            "aktuellen Basis-CV-Datei (data/cv_basis/base_de.docx bzw. base_en.docx) — auch "
+            "aktuellen Basis-CV-Datei in der Sprache der Anzeige (data/cv_basis/base_<sprache>.docx "
+            "mit de, en, fr, it, es oder pt; fehlt bei fr, it, es, pt die Fassung dieser Sprache: "
+            "nichts übersetzen, zuerst base_en.docx, sonst base_de.docx, Sprachbruch melden) — auch "
             "wenn für diesen Job bereits Entwürfe oder fertige CV-Versionen existieren (die "
             "Basis kann sich seit deren Erstellung geändert haben, Echtfall 07.08.2026: "
             "v10-Umbau). Vorhandene Versionen erwähnst du in EINEM Satz im Bericht; sie sind "
@@ -622,12 +625,12 @@ def _budget_pruefung(session: Session) -> dict:
 
     verstoss = None
     if anzahl >= lim["max_runs"]:
-        verstoss = f"Tages-Limit von {lim['max_runs']} Läufen erreicht (heute: {anzahl})."
+        verstoss = sprache.tx("Tages-Limit von {limit} Läufen erreicht (heute: {anzahl}).", limit=lim['max_runs'], anzahl=anzahl)
     elif lim["daily"] and ausgegeben >= lim["daily"]:
-        verstoss = (f"Tagesbudget ${lim['daily']:.2f} erreicht (heute: ${ausgegeben:.2f} "
-                    f"in {anzahl} Läufen). Laufende Tasks laufen weiter.")
+        verstoss = sprache.tx("Tagesbudget ${limit} erreicht (heute: ${betrag} in {anzahl} Läufen). Laufende Tasks laufen weiter.",
+                              limit=f"{lim['daily']:.2f}", betrag=f"{ausgegeben:.2f}", anzahl=anzahl)
     elif lim["monthly"] and monat >= lim["monthly"]:
-        verstoss = f"Monatsbudget ${lim['monthly']:.2f} erreicht (Monat bisher: ${monat:.2f})."
+        verstoss = sprache.tx("Monatsbudget ${limit} erreicht (Monat bisher: ${betrag}).", limit=f"{lim['monthly']:.2f}", betrag=f"{monat:.2f}")
 
     if verstoss and lim["enforcement"] == "hart":
         return {"limits": lim, "ausgegeben": ausgegeben, "anzahl": anzahl, "monat": monat,
@@ -752,23 +755,50 @@ HEADLESS_SUFFIX = (
 )
 
 
+# P2-90: Die KI schreibt für den Nutzer in der Sprache der Oberfläche. Die Skills bleiben deutsch, angesagt wird
+# die Sprache hier, an der einzigen Stelle, an der der Prompt entsteht. Bei Deutsch kommt nichts dazu, der Prompt
+# bleibt byte-gleich. Unter ChatGPT umhüllt `ki_anbieter.codex_prompt` das Ergebnis, der Hinweis gilt also auch dort.
+# Ausgenommen: `beirat-persona` schreibt eine Datei mit festen deutschen Überschriften, die das Programm prüft.
+# `profil-einlesen` übernimmt den Text des Nutzers in dessen Sprache.
+_OHNE_AUSGABESPRACHE = {"beirat-persona", "profil-einlesen"}
+SPRACH_HINWEIS_EN = (
+    "\n\nIMPORTANT (output language): The user works in English. The instructions in the skill are in German, but "
+    "everything you write for the user must be in English: reports including all HTML headings and labels, reasons, "
+    "summaries, notes and your whole final message, also when the job posting or CV is in German. That includes any "
+    "concerns at the start and the first status line (the skill gives it in German, such "
+    "as 'CV erstellt — ATS 90 % · EN' or 'CV-Match — 90/100 · EN · Entwurf bereit': write 'CV created — ATS 90 % · EN', "
+    "'CV match — 90/100 · EN · draft ready'). Use the terms in config/glossar_de_en.md. Translate fixed headings from "
+    "the skill's HTML templates; keep the HTML structure and CSS classes exactly as written, and set lang=\"en\"."
+    "\n\nDo not change: (1) CVs, cover letters and email drafts: their language follows the skill's rule (the job "
+    "posting or the incoming email). (2) Values from fixed lists stay exactly as the skill writes them, even in German: "
+    "status, categories, search-area keys, markers, JSON field names, file names. (3) Quotations stay in their "
+    "original language."
+)
+
+
+def _sprach_hinweis(kind: str) -> str:
+    if sprache.aktuell() == "de" or kind in _OHNE_AUSGABESPRACHE:
+        return ""
+    return SPRACH_HINWEIS_EN
+
+
 def build_prompt(kind: str, job_id: Optional[int], params: Optional[dict] = None) -> str:
     spec = PROMPTS.get(kind)
     if not spec:
         erlaubt = ", ".join(sorted(k for k, v in PROMPTS.items() if v.get("headless")))
-        raise PromptError(f"Unbekannte Task-Art '{kind}'. Erlaubt: {erlaubt}")
+        raise PromptError(sprache.tx("Unbekannte Task-Art '{kind}'. Erlaubt: {erlaubt}", kind=kind, erlaubt=erlaubt))
     if not spec.get("headless", False):
-        raise PromptError(f"'{kind}' läuft nicht headless: {spec.get('reason', 'Connector-Abhängigkeit')}")
+        raise PromptError(sprache.tx("'{kind}' läuft nicht headless: {grund}", kind=kind, grund=sprache.uebersetzt(spec.get('reason', 'Connector-Abhängigkeit'))))
     if spec.get("needs_job") and not job_id:
-        raise PromptError(f"'{kind}' braucht eine job_id")
+        raise PromptError(sprache.tx("'{kind}' braucht eine job_id", kind=kind))
     params = params or {}
     for p in spec.get("needs_params", ()):
         if not str(params.get(p, "")).strip():
-            raise PromptError(f"'{kind}' braucht den Parameter '{p}'")
+            raise PromptError(sprache.tx("'{kind}' braucht den Parameter '{parameter}'", kind=kind, parameter=p))
     try:
-        return spec["template"].format(job_id=job_id, **params) + HEADLESS_SUFFIX
+        return spec["template"].format(job_id=job_id, **params) + HEADLESS_SUFFIX + _sprach_hinweis(kind)
     except KeyError as e:
-        raise PromptError(f"'{kind}': fehlender Parameter {e}")
+        raise PromptError(sprache.tx("'{kind}': fehlender Parameter {parameter}", kind=kind, parameter=e))
 
 
 # ── Queue + Worker ────────────────────────────────────────────────────────────────────
@@ -799,9 +829,7 @@ def _update(task_id: int, **fields) -> None:
             s.add(t)
             s.commit()
     except Exception as e:                      # noqa: BLE001 — s. Kommentar oben (P2-1)
-        print(f"[agent-runner] KRITISCH: _update(Task {task_id}, Felder={list(fields)}) "
-              f"fehlgeschlagen: {type(e).__name__}: {e} — Task-Zeile bleibt auf altem Stand",
-              flush=True)
+        print(tt("[agent-runner] KRITISCH: _update(Task {task_id}, Felder={felder}) fehlgeschlagen: {art}: {fehler} — Task-Zeile bleibt auf altem Stand", task_id=task_id, felder=list(fields), art=type(e).__name__, fehler=e), flush=True)
 
 
 def check_env_file() -> list[str]:
@@ -810,7 +838,7 @@ def check_env_file() -> list[str]:
     if not ENV_FILE.exists():
         return warn
     if (ENV_FILE.stat().st_mode & 0o077) != 0:
-        warn.append(f"{ENV_FILE.name}: zu offene Rechte — 'chmod 600 {ENV_FILE}' ausführen")
+        warn.append(tx("{name}: zu offene Rechte — 'chmod 600 {pfad}' ausführen", name=ENV_FILE.name, pfad=ENV_FILE))
     token_seen = False
     prev_was_token = False
     for i, raw in enumerate(ENV_FILE.read_text(encoding="utf-8").splitlines(), 1):
@@ -821,10 +849,11 @@ def check_env_file() -> list[str]:
         if "=" not in line:
             # Häufigster Fehler: das Token wurde beim Kopieren umgebrochen. Die Folgezeile
             # NIE löschen — sie gehört an die vorige angehängt.
-            hint = ("sieht aus wie die umgebrochene FORTSETZUNG der vorigen Token-Zeile — "
-                    "beide Zeilen zu EINER zusammenfügen (nicht löschen!)" if prev_was_token else
-                    "das Token muss als 'CLAUDE_CODE_OAUTH_TOKEN=sk-ant-oat01-…' stehen")
-            warn.append(f"{ENV_FILE.name}:{i}: Zeile ohne 'KEY=WERT' ({len(line)} Zeichen) — {hint}")
+            hint = (tx("sieht aus wie die umgebrochene FORTSETZUNG der vorigen Token-Zeile — "
+                       "beide Zeilen zu EINER zusammenfügen (nicht löschen!)") if prev_was_token else
+                    tx("das Token muss als 'CLAUDE_CODE_OAUTH_TOKEN=sk-ant-oat01-…' stehen"))
+            warn.append(tx("{name}:{zeile}: Zeile ohne 'KEY=WERT' ({zeichen} Zeichen) — {hinweis}",
+                           name=ENV_FILE.name, zeile=i, zeichen=len(line), hinweis=hint))
             continue
         k, v = (p.strip() for p in line.split("=", 1))
         v = v.strip('"').strip("'")
@@ -832,12 +861,14 @@ def check_env_file() -> list[str]:
         if prev_was_token:
             token_seen = True
             if not v.startswith("sk-ant-oat01-"):
-                warn.append(f"{ENV_FILE.name}:{i}: Token beginnt nicht mit 'sk-ant-oat01-' — unvollständig?")
+                warn.append(tx("{name}:{zeile}: Token beginnt nicht mit 'sk-ant-oat01-' — unvollständig?",
+                               name=ENV_FILE.name, zeile=i))
             elif len(v) < 100:
-                warn.append(f"{ENV_FILE.name}:{i}: Token wirkt zu kurz ({len(v)} Zeichen; erwartet ~100+) — "
-                            "beim Kopieren abgeschnitten oder umgebrochen?")
+                warn.append(tx("{name}:{zeile}: Token wirkt zu kurz ({zeichen} Zeichen; erwartet ~100+) — "
+                               "beim Kopieren abgeschnitten oder umgebrochen?",
+                               name=ENV_FILE.name, zeile=i, zeichen=len(v)))
     if not token_seen:
-        warn.append(f"{ENV_FILE.name}: kein CLAUDE_CODE_OAUTH_TOKEN gefunden")
+        warn.append(tx("{name}: kein CLAUDE_CODE_OAUTH_TOKEN gefunden", name=ENV_FILE.name))
     return warn
 
 
@@ -848,7 +879,7 @@ def check_secret_files() -> list[str]:
     for name in ("gmail_credentials.json", "gmail_token.json"):
         p = SECRETS_DIR / name
         if p.exists() and (p.stat().st_mode & 0o077) != 0:
-            warn.append(f"{name}: zu offene Rechte — 'chmod 600 {p}' ausführen")
+            warn.append(tx("{name}: zu offene Rechte — 'chmod 600 {pfad}' ausführen", name=name, pfad=p))
     return warn
 
 
@@ -1010,10 +1041,9 @@ def wirksames_modell(alias) -> str:
         neu = wert not in _RUECKFALL_GELOGGT
         _RUECKFALL_GELOGGT.add(wert)
     if neu:
-        grund = ("gesperrt (GESPERRTE_MODELLE)" if wert.strip().lower() in GESPERRTE_MODELLE
-                 else "unbekannt (nicht in MODELLE)")
-        print(f"[agent-runner] Modell {wert[:40]!r} ist {grund}, es läuft mit {MODELL_STANDARD!r}.",
-              flush=True)
+        grund = (tt("gesperrt (GESPERRTE_MODELLE)") if wert.strip().lower() in GESPERRTE_MODELLE
+                 else tt("unbekannt (nicht in MODELLE)"))
+        print(tt("[agent-runner] Modell {wert!r} ist {grund}, es läuft mit {standard!r}.", wert=wert[:40], grund=grund, standard=MODELL_STANDARD), flush=True)
     return MODELL_STANDARD
 
 
@@ -1147,6 +1177,77 @@ def _spawn_kwargs() -> dict:
     return {"start_new_session": True}
 
 
+def _neuer_als(wert: Optional[str], started) -> bool:
+    """Liegt die Datei `wert` (gespeicherter Pfad) vor und wurde seit dem Start des Laufs geschrieben? Zwei Sekunden
+    Spielraum, weil Dateisysteme Zeitstempel runden."""
+    if not wert:
+        return False
+    pfad = Path(wert) if Path(wert).is_absolute() else artefakt_pfad(wert)
+    if not pfad.is_file():
+        return False
+    geschrieben = datetime.datetime.fromtimestamp(pfad.stat().st_mtime, datetime.timezone.utc).replace(tzinfo=None)
+    return geschrieben >= started - datetime.timedelta(seconds=2)
+
+
+def _pruefe_cv_entwurf(s: Session, job: Job, started) -> Optional[str]:
+    zeilen = s.exec(select(CVVersion).where(CVVersion.job_id == job.id, CVVersion.status == "entwurf",
+                                            CVVersion.created_at >= started)).all()
+    if any(z.match_dashboard_path for z in zeilen):
+        return None
+    return sprache.tx("Der Lauf hat keinen neuen CV-Entwurf mit Match-Dashboard angelegt. Bitte starten Sie ihn erneut.")
+
+
+def _pruefe_cv_fertig(s: Session, job: Job, started) -> Optional[str]:
+    zeilen = s.exec(select(CVVersion).where(CVVersion.job_id == job.id, CVVersion.status == "fertig")).all()
+    if any(_neuer_als(z.file_path, started) for z in zeilen):
+        return None
+    return sprache.tx("Der Lauf hat keinen fertigen Lebenslauf erzeugt. Ist noch kein Entwurf vorhanden, starten Sie zuerst "
+                      "den CV-Match.")
+
+
+def _pruefe_firma(s: Session, job: Job, started) -> Optional[str]:
+    firma = s.get(Company, job.company_id) if job.company_id else None
+    if firma and _neuer_als(firma.fit_analysis_path, started):
+        return None
+    # Ohne Firmeneintrag kann der Skill den Bericht nicht verlinken, die Datei entsteht trotzdem.
+    if not firma and any(_neuer_als(str(p), started) for p in (DATA_DIR / "company_fit").glob("*CompanyFit*.html")):
+        return None
+    return sprache.tx("Der Lauf hat keinen neuen Firmenbericht angelegt. Bitte starten Sie ihn erneut.")
+
+
+def _pruefe_anschreiben(s: Session, job: Job, started) -> Optional[str]:
+    zeilen = s.exec(select(Application).where(Application.job_id == job.id)).all()
+    if any(_neuer_als(z.cover_letter_path, started) for z in zeilen):
+        return None
+    return sprache.tx("Der Lauf hat kein neues Anschreiben angelegt. Bitte starten Sie ihn erneut.")
+
+
+# Arten mit einem festen Ergebnis. Exit-Code 0 und ein Abschlusstext der KI beweisen nicht, dass es entstanden ist: Ein
+# `cv-match` hörte einmal nach dem inneren Skill `cv-job-match` auf und galt als „done“, ohne Entwurf und Dashboard. Weitere
+# Arten nur aufnehmen, wenn jeder erfolgreiche Lauf das Ergebnis schreibt.
+_ERGEBNIS_PRUEFUNG = {
+    "cv-match": _pruefe_cv_entwurf,
+    "cv-erstellen": _pruefe_cv_fertig,
+    "firma-pruefen": _pruefe_firma,
+    "anschreiben-erstellen": _pruefe_anschreiben,
+}
+
+
+def _ergebnis_fehlt(kind: str, job_id: Optional[int], started) -> Optional[str]:
+    """Fehlermeldung, wenn ein Lauf dieser Art sein Ergebnis nicht hinterlassen hat, sonst None. Scheitert die Prüfung
+    selbst, gilt der Lauf als erfolgreich: Die Prüfung darf keinen guten Lauf kippen."""
+    pruefung = _ERGEBNIS_PRUEFUNG.get(kind)
+    if pruefung is None or job_id is None:
+        return None
+    try:
+        with Session(engine) as s:
+            job = s.get(Job, job_id)
+            return pruefung(s, job, started) if job else None
+    except Exception as exc:                          # noqa: BLE001 — darf den Lauf nie kippen
+        print(tt("[agent-runner] WARNUNG: Ergebnisprüfung für {kind} fehlgeschlagen: {fehler}", kind=kind, fehler=exc), flush=True)
+        return None
+
+
 def _kette_vorpruefung(kind: str, task_id: int) -> tuple[bool, str]:
     """P2-79: (läuft der Schritt?, Begründung) für einen Kettenschritt mit `in_kette_nur_wenn`.
 
@@ -1166,8 +1267,7 @@ def _kette_vorpruefung(kind: str, task_id: int) -> tuple[bool, str]:
         faellig, grund = getattr(importlib.import_module(modul), funktion)()
         return bool(faellig), str(grund)
     except Exception as e:                         # noqa: BLE001 — s. Docstring
-        print(f"[agent-runner] WARNUNG: Vorprüfung {spec!r} für Task {task_id} ({kind}) "
-              f"fehlgeschlagen: {type(e).__name__}: {e} — Schritt läuft normal", flush=True)
+        print(tt("[agent-runner] WARNUNG: Vorprüfung {spec!r} für Task {task_id} ({kind}) fehlgeschlagen: {art}: {fehler} — Schritt läuft normal", spec=spec, task_id=task_id, kind=kind, art=type(e).__name__, fehler=e), flush=True)
         return True, ""
 
 
@@ -1186,7 +1286,7 @@ async def _run_task(task_id: int) -> None:
     if chain_id:
         laufen, grund = _kette_vorpruefung(kind, task_id)
         if not laufen:
-            print(f"[agent-runner] Task {task_id} ({kind}): {grund}", flush=True)
+            print(tt("[agent-runner] Task {task_id} ({kind}): {grund}", task_id=task_id, kind=kind, grund=grund), flush=True)
             gestartet = _now()
             _update(task_id, started_at=gestartet)
             _finish(task_id, gestartet, "done", exit_code=0,
@@ -1210,7 +1310,7 @@ async def _run_task(task_id: int) -> None:
         stand = ensure_budget(geld_provider, estimated_cost=0.05)
         if not stand["allowed"]:
             _finish(task_id, _now(), "failed", exit_code=None,
-                    error=f"Budget erschöpft ({geld_provider}): {stand['grund']}")
+                    error=sprache.tx("Budget erschöpft ({anbieter}): {grund}", anbieter=geld_provider, grund=stand['grund']))
             return
 
     log_filename, log_path = neue_log_datei(task_id)
@@ -1244,6 +1344,9 @@ async def _run_task(task_id: int) -> None:
                                                 PROJECT_ROOT, LOG_DIR, SECRETS_DIR)
             else:
                 aufruf = local_cmd or _argv(prompt, kind, modell_fuer_kind(kind))
+                if local_cmd:
+                    # P2-95: Die Ausgabe lokaler Schritte landet im Task-Center, also in der Sprache der Oberfläche.
+                    child_env["BMS_TERMINAL_SPRACHE"] = sprache.aktuell()
             proc = await asyncio.create_subprocess_exec(
                 *aufruf,
                 cwd=str(PROJECT_ROOT),
@@ -1276,11 +1379,11 @@ async def _run_task(task_id: int) -> None:
                 await proc.wait()
                 # KEIN Retry: der Lauf hing. Ein zweiter hängt vermutlich auch — und kostet nochmal.
                 _finish(task_id, started, "failed", exit_code=None,
-                        error=f"Timeout nach {timeout_s}s — Lauf abgebrochen")
+                        error=sprache.tx("Timeout nach {sekunden}s — Lauf abgebrochen", sekunden=timeout_s))
                 return
 
         if _was_cancelled(task_id):
-            _finish(task_id, started, "cancelled", exit_code=rc, error="Vom Nutzer abgebrochen")
+            _finish(task_id, started, "cancelled", exit_code=rc, error=sprache.tx("Vom Nutzer abgebrochen"))
             return
 
         if local_cmd:
@@ -1291,9 +1394,13 @@ async def _run_task(task_id: int) -> None:
                                 "num_turns": 0, "total_cost_usd": 0.0})
             else:
                 _fehlschlag(task_id, kind, started, exit_code=rc, retry_erlaubt=True,
-                            error=letzte or f"Prozess endete mit Exit-Code {rc}")
+                            error=letzte or sprache.tx("Prozess endete mit Exit-Code {code}", code=rc))
         elif rc == 0 and result and not result.get("is_error"):
-            _finish(task_id, started, "done", exit_code=rc, result=result)
+            fehlt = _ergebnis_fehlt(kind, job_id, started)
+            if fehlt:
+                _fehlschlag(task_id, kind, started, exit_code=rc, result=result, retry_erlaubt=True, error=fehlt)
+            else:
+                _finish(task_id, started, "done", exit_code=rc, result=result)
         else:
             sub = ((result or {}).get("subtype") or "").lower()
             if sub in ("abo_limit", "anmeldung"):
@@ -1302,17 +1409,17 @@ async def _run_task(task_id: int) -> None:
             elif "budget" in sub:
                 # KEIN Retry: das Geld ist weg, ein zweiter Lauf reißt dieselbe Grenze.
                 _finish(task_id, started, "failed", exit_code=rc, result=result,
-                        error=f"Budget-Notbremse gegriffen (Limit ${_budget_for(kind)}) — Lauf "
-                              "abgebrochen. Artefakte können unvollständig sein.")
+                        error=sprache.tx("Budget-Notbremse gegriffen (Limit ${limit}) — Lauf abgebrochen. Artefakte "
+                                         "können unvollständig sein.", limit=_budget_for(kind)))
             else:
                 _fehlschlag(task_id, kind, started, exit_code=rc, result=result, retry_erlaubt=True,
-                            error=(result or {}).get("result") or f"Prozess endete mit Exit-Code {rc}")
+                            error=(result or {}).get("result") or sprache.tx("Prozess endete mit Exit-Code {code}", code=rc))
 
     except FileNotFoundError:
         # KEIN Retry: die Binary fehlt auch beim zweiten Versuch.
         fehlt = (local_cmd or [ki_anbieter.CODEX_BIN if chatgpt else CLAUDE_BIN])[0]
         _finish(task_id, started, "failed", exit_code=None,
-                error=f"Binary '{fehlt}' nicht gefunden (PATH des Server-Prozesses prüfen)")
+                error=sprache.tx("Binary '{programm}' nicht gefunden (PATH des Server-Prozesses prüfen)", programm=fehlt))
     except Exception as e:                          # noqa: BLE001 — Runner darf nie sterben
         _fehlschlag(task_id, kind, started, error=f"{type(e).__name__}: {e}", retry_erlaubt=True)
     finally:
@@ -1340,7 +1447,7 @@ def _fehlschlag(task_id: int, kind: str, started, error: str,
         # Wurde der Task zwischenzeitlich abgebrochen, bleibt er abgebrochen — weder Retry noch
         # "failed". Sonst sähe der Nutzer "fehlgeschlagen", obwohl er selbst auf Abbrechen geklickt hat.
         if _was_cancelled(task_id):
-            _finish(task_id, started, "cancelled", exit_code=exit_code, error="Vom Nutzer abgebrochen")
+            _finish(task_id, started, "cancelled", exit_code=exit_code, error=sprache.tx("Vom Nutzer abgebrochen"))
             return
 
         if retry_erlaubt and PROMPTS.get(kind, {}).get("retryable", False):
@@ -1352,19 +1459,16 @@ def _fehlschlag(task_id: int, kind: str, started, error: str,
                     t.started_at = None
                     t.pid = None        # Phase 65: der alte Prozess ist beendet (er ist ja
                                         # gerade gescheitert) — keine veraltete PID stehen lassen
-                    t.error = f"Versuch {t.retry_count} fehlgeschlagen: {str(error)[:300]} — wird wiederholt"
+                    t.error = sprache.tx("Versuch {nummer} fehlgeschlagen: {fehler} — wird wiederholt", nummer=t.retry_count, fehler=str(error)[:300])
                     s.add(t)
                     s.commit()
                     versuch = t.retry_count + 1
-                    print(f"[agent-runner] Task {task_id} ({kind}): Fehlschlag, starte Versuch "
-                          f"{versuch}/{MAX_RETRIES + 1}", flush=True)
+                    print(tt("[agent-runner] Task {task_id} ({kind}): Fehlschlag, starte Versuch {versuch}/{gesamt}", task_id=task_id, kind=kind, versuch=versuch, gesamt=MAX_RETRIES + 1), flush=True)
                     enqueue(task_id)                     # hinten anstellen, blockiert keinen Worker
                     return
         _finish(task_id, started, "failed", exit_code=exit_code, error=str(error)[:2000], result=result)
     except Exception as e:                     # noqa: BLE001 — s. Docstring oben (P2-1)
-        print(f"[agent-runner] KRITISCH: _fehlschlag(Task {task_id}, {kind}) konnte den Fehlerpfad "
-              f"nicht abschließen: {type(e).__name__}: {e} — Task-Zeile bleibt ggf. auf altem Stand",
-              flush=True)
+        print(tt("[agent-runner] KRITISCH: _fehlschlag(Task {task_id}, {kind}) konnte den Fehlerpfad nicht abschließen: {art}: {fehler} — Task-Zeile bleibt ggf. auf altem Stand", task_id=task_id, kind=kind, art=type(e).__name__, fehler=e), flush=True)
 
 
 def _finish(task_id: int, started, status: str, exit_code=None, error=None, result=None) -> None:
@@ -1398,9 +1502,7 @@ def _finish(task_id: int, started, status: str, exit_code=None, error=None, resu
         _release_dependents(task_id, ok=ok)
         _cleanup_logs_gedrosselt()      # Rotation auch im Betrieb (P1-3), gedrosselt s. u.
     except Exception as e:              # noqa: BLE001 — s. Kommentar oben (P2-1)
-        print(f"[agent-runner] KRITISCH: _finish(Task {task_id}, status={status}) fehlgeschlagen: "
-              f"{type(e).__name__}: {e} — Task-Zeile/Kette/Log-Rotation können unvollständig "
-              f"geblieben sein", flush=True)
+        print(tt("[agent-runner] KRITISCH: _finish(Task {task_id}, status={status}) fehlgeschlagen: {art}: {fehler} — Task-Zeile/Kette/Log-Rotation können unvollständig geblieben sein", task_id=task_id, status=status, art=type(e).__name__, fehler=e), flush=True)
 
 
 def _kette_laeuft_weiter(kind: str, status: str) -> bool:
@@ -1430,7 +1532,7 @@ def _release_dependents(task_id: int, ok: bool) -> None:
             for t in nachfolger:
                 t.status = "cancelled"
                 t.finished_at = _now()
-                t.error = f"Kette abgebrochen — vorheriger Schritt (Task {task_id}) war nicht erfolgreich"
+                t.error = sprache.tx("Kette abgebrochen — vorheriger Schritt (Task {task_id}) war nicht erfolgreich", task_id=task_id)
                 s.add(t)
             s.commit()
     if ok:
@@ -1501,8 +1603,7 @@ def shutdown_kill_all() -> None:
     """
     for task_id, proc in list(_procs.items()):
         _kill(proc.pid)
-        print(f"[agent-runner] Shutdown: Task {task_id} (PID {proc.pid}) wird mit dem Server "
-              f"beendet — bei Bedarf nach dem nächsten Start erneut anstoßen", flush=True)
+        print(tt("[agent-runner] Shutdown: Task {task_id} (PID {pid}) wird mit dem Server beendet — bei Bedarf nach dem nächsten Start erneut anstoßen", task_id=task_id, pid=proc.pid), flush=True)
 
 
 # ── Crash-Recovery: Identitätsprüfung + Vier-Fälle-Logik (Phase 65, P1-6) ─────────────
@@ -1555,9 +1656,7 @@ def _prozess_lebt_windows(pid: int) -> bool:
                             capture_output=True, text=True, timeout=5)
         return str(pid) in r.stdout
     except Exception as e:                       # noqa: BLE001 — P1: darf nie nach oben werfen
-        print(f"[agent-runner] WARNUNG: 'tasklist' für PID {pid} fehlgeschlagen: "
-              f"{type(e).__name__}: {e} — PID {pid} sicherheitshalber als LEBEND behandelt",
-              flush=True)
+        print(tt("[agent-runner] WARNUNG: 'tasklist' für PID {pid} fehlgeschlagen: {art}: {fehler} — PID {pid} sicherheitshalber als LEBEND behandelt", pid=pid, art=type(e).__name__, fehler=e), flush=True)
         return True
 
 
@@ -1570,9 +1669,7 @@ def _prozess_kommandozeile(pid: int) -> Optional[str]:
         r = subprocess.run(["ps", "-p", str(pid), "-o", "command="],
                             capture_output=True, text=True, timeout=5)
     except Exception as e:                       # noqa: BLE001 — P1: darf nie nach oben werfen
-        print(f"[agent-runner] WARNUNG: 'ps -p {pid} -o command=' fehlgeschlagen: "
-              f"{type(e).__name__}: {e} — PID {pid} wird sicherheitshalber als NICHT bestätigt "
-              f"behandelt", flush=True)
+        print(tt("[agent-runner] WARNUNG: 'ps -p {pid} -o command=' fehlgeschlagen: {art}: {fehler} — PID {pid} wird sicherheitshalber als NICHT bestätigt behandelt", pid=pid, art=type(e).__name__, fehler=e), flush=True)
         return None
     zeile = r.stdout.strip()
     return zeile or None
@@ -1593,9 +1690,7 @@ def _prozess_startzeit_utc(pid: int) -> Optional[datetime.datetime]:
         struct = time.strptime(zeile, "%a %b %d %H:%M:%S %Y")
         return datetime.datetime.utcfromtimestamp(time.mktime(struct))
     except Exception as e:                       # noqa: BLE001 — P1: darf nie nach oben werfen
-        print(f"[agent-runner] WARNUNG: Startzeit von PID {pid} nicht ermittelbar: "
-              f"{type(e).__name__}: {e} — PID {pid} wird sicherheitshalber als NICHT bestätigt "
-              f"behandelt", flush=True)
+        print(tt("[agent-runner] WARNUNG: Startzeit von PID {pid} nicht ermittelbar: {art}: {fehler} — PID {pid} wird sicherheitshalber als NICHT bestätigt behandelt", pid=pid, art=type(e).__name__, fehler=e), flush=True)
         return None
 
 
@@ -1692,29 +1787,20 @@ def _running_wiederherstellen(s: Session) -> None:
         pid = t.pid
         t.pid = None
         if not pid:
-            t.error = ("Server wurde neu gestartet — keine PID hinterlegt, Prozess konnte nicht "
-                       "geprüft werden")
-            print(f"[agent-runner] Task {t.id} ({t.kind}): 'running' ohne hinterlegte PID nach "
-                  f"Neustart — konnte nicht geprüft werden, als fehlgeschlagen markiert", flush=True)
+            t.error = sprache.tx("Server wurde neu gestartet — keine PID hinterlegt, Prozess konnte nicht geprüft werden")
+            print(tt("[agent-runner] Task {id} ({kind}): 'running' ohne hinterlegte PID nach Neustart — konnte nicht geprüft werden, als fehlgeschlagen markiert", id=t.id, kind=t.kind), flush=True)
         elif not _prozess_lebt(pid):
-            t.error = f"Server wurde neu gestartet — Prozess (PID {pid}) war bereits beendet"
-            print(f"[agent-runner] Task {t.id} ({t.kind}): PID {pid} nach Neustart bereits "
-                  f"beendet — als fehlgeschlagen markiert", flush=True)
+            t.error = sprache.tx("Server wurde neu gestartet — Prozess (PID {pid}) war bereits beendet", pid=pid)
+            print(tt("[agent-runner] Task {id} ({kind}): PID {pid} nach Neustart bereits beendet — als fehlgeschlagen markiert", id=t.id, kind=t.kind, pid=pid), flush=True)
         elif not _ist_unser_prozess(pid, t):
             cmdline = _prozess_kommandozeile(pid) or "(Kommandozeile nicht ermittelbar)"
-            t.error = (f"Server wurde neu gestartet — PID {pid} lebt noch, Identität NICHT "
-                       f"bestätigt (Fremdprozess-Schutz), absichtlich NICHT beendet")
-            print(f"[agent-runner] WARNUNG P1: Task {t.id} ({t.kind}): PID {pid} lebt nach "
-                  f"Neustart, konnte aber NICHT als unser Prozess bestätigt werden "
-                  f"(Kommandozeile: {cmdline!r}) — NICHT beendet, um keinen fremden Prozess zu "
-                  f"treffen. Als fehlgeschlagen markiert; bei Bedarf manuell prüfen: "
-                  f"ps -p {pid} -o command=", flush=True)
+            t.error = sprache.tx("Server wurde neu gestartet — PID {pid} lebt noch, Identität NICHT "
+                                 "bestätigt (Fremdprozess-Schutz), absichtlich NICHT beendet", pid=pid)
+            print(tt("[agent-runner] WARNUNG P1: Task {id} ({kind}): PID {pid} lebt nach Neustart, konnte aber NICHT als unser Prozess bestätigt werden (Kommandozeile: {cmdline!r}) — NICHT beendet, um keinen fremden Prozess zu treffen. Als fehlgeschlagen markiert; bei Bedarf manuell prüfen: ps -p {pid} -o command=", id=t.id, kind=t.kind, pid=pid, cmdline=cmdline), flush=True)
         else:
             _kill(pid)
-            t.error = f"Server wurde neu gestartet — verwaister Prozess (PID {pid}) gefunden und beendet"
-            print(f"[agent-runner] WARNUNG: Task {t.id} ({t.kind}): verwaister Prozess PID {pid} "
-                  f"nach Neustart gefunden und beendet (Identität bestätigt) — als fehlgeschlagen "
-                  f"markiert, bei Bedarf neu starten", flush=True)
+            t.error = sprache.tx("Server wurde neu gestartet — verwaister Prozess (PID {pid}) gefunden und beendet", pid=pid)
+            print(tt("[agent-runner] WARNUNG: Task {id} ({kind}): verwaister Prozess PID {pid} nach Neustart gefunden und beendet (Identität bestätigt) — als fehlgeschlagen markiert, bei Bedarf neu starten", id=t.id, kind=t.kind, pid=pid), flush=True)
         s.add(t)
     s.commit()
 
@@ -1738,9 +1824,7 @@ async def _worker() -> None:
             # "running" hängen) — start_workers() räumt das beim nächsten Serverneustart per
             # Crash-Recovery auf (Status "running" → "failed"). Aus "stiller Totalausfall" wird
             # damit höchstens eine "laut gemeldete Einzeltask-Leiche", nie wieder ein toter Worker.
-            print(f"[agent-runner] KRITISCH: Worker verlor Task {task_id} an "
-                  f"{type(e).__name__}: {e} — Worker läuft weiter, Task-Zeile kann inkonsistent "
-                  f"bleiben bis zum nächsten Serverneustart", flush=True)
+            print(tt("[agent-runner] KRITISCH: Worker verlor Task {task_id} an {art}: {fehler} — Worker läuft weiter, Task-Zeile kann inkonsistent bleiben bis zum nächsten Serverneustart", task_id=task_id, art=type(e).__name__, fehler=e), flush=True)
         finally:
             _queue.task_done()
 
@@ -1761,7 +1845,7 @@ async def cancel(task_id: int) -> bool:
     if proc:
         _kill(proc.pid)                               # _finish() im Worker räumt die Kette ab
     else:
-        _update(task_id, finished_at=_now(), error="Vor dem Start abgebrochen")
+        _update(task_id, finished_at=_now(), error=sprache.tx("Vor dem Start abgebrochen"))
         _release_dependents(task_id, ok=False)
     return True
 
@@ -1774,23 +1858,21 @@ def start_workers() -> None:
     # P2-86: Unter ChatGPT wird der Claude-Schlüssel in agent.env nicht gebraucht, ein Fehlen ist keine Warnung wert.
     env_warnungen = check_env_file() if ki_anbieter.aktiv() == ki_anbieter.CLAUDE else []
     for w in env_warnungen + check_secret_files():
-        print(f"[agent-runner] WARNUNG: {w}", flush=True)
+        print(tt("[agent-runner] WARNUNG: {warnung}", warnung=w), flush=True)
 
     # Guardrails sichtbar machen, statt sie im Code zu verstecken.
     _tb = f"${DAILY_BUDGET_USD:.2f}" if DAILY_BUDGET_USD else "aus"
-    print(f"[agent-runner] Tagesbudget {_tb} · max {MAX_TASKS_PER_DAY} Läufe/Tag · "
-          f"${MAX_BUDGET_USD} je Lauf · {MAX_PARALLEL} parallel", flush=True)
+    print(tt("[agent-runner] Tagesbudget {budget} · max {laeufe} Läufe/Tag · ${je_lauf} je Lauf · {parallel} parallel", budget=_tb, laeufe=MAX_TASKS_PER_DAY, je_lauf=MAX_BUDGET_USD, parallel=MAX_PARALLEL), flush=True)
     entfernt = cleanup_logs()
     tmp_entfernt = cleanup_tmp()        # P2-53
     _LETZTE_ROTATION = time.time()      # Betriebs-Rotation (s. u.) zählt die Stunde ab hier neu
     if entfernt:
-        print(f"[agent-runner] {entfernt} Task-Log(s) älter als {LOG_RETENTION_DAYS} Tage gelöscht", flush=True)
+        print(tt("[agent-runner] {anzahl} Task-Log(s) älter als {tage} Tage gelöscht", anzahl=entfernt, tage=LOG_RETENTION_DAYS), flush=True)
     if tmp_entfernt:
-        print(f"[agent-runner] {tmp_entfernt} Zwischendatei(en) älter als {LOG_RETENTION_DAYS} Tage gelöscht",
-              flush=True)
+        print(tt("[agent-runner] {anzahl} Zwischendatei(en) älter als {tage} Tage gelöscht", anzahl=tmp_entfernt, tage=LOG_RETENTION_DAYS), flush=True)
     hinweis = _backup_hinweis()
     if hinweis:
-        print(f"[agent-runner] Hinweis: {hinweis}", flush=True)
+        print(tt("[agent-runner] Hinweis: {hinweis}", hinweis=hinweis), flush=True)
 
     _queue = asyncio.Queue()
 
@@ -1819,16 +1901,15 @@ def start_workers() -> None:
                 # Vorgänger tot/weg → dieser Kettenschritt läuft nie an. Früher blieb er ewig
                 # 'queued' (als „AKTIV" sichtbar, aber ohne Prozess). Jetzt sauber abbrechen.
                 t.status = "cancelled"
-                t.error = (f"Kette abgebrochen: Vorgänger #{t.depends_on} ist "
-                           f"{dep.status if dep else 'nicht mehr vorhanden'} (Server-Neustart)")
+                t.error = sprache.tx("Kette abgebrochen: Vorgänger #{vorgaenger} ist {zustand} (Server-Neustart)", vorgaenger=t.depends_on,
+                                     zustand=sprache.uebersetzt(dep.status) if dep else sprache.tx("nicht mehr vorhanden"))
                 t.finished_at = _now()
                 s.add(t)
                 verwaist += 1
             # sonst (dep noch 'queued') stehen lassen — der Vorgänger weckt ihn beim Fertigwerden.
         s.commit()
         if verwaist:
-            print(f"[agent-runner] {verwaist} verwaiste Ketten-Task(s) nach Neustart abgebrochen "
-                  f"(toter Vorgänger)", flush=True)
+            print(tt("[agent-runner] {anzahl} verwaiste Ketten-Task(s) nach Neustart abgebrochen (toter Vorgänger)", anzahl=verwaist), flush=True)
 
     for tid in pending:
         _queue.put_nowait(tid)
@@ -1924,8 +2005,7 @@ def cleanup_tmp(ordner: Optional[list] = None) -> int:
         with Session(engine) as s:
             geschuetzt = {os.path.realpath(artefakt_pfad(pfad)) for (_, _, _, pfad) in _alle_referenzen(s)}
     except Exception as exc:                               # noqa: BLE001
-        print(f"[agent-runner] WARNUNG: Zwischendateien nicht aufgeräumt, Verweisliste fehlt ({exc})",
-              flush=True)
+        print(tt("[agent-runner] WARNUNG: Zwischendateien nicht aufgeräumt, Verweisliste fehlt ({fehler})", fehler=exc), flush=True)
         return 0
     grenze = time.time() - LOG_RETENTION_DAYS * 86400
     geloescht = 0

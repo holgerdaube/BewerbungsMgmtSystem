@@ -1,0 +1,73 @@
+{
+  "seite": {
+    "titel": "Application Advisory Board",
+    "einleitung": "Seven fictional board members with different areas of expertise debate your question live and respond to each other's contributions. {{vorsitz}} moderates and closes with a synthesis. To find out whether it is worth applying for a particular job, use “Check job (Advisory Board)” in the job's “Create documents” card."
+  },
+  "vorsitz": {
+    "der": "The chair",
+    "den": "the chair"
+  },
+  "schluessel": {
+    "titel": "🔑 Keys & engine",
+    "abo_chatgpt_ok": "ChatGPT subscription ✓ (Codex found)",
+    "abo_chatgpt_fehlt": "ChatGPT subscription not found",
+    "abo_claude_ok": "Claude subscription ✓ (works without a key)",
+    "abo_claude_fehlt": "Claude subscription not found",
+    "anthropic_gesetzt": "Anthropic key ✓ {{maske}}",
+    "anthropic_leer": "Anthropic key –",
+    "openai_gesetzt": "OpenAI key ✓ {{maske}}",
+    "openai_leer": "OpenAI key –",
+    "text_chatgpt": "Without a key, the Advisory Board debates through your ChatGPT subscription (Codex), so <b>no key is needed</b>. An OpenAI key unlocks OpenAI as a separate engine and is billed separately through the OpenAI API. The key is stored only on this computer, outside the program folder. Leave a field empty to keep the saved key unchanged.",
+    "text_claude": "Without a key, the Advisory Board debates through your Claude subscription, so <b>no key is needed</b>. An Anthropic key entered here replaces the subscription, and an OpenAI key unlocks OpenAI as an engine. The keys are stored only on this computer, outside the program folder. Leave a field empty to keep the saved key unchanged.",
+    "placeholder_anthropic": "Anthropic key",
+    "placeholder_openai": "OpenAI key (sk-…)",
+    "speichern": "Save",
+    "gespeichert": "Saved. The keys are stored only on this computer, outside the program folder."
+  },
+  "formular": {
+    "titel": "New debate",
+    "thema_placeholder": "Topic / question for the Advisory Board *",
+    "kontext_placeholder": "Additional context (job, company, CV version, background …)",
+    "min_beitraege": "Minimum contributions",
+    "motor": "Engine",
+    "motor_chatgpt": "ChatGPT (subscription)",
+    "motor_claude": "Claude (subscription or key)",
+    "motor_openai": "OpenAI (key required)",
+    "chatgpt_hinweis": "With ChatGPT, each contribution appears only once it is finished, not word by word.",
+    "vorsitz_waehlt": "{{vorsitz}} chooses the board members",
+    "starten": "▶ Start debate",
+    "laeuft": "Debate running…",
+    "stoppen": "■ Stop (→ synthesis)",
+    "mind_zwei": "Select at least two board members or let {{vorsitz}} choose."
+  },
+  "fortschritt": "Contribution <b>{{nr}}</b> · minimum {{min}} · maximum {{max}}",
+  "start_fehlgeschlagen": "Could not start",
+  "archiv": {
+    "titel": "Earlier debates",
+    "beitraege_one": "{{count}} contribution",
+    "beitraege_other": "{{count}} contributions"
+  },
+  "live": {
+    "vorsitz": "Chair",
+    "enthaltung": "Abstained",
+    "beitrag_nr": "Contribution {{nr}}",
+    "schreibt": "writing…",
+    "synthese": "📋 Synthesis",
+    "entsteht": "in progress…",
+    "abstimmung_start": "Vote — all 7 board members rate independently …"
+  },
+  "check": {
+    "laeuft": "⏳ Board is checking…",
+    "start": "Starting…",
+    "label": "▶ Check job (Advisory Board)"
+  },
+  "wert": {
+    "fertig": "finished",
+    "fehler": "error",
+    "abgebrochen": "cancelled",
+    "läuft": "running",
+    "Bewerben": "Apply",
+    "Bedingt": "Conditional",
+    "Nicht": "Don't apply"
+  }
+}

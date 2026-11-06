@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { Trans } from 'react-i18next'
+import { t } from '../i18n'
 import { api } from '../api'
 import BeiratLive from './BeiratLive'
 
@@ -27,7 +29,7 @@ export default function BeiratCheckButton({ jobId, onFinished, subtle, label }: 
       const r = await api<any>('/beirat/stellen-check', { method: 'POST', body: JSON.stringify({ job_id: jobId }) })
       setDebatteId(r.id); setLaeuft(true)
     } catch (e: any) {
-      setFehler(e?.message || 'Start fehlgeschlagen')
+      setFehler(e?.message || t('beirat:start_fehlgeschlagen'))
     } finally {
       setBusy(false)
     }
@@ -39,10 +41,10 @@ export default function BeiratCheckButton({ jobId, onFinished, subtle, label }: 
         className={subtle
           ? 'whitespace-nowrap rounded-lg border border-brand-cyan/40 px-3 py-1.5 text-xs font-medium text-brand-navy transition hover:bg-brand-cyan/10 disabled:cursor-not-allowed disabled:opacity-50'
           : 'w-full rounded-lg bg-brand-cyan px-3 py-2 text-sm font-semibold text-brand-aufAktion transition hover:bg-brand-cyanHover disabled:cursor-not-allowed disabled:opacity-50'}>
-        {laeuft ? '⏳ Beirat prüft…' : busy ? 'Starte…' : (label || '▶ Stelle prüfen (Beirat)')}
+        {laeuft ? t('beirat:check.laeuft') : busy ? t('beirat:check.start') : (label || t('beirat:check.label'))}
       </button>
       {laeuft && fortschritt && (
-        <div className="text-xs text-slate-500">Beitrag <b>{fortschritt.nr}</b> · Minimum {fortschritt.min} · Obergrenze {fortschritt.max}</div>
+        <div className="text-xs text-slate-500"><Trans i18nKey="beirat:fortschritt" values={{ nr: fortschritt.nr, min: fortschritt.min, max: fortschritt.max }} components={{ b: <b /> }} /></div>
       )}
       {debatteId && laeuft && (
         <BeiratLive

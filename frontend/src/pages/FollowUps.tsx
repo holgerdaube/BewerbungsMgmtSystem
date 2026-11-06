@@ -4,17 +4,19 @@ import { api, type FollowUp } from '../api'
 import { ScoreBadge, StatusBadge, CopyChip } from '../components/ui'
 import { isoTag } from '../zeit'
 import { useProfilAdresse, mapsRouteUrl } from '../profil'
+import { t } from '../i18n'
 
 function daysLabel(dateStr: string, today: string): string {
   const d = Math.round((new Date(dateStr).getTime() - new Date(today).getTime()) / 86400000)
-  if (d === 0) return 'heute fällig'
-  if (d < 0) return `${-d} Tag${d === -1 ? '' : 'e'} überfällig`
-  if (d === 1) return 'morgen'
-  return `in ${d} Tagen`
+  if (d === 0) return t('followups:tage.heute')
+  if (d < 0) return t('followups:tage.ueberfaellig', { count: -d })
+  if (d === 1) return t('followups:tage.morgen')
+  return t('followups:tage.in_tagen', { count: d })
 }
 
 function Row({ f, today }: { f: FollowUp; today: string }) {
   const nav = useNavigate()
+  const nachfassPhrase = t('common:ausloeser.nachfass', { id: f.id })
   return (
     <div onClick={() => nav(`/jobs/${f.id}`)}
          className="flex cursor-pointer items-start gap-3 border-b border-slate-100 px-4 py-3 last:border-0 hover:bg-brand-cyan/5">
@@ -25,13 +27,13 @@ function Row({ f, today }: { f: FollowUp; today: string }) {
           <span className="text-slate-500">· {f.title}</span>
           <StatusBadge status={f.status} />
         </div>
-        {f.next_step && <div className="mt-0.5 text-sm text-slate-700"><span className="text-slate-400">Nächster Schritt:</span> {f.next_step}</div>}
+        {f.next_step && <div className="mt-0.5 text-sm text-slate-700"><span className="text-slate-400">{t('followups:naechster_schritt')}</span> {f.next_step}</div>}
         {f.notes && <div className="mt-0.5 truncate text-xs text-slate-400">{f.notes}</div>}
       </div>
       <div className="shrink-0 text-right">
         <div className="text-sm font-medium tabular-nums text-slate-700">{f.follow_up_date}</div>
         <div className={`text-xs ${f.overdue ? 'font-semibold text-rose-600' : 'text-slate-400'}`}>{daysLabel(f.follow_up_date, today)}</div>
-        <div className="mt-1.5"><CopyChip phrase={`Nachfass-Entwurf für Job ${f.id}`} label="✉️ Nachfass" /></div>
+        <div className="mt-1.5"><CopyChip phrase={nachfassPhrase} label={t('followups:nachfass')} /></div>
       </div>
     </div>
   )
@@ -52,7 +54,7 @@ export default function FollowUps() {
     api<any[]>('/upcoming-interviews').then(setGespraeche).catch(() => {})
   }, [])
 
-  if (!items) return <div className="text-slate-400">Lade…</div>
+  if (!items) return <div className="text-slate-400">{t('followups:lade')}</div>
   const overdue = items.filter((f) => f.overdue)
   const upcoming = items.filter((f) => !f.overdue)
   const nOverdue = netzwerk.filter((n) => n.overdue)
@@ -61,16 +63,16 @@ export default function FollowUps() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-2xl font-bold text-brand-navy">Follow-ups</h1>
+        <h1 className="text-2xl font-bold text-brand-navy">{t('common:nav.followups')}</h1>
         <p className="text-sm text-slate-500">
-          Fällige nächste Schritte &amp; anstehende Gespräche · Fälligkeit setzt du im Job-Detail · ✉️ kopiert den Nachfass-Auslöser
+          {t('followups:untertitel')}
         </p>
       </div>
 
       {gespraeche.length > 0 && (
         <div className="rounded-xl border border-indigo-200 bg-white shadow-sm">
           <div className="border-b border-indigo-100 bg-indigo-50/60 px-4 py-2.5">
-            <h3 className="text-sm font-semibold text-indigo-800">🎙️ Anstehende Gespräche ({gespraeche.length})</h3>
+            <h3 className="text-sm font-semibold text-indigo-800">{t('followups:gespraeche.titel', { anzahl: gespraeche.length })}</h3>
           </div>
           {gespraeche.map((g) => (
             <div key={g.id} onClick={() => nav(`/jobs/${g.job_id}`)}
@@ -79,20 +81,20 @@ export default function FollowUps() {
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="font-medium text-brand-navy">{g.company_name || '–'}</span>
                   <span className="text-slate-500">· {g.title}</span>
-                  <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-medium text-indigo-800">Runde {g.runde} · {g.art || 'Gespräch'}</span>
+                  <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-medium text-indigo-800">{t('followups:gespraeche.runde', { runde: g.runde, art: g.art || t('followups:gespraeche.gespraech') })}</span>
                 </div>
                 {g.interviewer && <div className="mt-0.5 text-xs text-slate-500">{g.interviewer}</div>}
                 <div className="mt-1 flex flex-wrap gap-2 text-xs" onClick={(e) => e.stopPropagation()}>
-                  {g.prep_path && <a href={`/api/artifact?path=${encodeURIComponent(g.prep_path)}`} className="text-brand-cyan hover:underline">📋 Briefing</a>}
+                  {g.prep_path && <a href={`/api/artifact?path=${encodeURIComponent(g.prep_path)}`} className="text-brand-cyan hover:underline">{t('followups:gespraeche.briefing')}</a>}
                   {g.location && !/remote/i.test(g.location) && (
                     <a href={mapsRouteUrl(adresse, g.location)}
-                       target="_blank" rel="noreferrer" className="text-brand-cyan hover:underline" title="Route von zu Hause (Google Maps)">🗺️ Route</a>
+                       target="_blank" rel="noreferrer" className="text-brand-cyan hover:underline" title={t('followups:gespraeche.route_titel')}>{t('followups:gespraeche.route')}</a>
                   )}
                 </div>
               </div>
               <div className="shrink-0 text-right">
                 <div className="text-sm font-medium tabular-nums text-slate-700">{g.scheduled_at ? g.scheduled_at.replace('T', ' ') : '—'}</div>
-                {!g.scheduled_at && <div className="text-xs text-amber-600">Termin fehlt — im Job-Detail setzen</div>}
+                {!g.scheduled_at && <div className="text-xs text-amber-600">{t('followups:gespraeche.termin_fehlt')}</div>}
               </div>
             </div>
           ))}
@@ -101,8 +103,7 @@ export default function FollowUps() {
 
       {items.length === 0 && netzwerk.length === 0 ? (
         <div className="rounded-xl border border-slate-200 bg-white p-8 text-center text-slate-400 shadow-sm">
-          Noch keine Follow-ups gesetzt. Öffne eine Stelle (Fälligkeitsdatum unter „Nächste Schritte &amp; Follow-up")
-          oder setze bei einem Netzwerk-Kontakt eine „Fällig am"-Aktion.
+          {t('followups:leer')}
         </div>
       ) : (
         <>
@@ -110,19 +111,19 @@ export default function FollowUps() {
             <>
               <div className="rounded-xl border border-rose-200 bg-white shadow-sm">
                 <div className="flex items-center justify-between border-b border-rose-100 bg-rose-50/60 px-4 py-2.5">
-                  <h3 className="text-sm font-semibold text-rose-700">🔴 Stellen — überfällig &amp; heute ({overdue.length})</h3>
+                  <h3 className="text-sm font-semibold text-rose-700">{t('followups:stellen.ueberfaellig', { anzahl: overdue.length })}</h3>
                 </div>
                 {overdue.length === 0
-                  ? <div className="px-4 py-6 text-center text-sm text-slate-400">Nichts überfällig — sauber. 👍</div>
+                  ? <div className="px-4 py-6 text-center text-sm text-slate-400">{t('followups:stellen.nichts_ueberfaellig')}</div>
                   : overdue.map((f) => <Row key={f.id} f={f} today={today} />)}
               </div>
 
               <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
                 <div className="flex items-center justify-between border-b border-slate-100 px-4 py-2.5">
-                  <h3 className="text-sm font-semibold text-brand-navy">⏳ Stellen — anstehend ({upcoming.length})</h3>
+                  <h3 className="text-sm font-semibold text-brand-navy">{t('followups:stellen.anstehend', { anzahl: upcoming.length })}</h3>
                 </div>
                 {upcoming.length === 0
-                  ? <div className="px-4 py-6 text-center text-sm text-slate-400">Keine anstehenden Follow-ups.</div>
+                  ? <div className="px-4 py-6 text-center text-sm text-slate-400">{t('followups:stellen.keine_anstehend')}</div>
                   : upcoming.map((f) => <Row key={f.id} f={f} today={today} />)}
               </div>
             </>
@@ -131,7 +132,7 @@ export default function FollowUps() {
           {netzwerk.length > 0 && (
             <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
               <div className="border-b border-slate-100 px-4 py-2.5">
-                <h3 className="text-sm font-semibold text-brand-navy">🤝 Netzwerk-Aktionen ({netzwerk.length})</h3>
+                <h3 className="text-sm font-semibold text-brand-navy">{t('followups:netzwerk.titel', { anzahl: netzwerk.length })}</h3>
               </div>
               {[...nOverdue, ...nUpcoming].map((n) => (
                 <div key={n.id} onClick={() => nav('/netzwerk')}
@@ -141,7 +142,7 @@ export default function FollowUps() {
                       <span className="font-medium text-brand-navy">{n.name || '–'}</span>
                       {n.unternehmen && <span className="text-slate-500">· {n.unternehmen}</span>}
                     </div>
-                    {n.next_action && <div className="mt-0.5 text-sm text-slate-700"><span className="text-slate-400">Nächste Aktion:</span> {n.next_action}</div>}
+                    {n.next_action && <div className="mt-0.5 text-sm text-slate-700"><span className="text-slate-400">{t('followups:netzwerk.naechste_aktion')}</span> {n.next_action}</div>}
                   </div>
                   <div className="shrink-0 text-right">
                     <div className="text-sm font-medium tabular-nums text-slate-700">{n.next_action_date}</div>

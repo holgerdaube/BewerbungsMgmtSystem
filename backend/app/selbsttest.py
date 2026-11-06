@@ -22,6 +22,8 @@ Zwei Pruefungen:
 """
 import sys
 
+from app.terminal import tt
+
 
 def selbsttest() -> list[str]:
     """Gibt die Liste der fehlenden Spalten zurueck (leer = bestanden). Import-/Syntaxfehler
@@ -46,12 +48,12 @@ def main() -> int:
     try:
         fehlende = selbsttest()
     except Exception as exc:  # Import-/Syntaxfehler/DB-Fehler -- Ursache fuer den Kunden lesbar machen
-        print(f"Selbsttest fehlgeschlagen: {type(exc).__name__}: {exc}")
+        print(tt("Selbsttest fehlgeschlagen: {art}: {fehler}", art=type(exc).__name__, fehler=exc))
         return 1
     if fehlende:
-        print("Selbsttest fehlgeschlagen. Fehlende Spalten: " + ", ".join(fehlende))
+        print(tt("Selbsttest fehlgeschlagen. Fehlende Spalten: {spalten}", spalten=", ".join(fehlende)))
         return 1
-    print("Selbsttest bestanden")
+    print(tt("Selbsttest bestanden"))
     return 0
 
 

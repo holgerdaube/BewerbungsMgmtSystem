@@ -43,6 +43,7 @@ aus `pipeline.coach_settings`.
 """
 from fastapi import APIRouter, HTTPException
 
+from app.sprache import tx
 from pipeline import coach_settings
 
 router = APIRouter(prefix="/api/settings/coach", tags=["coach-settings"])
@@ -92,21 +93,21 @@ def get_coach_settings():
 def put_coach_settings(payload: dict):
     unbekannt = set(payload) - _EDITIERBARE_FELDER
     if unbekannt:
-        raise HTTPException(422, f"Nicht editierbare Felder: {', '.join(sorted(unbekannt))}")
+        raise HTTPException(422, tx("Nicht editierbare Felder: {felder}", felder=", ".join(sorted(unbekannt))))
 
     site_url = str(payload.get("site_url") or "").strip()
     if site_url and not site_url.startswith("https://"):
-        raise HTTPException(422, "Basic-Auth über HTTP würde das Passwort im Klartext "
-                                  "übertragen — die Adresse muss mit https:// beginnen.")
+        raise HTTPException(422, tx("Basic-Auth über HTTP würde das Passwort im Klartext "
+                                    "übertragen — die Adresse muss mit https:// beginnen."))
     site_url = site_url.rstrip("/")
 
     sftp_dir = str(payload.get("sftp_dir") or "").strip()
     if sftp_dir and not sftp_dir.startswith("/"):
-        raise HTTPException(422, "sftp_dir muss ein absoluter Serverpfad sein (beginnend mit '/').")
+        raise HTTPException(422, tx("sftp_dir muss ein absoluter Serverpfad sein (beginnend mit '/')."))
 
     authuserfile = str(payload.get("authuserfile") or "").strip()
     if authuserfile and not authuserfile.startswith("/"):
-        raise HTTPException(422, "authuserfile muss ein absoluter Serverpfad sein (beginnend mit '/').")
+        raise HTTPException(422, tx("authuserfile muss ein absoluter Serverpfad sein (beginnend mit '/')."))
 
     # Ab hier wird die gespeicherte Konfiguration gebraucht (Vergleichsbasis fuer
     # coach_user/sftp_password) -- reiner Lesezugriff, kein Seiteneffekt.
@@ -118,8 +119,8 @@ def put_coach_settings(payload: dict):
     coach_password_mitgeschickt = coach_password_roh is not None and str(coach_password_roh).strip() != ""
 
     if coach_user != alter_coach_user and not coach_password_mitgeschickt:
-        raise HTTPException(422, "Benutzername geändert — bitte auch ein Passwort setzen, "
-                                  "sonst passt die hinterlegte Zugangsdatei nicht mehr.")
+        raise HTTPException(422, tx("Benutzername geändert — bitte auch ein Passwort setzen, "
+                                    "sonst passt die hinterlegte Zugangsdatei nicht mehr."))
 
     neues_sftp_passwort = payload.get("sftp_password")
     if neues_sftp_passwort is not None and str(neues_sftp_passwort).strip():
@@ -152,7 +153,7 @@ def put_coach_settings(payload: dict):
     if neue_settings["aktiv"]:
         fehlend = coach_settings.fehlende_felder(neue_settings)
         if fehlend:
-            raise HTTPException(422, f"Zum Aktivieren fehlen noch: {', '.join(fehlend)}")
+            raise HTTPException(422, tx("Zum Aktivieren fehlen noch: {felder}", felder=", ".join(fehlend)))
 
     coach_settings.save_settings(neue_settings)
     return _out(neue_settings)
@@ -178,7 +179,7 @@ def test_coach_settings(payload: dict | None = None):
 
     ziel_dir = str(test_settings.get("sftp_dir") or "").strip()
     if not ziel_dir:
-        raise HTTPException(400, "sftp_dir fehlt — bitte zuerst das Zielverzeichnis eintragen.")
+        raise HTTPException(400, tx("sftp_dir fehlt — bitte zuerst das Zielverzeichnis eintragen."))
 
     try:
         ausgabe = coach_settings.sftp_lauf(test_settings, [f"cls -1 {ziel_dir}"])
@@ -186,8 +187,9 @@ def test_coach_settings(payload: dict | None = None):
         raise HTTPException(400, coach_settings.ohne_geheimnisse(str(exc), test_settings))
 
     anzahl = len([zeile for zeile in ausgabe.splitlines() if zeile.strip()])
-    stand = "leer" if anzahl == 0 else f"{anzahl} Einträge"
-    return {"ok": True, "meldung": f"Verbunden. Zielverzeichnis {ziel_dir} erreichbar ({stand})."}
+    stand = tx("leer") if anzahl == 0 else tx("{anzahl} Einträge", anzahl=anzahl)
+    return {"ok": True, "meldung": tx("Verbunden. Zielverzeichnis {ziel_dir} erreichbar ({stand}).",
+                                      ziel_dir=ziel_dir, stand=stand)}
 
 
 @router.post("/serverpfad")

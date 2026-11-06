@@ -44,6 +44,7 @@ CLI (aus backend/):
           Schreibzugriff. Exit-Code 1 bei Befunden, 0 sonst (Muster `report_check.main`).
 """
 import datetime
+import functools
 import json
 import re
 import sys
@@ -60,7 +61,8 @@ from app.models import AgentTask, Job, JobLog
 # FRÜHEREN, freihändig geschriebenen Snapshots in reinen Text.
 from pipeline.htmltext import entkleiden
 from app.favicon import favicon_link
-from pipeline.bericht_stil import DRUCK_SEITENFARBE_BEHALTEN, bericht_css
+from app.sprache import datum, html_lang, tx, uebersetzt
+from pipeline.bericht_stil import DRUCK_SEITENFARBE_BEHALTEN, bericht_css, fassungen
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent  # Bewerbung_Mgmt_System/
 
@@ -111,13 +113,13 @@ def _meta_spalten(job: Job) -> list:
     spalten = []
     ort_modell = " · ".join(t for t in (job.location, job.work_model) if t)
     if ort_modell:
-        spalten.append(("Ort / Modell", ort_modell))
+        spalten.append((tx("Ort / Modell"), ort_modell))
     if job.salary:
-        spalten.append(("Gehalt", job.salary))
+        spalten.append((tx("Gehalt"), job.salary))
     if job.published_date:
-        spalten.append(("Veröffentlicht", job.published_date))
+        spalten.append((tx("Veröffentlicht"), job.published_date))
     if job.url:
-        spalten.append(("Original-URL", f'<a href="{_esc(job.url)}" target="_blank" rel="noreferrer">{_esc(job.url)}</a>'))
+        spalten.append((tx("Original-URL"), f'<a href="{_esc(job.url)}" target="_blank" rel="noreferrer">{_esc(job.url)}</a>'))
     return spalten
 
 
@@ -136,13 +138,13 @@ NICHT_PRUEFBAR_BEFUNDE = {"NICHT_PRUEFBAR", "LOGIN_WALL"}
 def _badge(hat_text: bool, tot: bool = False, nicht_pruefbar: bool = False) -> tuple:
     """(Label, CSS-Farbklasse fürs .dot). Nie beschönigen — Design-Entscheidung 4."""
     if tot:
-        return ("rot", "Anzeige zum Nachzieh-Zeitpunkt nicht mehr abrufbar")
+        return ("rot", tx("Anzeige zum Nachzieh-Zeitpunkt nicht mehr abrufbar"))
     if nicht_pruefbar:
-        return ("amber", "Nicht prüfbar (Bot-Schutz/Login-Wall beim Nachzieh-Lauf) — "
-                          "dadurch NICHT als tot bestätigt, Status bleibt offen")
+        return ("amber", tx("Nicht prüfbar (Bot-Schutz/Login-Wall beim Nachzieh-Lauf) — "
+                            "dadurch NICHT als tot bestätigt, Status bleibt offen"))
     if hat_text:
-        return ("grün", "Original automatisch beim Suchlauf abgerufen (mechanischer Live-Check)")
-    return ("amber", "Teilquelle: Suchlauf-Record (nur Metadaten, kein Anzeigentext)")
+        return ("grün", tx("Original automatisch beim Suchlauf abgerufen (mechanischer Live-Check)"))
+    return ("amber", tx("Teilquelle: Suchlauf-Record (nur Metadaten, kein Anzeigentext)"))
 
 
 # ── Phase 79: Vollversion-Gliederung (Entscheidung 1 der Spec) ─────────────────────────────
@@ -170,17 +172,21 @@ _QUELLE_LABEL = {"gruen": "grün", "amber": "amber", "rot": "rot"}
 # .dot-Klassen wie im Company-Fit-Kopf; Schlüssel ist das DARSTELLUNGS-Label (auch von
 # _badge() geliefert), Fallback grau für unbekannte Alt-Labels.
 _QUELLE_DOT = {"grün": "green", "amber": "amber", "rot": "red"}
-_QUELLE_TEXT = {
-    "gruen": "Original beim Firma-Prüfungslauf abgerufen",
-    "amber": "Teilquelle beim Firma-Prüfungslauf (kein wörtlicher Originaltext)",
-    "rot": "Anzeige beim Firma-Prüfungslauf nicht abrufbar",
-}
 
-_FOOTER_HINWEIS_BASIS = "Automatisch bei Erfassung gesichert — Firma-Prüfung ausstehend"
-# Entscheidung 4 der Spec: sichtbarer Ausfall statt stiller Basis-Version — ein firma-pruefen-
+
+def _quelle_text(quelle: str) -> str:
+    """Anzeigetext der Quellen-Ampel in der Sprache, die beim Erzeugen gilt (nie beim Import)."""
+    return {
+        "gruen": tx("Original beim Firma-Prüfungslauf abgerufen"),
+        "amber": tx("Teilquelle beim Firma-Prüfungslauf (kein wörtlicher Originaltext)"),
+        "rot": tx("Anzeige beim Firma-Prüfungslauf nicht abrufbar"),
+    }[quelle]
+
+
+# Footer-Hinweise (Entscheidung 4 der Spec): sichtbarer Ausfall statt stiller Basis-Version — ein firma-pruefen-
 # Lauf, der die Aufwertung ausließe, würde sonst denselben Footer-Text wie ein UNGEPRÜFTER Job
-# zeigen und fiele nicht auf.
-_FOOTER_HINWEIS_VOLL = "Bei der Firma-Prüfung geprüft und gegliedert"
+# zeigen und fiele nicht auf. Basis: "Automatisch bei Erfassung gesichert — Firma-Prüfung ausstehend",
+# Vollversion: "Bei der Firma-Prüfung geprüft und gegliedert" (beide über tx() an der Stelle der Verwendung).
 
 
 def _abschnitt_inhalt_html(wert) -> str:
@@ -228,11 +234,12 @@ def _widersprueche_html(widersprueche: Optional[list]) -> str:
         # P2-15-Falle: schließendes deutsches Anführungszeichen ist U+201C, NIE ASCII '"' — als
         # \u-Escape geschrieben, damit kein Editor/Copy-Paste versehentlich das falsche Zeichen
         # einsetzt.
-        zeilen.append(f"<p><b>{feld}:</b> Anzeigentext „{anzeige}“ vs. Eckdaten "
-                      f"„{eckdaten}“</p>")
+        zeilen.append(f"<p><b>{feld}:</b> "
+                      + tx("Anzeigentext „{anzeige}“ vs. Eckdaten „{eckdaten}“", anzeige=anzeige, eckdaten=eckdaten)
+                      + "</p>")
     if not zeilen:
         return ""
-    return '<h2 class="sec">⚠️ Widersprüche</h2>\n<div class="card">' + "".join(zeilen) + "</div>"
+    return '<h2 class="sec">' + tx("⚠️ Widersprüche") + '</h2>\n<div class="card">' + "".join(zeilen) + "</div>"
 
 
 def _build_html(job: Job, text: Optional[str], quelle_label: str, quelle_text: str,
@@ -242,7 +249,7 @@ def _build_html(job: Job, text: Optional[str], quelle_label: str, quelle_text: s
     `abschnitte=None` (Default) erzeugt EXAKT das alte Basis-Layout von vor Phase 79
     (Regressionsschutz, s. `tests/test_posting_snapshot_full.py` Punkt 6/`tests/
     test_daten_pfade.py`) — dieselbe Bedingung entscheidet auch über den Footer-Text
-    (`footer_hinweis=None` → `_FOOTER_HINWEIS_BASIS`).
+    (`footer_hinweis=None` → Basis-Footer).
 
     Ist `abschnitte` gesetzt (auch `{}`, das ist der Auslöser, nicht „hat Inhalt"), rendert die
     Funktion das Voll-Layout: die fünf Kanon-Abschnitte in fester Reihenfolge (Aufgaben →
@@ -250,23 +257,24 @@ def _build_html(job: Job, text: Optional[str], quelle_label: str, quelle_text: s
     der Volltext — der wandert HIER in einen zugeklappten `<details>`-Block statt der offenen
     Anzeigentext-Karte (Konservierungs-Zweck des Snapshots bleibt, Entscheidung 1 der Spec:
     „zugeklappt heißt nicht gelöscht") —, zuletzt weiterhin Erfassungs-Kontext."""
-    meta_html = "".join(f'<div><p class="k">{_esc(k)}</p><p class="v">{v if k == "Original-URL" else _esc(v)}</p></div>'
+    url_label = tx("Original-URL")
+    meta_html = "".join(f'<div><p class="k">{_esc(k)}</p><p class="v">{v if k == url_label else _esc(v)}</p></div>'
                         for k, v in _meta_spalten(job))
     erzeugt = datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M")
     kontext_teile = []
     if job.source_note:
-        kontext_teile.append(f"<p><b>Erfassung:</b> {_esc(job.source_note)}</p>")
+        kontext_teile.append(f"<p><b>{tx('Erfassung:')}</b> {_esc(job.source_note)}</p>")
     if job.verify_note:
-        kontext_teile.append(f"<p><b>Vier-Augen-Beleg:</b> {_esc(job.verify_note)}</p>")
-    kontext_html = "".join(kontext_teile) or "<p>Kein Erfassungs-Kontext hinterlegt.</p>"
-    erfassungs_kontext_karte = f'<h2 class="sec">Erfassungs-Kontext</h2>\n<div class="card">{kontext_html}</div>'
+        kontext_teile.append(f"<p><b>{tx('Vier-Augen-Beleg:')}</b> {_esc(job.verify_note)}</p>")
+    kontext_html = "".join(kontext_teile) or "<p>" + tx("Kein Erfassungs-Kontext hinterlegt.") + "</p>"
+    erfassungs_kontext_karte = f'<h2 class="sec">{tx("Erfassungs-Kontext")}</h2>\n<div class="card">{kontext_html}</div>'
 
     if abschnitte is None:
         # Heutiges Verhalten (Phase 38, vor Phase 79) — UNVERÄNDERT, byte-identisch.
         content_karten = [erfassungs_kontext_karte]
         if text:
             absaetze = "".join(f"<p>{_esc(p)}</p>" for p in text.split("\n\n") if p.strip())
-            content_karten.insert(0, '<h2 class="sec">Anzeigentext (automatisch extrahiert, unbereinigt)</h2>\n'
+            content_karten.insert(0, '<h2 class="sec">' + tx("Anzeigentext (automatisch extrahiert, unbereinigt)") + '</h2>\n'
                                       f'<div class="card">{absaetze}</div>')
     else:
         # Phase 79 Voll-Layout (Entscheidung 1): feste Reihenfolge, dann ggf. Widersprüche, dann
@@ -276,23 +284,23 @@ def _build_html(job: Job, text: Optional[str], quelle_label: str, quelle_text: s
             inhalt_html = _abschnitt_inhalt_html(abschnitte.get(schluessel))
             if not inhalt_html:
                 continue
-            titel = _ABSCHNITT_TITEL[schluessel]
+            titel = uebersetzt(_ABSCHNITT_TITEL[schluessel])
             content_karten.append(f'<h2 class="sec">{titel}</h2>\n<div class="card">{inhalt_html}</div>')
         widerspruch_karte = _widersprueche_html(widersprueche)
         if widerspruch_karte:
             content_karten.append(widerspruch_karte)
         if text:
-            content_karten.append('<details class="volltext">\n<summary>Volltext (unbereinigt)</summary>\n'
+            content_karten.append('<details class="volltext">\n<summary>' + tx("Volltext (unbereinigt)") + '</summary>\n'
                                   f'<pre>{_esc(text)}</pre>\n</details>')
         content_karten.append(erfassungs_kontext_karte)
 
-    banner_html = (f'<div class="caveat"><b>Hinweis:</b> {_esc(hinweis_banner)}</div>' if hinweis_banner else "")
-    footer_text = footer_hinweis or _FOOTER_HINWEIS_BASIS
+    banner_html = (f'<div class="caveat"><b>{tx("Hinweis:")}</b> {_esc(hinweis_banner)}</div>' if hinweis_banner else "")
+    footer_text = footer_hinweis or tx("Automatisch bei Erfassung gesichert — Firma-Prüfung ausstehend")
 
-    titel = f"Anzeigen-Snapshot · {_esc(job.title)}"
+    titel = tx("Anzeigen-Snapshot · {titel}", titel=_esc(job.title))
     _FAVICON = favicon_link()      # P2-72: Icon des geltenden Designs, bei jedem Snapshot frisch
     return f"""<!DOCTYPE html>
-<html lang="de">
+<html lang="{html_lang()}">
 <head>
 <meta charset="utf-8">{_FAVICON}
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -302,13 +310,13 @@ def _build_html(job: Job, text: Optional[str], quelle_label: str, quelle_text: s
 <body>
 <div class="wrap">
   <header class="head">
-    <p class="eyebrow">Anzeigen-Snapshot</p>
+    <p class="eyebrow">{tx("Anzeigen-Snapshot")}</p>
     <h1>{_esc(job.title)}</h1>
     <p class="sub">{_esc(" · ".join(t for t in (job.company_name, job.portal) if t))}</p>
     <div class="meta">
       {meta_html}
-      <div><p class="k">Abrufdatum</p><p class="v">{erzeugt[:10]}</p></div>
-      <div><p class="k">Quelle</p><p class="v"><span class="dot {_QUELLE_DOT.get(quelle_label, "grau")}"></span>{_esc(quelle_label)} — {_esc(quelle_text)}</p></div>
+      <div><p class="k">{tx("Abrufdatum")}</p><p class="v">{erzeugt[:10]}</p></div>
+      <div><p class="k">{tx("Quelle")}</p><p class="v"><span class="dot {_QUELLE_DOT.get(quelle_label, "grau")}"></span>{_esc(uebersetzt(quelle_label))} — {_esc(quelle_text)}</p></div>
     </div>
   </header>
 
@@ -317,7 +325,7 @@ def _build_html(job: Job, text: Optional[str], quelle_label: str, quelle_text: s
   {"".join(content_karten)}
 
   <div class="foot">
-    <span>Bewerbungs-Mgmt · erzeugt am {erzeugt}</span>
+    <span>{tx("Bewerbungs-Mgmt · erzeugt am {datum}", datum=erzeugt)}</span>
     <span>{_esc(footer_text)}</span>
   </div>
 </div>
@@ -357,10 +365,26 @@ def _ziel_dateiname(job: Job) -> str:
 # render_full-Lauf auf einem schon gegliederten Snapshot — Idempotenz), (2) die Phase-38-Basis-
 # Anzeigentext-Karte (erster render_full-Lauf nach render_basis). Kein Snapshot/keine Datei/nie
 # ein Anzeigentext vorhanden (rot-Badge-Fall) → None, NICHT erfinden.
-_VOLLTEXT_DETAILS_RE = re.compile(r"<summary>Volltext \(unbereinigt\)</summary>\s*<pre>(.*?)</pre>", re.S)
-_ANZEIGENTEXT_KARTE_RE = re.compile(
-    r'<h2 class="sec">Anzeigentext \(automatisch extrahiert, unbereinigt\)</h2>\s*<div class="card">(.*?)</div>',
-    re.S)
+#
+# Berichte bleiben in der Sprache, in der sie entstanden: Die Überschriften werden deshalb in beiden Fassungen
+# gesucht (deutsch und englisch, `fassungen()`), nicht nur in der Sprache, die gerade gilt.
+def _oder(*deutsche_texte: str) -> str:
+    """Regex-Alternative aus allen Fassungen der Texte (jeweils maskiert)."""
+    return "|".join(re.escape(f) for t in deutsche_texte for f in fassungen(t))
+
+
+@functools.lru_cache(maxsize=None)
+def _volltext_details_re():
+    return re.compile(r"<summary>(?:" + _oder("Volltext (unbereinigt)") + r")</summary>\s*<pre>(.*?)</pre>", re.S)
+
+
+@functools.lru_cache(maxsize=None)
+def _anzeigentext_karte_re():
+    return re.compile(
+        r'<h2 class="sec">(?:' + _oder("Anzeigentext (automatisch extrahiert, unbereinigt)")
+        + r')</h2>\s*<div class="card">(.*?)</div>', re.S)
+
+
 _P_RE = re.compile(r"<p>(.*?)</p>", re.S)
 
 
@@ -371,10 +395,10 @@ def _lese_vorhandenen_volltext(job: Job) -> Optional[str]:
     if not pfad.is_file():
         return None
     html = pfad.read_text(encoding="utf-8", errors="replace")
-    m = _VOLLTEXT_DETAILS_RE.search(html)
+    m = _volltext_details_re().search(html)
     if m:
         return _unesc(m.group(1)) or None
-    m = _ANZEIGENTEXT_KARTE_RE.search(html)
+    m = _anzeigentext_karte_re().search(html)
     if m:
         text = "\n\n".join(_unesc(p) for p in _P_RE.findall(m.group(1)))
         return text or None
@@ -417,7 +441,7 @@ def render_full(job_id: int, abschnitte: dict, quelle: str, hinweis: Optional[st
     Abschnitte werden weggelassen, nie mit „–" gefüllt.
 
     `quelle`: `"gruen"|"amber"|"rot"` — steuert NUR die Kategorie, der Anzeigetext kommt aus dem
-    Code (`_QUELLE_LABEL`/`_QUELLE_TEXT`), NICHT vom Modell frei betextet (Badge-Ehrlichkeit,
+    Code (`_QUELLE_LABEL`/`_quelle_text()`), NICHT vom Modell frei betextet (Badge-Ehrlichkeit,
     Anti-Halluzinations-Linie). Ungültiger Wert → `ValueError` (Muster `deepdive._FIT_AMPEL_WERTE`).
 
     `hinweis` (optional): Callout-Banner (z. B. Portal-geschlossen-Hinweis), landet wie bisher in
@@ -442,10 +466,10 @@ def render_full(job_id: int, abschnitte: dict, quelle: str, hinweis: Optional[st
             raise SystemExit(f"Job {job_id} nicht gefunden")
 
         text = _lese_vorhandenen_volltext(job)
-        label, quelle_text = _QUELLE_LABEL[quelle], _QUELLE_TEXT[quelle]
+        label, quelle_text = _QUELLE_LABEL[quelle], _quelle_text(quelle)
         html = _build_html(job, text, label, quelle_text, hinweis_banner=hinweis,
                            abschnitte=abschnitte, widersprueche=widersprueche,
-                           footer_hinweis=_FOOTER_HINWEIS_VOLL)
+                           footer_hinweis=tx("Bei der Firma-Prüfung geprüft und gegliedert"))
         _SNAPSHOT_DIR.mkdir(parents=True, exist_ok=True)
         fname = _ziel_dateiname(job)
         (_SNAPSHOT_DIR / fname).write_text(html, encoding="utf-8")
@@ -492,11 +516,11 @@ def backfill(status_csv: str) -> dict:
                 anzeige_nicht_pruefbar = bool(job.url) and nicht_pruefbar
                 label, quelle_text = _badge(bool(text), tot=anzeige_tot, nicht_pruefbar=anzeige_nicht_pruefbar)
                 if anzeige_tot:
-                    banner = ("Anzeige beim Nachzieh-Lauf nicht mehr abrufbar — nur Metadaten aus "
-                              "der Erfassung.")
+                    banner = tx("Anzeige beim Nachzieh-Lauf nicht mehr abrufbar — nur Metadaten aus "
+                                "der Erfassung.")
                 elif anzeige_nicht_pruefbar:
-                    banner = ("Anzeige beim Nachzieh-Lauf nicht prüfbar (Bot-Schutz/Login-Wall) — "
-                              "Status unklar, NICHT als tot bestätigt. Nur Metadaten aus der Erfassung.")
+                    banner = tx("Anzeige beim Nachzieh-Lauf nicht prüfbar (Bot-Schutz/Login-Wall) — "
+                                "Status unklar, NICHT als tot bestätigt. Nur Metadaten aus der Erfassung.")
                 else:
                     banner = None
                 html = _build_html(job, text, label, quelle_text, hinweis_banner=banner)
@@ -526,7 +550,12 @@ def backfill(status_csv: str) -> dict:
 # gebaut (das ist ein reiner HTML/CSS-Checker `pruefe(html) -> list` ohne DB-Zugriff, s. dessen
 # Modulkopf) — eine DB-gestützte Bestandsregel („welche Jobs mit abgeschlossenem firma-pruefen-
 # Lauf haben einen ungegliederten Snapshot?") gehört hierher, nicht dorthin.
-_BASIS_HEADINGS = {"Anzeigentext (automatisch extrahiert, unbereinigt)", "Erfassungs-Kontext"}
+def _basis_headings() -> set:
+    """Die Überschriften der Basis-Abschnitte in beiden Sprachen (s. `fassungen()`)."""
+    return {f for t in ("Anzeigentext (automatisch extrahiert, unbereinigt)", "Erfassungs-Kontext")
+            for f in fassungen(t)}
+
+
 _H2_SEC_RE = re.compile(r'<h2 class="sec">(.*?)</h2>', re.S)
 
 
@@ -544,10 +573,10 @@ def _klassifiziere_snapshot(html: str) -> str:
     'A' = zusätzlich exakt „Aufgaben" UND „Anforderungen" (die Referenz für diesen Zustand),
     'B' = irgendetwas anderes über die Basis hinaus (gegliedert, aber abweichend benannt/
     zusammengefasst — 25 Varianten allein für die Aufgaben-Überschrift im Bestand)."""
-    eigene = _snapshot_headings(html) - _BASIS_HEADINGS
+    eigene = _snapshot_headings(html) - _basis_headings()
     if not eigene:
         return "C"
-    if {"Aufgaben", "Anforderungen"} <= eigene:
+    if all(any(f in eigene for f in fassungen(t)) for t in ("Aufgaben", "Anforderungen")):
         return "A"
     return "B"
 
@@ -631,7 +660,7 @@ _E1_ZIEL_MUSTER = (
 # Block wird separat gerettet (`_lege_volltext_kandidaten()`), Widersprüche/Strukturierte
 # Merkmale stehen bereits in `job.verify_note` (landet automatisch in der Erfassungs-Kontext-
 # Karte, s. `_build_html()`).
-_E1_AUSSCHLUSS_MUSTER = re.compile(r"(?i)volltext|widerspr|strukturierte\s+merkmale")
+_E1_AUSSCHLUSS_MUSTER = re.compile(r"(?i)volltext|full\s*text|widerspr|contradiction|strukturierte\s+merkmale")
 # Echte Misch-Überschrift („Aufgaben & Anforderungen", ein Bestandsbeispiel) — im
 # Original NIE sortenrein getrennt, deshalb NICHT einer der beiden Kategorien zuschlagen (das
 # behauptete Trennung, die es im Original gar nicht gab), sondern in `kontext` belassen. Anders
@@ -790,14 +819,14 @@ def _e2_abschnitte(text: str) -> Optional[dict]:
 # („Original-Text anzeigen/verbergen", „…, inkl. LinkedIn-Rahmen" …). `_lese_vorhandenen_
 # volltext()` bleibt UNVERÄNDERT (Dateiliste) — diese Funktion ist rein additiv daneben.
 _LEGACY_VOLLTEXT_DETAILS_RE = re.compile(r"<details[^>]*>.*?<pre>(.*?)</pre>.*?</details>", re.S)
-_LEGACY_VOLLTEXT_HEADING_RE = re.compile(r"(?i)volltext")
+_LEGACY_VOLLTEXT_HEADING_RE = re.compile(r"(?i)volltext|full\s*text")
 
 
 def _lege_volltext_kandidaten(html: str) -> Optional[str]:
     """Reihenfolge, erster Treffer gewinnt: (1) IRGENDein `<details>…<pre>…</pre>…</details>` —
     unabhängig vom `<summary>`-Wortlaut, (2) eine `<h2 class="sec">`-Überschrift mit dem Wort
     „Volltext" darin, deren Karte gelesen wird (`<pre>` bevorzugt, sonst `entkleiden()`),
-    (3) Fallback auf die bestehende Phase-38-Anzeigentext-Karte (`_ANZEIGENTEXT_KARTE_RE`, falls
+    (3) Fallback auf die bestehende Phase-38-Anzeigentext-Karte (`_anzeigentext_karte_re()`, falls
     sie unverändert stehen blieb). Kein Fund -> `None`, NICHT erfinden."""
     m = _LEGACY_VOLLTEXT_DETAILS_RE.search(html)
     if m:
@@ -815,7 +844,7 @@ def _lege_volltext_kandidaten(html: str) -> Optional[str]:
         text = entkleiden(inhalt_html).strip()
         if text:
             return text
-    m = _ANZEIGENTEXT_KARTE_RE.search(html)
+    m = _anzeigentext_karte_re().search(html)
     if m:
         text = "\n\n".join(_unesc(p) for p in _P_RE.findall(m.group(1)))
         if text.strip():
@@ -832,9 +861,11 @@ def _lege_volltext_kandidaten(html: str) -> Optional[str]:
 # Treffer gewinnt: (1) Ampel-Wort/-Emoji nahe einem „Quelle"-Label, (2) IRGENDein Ampel-Token
 # innerhalb des `<header>`-Blocks — der ist kurz genug, dass ein Treffer dort praktisch nie etwas
 # anderes bedeutet als die Quellen-Ampel.
-_QUELLE_ZEILE_RE = re.compile(r'(?i)Quelle[^<]{0,40}</p>\s*<p class="v">(.{0,400}?)</(?:p|div)>', re.S)
+_QUELLE_ZEILE_RE = re.compile(r'(?i)(?:Quelle|Source)[^<]{0,40}</p>\s*<p class="v">(.{0,400}?)</(?:p|div)>', re.S)
 _QUELLE_FREITEXT_RE = re.compile(r"(?i)Quelle:?\s*(.{0,160})", re.S)
 _QUELLE_TOKEN_RE = re.compile(r"🟢|🟡|🟠|🔴|grün|gruen|amber|\brot\b", re.I)
+# Englische Fassung der Ampel-Wörter, nur im Quellen-Fenster gesucht (im Kopf könnte „Red“ im Stellentitel stehen).
+_QUELLE_TOKEN_EN_RE = re.compile(r"\bgreen\b|\bred\b", re.I)
 _HEADER_BLOCK_RE = re.compile(r"<header\b.*?</header>", re.S)
 
 
@@ -846,7 +877,7 @@ def _erkenne_alte_quelle(html: str) -> Optional[str]:
     if not fenster:
         m2 = _QUELLE_FREITEXT_RE.search(html)
         fenster = m2.group(1) if m2 else ""
-    tok = _QUELLE_TOKEN_RE.search(fenster)
+    tok = _QUELLE_TOKEN_RE.search(fenster) or _QUELLE_TOKEN_EN_RE.search(fenster)
     if not tok:
         hm = _HEADER_BLOCK_RE.search(html)
         kopf = hm.group(0) if hm else html[:2000]
@@ -855,11 +886,11 @@ def _erkenne_alte_quelle(html: str) -> Optional[str]:
         return None
     t = tok.group(0)
     tl = t.lower()
-    if t == "🟢" or "grün" in tl or "gruen" in tl:
+    if t == "🟢" or "grün" in tl or "gruen" in tl or tl == "green":
         return "gruen"
     if t in ("🟡", "🟠") or "amber" in tl:
         return "amber"
-    if t == "🔴" or tl == "rot":
+    if t == "🔴" or tl in ("rot", "red"):
         return "rot"
     return None
 
@@ -1009,23 +1040,29 @@ _schlafen = time.sleep                # Modulfunktion, damit Tests die Pause ers
 
 # Gründe für `fehlt` — Kundentexte, ohne Phasennummer. Der Server hängt sie in die Rückfrage an
 # (`ANZEIGE_FEHLT: … <grund> …`), deshalb enden alle auf einen Punkt.
-_GRUND_NICHT_GEFUNDEN = "Stelle nicht gefunden."
-_GRUND_KEINE_URL = "Die Stelle hat keine Anzeigen-Adresse."
-_GRUND_RATE_LIMIT = ("LinkedIn hat den Abruf auch nach mehreren Versuchen abgelehnt "
-                     "(zu viele Anfragen). Ein späterer Versuch klappt meist.")
-_GRUND_BLOCKIERT = "Das Portal blockiert automatische Abrufe."
-_GRUND_LOGIN = "Die Anzeige ist nur mit Anmeldung sichtbar."
-_GRUND_OFFLINE = "Die Anzeige ist nicht mehr online."
-_GRUND_UNKLAR = "Die abgerufene Seite passt nicht eindeutig zur Stelle."
-# Zusätze zur Tabelle der Spec (Randfälle, die sie nicht nennt):
-#   * `check_url` meldet Zeitüberschreitung/Netzfehler als TOT ohne HTTP-Status. „Nicht mehr
-#     online“ wäre dafür falsch (eine lebende Anzeige würde als weg gemeldet) -> eigener Grund.
-_GRUND_NICHT_ERREICHBAR = ("Die Anzeige konnte nicht erreicht werden (Zeitüberschreitung oder "
-                           "Netzfehler). Ein späterer Versuch klappt meist.")
-_GRUND_LEER = "Die abgerufene Seite enthielt keinen auswertbaren Anzeigentext."
-_GRUND_ABRUF_FEHLER = "Der Abruf der Anzeige ist fehlgeschlagen."
-_GRUND_SPEICHERN = "Der Anzeigentext konnte nicht gespeichert werden."
-_GRUND_TROCKENLAUF = "Im Snapshot liegt kein Anzeigentext. Trockenlauf, es wurde nichts abgerufen."
+def _grund(name: str) -> str:
+    """Die Gründe für `fehlt` in der Sprache, die jetzt gilt (nie beim Import festgehalten)."""
+    return {
+        "nicht_gefunden": tx("Stelle nicht gefunden."),
+        "keine_url": tx("Die Stelle hat keine Anzeigen-Adresse."),
+        "rate_limit": tx("LinkedIn hat den Abruf auch nach mehreren Versuchen abgelehnt "
+                         "(zu viele Anfragen). Ein späterer Versuch klappt meist."),
+        "blockiert": tx("Das Portal blockiert automatische Abrufe."),
+        "login": tx("Die Anzeige ist nur mit Anmeldung sichtbar."),
+        "offline": tx("Die Anzeige ist nicht mehr online."),
+        "unklar": tx("Die abgerufene Seite passt nicht eindeutig zur Stelle."),
+        "nicht_erreichbar": tx("Die Anzeige konnte nicht erreicht werden (Zeitüberschreitung oder "
+                               "Netzfehler). Ein späterer Versuch klappt meist."),
+        "leer": tx("Die abgerufene Seite enthielt keinen auswertbaren Anzeigentext."),
+        "abruf_fehler": tx("Der Abruf der Anzeige ist fehlgeschlagen."),
+        "speichern": tx("Der Anzeigentext konnte nicht gespeichert werden."),
+        "trockenlauf": tx("Im Snapshot liegt kein Anzeigentext. Trockenlauf, es wurde nichts abgerufen."),
+    }[name]
+
+
+# Zusatz zur Tabelle der Spec (Randfall, den sie nicht nennt): `check_url` meldet Zeitüberschreitung/Netzfehler
+# als TOT ohne HTTP-Status. „Nicht mehr online“ wäre dafür falsch (eine lebende Anzeige würde als weg gemeldet),
+# deshalb der eigene Grund `nicht_erreichbar`.
 
 # P2-76: Befunde von `check_url`, bei denen ein mitgelieferter Anzeigentext in den Snapshot darf.
 # `OK` = Anzeige offen, Titel und Firma passen. `ABGELAUFEN` trägt nur dann Text, wenn eine
@@ -1064,19 +1101,19 @@ def _grund_fuer_befund(pr: dict) -> str:
     """Tabelle der Spec: Befund von `check_url` -> Grund für `fehlt`."""
     befund = pr.get("befund")
     if befund == "NICHT_PRUEFBAR":
-        return _GRUND_RATE_LIMIT if pr.get("http_status") == 429 else _GRUND_BLOCKIERT
+        return _grund("rate_limit") if pr.get("http_status") == 429 else _grund("blockiert")
     if befund == "LOGIN_WALL":
-        return _GRUND_LOGIN
+        return _grund("login")
     if befund in KONFIRMIERT_TOT_BEFUNDE:
         # TOT ohne HTTP-Status = Zeitüberschreitung/Netzfehler, keine bestätigt tote Anzeige.
         if befund == "TOT" and pr.get("http_status") is None:
-            return _GRUND_NICHT_ERREICHBAR
-        return _GRUND_OFFLINE
+            return _grund("nicht_erreichbar")
+        return _grund("offline")
     if befund == "INHALT_UNKLAR":
-        return _GRUND_UNKLAR
+        return _grund("unklar")
     if befund == "OK":
-        return _GRUND_LEER                      # OK, aber ohne Text
-    return _GRUND_ABRUF_FEHLER
+        return _grund("leer")                   # OK, aber ohne Text
+    return _grund("abruf_fehler")
 
 
 def _sichern(job_id: int, abrufen: bool) -> dict:
@@ -1086,14 +1123,14 @@ def _sichern(job_id: int, abrufen: bool) -> dict:
     with Session(engine) as s:
         job = s.get(Job, job_id)
         if not job or job.deleted_at:
-            return _sichern_ergebnis(job_id, "fehlt", grund=_GRUND_NICHT_GEFUNDEN)
+            return _sichern_ergebnis(job_id, "fehlt", grund=_grund("nicht_gefunden"))
         pfad = job.posting_snapshot_path
         if hat_anzeigentext(job):
             return _sichern_ergebnis(job_id, "vorhanden", pfad=pfad)
         if not (job.url or "").strip():
-            return _sichern_ergebnis(job_id, "fehlt", grund=_GRUND_KEINE_URL, pfad=pfad)
+            return _sichern_ergebnis(job_id, "fehlt", grund=_grund("keine_url"), pfad=pfad)
         if not abrufen:
-            return _sichern_ergebnis(job_id, "fehlt", grund=_GRUND_TROCKENLAUF, pfad=pfad)
+            return _sichern_ergebnis(job_id, "fehlt", grund=_grund("trockenlauf"), pfad=pfad)
 
         from pipeline.verify_jobs import check_url
         try:
@@ -1101,7 +1138,7 @@ def _sichern(job_id: int, abrufen: bool) -> dict:
             pr = check_url(job.url, job.company_name, job.title, return_text=True)
         except Exception as e:                                  # noqa: BLE001 — Start nie am Abruf scheitern lassen
             print(f"[posting_snapshot nachholen] Job {job_id}: {type(e).__name__}: {e}", file=sys.stderr)
-            return _sichern_ergebnis(job_id, "fehlt", grund=_GRUND_ABRUF_FEHLER, pfad=pfad)
+            return _sichern_ergebnis(job_id, "fehlt", grund=_grund("abruf_fehler"), pfad=pfad)
 
         befund = pr.get("befund")
         versuche = pr.get("versuche")          # nur wenn der Abruf es meldet (Vertrag A) -> .get()
@@ -1113,27 +1150,27 @@ def _sichern(job_id: int, abrufen: bool) -> dict:
             return _sichern_ergebnis(job_id, "fehlt", grund=_grund_fuer_befund(pr), befund=befund,
                                      versuche=versuche, pfad=pfad)
 
-        datum = datetime.date.today().strftime('%d.%m.%Y')
+        heute_text = datum(datetime.date.today())
         if befund == "ABGELAUFEN":
-            hinweis = (f"Anzeigentext am {datum} nachgeholt. "
-                       f"Das Portal nimmt laut Abruf keine Bewerbungen mehr an. "
-                       f"Gegliedert wird er bei der nächsten Firma-Prüfung.")
+            hinweis = (tx("Anzeigentext am {datum} nachgeholt.", datum=heute_text) + " "
+                       + tx("Das Portal nimmt laut Abruf keine Bewerbungen mehr an.") + " "
+                       + tx("Gegliedert wird er bei der nächsten Firma-Prüfung."))
         else:
-            hinweis = (f"Anzeigentext am {datum} nachgeholt. "
-                       f"Gegliedert wird er bei der nächsten Firma-Prüfung.")
+            hinweis = (tx("Anzeigentext am {datum} nachgeholt.", datum=heute_text) + " "
+                       + tx("Gegliedert wird er bei der nächsten Firma-Prüfung."))
         rel = render_basis(job, text, hinweis=hinweis)
         if rel is None:                                          # render_basis meldet den Fehler auf stderr
-            return _sichern_ergebnis(job_id, "fehlt", grund=_GRUND_SPEICHERN, befund=befund,
+            return _sichern_ergebnis(job_id, "fehlt", grund=_grund("speichern"), befund=befund,
                                      versuche=versuche, pfad=pfad)
         try:
             s.add(job)
-            s.add(JobLog(job_id=job.id, eintrag="Anzeigentext der Anzeige nachgeholt.", art="auto"))
+            s.add(JobLog(job_id=job.id, eintrag=tx("Anzeigentext der Anzeige nachgeholt."), art="auto"))
             s.commit()
         except Exception as e:                                  # noqa: BLE001
             s.rollback()
             print(f"[posting_snapshot nachholen] Job {job_id}: Speichern fehlgeschlagen: "
                   f"{type(e).__name__}: {e}", file=sys.stderr)
-            return _sichern_ergebnis(job_id, "fehlt", grund=_GRUND_SPEICHERN, befund=befund,
+            return _sichern_ergebnis(job_id, "fehlt", grund=_grund("speichern"), befund=befund,
                                      versuche=versuche, pfad=pfad)
         return _sichern_ergebnis(job_id, "nachgeholt", befund=befund, versuche=versuche, pfad=rel)
 

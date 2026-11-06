@@ -848,3 +848,13 @@ starten.
 - **CV-Tailoring wahrheitstreu** — keine erfundenen Skills/Zahlen; nicht gedeckte Keywords werden ehrlich benannt.
 - **Automatik** (zeitgesteuert) ist vorbereitet, aber nicht aktiv: Den Tageslauf startest du per
   Knopfdruck (Abschnitt 5).
+- **Bewerbungssprachen** — Lebenslauf und Anschreiben entstehen auf Deutsch, Englisch, Französisch, Italienisch,
+  Spanisch oder Portugiesisch, je nach Sprache der Anzeige. Dafür brauchst du je Sprache einen Basis-CV (Profil-Seite).
+  Fehlt er bei Französisch, Italienisch, Spanisch oder Portugiesisch, übersetzt das System nichts, nimmt die englische
+  (sonst die deutsche) Fassung und nennt das im Bericht des Laufs, die Job-Seite zeigt es nicht an. Portugal und
+  Brasilien teilen sich eine Fassung. Die Postfach-Suche kennt Wörter dieser Sprachen, ist mit echten Mails aber noch
+  nicht geprüft.
+- **Jobsuche außerhalb Deutschlands** — Die vorbelegten Portale sind auf Deutschland ausgerichtet, in Frankreich,
+  Italien und Spanien fand die Suche in der Prüfung kaum Stellen. Nutze dort die zwei freien Portal-Zeilen, LinkedIn-Alerts
+  und deine Zielfirmen. Manche Portale liefern den Anzeigentext nicht lesbar, zum Beispiel France Travail, dort kann
+  das BMS die Fremdangebote der Seite für den Anzeigentext halten: Prüfe den Text im Job-Detail, bevor du Unterlagen erzeugst.

@@ -1,0 +1,52 @@
+{
+  "zurueck": "← Zurück zu Stellen",
+  "titel": "Neue Stelle anlegen",
+  "untertitel": "Manuell gefundene Stelle erfassen — <b>Neu</b> = landet in der Review-Liste ·<b> Prüfen</b> = direkt in die aktive Pipeline · <b>Beworben</b> = legt die Bewerbung gleich mit an.",
+  "fehler": "Fehler: {{meldung}}",
+  "feld": {
+    "firma": "Firma",
+    "rollen_titel": "Rollen-Titel",
+    "url": "Stellen-URL",
+    "portal": "Portal / Quelle",
+    "standort": "Standort",
+    "arbeitsmodell": "Arbeitsmodell",
+    "seniority": "Seniorität",
+    "such_tab": "Such-Tab",
+    "plan": "Plan A/B/C",
+    "gehalt": "Gehalt (falls gelistet)",
+    "veroeffentlicht": "Veröffentlicht am",
+    "fit": "Zielstellen-Fit (optional)",
+    "status": "Status",
+    "beworben_am": "Beworben am",
+    "kanal": "Bewerbungs-Kanal",
+    "notizen": "Notizen"
+  },
+  "platzhalter": {
+    "firma": "z. B. Muster GmbH",
+    "rollen_titel": "z. B. Head of Professional Services DACH",
+    "url": "https://…",
+    "standort": "z. B. Köln oder Remote",
+    "gehalt": "z. B. 120–140k",
+    "notizen": "Woher der Tipp kommt, erste Einschätzung, Ansprechpartner…"
+  },
+  "fit_unbewertet": "– noch nicht bewertet –",
+  "dublette": {
+    "url": "URL bereits erfasst in Stelle",
+    "stelle": "Stelle bereits erfasst:",
+    "zur_stelle": "Zur Stelle →"
+  },
+  "speichern": "Speichern…",
+  "anlegen": "✓ Stelle anlegen",
+  "abbrechen": "Abbrechen",
+  "nach_anlegen": "Nach dem Anlegen: Job-Detail → „Unterlagen erstellen\" startet den Workflow",
+  "wert": {
+    "Firmenseite": "Firmenseite",
+    "Empfehlung": "Empfehlung",
+    "E-Mail": "E-Mail",
+    "Headhunter": "Headhunter",
+    "Sonstiges": "Sonstiges",
+    "Unbekannt": "Unbekannt",
+    "Portal": "Portal",
+    "Recruiter": "Recruiter"
+  }
+}

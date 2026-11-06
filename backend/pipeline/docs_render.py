@@ -357,7 +357,7 @@ def _zerlege(body: str) -> tuple:
     return titel_html, intro, abschnitte
 
 
-def _seite(titel_html: str, titel_text: str, intro_html: str, abschnitte: list, d) -> str:
+def _seite(titel_html: str, titel_text: str, intro_html: str, abschnitte: list, d, sprache: str = "de") -> str:
     if abschnitte:
         intro_block = f'<div class="intro">{intro_html}</div>' if intro_html else ""
         karten = "".join(
@@ -369,7 +369,7 @@ def _seite(titel_html: str, titel_text: str, intro_html: str, abschnitte: list, 
         intro_block = ""
         karten = f'<section class="card">{intro_html}</section>' if intro_html else ""
 
-    return f"""<!doctype html><html lang="de"><head><meta charset="utf-8">
+    return f"""<!doctype html><html lang="{sprache}"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">{favicon.favicon_link(d)}
 <title>{titel_text}</title>
 <style>{_css(d)}</style></head><body><div class="wrap">
@@ -378,7 +378,7 @@ def _seite(titel_html: str, titel_text: str, intro_html: str, abschnitte: list, 
 </div></body></html>"""
 
 
-def render_markdown(quelltext: str, dateiname: str, geltend=None) -> str:
+def render_markdown(quelltext: str, dateiname: str, geltend=None, sprache: str = "de") -> str:
     """Kernrenderer: kompletter Markdown-Quelltext einer Doku-Datei -> fertiges, eigenständiges
     HTML-Dokument im §18-Look samt Hash-Kommentar als letzter Zeile.
 
@@ -406,14 +406,16 @@ def render_markdown(quelltext: str, dateiname: str, geltend=None) -> str:
     titel_text = _innentext_fuer_title(titel_html)
     intro_html = _TRAILING_HR_RE.sub("", intro_html).strip()
 
-    seite = _seite(titel_html, titel_text, intro_html, abschnitte, geltend)
+    seite = _seite(titel_html, titel_text, intro_html, abschnitte, geltend, sprache)
     kommentar = f"<!-- docs_render quelle={dateiname} sha256={_hash(quelltext)} -->"
     return f"{seite}\n{kommentar}\n"
 
 
 def render_datei(md_pfad: Path) -> str:
     """Liest eine .md-Datei und liefert den fertigen HTML-Seitentext."""
-    return render_markdown(md_pfad.read_text(encoding="utf-8"), md_pfad.name)
+    # P2-91: Die englischen Fassungen liegen unter docs/en/.
+    sprache = "en" if md_pfad.parent.name == "en" else "de"
+    return render_markdown(md_pfad.read_text(encoding="utf-8"), md_pfad.name, sprache=sprache)
 
 
 def ziel_fuer(md_pfad: Path) -> Path:
@@ -486,7 +488,7 @@ def _ziel_dateien(datei_arg) -> list:
         if not p.is_absolute():
             p = PROJECT_ROOT / p
         return [p]
-    return sorted(_DOCS_DIR.glob("*.md"))
+    return sorted(_DOCS_DIR.glob("*.md")) + sorted((_DOCS_DIR / "en").glob("*.md"))
 
 
 def main(argv=None) -> int:

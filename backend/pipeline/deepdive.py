@@ -34,6 +34,7 @@ from sqlmodel import Session, select
 
 from app.db import engine, init_db
 from app.models import Company, CVVersion, Job
+from pipeline import bewerbungssprache
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent  # Bewerbung_Mgmt_System/
 
@@ -52,6 +53,13 @@ def _rel(path):
 
 
 _FIT_AMPEL_WERTE = {"gruen", "gelb", "rot"}
+
+
+def _sprache(language):
+    """`CVVersion.language` einheitlich in Großbuchstaben (`FR`, `en-US` → `EN`). Das Modell setzt das Kürzel
+    mal klein, mal groß; Anzeige, Dateiname und Fußzeile vertragen beides, ein einheitlicher Wert hält
+    Auswertungen einfach. Fehlt die Angabe, bleibt sie leer (Altbestand), Altwerte werden nicht migriert."""
+    return bewerbungssprache.normiere_code(language)
 
 
 def register(job_id, company_fit_path=None, cv=None, next_step=None, posting_path=None, fit_ampel=None):
@@ -84,7 +92,7 @@ def register(job_id, company_fit_path=None, cv=None, next_step=None, posting_pat
         if cv:
             row = CVVersion(
                 job_id=job_id,
-                language=cv.get("language"),
+                language=_sprache(cv.get("language")),
                 kind=cv.get("kind", "tailored"),
                 file_path=_rel(cv.get("file_path")),
                 ats_score=cv.get("ats_score"),
@@ -143,7 +151,7 @@ def register_entwurf(job_id, cv: dict) -> dict:
 
         row = CVVersion(
             job_id=job_id,
-            language=cv.get("language"),
+            language=_sprache(cv.get("language")),
             kind=cv.get("kind", "tailored"),
             file_path=_rel(cv.get("file_path")),
             match_score100=cv.get("match_score100"),

@@ -1,6 +1,6 @@
 ---
 name: firma-pruefen
-description: Prüft für eine Stelle aus dem Bewerbungs-Management-System die Firma auf Fit — Geschäftsmodell, Markt, KI-Disruption, Wettbewerber UND den Einfluss dieser konkreten Rolle auf das Unternehmen. Erzeugt ein Company-Fit-Dashboard und verlinkt es am Job-Detail. Nutze diesen Skill bei "Firma prüfen für Job <id>", "prüf die Firma", "Company-Fit für <Firma>", "passt die Firma", "ist das ein Fit", "analysiere den Arbeitgeber".
+description: Prüft für eine Stelle aus dem Bewerbungs-Management-System die Firma auf Fit — Geschäftsmodell, Markt, KI-Disruption, Wettbewerber UND den Einfluss dieser konkreten Rolle auf das Unternehmen. Erzeugt ein Company-Fit-Dashboard und verlinkt es am Job-Detail. Nutze diesen Skill bei "Firma prüfen für Job <id>", "Check the company for job <id>", "prüf die Firma", "Company-Fit für <Firma>", "passt die Firma", "ist das ein Fit", "analysiere den Arbeitgeber".
 ---
 
 # Firma prüfen (Company-Fit)

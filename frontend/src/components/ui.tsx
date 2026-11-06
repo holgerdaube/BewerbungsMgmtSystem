@@ -1,6 +1,9 @@
 import React, { useEffect, useState, useSyncExternalStore } from 'react'
 import { Link } from 'react-router-dom'
 import { api, type Einstellungen, type KiAnbieter } from '../api'
+import { t } from '../i18n'
+import { zahl as zahlFormat } from '../i18n/format'
+import { wert } from '../i18n/werte'
 
 // P2-72 (Design aus einer Quelle): Schrift auf den Zustandsflächen (Status, Score, Situation, Tier,
 // Szenario). Der Wert ist geprüft (18.8, Kontrast auf jeder dieser Flächen) und trägt Bedeutung, nicht
@@ -45,7 +48,7 @@ export function ScoreBadge({ score }: { score: number | null }) {
       <span
         className="inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold"
         style={{ backgroundColor: SCORE_NONE, color: TEXT_AUF_ZUSTAND }}
-        title="Nicht bewertet"
+        title={t('common:ui.score_nicht_bewertet')}
       >–</span>
     )
   }
@@ -53,7 +56,7 @@ export function ScoreBadge({ score }: { score: number | null }) {
     <span
       className="inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold"
       style={{ backgroundColor: SCORE_COLORS[score] || SCORE_NONE, color: SCORE_TEXT[score] || TEXT_AUF_ZUSTAND }}
-      title={`Zielstellen-Fit ${score}/5`}
+      title={t('common:ui.score_titel', { score })}
     >
       {score}
     </span>
@@ -79,10 +82,10 @@ export const STATUS_FARBEN: Record<string, { bg: string; text: string }> = {
   Interview: { bg: '#7C4DFF', text: '#ffffff' },                 // status.advanced
   Angebot: { bg: '#18A957', text: TEXT_AUF_ZUSTAND },            // status.positive
   Absage: { bg: '#E5484D', text: '#ffffff' },                    // status.negative
-  'Keine Rückmeldung': { bg: '#7A5C5C', text: '#ffffff' },       // kein §18.10-Token, s.o.
-  'Kein Match': { bg: '#64748B', text: '#ffffff' },              // status.no_match
+  'Keine Rückmeldung': { bg: '#7A5C5C', text: '#ffffff' },       // i18n-ok: DB-Wert; kein §18.10-Token, s.o.
+  'Kein Match': { bg: '#64748B', text: '#ffffff' },              // i18n-ok: DB-Wert; status.no_match
   'Beirat abgelehnt': { bg: '#D97706', text: TEXT_AUF_ZUSTAND }, // status.rejected_internal
-  'Nicht verfügbar': { bg: '#A8B4C4', text: TEXT_AUF_ZUSTAND },  // ui.state.unknown
+  'Nicht verfügbar': { bg: '#A8B4C4', text: TEXT_AUF_ZUSTAND },  // i18n-ok: DB-Wert; ui.state.unknown
   Geparkt: { bg: '#E4A11B', text: TEXT_AUF_ZUSTAND },            // status.parked
 }
 export const STATUS_FARBE_UNBEKANNT = { bg: '#94A3B8', text: TEXT_AUF_ZUSTAND } // Fallback für nicht gelistete Status-Strings
@@ -97,10 +100,10 @@ export function StatusBadge({ status }: { status: string | null }) {
   const f = STATUS_FARBEN[s] || STATUS_FARBE_UNBEKANNT
   return (
     <span
-      className={`inline-block whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium ${s === 'Nicht verfügbar' ? 'line-through' : ''}`}
+      className={`inline-block whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium ${s === 'Nicht verfügbar' ? 'line-through' : ''}`} // i18n-ok: DB-Wert
       style={{ backgroundColor: f.bg, color: f.text }}
     >
-      {s}
+      {wert('status', s)}
     </span>
   )
 }
@@ -111,8 +114,10 @@ export function VerifyBadge({ verifyNote, verifiedAt }: { verifyNote?: string | 
   if (!verifiedAt) return null
   const status = (verifyNote || '').split(':')[0].trim()
   let cls = '', label = ''
-  if (status === 'BESTÄTIGT' || status === 'KORRIGIERT') { cls = 'bg-emerald-100 text-emerald-800'; label = '✓ geprüft' }
-  else if (status === 'QUELLE_VERTRAUT') { cls = 'bg-amber-100 text-amber-800'; label = '~ Quelle vertraut' }
+  if (status === 'BESTÄTIGT' || status === 'KORRIGIERT') { // i18n-ok: Marker aus verify_note
+    cls = 'bg-emerald-100 text-emerald-800'; label = t('common:ui.verify_geprueft')
+  }
+  else if (status === 'QUELLE_VERTRAUT') { cls = 'bg-amber-100 text-amber-800'; label = t('common:ui.verify_quelle') }
   else return null
   return (
     <span title={verifyNote || undefined} className={`inline-block whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium ${cls}`}>
@@ -137,9 +142,9 @@ export function DubletteBadge({ verifyNote }: { verifyNote?: string | null }) {
   if (!treffer) return null
   return (
     <Link to={`/jobs/${treffer.jobId}`}
-      title={`Text-Ähnlichkeitsverdacht ${treffer.prozent} % — vermuteter Repost, s. Notizen & Verlauf`}
+      title={t('common:ui.dublette_titel', { prozent: treffer.prozent })}
       className="inline-block whitespace-nowrap rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800 hover:bg-amber-200">
-      Dublette? → Job {treffer.jobId}
+      {t('common:ui.dublette_label', { jobId: treffer.jobId })}
     </Link>
   )
 }
@@ -162,9 +167,9 @@ export function NeuausschreibungBadge({ verifyNote }: { verifyNote?: string | nu
   if (!treffer) return null
   return (
     <Link to={`/jobs/${treffer.jobId}`}
-      title={`Diese Stelle war schon im Tracker (${treffer.status}). Neue Anzeige mit neuem Link — bitte neu entscheiden.`}
+      title={t('common:ui.neuausschreibung_titel', { status: wert('status', treffer.status) })}
       className="inline-block whitespace-nowrap rounded-full bg-sky-100 px-2 py-0.5 text-xs font-medium text-sky-800 hover:bg-sky-200">
-      Neuausschreibung → Job {treffer.jobId}
+      {t('common:ui.neuausschreibung_label', { jobId: treffer.jobId })}
     </Link>
   )
 }
@@ -216,11 +221,11 @@ export function BarList({ title, data, colorFn, linkFn, maxValue }: {
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
       <h3 className="mb-3 text-sm font-semibold text-brand-navy">
-        {title}{linkFn && <span className="font-normal text-slate-400"> · klickbar</span>}
+        {title}{linkFn && <span className="font-normal text-slate-400"> · {t('common:ui.klickbar')}</span>}
       </h3>
       <div className="space-y-2">
         {entries.length === 0 ? (
-          <div className="text-xs text-slate-400">keine Stellen</div>
+          <div className="text-xs text-slate-400">{t('common:ui.keine_stellen')}</div>
         ) : entries.map(([k, v]) =>
           linkFn ? (
             <Link key={k} to={linkFn(k)} className="flex items-center gap-2 rounded text-sm transition hover:bg-slate-50">
@@ -276,19 +281,19 @@ export function useKiAnbieter() {
 
 /** Token lesbar: 950 → „950“, 374 000 → „374 Tsd.“, 1 680 000 → „1,68 Mio.“. */
 export function tokenText(n: number): string {
-  const zahl = (x: number, stellen: number) => x.toLocaleString('de-DE', { maximumFractionDigits: stellen })
-  if (n >= 1_000_000) return `${zahl(n / 1_000_000, 2)} Mio.`
-  if (n >= 1_000) return `${zahl(n / 1_000, 1)} Tsd.`
+  const zahl = (x: number, stellen: number) => zahlFormat(x, { maximumFractionDigits: stellen })
+  if (n >= 1_000_000) return t('common:ui.token_mio', { wert: zahl(n / 1_000_000, 2) })
+  if (n >= 1_000) return t('common:ui.token_tsd', { wert: zahl(n / 1_000, 1) })
   return zahl(n, 0)
 }
 
 /** Kostenangabe eines Laufs: Token, wenn der Lauf welche gemeldet hat (ChatGPT), sonst USD (Claude).
  *  `null` heißt: nichts anzeigen. Unter ChatGPT wäre „$0.000“ keine Aussage, ChatGPT meldet keine
  *  Kosten; ein Lauf aus der Zeit unter Claude mit echten Kosten bleibt sichtbar. */
-export function laufKosten(t: { tokens?: number | null; cost_usd: number | null }, anbieter: KiAnbieter): string | null {
-  if (t.tokens) return `${tokenText(t.tokens)} Token`
-  if (t.cost_usd == null || (anbieter === 'chatgpt' && !t.cost_usd)) return null
-  return `$${t.cost_usd.toFixed(3)}`
+export function laufKosten(lauf: { tokens?: number | null; cost_usd: number | null }, anbieter: KiAnbieter): string | null {
+  if (lauf.tokens) return t('common:ui.token_anzahl', { wert: tokenText(lauf.tokens) })
+  if (lauf.cost_usd == null || (anbieter === 'chatgpt' && !lauf.cost_usd)) return null
+  return `$${lauf.cost_usd.toFixed(3)}`
 }
 
 // Das stream-json von Claude liest die Log-Anzeige selbst (Tasks.tsx, AgentTaskButton.tsx). Die Ereignisse
@@ -305,14 +310,14 @@ function befehlText(befehl: string): string {
  *  `null` = Rauschen, nicht anzeigen. */
 export function codexZeile(ev: any): string | null | undefined {
   const typ = String(ev?.type || '')
-  if (typ === 'thread.started') return '· Lauf gestartet'
+  if (typ === 'thread.started') return t('common:ui.lauf_gestartet')
   if (typ === 'turn.completed') {
     const u = ev.usage || {}
     const neu = (u.input_tokens || 0) - (u.cached_input_tokens || 0) + (u.output_tokens || 0)
-    return neu > 0 ? `· Turn fertig (${tokenText(neu)} Token neu)` : '· Turn fertig'
+    return neu > 0 ? t('common:ui.turn_fertig_neu', { token: tokenText(neu) }) : t('common:ui.turn_fertig')
   }
-  if (typ === 'turn.failed') return `✗ ${String(ev.error?.message || 'Lauf fehlgeschlagen').slice(0, 200)}`
-  if (typ === 'error') return `⚠ ${String(ev.message || 'Fehler').slice(0, 200)}`
+  if (typ === 'turn.failed') return `✗ ${String(ev.error?.message || t('common:ui.lauf_fehlgeschlagen')).slice(0, 200)}`
+  if (typ === 'error') return `⚠ ${String(ev.message || t('common:ui.fehler')).slice(0, 200)}`
   if (typ === 'turn.started') return null
   if (typ !== 'item.started' && typ !== 'item.completed') return undefined
   const item = ev.item || {}
@@ -326,28 +331,28 @@ export function codexZeile(ev: any): string | null | undefined {
     }
     case 'collab_tool_call':
       return !fertig && item.tool !== 'wait' && item.tool !== 'close_agent'
-        ? `⤷ Subagent: ${String(item.prompt || item.tool || 'gestartet').slice(0, 140)}` : null
+        ? `⤷ Subagent: ${String(item.prompt || item.tool || t('common:ui.subagent_gestartet')).slice(0, 140)}` : null
     case 'agent_message': {
       const text = String(item.text || '').trim()
       return fertig && text ? `💬 ${text.slice(0, 160)}` : null
     }
     case 'web_search':
-      return fertig && item.query ? `🔍 Websuche: ${String(item.query).slice(0, 140)}` : null
+      return fertig && item.query ? t('common:ui.websuche', { anfrage: String(item.query).slice(0, 140) }) : null
     case 'file_change': {
       const pfade = (item.changes || []).map((c: any) => c?.path).filter(Boolean)
-      return fertig ? `📝 ${pfade.length ? pfade.join(', ').slice(0, 140) : 'Dateien geändert'}` : null
+      return fertig ? `📝 ${pfade.length ? pfade.join(', ').slice(0, 140) : t('common:ui.dateien_geaendert')}` : null
     }
     case 'mcp_tool_call':
       return !fertig ? `🔧 ${[item.server, item.tool].filter(Boolean).join('.')}` : null
     case 'error':
-      return fertig ? `⚠ ${String(item.message || 'Fehler').slice(0, 200)}` : null
+      return fertig ? `⚠ ${String(item.message || t('common:ui.fehler')).slice(0, 200)}` : null
     default:
       return null   // reasoning, todo_list und was Codex sonst noch meldet: Rauschen
   }
 }
 
 /** Kompakter Auslöser-Kopierer für Tabellenzeilen (Claude-in-the-Loop, kleines Pendant zu CopyTrigger). */
-export function CopyChip({ phrase, label = '🚀 Initiativ' }: { phrase: string; label?: string }) {
+export function CopyChip({ phrase, label = t('common:ui.copy_initiativ') }: { phrase: string; label?: string }) {
   const [ok, setOk] = useState(false)
   const { name } = useKiAnbieter()
   const copy = async (e: React.MouseEvent) => {
@@ -357,10 +362,10 @@ export function CopyChip({ phrase, label = '🚀 Initiativ' }: { phrase: string;
     setTimeout(() => setOk(false), 2500)
   }
   return (
-    <button onClick={copy} title={`Kopiert „${phrase}" — in der ${name}-Session einfügen & senden`}
+    <button onClick={copy} title={t('common:ui.copy_titel', { phrase, name })}
       className={`whitespace-nowrap rounded-lg border px-2 py-1 text-xs font-medium transition ${
         ok ? 'border-emerald-300 bg-emerald-50 text-emerald-700' : 'border-brand-cyan/40 text-brand-navy hover:bg-brand-cyan/10'}`}>
-      {ok ? '✓ kopiert' : label}
+      {ok ? t('common:ui.copy_ok') : label}
     </button>
   )
 }

@@ -599,6 +599,10 @@ class SuchEinstellung(UtcZeit, SQLModel, table=True):
     # Anschreiben); fehlende Funktion ⇒ Default agent_runner.MODELL_STANDARD.
     modelle_json: str = Field(default="{}")
     ki_anbieter: str = Field(default="claude")                         # P2-86: claude | chatgpt (app/ki_anbieter.py)
+    # P2-88: de | en (app/sprache.py). Die beiden Vorgaben unterscheiden sich mit Absicht: "" heißt „noch nie
+    # gewählt“ (neue Installation, die Oberfläche nimmt einmal die Browsersprache), die Spalte in `app/db.py`
+    # hat DEFAULT 'de', damit eine bestehende Installation beim ALTER TABLE auf Deutsch bleibt.
+    sprache: str = Field(default="")
     # Phase 87 — Liste der Suchportale (Name/URL/Zugriffsart/aktiv), editierbar über
     # /einstellungen. Leerer Default: der erste GET seedet aus suchprofil.PORTALE_DEFAULT.
     portale_json: str = Field(default="[]")

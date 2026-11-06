@@ -722,6 +722,8 @@ wie bei den Suchläufen. Spec: P2-76.</p>
   Listen liefert seit P2-80 <code>pipeline/mail_suchlisten.py</code> (vorher ein Schnipsel im Skill): Kontakt-
   Adressen, Domains der Berater-Kontakte und der laufenden Bewerbungen (Beworben/Interview/Angebot,
   aus Mails an der Stelle und Kontaktadressen), gefiltert gegen ATS, Freemail und große Jobportale.
+  Schritt 1c sucht zusätzlich nach Wörtern in Französisch, Italienisch, Spanisch und Portugiesisch, aber nur, wenn
+  <code>mail_suchlisten --sprachen</code> eine solche Sprache meldet (Basis-CV oder laufende Bewerbung).
   Der Ingest trägt die Adresse an einem gleichnamigen Kontakt derselben Firma ohne Adresse nach,
   statt eine Dublette anzulegen (P2-80). <em>Headless-fähig, read-only.</em></li>
 <li><strong>beworben-check</strong> <em>(Phase 74)</em> — wöchentliche Verfügbarkeitsprüfung aller laufenden Bewerbungen
@@ -2104,6 +2106,13 @@ kompatibel) — das Klartext-Passwort wird nirgends gespeichert. Auslöser: Butt
 aktualisieren" (Einstellungen) und automatisch als letztes, nicht-fatales Glied des Tageslaufs —
 ohne vollständige Konfiguration bzw. bei abgeschaltetem Schalter endet der Schritt grün (Exit 0),
 der Tageslauf wird davon nie rot. Details: <code>docs/COACH_SITE.md</code>.</p>
+<h3>Vier Sprachen</h3>
+<ul>
+<li><strong>Oberfläche und KI-Ausgaben:</strong> <code>de</code> oder <code>en</code>, Einstellung in <code>sucheinstellung.sprache</code> (<code>app/sprache.py</code>, <code>frontend/src/i18n</code>).</li>
+<li><strong>Bewerbung:</strong> Lebenslauf und Anschreiben folgen der Anzeige (<code>pipeline/bewerbungssprache.py</code>).</li>
+<li><strong>Terminal:</strong> Meldungen folgen dem Betriebssystem, unabhängig von der App: Deutsch auf einem deutschen System, sonst Englisch. <code>BMS_TERMINAL_SPRACHE</code> (<code>de</code>, <code>en</code>) gewinnt. Quellen: <code>app/terminal.py</code> mit <code>texte/en_terminal.json</code> für den Server, eigene Tabellen in <code>scripts/bms_update.py</code> und <code>scripts/bms_wiederherstellen.py</code>, Verzweigungen in den <code>.command</code>- und <code>.bat</code>-Dateien.</li>
+<li><strong>Maschinenwerte</strong> in Datenbank, Skills und Personas bleiben deutsch.</li>
+</ul>
 <h3>Tests &amp; CI (<code>backend/tests/</code>, <code>.github/workflows/ci.yml</code>, Phase 57)</h3>
 <p>Aktuell <strong>mehr als 2000 pytest-Tests</strong> (Phase 57 startete mit 36) laufen isoliert von der Live-DB: <code>conftest.py</code>
 setzt <code>BMS_DATA_DIR</code> auf ein frisches <code>tempfile.mkdtemp()</code>-Verzeichnis ganz oben auf
@@ -2519,4 +2528,4 @@ Begründung dokumentiert (Messdaten als Referenz).</p>
 „Paketdienst und Netzregeln“, 13.10.2026, P2-71), der Abschnitt „Profil-Datei“ am 11.10.2026 (P2-69), die Absätze „Anzeigentext sichern" und „Portal-Status" am 14.10.2026 (P2-75, P2-76). Da parallele Bau-Sessions laufen,
 ist die zentrale Quelle immer der Code selbst, nicht diese Datei.</em></p></section>
 </div></body></html>
-<!-- docs_render quelle=DOKUMENTATION.md sha256=35cdbc7a5860621461a7f07e118633af40d25f0f7932849d3b3cf4d309ba326c -->
+<!-- docs_render quelle=DOKUMENTATION.md sha256=228aeea9fad3f85a3b6ea84de40af7c744629acc85973703a856fd56c018a367 -->

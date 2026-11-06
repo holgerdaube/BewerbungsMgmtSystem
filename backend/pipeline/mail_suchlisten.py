@@ -20,17 +20,29 @@ Regeln (unverändert aus Phase 80 übernommen, bis auf die laufenden Bewerbungen
     übrige Post in die Suche spülen würden).
   * `OHNE_MAIL`: Namen der Berater-Kontakte ohne Adresse, für die Berichtszeile des Skills.
 
+  * Fremdsprachen (FR, IT, ES, PT): Wörter für Betreff und Absender stehen in
+    `pipeline/bewerbungssprache.py`. Sie kommen NICHT in die Haupt-Query des Skills, sondern in eine
+    eigene zweite Suche, und nur, wenn der Nutzer in einer dieser Sprachen bewirbt: Basis-CV
+    `data/cv_basis/base_<sprache>.docx` oder eine laufende Bewerbung mit CV bzw. Anschreiben in der
+    Sprache (`sprachen()`). Ohne solche Sprachen läuft der Skill wie bisher.
+
 CLI (aus backend/), nur lesend:
     ~/.bewerbung_mgmt_venv/bin/python -m pipeline.mail_suchlisten
 Ausgabe: drei beschriftete Zeilen `ADRESSEN:`, `DOMAINS:`, `OHNE_MAIL:` (Format wie bisher im Skill).
+    ~/.bewerbung_mgmt_venv/bin/python -m pipeline.mail_suchlisten --sprachen
+Ausgabe: `SPRACHEN:` (Codes, leer ohne Fremdsprache) und nur dann `SPRACHEN_BETREFF:` und
+`SPRACHEN_ABSENDER:` (Wörter, mit ` OR ` verbunden). Eigener Aufruf, damit die Ausgabe ohne Schalter für
+alle Nutzer bleibt, wie sie war.
 """
+import argparse
 import re
 from typing import Optional
 
 from sqlmodel import Session, select
 
-from app.db import engine, init_db
-from app.models import Contact, Email, Job
+from app.db import DATA_DIR, engine, init_db
+from app.models import Application, Contact, CVVersion, Email, Job
+from pipeline import bewerbungssprache
 
 # Bewusst dieselbe Menge wie `main.py::TERMINAL_STATUSES` (Pipeline-Module importieren main.py nicht).
 TERMINAL = {"Absage", "Kein Match", "Nicht verfügbar", "Beirat abgelehnt", "Keine Rückmeldung"}
@@ -46,6 +58,14 @@ SPERRLISTE_DOMAINS = {
     # Arbeitgeber — eine Domain-Suche würde jede Portal-Mitteilung einsammeln.
     "linkedin.com", "xing.com", "indeed.com", "stepstone.de", "glassdoor.com",
 }
+# Sprachen der zweiten Suche: alle Tabellensprachen außer DE und EN (deren Wörter stehen in der
+# Haupt-Query des Skills).
+FREMDSPRACHEN = tuple(c for c in bewerbungssprache.CODES if c not in ("DE", "EN"))
+# Absender-Teile unter dieser Länge kommen nicht in die Suche: `rh` träfe in Gmail jeden Absender, der
+# „RH“ im Namen trägt, und im IMAP-Weg (Teilstring-Vergleich, `imap_mail._matches_leaf`) auch „Gerhard“,
+# „Rhein…“. Gemessen am echten Postfach ist es nicht; die Domain-Suche (Schritt 1b) und die Betreff-Wörter
+# fangen die Post laufender Bewerbungen. Das Wort bleibt in der Tabelle.
+ABSENDER_MIN_LAENGE = 4
 _ADRESSE_RE = re.compile(r"[\w.+-]+@([\w-]+(?:\.[\w-]+)+)")
 
 
@@ -90,7 +110,44 @@ def suchlisten() -> dict:
     return {"adressen": sorted(adressen), "domains": sorted(domains), "ohne_mail": sorted(ohne_mail)}
 
 
-def main() -> None:
+def sprachen() -> list:
+    """Fremdsprachen (`FREMDSPRACHEN`), in denen der Nutzer bewirbt, in Tabellenreihenfolge: Basis-CV
+    `base_<sprache>.docx` in `data/cv_basis/` oder ein CV (`CVVersion.language`) bzw. Anschreiben
+    (`Application.cover_letter_language`) an einer laufenden Bewerbung (`LAUFEND`). Nur lesend."""
+    init_db()
+    gefunden = {c for c in FREMDSPRACHEN if (DATA_DIR / "cv_basis" / f"base_{c.lower()}.docx").is_file()}
+    with Session(engine) as s:
+        laufend = [j.id for j in s.exec(select(Job).where(Job.deleted_at.is_(None),
+                                                          Job.status.in_(LAUFEND))).all()]
+        if laufend:
+            angaben = [cv.language for cv in s.exec(select(CVVersion).where(CVVersion.job_id.in_(laufend))).all()]
+            angaben += [a.cover_letter_language
+                        for a in s.exec(select(Application).where(Application.job_id.in_(laufend))).all()]
+            gefunden |= {c for c in map(bewerbungssprache.normiere_code, angaben) if c in FREMDSPRACHEN}
+    return [c for c in FREMDSPRACHEN if c in gefunden]
+
+
+def sprachen_woerter(codes) -> dict:
+    """`{"betreff": [...], "absender": [...]}` der genannten Sprachen aus der Sprachtabelle, ohne Doppelte.
+    Absender-Teile kürzer als `ABSENDER_MIN_LAENGE` fehlen (siehe dort)."""
+    return {"betreff": list(bewerbungssprache.alle_marker("mail_betreff", codes)),
+            "absender": [w for w in bewerbungssprache.alle_marker("mail_absender", codes)
+                         if len(w) >= ABSENDER_MIN_LAENGE]}
+
+
+def main(argv=()) -> None:
+    ap = argparse.ArgumentParser(description="Suchlisten für den Gmail-Check (nur lesend)")
+    ap.add_argument("--sprachen", action="store_true",
+                    help="stattdessen die Sprachen und Suchwörter der zweiten Suche ausgeben")
+    args = ap.parse_args(argv)
+    if args.sprachen:
+        codes = sprachen()
+        print("SPRACHEN:", " ".join(codes))
+        if codes:
+            woerter = sprachen_woerter(codes)
+            print("SPRACHEN_BETREFF:", " OR ".join(woerter["betreff"]))
+            print("SPRACHEN_ABSENDER:", " OR ".join(woerter["absender"]))
+        return
     listen = suchlisten()
     print("ADRESSEN:", " OR ".join(listen["adressen"]))
     print("DOMAINS:", " OR ".join(f"@{d}" for d in listen["domains"]))
@@ -98,4 +155,5 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    import sys
+    main(sys.argv[1:])

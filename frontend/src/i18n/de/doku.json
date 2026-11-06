@@ -1,0 +1,13 @@
+{
+  "titel": "Dokumentation",
+  "einleitung": "Anleitungen, Funktionsübersicht und die Änderungen je Version. Alle Texte liegen auf Ihrem Rechner.",
+  "lade_fehler": "Die Dokumentation konnte nicht geladen werden.",
+  "laden": "Lade Dokumentation…",
+  "leer": "Es sind keine Dokumente vorhanden.",
+  "intern": "Intern",
+  "neuer_tab": "In neuem Tab öffnen ↗",
+  "rahmen_titel": "Dokumentation: {{titel}}",
+  "version_fehler": "Versionsstand konnte nicht geladen werden.",
+  "installiert_version": "Installiert: Version {{version}}",
+  "installiert_keine": "Installiert: noch keine freigegebene Version"
+}

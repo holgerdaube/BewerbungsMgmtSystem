@@ -1,0 +1,13 @@
+{
+  "titel": "Documentation",
+  "einleitung": "Guides, feature overview and the changes in each version. Everything is stored on your computer.",
+  "lade_fehler": "The documentation could not be loaded.",
+  "laden": "Loading documentation…",
+  "leer": "There are no documents.",
+  "intern": "Internal",
+  "neuer_tab": "Open in new tab ↗",
+  "rahmen_titel": "Documentation: {{titel}}",
+  "version_fehler": "The version information could not be loaded.",
+  "installiert_version": "Installed: version {{version}}",
+  "installiert_keine": "Installed: no released version yet"
+}

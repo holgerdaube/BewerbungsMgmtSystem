@@ -25,6 +25,14 @@ from sqlmodel import Session, select
 
 from app import zeit
 from app.db import engine
+from app.sprache import aktuell, datum, tx, uebersetzt
+
+
+def _wert(wert):
+    """Maschinenwert aus der Datenbank (Priorität, Kanal, Status) in der Sprache der Ausgabe; leer bleibt leer."""
+    return uebersetzt(wert) if wert else wert
+
+from pipeline import bewerbungssprache
 from app.gesamtprozess import (
     absagen_kpi, bewerbungen_kpi, funnel_kpi, gespraeche_kpi, keine_reaktion_kpi,
 )
@@ -160,16 +168,26 @@ FUNNEL_TRICHTER_SPAN = 30
 # Format gezwängt, s. Spec: nur `groesster_verlust.text` ist Teil des Vertrags, die anderen vier
 # Zeilen formatiert jeder Konsument [Excel hier, Dashboard in Stufe B] selbst — dieselbe
 # Arbeitsteilung wie bei den rohen vs_vorstufe/vs_start-Prozenten).
-FUNNEL_ENGSTELLEN_ZEILEN = [
-    ("Relevant", "screening",
-     lambda p, basis: f"Screening: nur {p} der gesichteten Stellen sind relevant"),
-    ("Beworben", "bewerbungsquote",
-     lambda p, basis: f"Bewerbungsquote: {p} der relevanten Stellen wurden beworben"),
-    ("Antworten", "antwortquote",
-     lambda p, basis: f"Antwortquote {p} auf {basis} Bewerbungen"),
-    ("Interviews", "interview_konversion",
-     lambda p, basis: f"Interview-Konversion: {p} der Antworten führten zum Interview"),
-]
+def _engstellen_zeilen():
+    """(Stufe, Position in `stufen`, Schlüssel in `engstellen`, Satzbaustein) je Stufe 2 bis 5, mit den Texten der
+    Sprache, die beim Export gilt. Die Position (nicht der Stufenname) verbindet die Zeile mit `funnel["stufen"]`,
+    denn der Name kommt von `gesamtprozess` und kann in der Sprache des Servers stehen."""
+    def antwortquote(p, basis):
+        # Deutsch schreibt auch „1 Bewerbungen“ und bleibt so; der zweite Schlüssel (anderer Platzhalter, gleicher
+        # deutscher Text) lässt Englisch den Singular richtig schreiben.
+        if basis == 1:
+            return tx("Antwortquote {p} auf {eine} Bewerbungen", p=p, eine=basis)
+        return tx("Antwortquote {p} auf {basis} Bewerbungen", p=p, basis=basis)
+
+    return [
+        ("Relevant", 1, "screening",
+         lambda p, basis: tx("Screening: nur {p} der gesichteten Stellen sind relevant", p=p)),
+        ("Beworben", 2, "bewerbungsquote",
+         lambda p, basis: tx("Bewerbungsquote: {p} der relevanten Stellen wurden beworben", p=p)),
+        ("Antworten", 3, "antwortquote", antwortquote),
+        ("Interviews", 4, "interview_konversion",
+         lambda p, basis: tx("Interview-Konversion: {p} der Antworten führten zum Interview", p=p)),
+    ]
 
 
 def _fill(hexcode):
@@ -178,17 +196,29 @@ def _fill(hexcode):
 
 def _de_pct_tabelle(p):
     """'38,3%' (KEIN Leerzeichen) — Tabellenzellen-Konvention, deutsches Komma wie überall im
-    Export (Spec-Fallstrick). None (Basis 0) -> Gedankenstrich."""
+    Export (Spec-Fallstrick); Englisch '38.3%'. None (Basis 0) -> Gedankenstrich."""
     if p is None:
         return "—"
-    return f"{p:.1f}".replace(".", ",") + "%"
+    zahl = f"{p:.1f}"
+    return (zahl.replace(".", ",") if aktuell() == "de" else zahl) + "%"
 
 
 def _de_pct_prosa(p):
-    """'38,3 %' (MIT Leerzeichen) — Fließtext-Konvention fürs Engstellen-Panel."""
+    """'38,3 %' (MIT Leerzeichen) — Fließtext-Konvention fürs Engstellen-Panel; Englisch '38.3%'."""
     if p is None:
         return "—"
-    return f"{p:.1f}".replace(".", ",") + " %"
+    zahl = f"{p:.1f}"
+    return zahl.replace(".", ",") + " %" if aktuell() == "de" else zahl + "%"
+
+
+def _n_stellen(n):
+    """„12 Stellen“; Deutsch schreibt auch „1 Stellen“ und bleibt so, Englisch bekommt den Singular über den zweiten
+    Schlüssel (anderer Platzhalter, gleicher deutscher Text)."""
+    return tx("{eine} Stellen", eine=n) if n == 1 else tx("{anzahl} Stellen", anzahl=n)
+
+
+def _n_interviews(n):
+    return tx("{eins} Interviews", eins=n) if n == 1 else tx("{anzahl} Interviews", anzahl=n)
 
 
 def _funnel_sheet(wb, funnel):
@@ -199,16 +229,16 @@ def _funnel_sheet(wb, funnel):
     stufen = funnel["stufen"]
     engstellen = funnel["engstellen"]
 
-    ws = wb.create_sheet("Funnel", 1)
+    ws = wb.create_sheet(tx("Funnel"), 1)
     ws.sheet_view.showGridLines = False
 
     ws.merge_cells("A1:E1")
-    ws["A1"] = "Funnel — von der Stellenansicht zum Interview"
+    ws["A1"] = tx("Funnel — von der Stellenansicht zum Interview")
     ws["A1"].font = Font(color=_marke(), bold=True, size=14)
 
     # ── Tabelle (Zeile 3 Kopf, Zeilen 4-8 die fünf Stufen) ─────────────────────────────────
     kopf_row = 3
-    for i, h in enumerate(["Stufe", "Anzahl", "vs. Vorstufe", "vs. Start", "Kommentar"], start=1):
+    for i, h in enumerate([tx("Stufe"), tx("Anzahl"), tx("vs. Vorstufe"), tx("vs. Start"), tx("Kommentar")], start=1):
         c = ws.cell(row=kopf_row, column=i, value=h)
         c.fill = _header_fill()
         c.font = HEADER_FONT
@@ -216,7 +246,7 @@ def _funnel_sheet(wb, funnel):
 
     for i, stufe in enumerate(stufen):
         r = kopf_row + 1 + i
-        ws.cell(row=r, column=1, value=f"{i + 1} · {stufe['stufe']}").font = Font(color=_text(), size=10)
+        ws.cell(row=r, column=1, value=f"{i + 1} · {uebersetzt(stufe['stufe'])}").font = Font(color=_text(), size=10)
         anzahl_cell = ws.cell(row=r, column=2, value=stufe["anzahl"])
         anzahl_cell.font = Font(color=_text(), bold=True, size=11)
         ws.cell(row=r, column=3, value=_de_pct_tabelle(stufe["vs_vorstufe"])).font = Font(color=_text(), size=10)
@@ -230,7 +260,7 @@ def _funnel_sheet(wb, funnel):
     # ── Trichter-Grafik als Zell-Balken (Zeilen 11-15) — bewusst KEIN openpyxl-BarChart, dessen
     # per-Punkt-Farben sind fragil (Spec-Vorgabe). Eigener Spaltenbereich G..AJ (30 schmale
     # Spalten), unabhängig von der Tabellenbreite A:E oben. ─────────────────────────────────
-    ws.cell(row=10, column=1, value="Trichter").font = Font(color=_marke(), bold=True, size=12)
+    ws.cell(row=10, column=1, value=tx("Trichter")).font = Font(color=_marke(), bold=True, size=12)
     for c in range(FUNNEL_TRICHTER_START_COL, FUNNEL_TRICHTER_START_COL + FUNNEL_TRICHTER_SPAN):
         ws.column_dimensions[get_column_letter(c)].width = 1.2
 
@@ -254,26 +284,24 @@ def _funnel_sheet(wb, funnel):
         mitte_cell.font = Font(color=txt, bold=True, size=11)
         mitte_cell.alignment = Alignment(horizontal="center", vertical="center")
         ws.row_dimensions[r].height = 18
-        ws.cell(row=r, column=1, value=f"{i + 1} · {stufe['stufe']}").font = Font(color=_text(), size=9)
+        ws.cell(row=r, column=1, value=f"{i + 1} · {uebersetzt(stufe['stufe'])}").font = Font(color=_text(), size=9)
 
     # ── Engstellen im Funnel (ab Zeile 17) — 5 Zeilen, größter Verlust rot+fett, Ende-zu-Ende
     # gedämpft grau (Spec-Vorgabe). ─────────────────────────────────────────────────────────
     engstellen_kopf_row = trichter_row0 + len(stufen) + 1   # = 17
-    ws.cell(row=engstellen_kopf_row, column=1, value="Engstellen im Funnel").font = Font(color=_marke(), bold=True, size=12)
+    ws.cell(row=engstellen_kopf_row, column=1, value=tx("Engstellen im Funnel")).font = Font(color=_marke(), bold=True, size=12)
 
-    stufen_by_name = {s["stufe"]: (i, s) for i, s in enumerate(stufen)}
     groesster_verlust = engstellen.get("groesster_verlust")
     gv_stufe = groesster_verlust["stufe"] if groesster_verlust else None
 
     r = engstellen_kopf_row + 1
-    for stufe_name, key, textfn in FUNNEL_ENGSTELLEN_ZEILEN:
-        idx, _s = stufen_by_name[stufe_name]
+    for stufe_name, idx, key, textfn in _engstellen_zeilen():
         p = engstellen[key]
-        if stufe_name == gv_stufe:
+        if stufen[idx]["stufe"] == gv_stufe:
             text = groesster_verlust["text"]
             font = Font(color=FUNNEL_ROT, bold=True, size=10)
         elif p is None:
-            text = f"{stufe_name}: keine Daten"
+            text = tx("{stufe}: keine Daten", stufe=uebersetzt(stufe_name))
             font = Font(color=_text(), size=10)
         else:
             basis = stufen[idx - 1]["anzahl"]
@@ -287,8 +315,8 @@ def _funnel_sheet(wb, funnel):
 
     # Ende-zu-Ende — immer gedämpft grau, ist NIE `groesster_verlust`-Kandidat (Spec: nur
     # Stufe 2-5 vs_vorstufe kommen dafür infrage, Ende-zu-Ende ist vs_start der letzten Stufe).
-    eze_text = (f"Ende-zu-Ende: {_de_pct_prosa(engstellen['ende_zu_ende'])} — "
-                f"{stufen[0]['anzahl']} Stellen → {stufen[4]['anzahl']} Interviews")
+    eze_text = tx("Ende-zu-Ende: {prozent} — {stellen} → {interviews}", prozent=_de_pct_prosa(engstellen['ende_zu_ende']),
+                  stellen=_n_stellen(stufen[0]['anzahl']), interviews=_n_interviews(stufen[4]['anzahl']))
     ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=5)
     eze_cell = ws.cell(row=r, column=1, value=eze_text)
     eze_cell.font = Font(color="94A3B8", italic=True, size=10)
@@ -308,9 +336,29 @@ def _style_header(ws, ncols, autofilter=True):
         ws.auto_filter.ref = f"A1:{get_column_letter(ncols)}{ws.max_row}"
 
 
+def _datumsformat() -> str:
+    """Datumsformat der Zellen: Deutsch TT.MM.JJJJ, Englisch TT/MM/JJJJ (wie `sprache.datum`)."""
+    return "DD.MM.YYYY" if aktuell() == "de" else "DD/MM/YYYY"
+
+
 def _set_widths(ws, widths):
     for i, w in enumerate(widths, start=1):
         ws.column_dimensions[get_column_letter(i)].width = w
+
+
+def _breite_fuer_kopf(ws):
+    """Englische Spaltenköpfe sind oft länger als die deutschen; ihre Spalte wird so breit, dass der Kopf passt.
+    Deutsch bleibt unberührt (die festen Breiten oben sind darauf abgestimmt)."""
+    if aktuell() == "de":
+        return
+    for c in range(1, ws.max_column + 1):
+        kopf = ws.cell(row=1, column=c).value
+        if kopf is None:
+            continue
+        buchstabe = get_column_letter(c)
+        noetig = len(str(kopf)) + 3
+        if (ws.column_dimensions[buchstabe].width or 0) < noetig:
+            ws.column_dimensions[buchstabe].width = noetig
 
 
 def _grund(j, grund_manuell):
@@ -325,7 +373,7 @@ def _grund(j, grund_manuell):
     if j.match_rationale and j.match_rationale.strip():
         r = j.match_rationale.strip()
         return r if len(r) <= 200 else r[:200].rstrip() + "…"
-    return "Begründung offen"
+    return tx("Begründung offen")
 
 
 def _fit_faerben(cell, score):
@@ -349,11 +397,11 @@ def _job_zeile(ws, j, ats, beirat, match100, grund_manuell, status=None,
     beirat_note = beirat.get(j.id)
     kopf = [
         j.company_name, j.title, j.match_score, match100.get(j.id), ats.get(j.id), beirat_note,
-        j.portal or ("Link" if j.url else None),
+        uebersetzt(j.portal) if j.portal else ("Link" if j.url else None),
     ]
     offset = 0
     if status is not None:  # Aussortiert-Blatt: Status vorne, „Grund" statt Schritt/Fällig
-        werte = [status] + kopf + [_grund(j, grund_manuell), norm_plan(j.plan_ab), j.location]
+        werte = [uebersetzt(status)] + kopf + [_grund(j, grund_manuell), norm_plan(j.plan_ab), j.location]
         offset = 1
     else:
         terminal = j.status in TERMINAL_STATUSES
@@ -366,6 +414,7 @@ def _job_zeile(ws, j, ats, beirat, match100, grund_manuell, status=None,
     if status is not None:
         bg, txt = STATUS_FARBEN[status]
         sc = ws.cell(row=r, column=1)
+        sc.value = uebersetzt(status)
         sc.fill = _fill(bg)
         sc.font = Font(color=txt, size=9)
     else:
@@ -394,7 +443,7 @@ def _job_zeile(ws, j, ats, beirat, match100, grund_manuell, status=None,
         # Echtes Datum, kein String (P2-30) — der Nutzer will danach sortieren/filtern können; ein
         # Textwert wie „–“ würde in dieser Spalte die Sortierung zerstören, s. Spec §1.1. Format
         # gilt auch bei leerer Zelle (kein Bewerbungsdatum bekannt) — schadet dort nicht.
-        ws.cell(row=r, column=offset + 12).number_format = "DD.MM.YYYY"
+        ws.cell(row=r, column=offset + 12).number_format = _datumsformat()
 
 
 def _datum_aus_text(wert):
@@ -466,10 +515,11 @@ def _bewerbungen_sheet(wb, jobs, apps, interviews, ats, match100, beworben_am, r
     zeilen.sort(key=lambda j: (j.company_name or "").lower())
     zeilen.sort(key=lambda j: beworben_am.get(j.id) or datetime.date.min, reverse=True)
 
-    ws = wb.create_sheet("Bewerbungen")
-    ws.append(BEWERBUNGEN_HEADERS)
+    ws = wb.create_sheet(tx("Bewerbungen"))
+    ws.append([uebersetzt(h) for h in BEWERBUNGEN_HEADERS])
     erste_datumsspalte = BEWERBUNGEN_HEADERS.index("Gefunden am") + 1
     erste_runde = BEWERBUNGEN_HEADERS.index("Runde 1") + 1
+    datumsformat = _datumsformat()
     for j in zeilen:
         je_runde = runden.get(j.id, {})
         ws.append([j.company_name, j.title, j.match_score, match100.get(j.id), ats.get(j.id),
@@ -481,13 +531,14 @@ def _bewerbungen_sheet(wb, jobs, apps, interviews, ats, match100, beworben_am, r
         ws.cell(row=r, column=4).alignment = Alignment(horizontal="center")  # Match-100
         ws.cell(row=r, column=2).alignment = Alignment(wrap_text=True, vertical="top")
         for c in range(erste_datumsspalte, len(BEWERBUNGEN_HEADERS) + 1):
-            ws.cell(row=r, column=c).number_format = "DD.MM.YYYY"
+            ws.cell(row=r, column=c).number_format = datumsformat
         # Gespräch ohne Datum: Zelle bleibt leer, der Kommentar zeigt, dass die Runde stattfand
         for n, d in je_runde.items():
             if d is None:
                 ws.cell(row=r, column=erste_runde + n - 1).comment = Comment(
-                    "Gespräch erfasst, Datum fehlt in der App", "BMS")
+                    tx("Gespräch erfasst, Datum fehlt in der App"), "BMS")
     _set_widths(ws, BEWERBUNGEN_WIDTHS)
+    _breite_fuer_kopf(ws)
     _style_header(ws, len(BEWERBUNGEN_HEADERS))
     return ws
 
@@ -510,7 +561,7 @@ def _dashboard_funnel_block(ws, funnel):
     # alle Zeilenhöhen einheitlich (die KPI-Wertzeilen 5/8/12 oben sind 26 pt hoch, Balken in
     # diesem Bereich wären ungleich dick).
     ws.cell(row=16, column=DASH_FUNNEL_START_COL,
-            value="Funnel — vom Sichten zum Interview").font = Font(color=_marke(), bold=True, size=12)
+            value=tx("Funnel — vom Sichten zum Interview")).font = Font(color=_marke(), bold=True, size=12)
 
     stufen = funnel["stufen"]
     stufe1_anzahl = stufen[0]["anzahl"]
@@ -532,7 +583,7 @@ def _dashboard_funnel_block(ws, funnel):
         # Label + Konversion rechts vom Streifen (Stufe 1 zeigt 100 % statt „—")
         pct = _de_pct_prosa(stufe["vs_vorstufe"] if i else 100.0)
         ws.cell(row=r, column=DASH_FUNNEL_START_COL + DASH_FUNNEL_SPAN + 1,
-                value=f"{stufe['stufe']} · {pct}").font = Font(color="64748B", size=9)
+                value=f"{uebersetzt(stufe['stufe'])} · {pct}").font = Font(color="64748B", size=9)
 
     # Ohne Stellen gibt es keinen größten Verlust (None), wie im Funnel-Blatt oben; ohne die Prüfung
     # brach der ganze Export einer frischen Installation hier ab (P2-62).
@@ -597,7 +648,7 @@ def build_workbook() -> Path:
             if not cv.job_id or cv.status != "fertig" or not cv.language:
                 continue
             sprache = cv.language.strip().upper()
-            if sprache in ("DE", "EN"):
+            if sprache in bewerbungssprache.CODES:
                 cv_version[cv.job_id] = f"Tailored ({sprache})"
         # Blatt „Bewerbungen" (P2-81): Datum je Gesprächsrunde und Absagedatum je Stelle
         runden = _gespraechsrunden(interviews, s.exec(select(Transcript)).all())
@@ -624,22 +675,22 @@ def build_workbook() -> Path:
     top_matches = sum(1 for j in jobs if (j.match_score or 0) >= 4)
 
     ws.merge_cells("A1:J1")
-    ws["A1"] = "Bewerbungs-Management — Stand"
+    ws["A1"] = tx("Bewerbungs-Management — Stand")
     ws["A1"].font = Font(color=_marke(), bold=True, size=20)
     from pipeline.user_profile import user_name
     ws.merge_cells("A2:H2")
-    ws["A2"] = f"{user_name()} · Export aus dem Bewerbungs-Mgmt-System"
+    ws["A2"] = tx("{name} · Export aus dem Bewerbungs-Mgmt-System", name=user_name())
     ws["A2"].font = LABEL_FONT
-    ws["J2"] = datetime.date.today().strftime("%d.%m.%Y")
+    ws["J2"] = datum(datetime.date.today())
     ws["J2"].font = Font(color=_text(), bold=True, size=11)
     ws["J2"].alignment = Alignment(horizontal="right")
 
-    kpis1 = [("Aktive Stellen", len(jobs)), ("Laufende Bewerbungen", active_apps),
-             ("Bewerbungen gesamt", len(apps)), ("Antworten", resp_kpis["responses"]),
-             ("Response Rate", f"{response_rate} %" if response_rate is not None else "—")]
-    kpis2 = [("Top-Zielstellen (≥4)", top_matches), ("Follow-ups fällig", fu_overdue),
-             ("Follow-ups offen", len(fu_jobs)), ("Netzwerk-Aktionen fällig", nc_overdue),
-             ("Ø Antwortzeit (h)", avg_resp if avg_resp is not None else "—")]
+    kpis1 = [(tx("Aktive Stellen"), len(jobs)), (tx("Laufende Bewerbungen"), active_apps),
+             (tx("Bewerbungen gesamt"), len(apps)), (tx("Antworten"), resp_kpis["responses"]),
+             (tx("Response Rate"), tx("{wert} %", wert=response_rate) if response_rate is not None else "—")]
+    kpis2 = [(tx("Top-Zielstellen (≥4)"), top_matches), (tx("Follow-ups fällig"), fu_overdue),
+             (tx("Follow-ups offen"), len(fu_jobs)), (tx("Netzwerk-Aktionen fällig"), nc_overdue),
+             (tx("Ø Antwortzeit (h)"), avg_resp if avg_resp is not None else "—")]
     for base_row, kpis in ((4, kpis1), (7, kpis2)):
         for i, (label, wert) in enumerate(kpis):
             col = 1 + i * 2
@@ -658,24 +709,28 @@ def build_workbook() -> Path:
     abs_kpi = absagen_kpi(jobs, outreach)
     kr_kpi = keine_reaktion_kpi(jobs, emails, apps, outreach)
 
-    ws.cell(row=10, column=1, value="Gesamtprozess seit Beginn").font = Font(color=_marke(), bold=True, size=12)
+    ws.cell(row=10, column=1, value=tx("Gesamtprozess seit Beginn")).font = Font(color=_marke(), bold=True, size=12)
     # Layout-Muster von kpis1/kpis2 exakt übernommen (Label klein grau, Wert groß fett Navy),
     # zusätzlich je Karte 1-2 kleine graue Split-Zeilen — Vorbild Dashboard.tsx::
     # GesamtprozessSection, gleiche Beschriftungen/Reihenfolge wie dort.
     kpis3 = [
-        ("Bewerbungen gesamt", bew_kpi["wert"],
-         [f"davon Ausschreibungen {bew_kpi['splits'].get('Positionsausschreibungen', 0)} · "
-          f"Netzwerk {bew_kpi['splits'].get('Netzwerk', 0)}"]),
-        ("Gespräche gesamt", ges_kpi["wert"],
-         [f"Headhunter {ges_kpi['splits'].get('Headhunter', 0)} · "
-          f"Recruiter {ges_kpi['splits'].get('Recruiter (Firma)', 0)} · "
-          f"Hiring Manager {ges_kpi['splits'].get('Hiring Manager', 0)} · "
-          f"Fachbereich/Sonstige {ges_kpi['splits'].get('Fachbereich/Sonstige', 0)}",
-          f"davon vor Ort {ges_kpi['splits'].get('davon_vor_Ort', 0)}"]),
-        ("Absagen gesamt", abs_kpi["wert"],
-         [f"davon Ausschreibungen {abs_kpi['splits'].get('Ausschreibungen', 0)} · "
-          f"Netzwerk {abs_kpi['splits'].get('Netzwerk', 0)}"]),
-        ("Keine Reaktion", kr_kpi["wert"], []),
+        (tx("Bewerbungen gesamt"), bew_kpi["wert"],
+         [tx("davon Ausschreibungen {ausschreibungen} · Netzwerk {netzwerk}",
+             ausschreibungen=bew_kpi['splits'].get('Positionsausschreibungen', 0),
+             netzwerk=bew_kpi['splits'].get('Netzwerk', 0))]),
+        (tx("Gespräche gesamt"), ges_kpi["wert"],
+         [tx("Headhunter {headhunter} · Recruiter {recruiter} · Hiring Manager {manager} · "
+             "Fachbereich/Sonstige {fachbereich}",
+             headhunter=ges_kpi['splits'].get('Headhunter', 0),
+             recruiter=ges_kpi['splits'].get('Recruiter (Firma)', 0),
+             manager=ges_kpi['splits'].get('Hiring Manager', 0),
+             fachbereich=ges_kpi['splits'].get('Fachbereich/Sonstige', 0)),
+          tx("davon vor Ort {anzahl}", anzahl=ges_kpi['splits'].get('davon_vor_Ort', 0))]),
+        (tx("Absagen gesamt"), abs_kpi["wert"],
+         [tx("davon Ausschreibungen {ausschreibungen} · Netzwerk {netzwerk}",
+             ausschreibungen=abs_kpi['splits'].get('Ausschreibungen', 0),
+             netzwerk=abs_kpi['splits'].get('Netzwerk', 0))]),
+        (tx("Keine Reaktion"), kr_kpi["wert"], []),
     ]
     for i, (label, wert, split_lines) in enumerate(kpis3):
         col = 1 + i * 2
@@ -687,30 +742,30 @@ def build_workbook() -> Path:
 
     # Drei Spaltenblöcke: Pipeline je Status · Suchplan A/B/C · Top-Portale
     r0 = 16
-    ws.cell(row=r0, column=1, value="Pipeline — Stellen je Status").font = Font(color=_marke(), bold=True, size=12)
+    ws.cell(row=r0, column=1, value=tx("Pipeline — Stellen je Status")).font = Font(color=_marke(), bold=True, size=12)
     r = r0 + 1
     for status in PIPELINE_ORDER + AUSSORTIERT:
         n = by_status.get(status, 0)
         if not n:
             continue
         bg, txt = STATUS_FARBEN[status]
-        c = ws.cell(row=r, column=1, value=status)
+        c = ws.cell(row=r, column=1, value=uebersetzt(status))
         c.fill = _fill(bg)
         c.font = Font(color=txt, bold=True, size=10)
         ws.cell(row=r, column=2, value=n).font = Font(color=_text(), bold=True, size=11)
         r += 1
 
     by_plan = Counter(norm_plan(j.plan_ab) or "ohne" for j in jobs)
-    ws.cell(row=r0, column=4, value="Stellen je Suchplan").font = Font(color=_marke(), bold=True, size=12)
+    ws.cell(row=r0, column=4, value=tx("Stellen je Suchplan")).font = Font(color=_marke(), bold=True, size=12)
     for i, plan in enumerate(["A", "B", "C", "ohne"]):
         ws.cell(row=r0 + 1 + i, column=4,
-                value=f"Plan {plan}" if plan != "ohne" else "ohne Plan").font = Font(color=_text(), size=10)
+                value=tx("Plan {plan}", plan=plan) if plan != "ohne" else tx("ohne Plan")).font = Font(color=_text(), size=10)
         ws.cell(row=r0 + 1 + i, column=5, value=by_plan.get(plan, 0)).font = Font(color=_text(), bold=True, size=11)
 
-    by_portal = Counter((j.portal or "Unbekannt") for j in jobs)
-    ws.cell(row=r0, column=7, value="Top-Portale").font = Font(color=_marke(), bold=True, size=12)
+    by_portal = Counter((j.portal or tx("Unbekannt")) for j in jobs)
+    ws.cell(row=r0, column=7, value=tx("Top-Portale")).font = Font(color=_marke(), bold=True, size=12)
     for i, (portal, n) in enumerate(by_portal.most_common(7)):
-        ws.cell(row=r0 + 1 + i, column=7, value=portal).font = Font(color=_text(), size=10)
+        ws.cell(row=r0 + 1 + i, column=7, value=uebersetzt(portal)).font = Font(color=_text(), size=10)
         ws.cell(row=r0 + 1 + i, column=8, value=n).font = Font(color=_text(), bold=True, size=11)
 
     _set_widths(ws, [17, 6, 3, 14, 6, 3, 16, 6, 3, 10])
@@ -725,9 +780,9 @@ def build_workbook() -> Path:
     _funnel_sheet(wb, funnel)
 
     # ── Blatt 2: Stellen — pro Status gruppiert, farbige Trennzeilen ───────────
-    ws2 = wb.create_sheet("Stellen")
+    ws2 = wb.create_sheet(tx("Stellen"))
     ws2.sheet_view.showGridLines = False
-    ws2.append(JOB_HEADERS)
+    ws2.append([uebersetzt(h) for h in JOB_HEADERS])
     for status in PIPELINE_ORDER:
         gruppe = [j for j in jobs if (j.status or "Neu") == status]
         if not gruppe:
@@ -738,13 +793,14 @@ def build_workbook() -> Path:
         bg, txt = STATUS_FARBEN[status]
         for c in range(1, len(JOB_HEADERS) + 1):
             ws2.cell(row=r, column=c).fill = _fill(bg)
-        kopf = ws2.cell(row=r, column=1, value=f"{status}  ({len(gruppe)})")
+        kopf = ws2.cell(row=r, column=1, value=f"{uebersetzt(status)}  ({len(gruppe)})")
         kopf.font = Font(color=txt, bold=True, size=11)
         ws2.row_dimensions[r].height = 20
         for j in gruppe:
             _job_zeile(ws2, j, ats, beirat, match100, grund_manuell,
                        beworben_am=beworben_am.get(j.id), cv_version=cv_version.get(j.id))
     _set_widths(ws2, JOB_WIDTHS)
+    _breite_fuer_kopf(ws2)
     _style_header(ws2, len(JOB_HEADERS), autofilter=False)  # Trennzeilen würden mitfiltern
     # CV-Version-Dropdown (P2-30, Spalte M) — WEICH: showErrorMessage=False lässt freies Tippen
     # zu, die Liste ist nur ein Vorschlag. BEWUSST ohne Versionsnummer (s. CV_VERSION_OPTIONEN).
@@ -762,100 +818,109 @@ def build_workbook() -> Path:
     _bewerbungen_sheet(wb, jobs, apps, interviews, ats, match100, beworben_am, runden, absage_am)
 
     # ── Blatt 3: Aussortiert — flach, filterbar ────────────────────────────────
-    ws3 = wb.create_sheet("Aussortiert")
-    ws3.append(AUSSORTIERT_HEADERS)
+    ws3 = wb.create_sheet(tx("Aussortiert"))
+    ws3.append([uebersetzt(h) for h in AUSSORTIERT_HEADERS])
     for status in AUSSORTIERT:
         gruppe = [j for j in jobs if (j.status or "Neu") == status]
         gruppe.sort(key=lambda j: (-(j.match_score or 0), (j.company_name or "").lower()))
         for j in gruppe:
             _job_zeile(ws3, j, ats, beirat, match100, grund_manuell, status=status)
     _set_widths(ws3, AUSSORTIERT_WIDTHS)
+    _breite_fuer_kopf(ws3)
     _style_header(ws3, len(AUSSORTIERT_HEADERS))
 
     # ── Blatt „Referenzen" (P2-30) — bewusst NACH Aussortiert, VOR Kontakte: gehört inhaltlich
     # zu den Bewerbungsunterlagen (wer bürgt für mich), nicht zu den Netzwerklisten. Leer außer
     # Kopfzeile (Vorgabe) — die beiden Dropdowns liegen aber schon auf Zeile 2–200, damit
     # sie beim Befüllen von Hand sofort da sind.
-    ws_ref = wb.create_sheet("Referenzen")
-    REFERENZEN_HEADERS = ["Name", "Rolle / Position", "Firma", "Zeitraum gemeinsam", "Kategorie",
-                          "Kontakt", "Zugesagt", "Zuletzt kontaktiert", "Notiz"]
+    ws_ref = wb.create_sheet(tx("Referenzen"))
+    REFERENZEN_HEADERS = [tx("Name"), tx("Rolle / Position"), tx("Firma"), tx("Zeitraum gemeinsam"), tx("Kategorie"),
+                          tx("Kontakt"), tx("Zugesagt"), tx("Zuletzt kontaktiert"), tx("Notiz")]
     REFERENZEN_WIDTHS = [24, 26, 22, 18, 18, 28, 14, 16, 46]
     ws_ref.append(REFERENZEN_HEADERS)
     _set_widths(ws_ref, REFERENZEN_WIDTHS)
+    _breite_fuer_kopf(ws_ref)
     _style_header(ws_ref, len(REFERENZEN_HEADERS))
     # Kategorie (Spalte E) — weich, dieselbe Haltung wie CV-Version oben: Vorschlag, kein Zwang.
     # „Kunde"/„Sonstige" ergänzt (der ursprüngliche Dreiervorschlag reicht in der Praxis nicht, Spec §1.3).
     dv_kategorie = DataValidation(
-        type="list", formula1='"Ehemaliger Chef,Peer,Direct Report,Kunde,Sonstige"',
+        type="list",
+        formula1='"' + ",".join([tx("Ehemaliger Chef"), tx("Peer"), tx("Direct Report"), tx("Kunde"), tx("Sonstige")]) + '"',
         showErrorMessage=False)
     ws_ref.add_data_validation(dv_kategorie)
     dv_kategorie.add("E2:E200")
     # Zugesagt (Spalte G) — ebenso weich.
-    dv_zugesagt = DataValidation(type="list", formula1='"Ja,Nein,Ausstehend"', showErrorMessage=False)
+    dv_zugesagt = DataValidation(type="list", formula1='"' + ",".join([tx("Ja"), tx("Nein"), tx("Ausstehend")]) + '"',
+                                 showErrorMessage=False)
     ws_ref.add_data_validation(dv_zugesagt)
     dv_zugesagt.add("G2:G200")
 
     # ── Blatt 4: Kontakte (Stellen-Kontakte) ───────────────────────────────────
-    ws4 = wb.create_sheet("Kontakte")
-    ws4.append(["Name", "Rolle", "Firma", "Stelle", "E-Mail", "Telefon", "LinkedIn", "Notizen"])
+    ws4 = wb.create_sheet(tx("Kontakte"))
+    ws4.append([tx("Name"), tx("Rolle"), tx("Firma"), tx("Stelle"), tx("E-Mail"), tx("Telefon"), "LinkedIn", tx("Notizen")])
     job_by_id = {j.id: j for j in jobs}
     for k in sorted(contacts, key=lambda k: ((companies.get(k.company_id).name if companies.get(k.company_id) else "").lower(), (k.name or "").lower())):
         comp = companies.get(k.company_id)
         j = job_by_id.get(k.job_id)
-        ws4.append([k.name, k.role, comp.name if comp else None, j.title if j else None,
+        ws4.append([k.name, _wert(k.role), comp.name if comp else None, j.title if j else None,
                     k.email, k.phone, k.linkedin_url, k.notes])
     _set_widths(ws4, [24, 22, 24, 36, 30, 16, 40, 50])
+    _breite_fuer_kopf(ws4)
     _style_header(ws4, 8)
 
     # ── Blatt 5: Netzwerk ──────────────────────────────────────────────────────
-    ws5 = wb.create_sheet("Netzwerk")
-    ws5.append(["Name", "Beziehung", "Unternehmen", "Rolle", "Priorität", "Letzter Kontakt",
-                "Kanal", "Nächste Aktion", "Fällig am", "Notizen"])
+    ws5 = wb.create_sheet(tx("Netzwerk"))
+    ws5.append([tx("Name"), tx("Beziehung"), tx("Unternehmen"), tx("Rolle"), tx("Priorität"), tx("Letzter Kontakt"),
+                tx("Kanal"), tx("Nächste Aktion"), tx("Fällig am"), tx("Notizen")])
     for n in sorted(netz, key=lambda n: ((n.prioritaet or "z"), (n.name or "").lower())):
-        ws5.append([n.name, n.beziehung, n.unternehmen, n.rolle, n.prioritaet,
-                    n.letzter_kontakt, n.kanal, n.next_action, n.next_action_date, n.notizen])
+        ws5.append([n.name, n.beziehung, n.unternehmen, n.rolle, _wert(n.prioritaet),
+                    n.letzter_kontakt, _wert(n.kanal), n.next_action, n.next_action_date, n.notizen])
         if n.next_action_date and n.next_action_date[:10] <= heute:
             ws5.cell(row=ws5.max_row, column=9).font = Font(color=FUNNEL_ROT, bold=True)
     _set_widths(ws5, [22, 16, 24, 26, 10, 14, 12, 34, 11, 46])
+    _breite_fuer_kopf(ws5)
     _style_header(ws5, 10)
 
     # ── Blatt 6: Headhunter ────────────────────────────────────────────────────
-    ws6 = wb.create_sheet("Headhunter")
-    ws6.append(["Firma", "Ansprechpartner", "Fokus", "Region", "Status", "Letzter Kontakt",
-                "Webseite", "Notizen"])
+    ws6 = wb.create_sheet(tx("Headhunter"))
+    ws6.append([tx("Firma"), tx("Ansprechpartner"), tx("Fokus"), tx("Region"), tx("Status"), tx("Letzter Kontakt"),
+                tx("Webseite"), tx("Notizen")])
     for h in sorted(hh, key=lambda h: (h.firma or "").lower()):
-        ws6.append([h.firma, h.ansprechpartner, h.fokus, h.region, h.status,
+        ws6.append([h.firma, h.ansprechpartner, h.fokus, h.region, _wert(h.status),
                     h.letzter_kontakt, h.webseite, h.notizen])
         if h.webseite:
             link = ws6.cell(row=ws6.max_row, column=7)
             link.hyperlink = h.webseite if h.webseite.startswith("http") else f"https://{h.webseite}"
             link.font = LINK_FONT
     _set_widths(ws6, [24, 24, 28, 14, 16, 14, 30, 50])
+    _breite_fuer_kopf(ws6)
     _style_header(ws6, 8)
 
     # ── Blatt 7: Zielfirmen ────────────────────────────────────────────────────
-    ws7 = wb.create_sheet("Zielfirmen")
-    ws7.append(["Company", "Branche", "Größe (MA)", "HQ", "Tier", "Szenario", "Key Contact",
-                "Status", "Karriereseite", "Wachstumssignal", "Einschätzung"])
+    ws7 = wb.create_sheet(tx("Zielfirmen"))
+    ws7.append([tx("Company"), tx("Branche"), tx("Größe (MA)"), "HQ", "Tier", tx("Szenario"), tx("Key Contact"),
+                tx("Status"), tx("Karriereseite"), tx("Wachstumssignal"), tx("Einschätzung")])
     for z in sorted(ziele, key=lambda z: ((z.tier or "9"), (z.company or "").lower())):
         url = z.karriere_url or z.website
         ws7.append([z.company, z.industry, z.size_ma, z.location_hq, z.tier, z.scenario,
-                    z.key_contact, z.connection_status, url, z.wachstumssignal, z.einschaetzung])
+                    z.key_contact, _wert(z.connection_status), url, z.wachstumssignal, z.einschaetzung])
         if url:
             link = ws7.cell(row=ws7.max_row, column=9)
             link.hyperlink = url if url.startswith("http") else f"https://{url}"
             link.font = LINK_FONT
     _set_widths(ws7, [26, 26, 12, 18, 8, 10, 30, 18, 30, 40, 24])
+    _breite_fuer_kopf(ws7)
     _style_header(ws7, 11)
 
     # ── Blatt 8: Outreach (Spiegel des Drive-Trackers) ─────────────────────────
-    ws8 = wb.create_sheet("Outreach")
-    ws8.append(["Datum", "Kontakt", "Unternehmen", "Typ", "Kanal", "Antwort", "Antwort-Datum",
-                "Nächster Schritt", "Next-Action", "Status", "Notizen"])
+    ws8 = wb.create_sheet(tx("Outreach"))
+    ws8.append([tx("Datum"), tx("Kontakt"), tx("Unternehmen"), tx("Typ"), tx("Kanal"), tx("Antwort"), tx("Antwort-Datum"),
+                tx("Nächster Schritt"), tx("Next-Action"), tx("Status"), tx("Notizen")])
     for o in sorted(outreach, key=lambda o: o.datum or "", reverse=True):
-        ws8.append([o.datum, o.kontakt, o.unternehmen, o.typ, o.kanal, o.antwort,
-                    o.antwort_datum, o.next_step, o.next_action_datum, o.status, o.notizen])
+        ws8.append([o.datum, o.kontakt, o.unternehmen, _wert(o.typ), _wert(o.kanal), _wert(o.antwort),
+                    o.antwort_datum, o.next_step, o.next_action_datum, _wert(o.status), o.notizen])
     _set_widths(ws8, [11, 22, 24, 16, 14, 8, 12, 36, 11, 14, 50])
+    _breite_fuer_kopf(ws8)
     _style_header(ws8, 11)
 
     out = EXPORT_DIR / dated_filename("Bewerbungs-Stand", "xlsx")

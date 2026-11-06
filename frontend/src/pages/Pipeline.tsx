@@ -3,8 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import { api, type JobRow } from '../api'
 import { ScoreBadge, STATUS_FARBEN } from '../components/ui'
 import { useReviewCount } from '../context/ReviewCount'
+import { t } from '../i18n'
+import { wert } from '../i18n/werte'
 
-const COLUMNS = ['Neu', 'Prüfen', 'Beworben', 'Interview', 'Angebot', 'Absage']
+const COLUMNS = ['Neu', 'Prüfen', 'Beworben', 'Interview', 'Angebot', 'Absage'] // i18n-ok: DB-Werte
 // Spaltenpunkte aus der kanonischen Styleguide-Map (18.07.) — Kanban und Status-Balken
 // sprechen dieselbe Farbsprache.
 const COL_ACCENT: Record<string, string> =
@@ -32,15 +34,18 @@ export default function Pipeline() {
     }
   }
 
-  if (err) return <div className="rounded-lg bg-rose-50 p-4 text-rose-700">Fehler: {err}</div>
+  if (err) return <div className="rounded-lg bg-rose-50 p-4 text-rose-700">{t('pipeline:fehler', { meldung: err })}</div>
 
   const archived = jobs.filter((j) => !COLUMNS.includes(j.status || '')).length
 
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-2xl font-bold text-brand-navy">Pipeline</h1>
-        <p className="text-sm text-slate-500">Karte per Drag &amp; Drop in eine andere Spalte ziehen ändert den Status · {archived} archiviert (Keine Rückmeldung / Kein Match / Beirat abgelehnt / Nicht verfügbar / Geparkt)</p>
+        <h1 className="text-2xl font-bold text-brand-navy">{t('common:nav.pipeline')}</h1>
+        <p className="text-sm text-slate-500">{t('pipeline:untertitel', {
+          anzahl: archived,
+          stati: ['Keine Rückmeldung', 'Kein Match', 'Beirat abgelehnt', 'Nicht verfügbar', 'Geparkt'].map((s) => wert('status', s)).join(' / '), // i18n-ok: DB-Werte
+        })}</p>
       </div>
 
       <div className="flex gap-3 overflow-x-auto pb-2">
@@ -56,7 +61,7 @@ export default function Pipeline() {
             >
               <div className="flex items-center justify-between border-b border-slate-200 px-3 py-2">
                 <span className="flex items-center gap-2 text-sm font-semibold text-brand-navy">
-                  <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: COL_ACCENT[col] }} />{col}
+                  <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: COL_ACCENT[col] }} />{wert('status', col)}
                 </span>
                 <span className="rounded-full bg-white px-2 text-xs font-medium text-slate-500">{items.length}</span>
               </div>
@@ -75,12 +80,12 @@ export default function Pipeline() {
                       <div className="min-w-0">
                         <div className="truncate text-sm font-medium text-brand-navy">{j.company_name}</div>
                         <div className="line-clamp-2 text-xs text-slate-500">{j.title}</div>
-                        <div className="mt-1 text-[11px] text-slate-400">{j.portal}{j.location ? ` · ${j.location}` : ''}</div>
+                        <div className="mt-1 text-[11px] text-slate-400">{j.portal ? wert('portal', j.portal) : ''}{j.location ? ` · ${j.location}` : ''}</div>
                       </div>
                     </div>
                   </div>
                 ))}
-                {items.length === 0 && <div className="px-1 py-6 text-center text-xs text-slate-300">leer</div>}
+                {items.length === 0 && <div className="px-1 py-6 text-center text-xs text-slate-300">{t('pipeline:leer')}</div>}
               </div>
             </div>
           )

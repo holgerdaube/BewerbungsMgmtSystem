@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api, type DokuEintrag, type VersionInfo } from '../api'
+import { t } from '../i18n'
 
 // P2-59: Dokumentationsseite im Muster von Rechtliches.tsx (Tabs), aber ohne eigenen
 // Markdown-Renderer: Das Backend rendert die Dokumente dieser Installation mit demselben
@@ -18,16 +19,16 @@ import { api, type DokuEintrag, type VersionInfo } from '../api'
 // Zeile über dem Rahmen im Tab „Version“: die laufende Version aus GET /api/version, bei einer
 // Git-Installation zusätzlich der Entwicklungsstand (dort gilt keine feste Version).
 function InstalliertZeile({ info, fehler }: { info: VersionInfo | null; fehler: boolean }) {
-  if (fehler) return <span className="text-sm text-slate-400">Versionsstand konnte nicht geladen werden.</span>
+  if (fehler) return <span className="text-sm text-slate-400">{t('doku:version_fehler')}</span>
   if (!info) return null
   const bekannt = !!info.version && info.version !== '0.0.0'
   return (
     <span className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
       <span className="text-sm font-semibold text-brand-navy">
-        {bekannt ? `Installiert: Version ${info.version}` : 'Installiert: noch keine freigegebene Version'}
+        {bekannt ? t('doku:installiert_version', { version: info.version }) : t('doku:installiert_keine')}
       </span>
       {info.installation === 'git' && info.entwicklungsstand && (
-        <span className="text-xs text-slate-500">Entwicklungsstand: {info.entwicklungsstand}</span>
+        <span className="text-xs text-slate-500">{t('common:layout.entwicklungsstand', { stand: info.entwicklungsstand })}</span>
       )}
     </span>
   )
@@ -66,19 +67,19 @@ export default function Dokumentation() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-2xl font-bold text-brand-navy">Dokumentation</h1>
+        <h1 className="text-2xl font-bold text-brand-navy">{t('doku:titel')}</h1>
         <p className="text-sm text-slate-500">
-          Anleitungen, Funktionsübersicht und die Änderungen je Version. Alle Texte liegen auf Ihrem Rechner.
+          {t('doku:einleitung')}
         </p>
       </div>
 
       {ladeFehler && (
         <p className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800">
-          Die Dokumentation konnte nicht geladen werden.
+          {t('doku:lade_fehler')}
         </p>
       )}
-      {liste === null && !ladeFehler && <p className="text-sm text-slate-400">Lade Dokumentation…</p>}
-      {liste !== null && !aktiv && <p className="text-sm text-slate-500">Es sind keine Dokumente vorhanden.</p>}
+      {liste === null && !ladeFehler && <p className="text-sm text-slate-400">{t('doku:laden')}</p>}
+      {liste !== null && !aktiv && <p className="text-sm text-slate-500">{t('doku:leer')}</p>}
 
       {aktiv && (
         <>
@@ -86,7 +87,7 @@ export default function Dokumentation() {
             {kunde.map(tab)}
             {intern.length > 0 && (
               <span className="ml-2 self-center border-l border-slate-200 pl-3 pr-1 text-[11px] font-medium uppercase tracking-wide text-slate-400">
-                Intern
+                {t('doku:intern')}
               </span>
             )}
             {intern.map(tab)}
@@ -96,7 +97,7 @@ export default function Dokumentation() {
             {aktiv.id === 'version' && <InstalliertZeile info={version} fehler={versionFehler} />}
             <a href={`/api/doku/${encodeURIComponent(aktiv.id)}`} target="_blank" rel="noopener"
               className="ml-auto text-sm text-brand-cyan hover:underline">
-              In neuem Tab öffnen ↗
+              {t('doku:neuer_tab')}
             </a>
           </div>
 
@@ -104,7 +105,7 @@ export default function Dokumentation() {
               fügte dem Verlauf des Browsers Einträge hinzu, und Zurück spränge dann im Rahmen statt
               auf die vorige Seite. */}
           <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-            <iframe key={aktiv.id} title={`Dokumentation: ${aktiv.titel}`}
+            <iframe key={aktiv.id} title={t('doku:rahmen_titel', { titel: aktiv.titel })}
               src={`/api/doku/${encodeURIComponent(aktiv.id)}`}
               sandbox="allow-popups allow-popups-to-escape-sandbox"
               className="block h-[75vh] min-h-[420px] w-full border-0" />

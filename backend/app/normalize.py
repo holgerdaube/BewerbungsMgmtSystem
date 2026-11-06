@@ -4,6 +4,7 @@ Every function keeps things conservative: when in doubt it returns a neutral buc
 rather than guessing, and callers always keep the original raw text alongside.
 """
 import re
+import unicodedata
 from typing import Optional, Tuple
 from urllib.parse import parse_qsl, urlencode, urlsplit
 
@@ -64,7 +65,11 @@ _ANGESTELLT_RE = re.compile(r"ANGESTELLT|MITARBEITER|FACHKRAFT|SACHBEARBEIT|\bAS
 _TRAINEE_RE = re.compile(r"\bTRAINEE\b|VOLONT")
 _AZUBI_RE = re.compile(r"AUSZUBILD|\bAZUBI\b|AUSBILDUNG|APPRENTICE")
 _WERKSTUDENT_RE = re.compile(r"WERKSTUDENT|WORKING STUDENT")
-_PRAKTIKANT_RE = re.compile(r"PRAKTIK|\bINTERN(SHIP)?\b")
+# Romanische Schreibweisen (nur eindeutige): Stagiaire, Stagista, Becario, Estagiário.
+_PRAKTIKANT_RE = re.compile(r"PRAKTIK|\bINTERN(SHIP)?\b|\bSTAGIAIRE|\bSTAGISTA|\bBECARI[OA]|\bESTAGI[ÁA]RI[OA]")
+# Directeur/Directrice (FR), Direttore/Direttrice (IT), Diretor/Diretora (PT). Spanisch (`Director`,
+# `Directora`) trifft schon das englische „DIRECTOR“. Mehrdeutiges (Responsable, Jefe, Gerente) bewusst nicht.
+_DIRECTOR_ROMANISCH_RE = re.compile(r"\bDIRECTEUR|\bDIRECTRICE|\bDIRETTORE|\bDIRETTRICE|\bDIRETORA?\b")
 
 
 def norm_seniority(raw) -> Tuple[Optional[str], Optional[str]]:
@@ -80,7 +85,7 @@ def norm_seniority(raw) -> Tuple[Optional[str], Optional[str]]:
         return "C-Level", s
     if "SENIOR DIRECTOR" in up or "SR DIRECTOR" in up or "SR. DIRECTOR" in up:
         return "Senior Director", s
-    if "DIRECTOR" in up:
+    if "DIRECTOR" in up or _DIRECTOR_ROMANISCH_RE.search(up):
         return "Director", s
     if "HEAD" in up or _HEAD_DE_RE.search(up):
         return "Head", s
@@ -136,17 +141,33 @@ def norm_status(raw) -> Tuple[str, Optional[str]]:
 
 
 # ── Work model ───────────────────────────────────────────────────────────────
+def _ohne_akzente(text: str) -> str:
+    return "".join(c for c in unicodedata.normalize("NFD", text) if not unicodedata.combining(c))
+
+
+# Romanische Entsprechungen (FR, IT, ES, PT), ohne Akzente verglichen. Das Ergebnis bleibt der deutsche
+# Maschinenwert. „Teilweise“ (`télétravail partiel`, `teletrabajo parcial`) zählt als Hybrid, nicht als Remote.
+_ROMANISCH_HYBRID = ("hybride", "hibrido", "ibrido", "partiel", "parcial", "parziale")
+_ROMANISCH_REMOTE = ("teletravail", "teletrabajo", "da remoto", "smart working", "remoto")
+_ROMANISCH_ONSITE = ("presentiel", "sur site", "presencial", "in sede")
+
+
 def norm_work_model(raw) -> Optional[str]:
     if raw is None:
         return None
     low = str(raw).strip().lower()
     if not low:
         return None
-    if "remote" in low and "hybrid" not in low:
+    falt = _ohne_akzente(low)
+    if "remote" in low and "hybrid" not in low and not any(w in falt for w in _ROMANISCH_HYBRID):
         return "Remote"
-    if "hybrid" in low:
+    if "hybrid" in low or any(w in falt for w in _ROMANISCH_HYBRID):
         return "Hybrid"
+    if any(w in falt for w in _ROMANISCH_REMOTE):
+        return "Remote"
     if "vor ort" in low or "onsite" in low or "on-site" in low or "field" in low or "büro" in low:
+        return "Onsite"
+    if any(w in falt for w in _ROMANISCH_ONSITE):
         return "Onsite"
     return str(raw).strip()
 
@@ -266,6 +287,16 @@ FIRMEN_ZUSAETZE = re.compile(
     r"international|global|jobs|careers|karriere)\b",
     re.IGNORECASE,
 )
+# 03.11.2026: iberische Rechtsformen (`S.L.`, `SLU`, `Lda`, `Ltda`). Sie fallen NUR als eigenes Wort am
+# Ende weg und nie als einziges Wort: `sl` ist auch ein Namensbestandteil, `lda` ein Kürzel.
+# Messung 03.11.2026 (read-only, Kopie der laufenden DB): über 764 Firmennamen (Firmen, Stellen,
+# Zielfirmen, Headhunter) ändern sich nur 3 Schlüssel (Punkt- und Schrägstrich-Schreibweisen von
+# SA und A/S), 0 Paare verschiedener Firmen fallen neu zusammen, 0 trennen sich; kein Name enthält
+# `sl`, `slu`, `lda` oder `ltda`. Die romanischen Schreibweisen belegen die Tests.
+_FIRMEN_ZUSATZ_ENDE = re.compile(r"(?:\s+(?:sl|slu|lda|ltda))+\s*$")
+# Einzelbuchstaben mit Punkt oder Schrägstrich dazwischen (`S.p.A.`, `S.A.R.L.`, `S/A`, `e.V.`):
+# Trenner weg, damit der Zusatz als ein Wort erkannt wird.
+_EINZELBUCHSTABEN_KETTE = re.compile(r"\b(?:[a-z][./])+[a-z]\b")
 
 
 def firma_key(name) -> str:
@@ -290,9 +321,10 @@ def firma_key(name) -> str:
     roh_slug = _slug(name)
     if not roh_slug:
         return roh_slug
-    klein = str(name or "").lower()
+    klein = _EINZELBUCHSTABEN_KETTE.sub(lambda m: re.sub(r"[./]", "", m.group(0)), str(name or "").lower())
     ohne_sonderzeichen = re.sub(r"[^a-z0-9]+", " ", klein)
     bereinigt = FIRMEN_ZUSAETZE.sub(" ", ohne_sonderzeichen)
+    bereinigt = _FIRMEN_ZUSATZ_ENDE.sub("", bereinigt.rstrip())
     schluessel = re.sub(r"\s+", "", bereinigt)
     return schluessel or roh_slug
 
@@ -312,10 +344,20 @@ def firma_key(name) -> str:
 # `slug_parts` oben. `ingest.py` braucht den Regex jetzt ebenfalls (bereinigter Firma+Titel-
 # Schlüssel, s. `titel_ohne_gender` unten); `naming.py` importiert ihn ab jetzt von hier statt
 # ihn selbst zu definieren. Muster unverändert (am Bestand geprüft, s. P3-5 oben).
-GENDER_RE = re.compile(
-    r"\(\s*(?:all\s+genders|[a-z](?:\s*[/|]\s*[a-z]){1,4}|[a-z]\*|[a-z](?:\s*:\s*[a-z]){1,4})\s*\)",
-    re.IGNORECASE,
+# 03.11.2026: Teile in der Klammer dürfen auch `nb` oder `xy` sein (`(f/m/nb)`, `(m/f/xy)`). OHNE Klammer
+# fällt der Zusatz nur am Titelende weg und nur als eines der Paare H/F, F/H, M/F, F/M, H/M, M/H (mit
+# davorstehendem ` - ` möglich, `Livreur - F/H`); danach dürfen noch Gender-Klammern folgen
+# (`Chauffeur H/F (H/F)`). Nicht angefasst: `Repartidor/a`, `Chauffeur/Livreur`, `IT/OT`, `B/C`.
+_GENDER_TEIL = r"(?:[a-z]|nb|xy)"
+_GENDER_KLAMMER = (
+    r"\(\s*(?:all\s+genders|" + _GENDER_TEIL + r"(?:\s*[/|]\s*" + _GENDER_TEIL + r"){1,4}|[a-z]\*|"
+    + _GENDER_TEIL + r"(?:\s*:\s*" + _GENDER_TEIL + r"){1,4})\s*\)"
 )
+_GENDER_PAAR_ENDE = (
+    r"(?:\s+-\s+|\s+)?(?<![\w/])(?:h\s*/\s*[fm]|f\s*/\s*[hm]|m\s*/\s*[fh])(?![\w/])"
+    r"(?=(?:\s*" + _GENDER_KLAMMER + r")*\s*$)"
+)
+GENDER_RE = re.compile(_GENDER_KLAMMER + "|" + _GENDER_PAAR_ENDE, re.IGNORECASE)
 
 
 def titel_ohne_gender(title) -> str:

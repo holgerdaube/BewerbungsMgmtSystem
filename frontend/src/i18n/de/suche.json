@@ -1,0 +1,24 @@
+{
+  "quelle": {
+    "stelle": "Stelle",
+    "stellenbeschreibung": "Stellenbeschreibung",
+    "company-fit": "Company-Fit",
+    "transkript": "Transkript",
+    "debrief": "Debrief",
+    "briefing": "Briefing",
+    "verlauf": "Verlauf"
+  },
+  "index_nicht_ladbar": "Index-Stand nicht ladbar",
+  "fehlgeschlagen": "Suche fehlgeschlagen",
+  "untertitel": "Volltextsuche über Stellen, Stellenbeschreibungen, Company-Fit, Transkripte, Debriefs, Briefings und Verlauf — Ergebnis ist immer eine Stelle.",
+  "platzhalter": "Suchbegriff — Firma, Ort, Stichwort aus einer Stellenbeschreibung oder einem Company-Fit-Dashboard…",
+  "sucht": "Sucht…",
+  "index_nicht_gebaut": "Index noch nicht gebaut",
+  "baut_index": "Baut Index…",
+  "index_jetzt_bauen": "Index jetzt bauen",
+  "index_stand_one": "Index-Stand: {{stand}} · {{count}} Dokumente",
+  "index_stand_other": "Index-Stand: {{stand}} · {{count}} Dokumente",
+  "index_aktualisieren": "↻ Index aktualisieren",
+  "mindestens_zwei": "Mindestens 2 Zeichen eingeben…",
+  "keine_stelle": "Keine Stelle gefunden für „{{q}}\" — Index-Stand prüfen?"
+}

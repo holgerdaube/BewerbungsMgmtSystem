@@ -11,6 +11,8 @@ unverändert).
 from fastapi import APIRouter, HTTPException
 
 from app import beispieldaten
+from app.sprache import tx
+from app.terminal import tt
 
 router = APIRouter(prefix="/api", tags=["beispieldaten"])
 
@@ -30,7 +32,7 @@ def post_beispieldaten_entfernen():
     except ValueError as exc:
         raise HTTPException(409, str(exc))
     except Exception as exc:       # noqa: BLE001 -- der Nutzer bekommt den Grund als Klartext
-        raise HTTPException(500, str(exc) or "Die Beispieldaten konnten nicht entfernt werden.")
+        raise HTTPException(500, str(exc) or tx("Die Beispieldaten konnten nicht entfernt werden."))
 
     # Funktionslokal importiert: main.py bindet diesen Router ein, ein Import auf Modulebene wäre
     # zirkulär. Ein Fehler hier macht das Entfernen nicht ungeschehen, er wird nur protokolliert.
@@ -43,5 +45,5 @@ def post_beispieldaten_entfernen():
         with Session(db.engine) as session:
             _profil_struktur_schreiben(session)
     except Exception as exc:       # noqa: BLE001
-        print(f"[beispieldaten] WARNUNG: Profil-Struktur nicht neu geschrieben: {exc}", flush=True)
+        print(tt("[beispieldaten] WARNUNG: Profil-Struktur nicht neu geschrieben: {fehler}", fehler=exc), flush=True)
     return ergebnis

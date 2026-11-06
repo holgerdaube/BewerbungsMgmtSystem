@@ -1,0 +1,68 @@
+{
+  "titel": "Budget & API costs",
+  "letzter_sync": "Last sync: {{wann}}",
+  "nie": "never",
+  "sync_button": "🔄 Sync usage",
+  "sync_laeuft": "Syncing…",
+  "sync_ok_one": "✓ {{count}} day imported",
+  "sync_ok_other": "✓ {{count}} days imported",
+  "sync_fehlgeschlagen": "Sync failed",
+  "laden": "Loading…",
+  "ki_agent_laeufe": "AI (agent runs)",
+  "chatgpt_box": {
+    "titel": "AI runs through your ChatGPT subscription",
+    "text": "The app's runs go through your ChatGPT subscription. ChatGPT does not report costs in USD, so the “AI (agent runs)” row only shows amounts from earlier runs under Claude. There is no budget limit per run: the time limit per run, the limits of your subscription and the limit on runs per day apply. The Task Centre shows usage in tokens."
+  },
+  "heute": "Today",
+  "monat": "Month",
+  "stat": {
+    "dieser_monat": "This month",
+    "jahres_prognose": "Annual forecast",
+    "geschaetzt": "estimated",
+    "fixkosten": "Fixed costs / month"
+  },
+  "dienste": {
+    "titel": "Services",
+    "dienst": "Service",
+    "art": "Type",
+    "jahr_prognose": "Year (forecast)",
+    "status": "Status"
+  },
+  "art": {
+    "abo": "Subscription",
+    "verbrauch": "Usage-based"
+  },
+  "limit_status": {
+    "ok": "within limits",
+    "warn": "⚠ ≥ 80%",
+    "over": "over limit",
+    "pausiert": "paused"
+  },
+  "steuerung": {
+    "titel": "Budget controls",
+    "keine_dienste": "No controllable services.",
+    "dienst_aktiv": "Service active",
+    "tageslimit": "Daily limit ($)",
+    "monatslimit": "Monthly limit ($)",
+    "kein_limit": "no limit",
+    "max_laeufe": "Max. runs/day",
+    "modus_hinweis": "hard = calls are blocked · soft = warning only",
+    "ohne_usd": "ChatGPT has no costs in USD and no budget limit per run. The time limit per run and the limits of your ChatGPT subscription apply; the limit on runs per day still applies.",
+    "laeufe_heute_one": "{{count}} run today",
+    "laeufe_heute_other": "{{count}} runs today",
+    "speichern": "Save",
+    "speichert": "Saving…",
+    "gespeichert": "✓ Saved",
+    "speichern_fehlgeschlagen": "Could not save"
+  },
+  "balken": {
+    "kein_limit_gesetzt": "{{label}}: no limit set",
+    "rest": "{{betrag}} left"
+  },
+  "kosten_monat": "Costs this month (EUR)",
+  "fussnote": "Usage: Apify via API sync; subscriptions from config/budgets.yaml. Limits take effect immediately on all paid calls made by this app (hard = blocked). Spending outside the app (Apify console, interactive {{name}} sessions) only shows up after the next sync and cannot be prevented. USD→EUR rate: {{kurs}}.",
+  "wert": {
+    "hart": "hard",
+    "weich": "soft"
+  }
+}

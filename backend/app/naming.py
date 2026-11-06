@@ -10,6 +10,7 @@ Datumsformate verstehen (Bestand vor der Umbenennung): dafür `datum_aus_praefix
 """
 import datetime
 import re
+import unicodedata
 from typing import Optional
 
 
@@ -61,6 +62,9 @@ _TRANSLIT = {
     "Ä": "Ae", "Ö": "Oe", "Ü": "Ue",
     "ß": "ss",
 }
+# Buchstaben, die sich nicht in Grundbuchstabe + Akzent zerlegen lassen (Französisch, Latein).
+# Bewusst getrennt von `_TRANSLIT`: Die Suche (`search_index`) faltet nur ß, nicht diese.
+_TRANSLIT_LIGATUR = {"œ": "oe", "Œ": "Oe", "æ": "ae", "Æ": "Ae"}
 
 # P2-36 (11.09.2026): Regex + Kommentarblock (Historie P3-5) nach app/normalize.py verschoben —
 # ein kanonischer Ort, wie slug_parts (ingest.py braucht denselben Gender-Zusatz-Regex jetzt
@@ -70,14 +74,21 @@ from app.normalize import GENDER_RE as _GENDER_RE
 
 
 def _translit(s: str) -> str:
+    """Dateinamen-tauglicher Text: `ä` → `ae`, `ß` → `ss` (zuerst, Deutsch bleibt wie es war), dann
+    `œ` → `oe`, `æ` → `ae`, dann alle übrigen Akzente weg (`é` → `e`, `ñ` → `n`, `ç` → `c`,
+    `ã` → `a`). Der Aufrufer streicht danach, was kein ASCII-Buchstabe ist (`·`, Satzzeichen).
+    NFD zerlegt nur Akzente; NFKD würde auch `™` zu `TM`, `²` zu `2` und `½` zu `12` machen und
+    damit deutsche und englische Namen verändern, die bisher ohne diese Zeichen auskamen."""
     for k, v in _TRANSLIT.items():
         s = s.replace(k, v)
-    return s
+    for k, v in _TRANSLIT_LIGATUR.items():
+        s = s.replace(k, v)
+    return "".join(c for c in unicodedata.normalize("NFD", s) if not unicodedata.combining(c))
 
 
 def _sanitize_part(part: str) -> str:
-    """Umlaute → ae/oe/…; Leerzeichen und '/' → '_'; alles außer [A-Za-z0-9_-]
-    entfernen; Mehrfach-'_' zusammenfassen."""
+    """Umlaute → ae/oe/…, Akzente → Grundbuchstabe (`_translit`); Leerzeichen und '/' → '_';
+    alles außer [A-Za-z0-9_-] entfernen; Mehrfach-'_' zusammenfassen."""
     part = _translit(str(part))
     part = re.sub(r"[\s/]+", "_", part.strip())
     part = re.sub(r"[^A-Za-z0-9_-]", "", part)
@@ -101,7 +112,8 @@ def _truncate_words(s: str, limit: int) -> str:
 def _camel_name(name: str) -> str:
     """Nutzer-Name (aus `user_name()`) → CamelCase ohne Trennzeichen, Umlaute-sicher
     (`_translit`) — für den CV-/Anschreiben-Dateinamen. "Max Mustermann" → "MaxMustermann"
-    (Bestandsverhalten unverändert, da bereits großgeschrieben); "Jörg Müller" → "JoergMueller".
+    (Bestandsverhalten unverändert, da bereits großgeschrieben); "Jörg Müller" → "JoergMueller",
+    "José García" → "JoseGarcia" (Akzente → Grundbuchstabe, vorher "JosGarca").
     Keine erzwungene Groß-/Kleinschreibung — nur [A-Za-z0-9] bleibt übrig, der Rest
     (Leerzeichen, Bindestrich, …) wird entfernt."""
     return re.sub(r"[^A-Za-z0-9]", "", _translit(str(name or "")))
@@ -137,11 +149,19 @@ def _firma_kurz(company: str) -> str:
     return firma or "Firma"
 
 
+# Weibliche/männliche Endung in Klammern DIREKT am Wort: `Entregador(a)`, `Addetto(a)`, `Livreur(se)`,
+# `Directeur(trice)`. Ohne diese Regel verlöre die Klammer nur ihre Zeichen und aus der neutralen Form
+# würde die weibliche (`Entregadora`). Bewusst eng: nur Endungen, die im Deutschen und Englischen nicht
+# vorkommen. `Mitarbeiter(in)`, `Ingenieur(e)`, `Berater (Senior)` bleiben unverändert, deshalb bleibt
+# auch das französische `Chargé(e)` wie bisher.
+_FORM_KLAMMER_RE = re.compile(r"(?<=\w)\((?:a|o|as|os|se|ne|trice|ère)\)", re.IGNORECASE)
+
+
 def _rolle_kurz(position: Optional[str], limit: int) -> str:
-    """P2-63: Rolle für den Dateinamen. Gender-Zusätze raus, Regionszusatz nach ` - ` (z. B.
-    ' - DACH') abgeschnitten, bereinigt, auf `limit` Zeichen an der Wortgrenze gekürzt.
-    Leer → '' (der Aufrufer setzt seinen Rückfall)."""
-    pos = _GENDER_RE.sub(" ", str(position or ""))
+    """P2-63: Rolle für den Dateinamen. Gender-Zusätze raus, Endungs-Klammern wie `Entregador(a)`
+    samt Inhalt raus, Regionszusatz nach ` - ` (z. B. ' - DACH') abgeschnitten, bereinigt, auf
+    `limit` Zeichen an der Wortgrenze gekürzt. Leer → '' (der Aufrufer setzt seinen Rückfall)."""
+    pos = _FORM_KLAMMER_RE.sub("", _GENDER_RE.sub(" ", str(position or "")))
     teile = _REGION_SCHNITT_RE.split(pos, maxsplit=1)
     # Abnahme P2-63: nur einen REGIONSZUSATZ abschneiden („ - DACH“, „ - Remote Germany“), keinen
     # inhaltlichen Teil des Titels („Head of IT - Infrastructure“ bliebe sonst „Head_of_IT“).

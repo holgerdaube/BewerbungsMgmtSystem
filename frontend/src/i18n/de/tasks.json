@@ -1,0 +1,106 @@
+{
+  "titel": "Task-Center",
+  "lade": "Lade…",
+  "abbrechen": "Abbrechen",
+  "noch_keine_ausgabe": "Noch keine Ausgabe…",
+  "chip": {
+    "queued": "wartet",
+    "running": "läuft",
+    "done": "fertig",
+    "failed": "fehlgeschlagen",
+    "cancelled": "abgebrochen"
+  },
+  "button_chip": {
+    "queued": "wartet…",
+    "running": "läuft…",
+    "done": "✓ fertig",
+    "failed": "✗ fehlgeschlagen",
+    "cancelled": "abgebrochen"
+  },
+  "filter": {
+    "alle": "Alle",
+    "aktiv": "Aktiv",
+    "failed": "Fehlgeschlagen"
+  },
+  "log": {
+    "lauf_gestartet": "· Lauf gestartet ({{anzahl}} Tools)",
+    "subagent": "⤷ Subagent: {{text}}",
+    "subagent_fertig": "⤷ Subagent fertig: {{text}}"
+  },
+  "kopf": {
+    "untertitel": "Skills, die das Backend headless ausführt",
+    "parallel": "max. {{anzahl}} parallel",
+    "laeufe_tag": "max. {{anzahl}} Läufe am Tag",
+    "zeitlimit": "Zeitlimit statt Budget je Lauf",
+    "notbremse": "Notbremse ${{betrag}} je Lauf",
+    "tagesbudget": "Tagesbudget ${{betrag}} / {{laeufe}} Läufe"
+  },
+  "stat": {
+    "gesamt": "Läufe gesamt",
+    "aktiv": "Aktiv",
+    "fehlgeschlagen": "Fehlgeschlagen",
+    "laeufe_heute": "Läufe heute",
+    "heute_verbraucht": "Heute verbraucht",
+    "laeufe_heute_titel": "{{anzahl}} von {{max}} Läufen heute",
+    "von_max_laeufen": "von max. {{max}} Läufen",
+    "von_betrag": "von ${{betrag}} · {{anzahl}}/{{max}} Läufe",
+    "token_gesamt": "Token gesamt",
+    "token_gesamt_titel": "Neue Token aller Läufe: Eingabe ohne Cache plus Ausgabe",
+    "keine_usd_kosten": "Kosten in USD meldet ChatGPT nicht",
+    "kosten_gesamt": "Kosten gesamt"
+  },
+  "eintraege_one": "{{count}} Einträge",
+  "eintraege_other": "{{count}} Einträge",
+  "letzte_von": "Die letzten {{anzahl}} von {{gesamt}}",
+  "spalte": {
+    "aufgabe": "Aufgabe",
+    "stelle": "Stelle",
+    "status": "Status",
+    "gestartet": "Gestartet",
+    "dauer": "Dauer",
+    "kosten": "Kosten"
+  },
+  "keine_laeufe": "Keine Läufe",
+  "versuch": "Versuch {{aktuell}}/{{max}}",
+  "versuch_titel": "Der erste Versuch schlug fehl und wurde wiederholt",
+  "kette": "{{kette}} · Schritt {{pos}}",
+  "job_nr": "Job {{id}}",
+  "lauf_token_titel": "Neue Token des Laufs: Eingabe ohne Cache plus Ausgabe",
+  "log_zeigen": "Log",
+  "log_zu": "Log zu",
+  "erneut": "Erneut",
+  "neustart_fehler": "Neustart nicht möglich",
+  "button": {
+    "start_fehlgeschlagen": "Start fehlgeschlagen",
+    "laeuft": "⏳ Läuft…",
+    "starte": "Starte…",
+    "kette_schritt": "{{kette}} · Schritt {{pos}}: {{label}}",
+    "kette_aus": "aus: {{kette}}",
+    "turns_one": "· {{count}} Turns",
+    "turns_other": "· {{count}} Turns",
+    "log_ausblenden": "Log ausblenden",
+    "log_anzeigen": "Log anzeigen",
+    "anzeige_nachholen": "Anzeigentext wird nachgeholt …",
+    "abschlussmeldung": "Abschlussmeldung des Laufs:",
+    "weniger": "▴ weniger anzeigen",
+    "mehr": "▸ mehr anzeigen",
+    "mehr_zeilen_one": "▸ mehr anzeigen ({{count}} weitere Zeilen)",
+    "mehr_zeilen_other": "▸ mehr anzeigen ({{count}} weitere Zeilen)",
+    "low_match_frage": "Bist du dir wirklich sicher?",
+    "low_match_ja": "Ja, trotzdem starten",
+    "anzeige_fehlt_frage": "Ohne Anzeigentext starten?",
+    "anzeige_fehlt_ja": "Trotzdem starten"
+  },
+  "tageslauf": {
+    "starten": "Tageslauf starten",
+    "name": "Tageslauf",
+    "schritte": "Neun Schritte nacheinander: <b>Stellen suchen</b> (WebSearch) → <b>Mail-Jobsuche</b> → <b>Zielfirmen-Sweep</b> → <b>Headhunter-Suche</b> → <b>Beworben-Check</b> → <b>Postfach prüfen</b> → <b>Absagen-Analyse</b> (einmal je Woche, sonst übersprungen) → <b>Ansichten aktualisieren</b> (Excel + Digest) → <b>Coach-Site aktualisieren</b> (entfällt, wenn sie abgeschaltet ist). Läuft im Hintergrund, dauert einige Minuten.",
+    "hinweis": "Apify bleibt außen vor (Free Plan) — für einen Portal-Scrape die Stellen-Suche einzeln mit Apify starten. Mails werden nur gelesen, nie versendet.",
+    "letzter_lauf": "Letzter Lauf:",
+    "lieber_session": "Lieber in der {{name}}-Session starten",
+    "ausloeser": "📋 Auslöser — Tageslauf — kopieren",
+    "task_center": "Task-Center →",
+    "treffer": "Treffer sichten →",
+    "schliessen": "Schließen"
+  }
+}

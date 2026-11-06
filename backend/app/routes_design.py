@@ -17,6 +17,7 @@ macht auch die Icons zu einer „neuen“ Antwort, was nur eine unnötige Übert
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import JSONResponse, Response
 
+from app.sprache import tx
 from pipeline import design
 
 router = APIRouter(prefix="/api", tags=["design"])
@@ -28,7 +29,7 @@ def _geltendes_design() -> design.Design:
     try:
         return design.laden()
     except design.DesignFehler as fehler:
-        raise HTTPException(500, f"Die Design-Vorgabe des Programms ist unbrauchbar: {fehler}")
+        raise HTTPException(500, tx("Die Design-Vorgabe des Programms ist unbrauchbar: {fehler}", fehler=str(fehler)))
 
 
 def _etag(d: design.Design) -> str:
@@ -80,12 +81,12 @@ def design_icon(groesse: str, request: Request):
     """`groesse` ist ein Text und keine Zahl: „032“, „32.0“ und „abc“ sind keine Größe, sondern 404
     (statt 422)."""
     if groesse not in design.ICON_GROESSEN:
-        raise HTTPException(404, "Unbekannte Icon-Größe")
+        raise HTTPException(404, tx("Unbekannte Icon-Größe"))
     d = _geltendes_design()
     etag = _etag(d)
     if _passt(request, etag):
         return _nicht_geaendert(etag)
     inhalt = d.icon_bytes(groesse)
     if inhalt is None:      # Datei zwischen Prüfung und Lesen verschwunden oder zu groß geworden
-        raise HTTPException(404, "Icon nicht gefunden")
+        raise HTTPException(404, tx("Icon nicht gefunden"))
     return Response(inhalt, media_type="image/png", headers=_kopf(etag))

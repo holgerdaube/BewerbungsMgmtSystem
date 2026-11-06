@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { api, type BeiratMitglied } from '../api'
+import { Trans } from 'react-i18next'
 import BeiratLive from '../components/BeiratLive'
+import { t } from '../i18n'
 
 /** Bewerbungs-Beirat (18.07.2026) — live orchestrierte Debatte der 7 Köpfe.
  *  Der Vorsitz dispatcht autonom; jeder Zug kommt als SSE-Event
@@ -39,45 +41,41 @@ function KeyPanel({ ki }: { ki: Ki }) {
     if (anthropic) body.anthropic = anthropic
     if (openai) body.openai = openai
     const s = await api('/beirat/keys', { method: 'POST', body: JSON.stringify(body) })
-    setStatus(s); setAnthropic(''); setOpenai(''); setMsg('Gespeichert. Die Schlüssel liegen nur auf diesem Rechner, außerhalb des Programmordners.')
+    setStatus(s); setAnthropic(''); setOpenai(''); setMsg(t('beirat:schluessel.gespeichert'))
     setTimeout(() => setMsg(null), 5000)
   }
   return (
     <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
       <button onClick={() => setOffen(!offen)} className="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-slate-600 hover:text-slate-800">
-        <span className="text-slate-400">{offen ? '▾' : '▸'}</span><span className="font-medium">🔑 Schlüssel & Motor</span>
+        <span className="text-slate-400">{offen ? '▾' : '▸'}</span><span className="font-medium">{t('beirat:schluessel.titel')}</span>
         {status && (
           <span className="ml-2 flex gap-2 text-xs">
             <span className={`rounded-full px-2 py-0.5 ${status.cli_verfuegbar ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
-              {ki === 'chatgpt' ? 'ChatGPT-Abo' : 'Claude-Abo'} {status.cli_verfuegbar ? (ki === 'chatgpt' ? '✓ (Codex gefunden)' : '✓ (ohne Key nutzbar)') : 'nicht gefunden'}</span>
+              {t(`beirat:schluessel.abo_${ki === 'chatgpt' ? 'chatgpt' : 'claude'}_${status.cli_verfuegbar ? 'ok' : 'fehlt'}`)}</span>
             {ki === 'claude' && (
               <span className={`rounded-full px-2 py-0.5 ${status.anthropic_gesetzt ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
-                Anthropic-Key {status.anthropic_gesetzt ? `✓ ${status.anthropic_maske}` : '–'}</span>
+                {status.anthropic_gesetzt ? t('beirat:schluessel.anthropic_gesetzt', { maske: status.anthropic_maske }) : t('beirat:schluessel.anthropic_leer')}</span>
             )}
             <span className={`rounded-full px-2 py-0.5 ${status.openai_gesetzt ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
-              OpenAI-Key {status.openai_gesetzt ? `✓ ${status.openai_maske}` : '–'}</span>
+              {status.openai_gesetzt ? t('beirat:schluessel.openai_gesetzt', { maske: status.openai_maske }) : t('beirat:schluessel.openai_leer')}</span>
           </span>
         )}
       </button>
       {offen && (
         <div className="space-y-2 border-t border-slate-100 p-4 text-sm">
           {ki === 'chatgpt' ? (
-            <p className="text-xs text-slate-500">Ohne Schlüssel debattiert der Beirat über Ihr ChatGPT-Abo (Codex), dafür ist <b>kein Key nötig</b>.
-              Ein OpenAI-Key schaltet OpenAI als eigenen Motor frei und wird getrennt über die OpenAI-API abgerechnet.
-              Der Schlüssel liegt nur auf diesem Rechner, außerhalb des Programmordners. Ein leeres Feld lässt den gespeicherten Schlüssel unverändert.</p>
+            <p className="text-xs text-slate-500"><Trans i18nKey="beirat:schluessel.text_chatgpt" components={{ b: <b /> }} /></p>
           ) : (
-            <p className="text-xs text-slate-500">Ohne Schlüssel debattiert der Beirat über Ihr Claude-Abo, dafür ist <b>kein Key nötig</b>.
-              Ein hier eingetragener Anthropic-Key ersetzt das Abo, ein OpenAI-Key schaltet OpenAI als Motor frei.
-              Die Schlüssel liegen nur auf diesem Rechner, außerhalb des Programmordners. Ein leeres Feld lässt den gespeicherten Schlüssel unverändert.</p>
+            <p className="text-xs text-slate-500"><Trans i18nKey="beirat:schluessel.text_claude" components={{ b: <b /> }} /></p>
           )}
           <div className="grid gap-2 md:grid-cols-2">
             {ki === 'claude' && (
-              <input type="password" className={INPUT} placeholder="Anthropic-Key" value={anthropic} onChange={(e) => setAnthropic(e.target.value)} />
+              <input type="password" className={INPUT} placeholder={t('beirat:schluessel.placeholder_anthropic')} value={anthropic} onChange={(e) => setAnthropic(e.target.value)} />
             )}
-            <input type="password" className={INPUT} placeholder="OpenAI-Key (sk-…)" value={openai} onChange={(e) => setOpenai(e.target.value)} />
+            <input type="password" className={INPUT} placeholder={t('beirat:schluessel.placeholder_openai')} value={openai} onChange={(e) => setOpenai(e.target.value)} />
           </div>
           <div className="flex items-center gap-3">
-            <button onClick={speichern} className="rounded-lg bg-brand-cyan px-3 py-1.5 text-sm font-medium text-brand-aufAktion hover:bg-brand-cyanHover">Speichern</button>
+            <button onClick={speichern} className="rounded-lg bg-brand-cyan px-3 py-1.5 text-sm font-medium text-brand-aufAktion hover:bg-brand-cyanHover">{t('beirat:schluessel.speichern')}</button>
             {msg && <span className="text-xs text-emerald-600">{msg}</span>}
           </div>
         </div>
@@ -114,13 +112,13 @@ export default function Beirat() {
     setFehler(null); setFortschritt(null)
     try {
       const teilnehmer = alleKoepfe ? null : Object.keys(auswahl).filter((k) => auswahl[k])
-      if (teilnehmer && teilnehmer.length < 2) { setFehler(`Wählen Sie mindestens zwei Köpfe oder lassen Sie ${vorsitz ?? 'den Vorsitz'} wählen.`); return }
+      if (teilnehmer && teilnehmer.length < 2) { setFehler(t('beirat:formular.mind_zwei', { vorsitz: vorsitz ?? t('beirat:vorsitz.den') })); return }
       const r = await api<any>('/beirat/debatten', {
         method: 'POST',
         body: JSON.stringify({ thema, kontext, min_beitraege: minB, provider, teilnehmer }),
       })
       setDebatteId(r.id); setLaeuft(true)
-    } catch (e: any) { setFehler(e?.message || 'Start fehlgeschlagen') }
+    } catch (e: any) { setFehler(e?.message || t('beirat:start_fehlgeschlagen')) }
   }
 
   const stoppen = async () => { if (debatteId) await api(`/beirat/debatten/${debatteId}/stop`, { method: 'POST' }).catch(() => {}) }
@@ -130,36 +128,36 @@ export default function Beirat() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-2xl font-bold text-brand-navy">Bewerbungs-Beirat</h1>
-        <p className="text-sm text-slate-500">Sieben fiktive Köpfe mit verschiedenen Fachperspektiven debattieren Ihre Frage live und gehen dabei auf die Beiträge der anderen ein. {vorsitz ?? 'Der Vorsitz'} moderiert und schließt mit einer Synthese. Ob sich eine Bewerbung auf eine bestimmte Stelle lohnt, prüfen Sie mit „Stelle prüfen (Beirat)“ in der Karte „Unterlagen erstellen“ der Stelle.</p>
+        <h1 className="text-2xl font-bold text-brand-navy">{t('beirat:seite.titel')}</h1>
+        <p className="text-sm text-slate-500">{t('beirat:seite.einleitung', { vorsitz: vorsitz ?? t('beirat:vorsitz.der') })}</p>
       </div>
 
       <KeyPanel ki={ki} />
 
       {/* Start-Formular */}
       <div className="rounded-xl border border-brand-cyan/40 bg-brand-cyan/5 p-4">
-        <div className="mb-2 text-sm font-semibold text-brand-navy">Neue Debatte</div>
+        <div className="mb-2 text-sm font-semibold text-brand-navy">{t('beirat:formular.titel')}</div>
         <div className="space-y-2">
-          <input className={`${INPUT} w-full`} placeholder="Thema / Frage an den Beirat *" value={thema} onChange={(e) => setThema(e.target.value)} disabled={laeuft} />
-          <textarea className={`${INPUT} w-full`} rows={3} placeholder="Zusätzlicher Kontext (Stelle, Firma, CV-Stand, Vorgeschichte …)" value={kontext} onChange={(e) => setKontext(e.target.value)} disabled={laeuft} />
+          <input className={`${INPUT} w-full`} placeholder={t('beirat:formular.thema_placeholder')} value={thema} onChange={(e) => setThema(e.target.value)} disabled={laeuft} />
+          <textarea className={`${INPUT} w-full`} rows={3} placeholder={t('beirat:formular.kontext_placeholder')} value={kontext} onChange={(e) => setKontext(e.target.value)} disabled={laeuft} />
           <div className="flex flex-wrap items-center gap-3 text-sm">
-            <label className="flex items-center gap-2">Mindest-Beiträge
+            <label className="flex items-center gap-2">{t('beirat:formular.min_beitraege')}
               <select className={INPUT} value={minB} onChange={(e) => setMinB(Number(e.target.value))} disabled={laeuft}>
                 {[6, 10, 20, 30].map((n) => <option key={n} value={n}>{n}</option>)}
               </select>
             </label>
-            <label className="flex items-center gap-2">Motor
+            <label className="flex items-center gap-2">{t('beirat:formular.motor')}
               <select className={INPUT} value={provider} onChange={(e) => setProvider(e.target.value as any)} disabled={laeuft}>
-                <option value="anthropic">{ki === 'chatgpt' ? 'ChatGPT (Abo)' : 'Claude (Abo oder Key)'}</option>
-                <option value="openai">OpenAI (Key nötig)</option>
+                <option value="anthropic">{ki === 'chatgpt' ? t('beirat:formular.motor_chatgpt') : t('beirat:formular.motor_claude')}</option>
+                <option value="openai">{t('beirat:formular.motor_openai')}</option>
               </select>
             </label>
             {ki === 'chatgpt' && provider === 'anthropic' && (
-              <span className="text-xs text-slate-500">Mit ChatGPT erscheint jeder Beitrag erst, wenn er fertig ist, nicht Wort für Wort.</span>
+              <span className="text-xs text-slate-500">{t('beirat:formular.chatgpt_hinweis')}</span>
             )}
             <label className="flex items-center gap-2 text-slate-600">
               <input type="checkbox" checked={alleKoepfe} onChange={(e) => setAlleKoepfe(e.target.checked)} disabled={laeuft} />
-              {vorsitz ?? 'Der Vorsitz'} wählt die Köpfe selbst
+              {t('beirat:formular.vorsitz_waehlt', { vorsitz: vorsitz ?? t('beirat:vorsitz.der') })}
             </label>
           </div>
           {!alleKoepfe && (
@@ -178,11 +176,11 @@ export default function Beirat() {
           <div className="flex items-center gap-2">
             <button onClick={starten} disabled={laeuft || !thema.trim()}
               className="rounded-lg bg-brand-cyan px-4 py-2 text-sm font-medium text-brand-aufAktion hover:bg-brand-cyanHover disabled:opacity-40">
-              {laeuft ? 'Debatte läuft…' : '▶ Debatte starten'}
+              {laeuft ? t('beirat:formular.laeuft') : t('beirat:formular.starten')}
             </button>
-            {laeuft && <button onClick={stoppen} className="rounded-lg border border-rose-300 px-3 py-2 text-sm text-rose-600 hover:bg-rose-50">■ Stoppen (→ Synthese)</button>}
+            {laeuft && <button onClick={stoppen} className="rounded-lg border border-rose-300 px-3 py-2 text-sm text-rose-600 hover:bg-rose-50">{t('beirat:formular.stoppen')}</button>}
             {fortschritt && laeuft && (
-              <span className="text-sm text-slate-500">Beitrag <b>{fortschritt.nr}</b> · Minimum {fortschritt.min} · Obergrenze {fortschritt.max}</span>
+              <span className="text-sm text-slate-500"><Trans i18nKey="beirat:fortschritt" values={{ nr: fortschritt.nr, min: fortschritt.min, max: fortschritt.max }} components={{ b: <b /> }} /></span>
             )}
             {fehler && <span className="text-sm text-rose-600">{fehler}</span>}
           </div>
@@ -202,14 +200,14 @@ export default function Beirat() {
       {/* Archiv */}
       {archiv.length > 0 && (
         <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
-          <div className="border-b border-slate-100 px-4 py-2.5 text-sm font-semibold text-brand-navy">Frühere Debatten</div>
+          <div className="border-b border-slate-100 px-4 py-2.5 text-sm font-semibold text-brand-navy">{t('beirat:archiv.titel')}</div>
           <div className="divide-y divide-slate-100">
             {archiv.map((d) => (
               <button key={d.id} onClick={() => archivOeffnen(d.id)} className="flex w-full items-center justify-between gap-3 px-4 py-2 text-left hover:bg-slate-50">
                 <span className="min-w-0 truncate text-sm text-slate-700">{d.thema}</span>
                 <span className="flex shrink-0 items-center gap-2 text-xs text-slate-400">
-                  <span>{d.beitraege} Beiträge</span>
-                  <span className={`rounded-full px-2 py-0.5 ${d.status === 'fertig' ? 'bg-emerald-100 text-emerald-700' : d.status === 'fehler' ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-700'}`}>{d.status}</span>
+                  <span>{t('beirat:archiv.beitraege', { count: d.beitraege })}</span>
+                  <span className={`rounded-full px-2 py-0.5 ${d.status === 'fertig' ? 'bg-emerald-100 text-emerald-700' : d.status === 'fehler' ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-700'}`}>{d.status ? t(`beirat:wert.${d.status}`, { defaultValue: d.status }) : d.status}</span>
                   <span>{String(d.gestartet || '').slice(0, 16).replace('T', ' ')}</span>
                 </span>
               </button>

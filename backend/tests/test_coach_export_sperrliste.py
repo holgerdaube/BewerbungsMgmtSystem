@@ -16,7 +16,7 @@ Kein app.*/pipeline.*-Import auf Modulebene (conftest-Konvention); `_EXPORT_DIR`
 monkeypatch auf tmp_path (Muster test_posting_snapshot_full.py)."""
 import re
 import uuid
-from datetime import date, datetime, time
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 
@@ -36,10 +36,10 @@ SPERR_MARKER = {
 
 
 def _heute_mittag() -> datetime:
-    """Heute 12:00 als naiver Zeitpunkt, wie `updated_at`/`created_at` in der DB. Bewusst nicht `utcnow()`:
-    Der Digest vergleicht `.date()` mit dem LOKALEN Datum; zwischen 0 und 2 Uhr Ortszeit läge `utcnow()` auf
-    gestern, die Stelle fiele still aus „Heute geändert“ und der Test prüfte nichts mehr."""
-    return datetime.combine(date.today(), time(12, 0))
+    """Heute 12:00 Ortszeit als naives UTC, wie `updated_at`/`created_at` in der DB."""
+    from app import zeit
+
+    return zeit.tagesbeginn_utc() + timedelta(hours=12)
 
 
 def _fixture(_session, tmp_path, monkeypatch):

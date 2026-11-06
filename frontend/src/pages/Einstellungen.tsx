@@ -6,7 +6,11 @@ import AgentTaskButton from '../components/AgentTaskButton'
 import { kiAnbieterUebernehmen } from '../components/ui'
 import { suchTabsNeuLaden } from '../suchbereich'
 import { PROFIL_GEAENDERT } from '../profil'
-import { deDatum } from '../zeit'
+import { t } from '../i18n'
+import { wert } from '../i18n/werte'
+import { datum, datumZeit, zahl } from '../i18n/format'
+import { Trans } from 'react-i18next'
+import { SpracheKarte } from '../components/SpracheUmschalter'
 import { SENIORITAETEN } from '../senioritaet'
 
 const INPUT = 'rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm focus:border-brand-cyan focus:outline-none'
@@ -18,19 +22,12 @@ const PLAN_FARBEN: Record<string, string> = { A: '#00B4D8', B: '#5B61E6', C: '#7
 
 // Phase 50 — Reihenfolge + Anzeigenamen der 6 Kern-Funktionen (Keys spiegeln
 // agent_runner.py::FUNKTION_KINDS + "beirat").
-const FUNKTIONEN: { key: string; label: string }[] = [
-  { key: 'jobsuche', label: 'Jobsuche' },
-  { key: 'company-fit', label: 'Company Fit' },
-  { key: 'beirat', label: 'Beirat' },
-  { key: 'cv-match', label: 'CV Match' },
-  { key: 'ats-scan', label: 'ATS Scan' },
-  { key: 'anschreiben', label: 'Anschreiben' },
-]
+const FUNKTIONEN: string[] = ['jobsuche', 'company-fit', 'beirat', 'cv-match', 'ats-scan', 'anschreiben']
 
 // ── Chip-Liste: rein lokale State-Mutation (add/remove ohne eigenen API-Call) — erst der
 // Karten-„Speichern"-Button persistiert den ganzen Plan in einem PATCH. Anders als
 // Profil.tsx::Skills (dort sind Skills eigene DB-Zeilen mit sofortigem Add/Remove). ──────
-function ChipListe({ label, werte, onChange, vorschlaege }: { label: string; werte: string[]; onChange: (werte: string[]) => void; vorschlaege?: string[] }) {
+function ChipListe({ label, werte, onChange, vorschlaege, anzeige = (w) => w }: { label: string; werte: string[]; onChange: (werte: string[]) => void; anzeige?: (w: string) => string; vorschlaege?: string[] }) {
   const [neu, setNeu] = useState('')
   const listenId = useId()
   const add = () => {
@@ -45,18 +42,18 @@ function ChipListe({ label, werte, onChange, vorschlaege }: { label: string; wer
       <div className="mb-1.5 flex flex-wrap gap-1.5">
         {werte.map((w) => (
           <span key={w} className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-700">
-            {w}
+            {anzeige(w)}
             <button onClick={() => onChange(werte.filter((x) => x !== w))} className="ml-0.5 text-slate-400 hover:text-rose-600">×</button>
           </span>
         ))}
         {werte.length === 0 && <span className="text-xs text-slate-400">–</span>}
       </div>
       <div className="flex gap-1.5">
-        <input className={`${INPUT} flex-1 text-xs`} placeholder={`${label} hinzufügen…`} value={neu} list={vorschlaege ? listenId : undefined}
+        <input className={`${INPUT} flex-1 text-xs`} placeholder={t('einstellungen:chips.hinzufuegen', { label })} value={neu} list={vorschlaege ? listenId : undefined}
           onChange={(e) => setNeu(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); add() } }} />
         <button onClick={add} className="rounded-lg border border-slate-300 px-2.5 text-xs text-slate-600 hover:bg-slate-50">+</button>
-        {vorschlaege && <datalist id={listenId}>{vorschlaege.map((v) => <option key={v} value={v} />)}</datalist>}
+        {vorschlaege && <datalist id={listenId}>{vorschlaege.map((v) => <option key={v} value={v} label={anzeige(v)} />)}</datalist>}
       </div>
     </div>
   )
@@ -81,7 +78,7 @@ function PlanKarte({ plan, onSaved }: { plan: Plan; onSaved: () => void }) {
       setOriginal(f)
       setSaved(true); setTimeout(() => setSaved(false), 2000)
       onSaved()
-    } catch (e: any) { setErr(e?.message || 'Speichern fehlgeschlagen') }
+    } catch (e: any) { setErr(e?.message || t('einstellungen:allgemein.speichern_fehlgeschlagen')) }
     finally { setSaving(false) }
   }
 
@@ -94,20 +91,20 @@ function PlanKarte({ plan, onSaved }: { plan: Plan; onSaved: () => void }) {
           onChange={(e) => setF({ ...f, label: e.target.value })} />
         <label className="flex shrink-0 items-center gap-1.5 text-xs text-slate-500">
           <input type="checkbox" checked={f.aktiv} onChange={(e) => setF({ ...f, aktiv: e.target.checked })} />
-          aktiv
+          {t('einstellungen:allgemein.aktiv')}
         </label>
       </div>
       <div className="space-y-3">
-        <ChipListe label="Titel" werte={f.titel} onChange={(titel) => setF({ ...f, titel })} />
-        <ChipListe label="Seniorität" werte={f.senioritaet} onChange={(senioritaet) => setF({ ...f, senioritaet })} vorschlaege={SENIORITAETEN} />
-        <ChipListe label="Branche" werte={f.branche} onChange={(branche) => setF({ ...f, branche })} />
+        <ChipListe label={t('einstellungen:plan.titel')} werte={f.titel} onChange={(titel) => setF({ ...f, titel })} />
+        <ChipListe label={t('einstellungen:plan.senioritaet')} anzeige={(w) => wert('seniority', w)} werte={f.senioritaet} onChange={(senioritaet) => setF({ ...f, senioritaet })} vorschlaege={SENIORITAETEN} />
+        <ChipListe label={t('einstellungen:plan.branche')} werte={f.branche} onChange={(branche) => setF({ ...f, branche })} />
       </div>
       <div className="mt-3 flex items-center gap-2 border-t border-slate-100 pt-3">
         <button onClick={save} disabled={saving || !dirty}
           className="rounded-lg bg-brand-cyan px-3 py-1.5 text-sm font-medium text-brand-aufAktion hover:bg-brand-cyanHover disabled:cursor-not-allowed disabled:opacity-40">
-          {saving ? 'Speichern…' : 'Speichern'}
+          {saving ? t('einstellungen:allgemein.speichern_laeuft') : t('einstellungen:allgemein.speichern')}
         </button>
-        {saved && <span className="text-sm text-emerald-600">✓ Gespeichert</span>}
+        {saved && <span className="text-sm text-emerald-600">{t('einstellungen:allgemein.gespeichert')}</span>}
         {err && <span className="text-sm text-rose-600">{err}</span>}
       </div>
     </div>
@@ -150,33 +147,33 @@ function SuchbereichKarte({ suchbereich, minMitarbeiter, umkreisLabel, onSaved }
       setSaved(true); setTimeout(() => setSaved(false), 2000)
       suchTabsNeuLaden()
       onSaved()
-    } catch (e: any) { setErr(e?.message || 'Speichern fehlgeschlagen') }
+    } catch (e: any) { setErr(e?.message || t('einstellungen:allgemein.speichern_fehlgeschlagen')) }
     finally { setSaving(false) }
   }
 
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      <div className="mb-3 text-sm font-semibold text-brand-navy">Suchbereich &amp; Firmengröße</div>
+      <div className="mb-3 text-sm font-semibold text-brand-navy">{t('einstellungen:suchbereich.titel')}</div>
       <div className="space-y-2">
         <label className="flex items-center gap-2 text-sm text-slate-700">
           <input type="checkbox" checked={f.remote.aktiv}
             onChange={(e) => setF({ ...f, remote: { aktiv: e.target.checked } })} />
-          Remote
+          {wert('tab', 'Remote')}
         </label>
         <label className="flex items-center gap-2 text-sm text-slate-700">
           <input type="checkbox" checked={f.deutschlandweit.aktiv}
             onChange={(e) => setF({ ...f, deutschlandweit: { aktiv: e.target.checked } })} />
-          Deutschlandweit
+          {wert('tab', 'Deutschlandweit')}
         </label>
         <div className="flex flex-wrap items-center gap-2">
           <label className="flex items-center gap-2 text-sm text-slate-700">
             <input type="checkbox" checked={f.umkreis.aktiv}
               onChange={(e) => setF({ ...f, umkreis: { ...f.umkreis, aktiv: e.target.checked } })} />
-            Stadt + Umkreis
+            {t('einstellungen:suchbereich.stadt_umkreis')}
           </label>
           {f.umkreis.aktiv && (
             <>
-              <input className={`${INPUT} w-48`} value={f.umkreis.stadt} placeholder="z. B. Köln"
+              <input className={`${INPUT} w-48`} value={f.umkreis.stadt} placeholder={t('einstellungen:suchbereich.stadt_platzhalter')}
                 onChange={(e) => setF({ ...f, umkreis: { ...f.umkreis, stadt: e.target.value } })} />
               <span className="text-sm text-slate-500">+</span>
               <input type="number" className={`${INPUT} w-20`} value={f.umkreis.umkreis_km}
@@ -188,24 +185,24 @@ function SuchbereichKarte({ suchbereich, minMitarbeiter, umkreisLabel, onSaved }
       </div>
       <div className="mt-3 border-t border-slate-100 pt-3">
         <label className="flex items-center gap-2 text-sm text-slate-700">
-          Mindest-Firmengröße
+          {t('einstellungen:suchbereich.min_groesse_vor')}
           <input type="number" className={`${INPUT} w-24`} value={f.min_mitarbeiter}
             onChange={(e) => setF({ ...f, min_mitarbeiter: Number(e.target.value) || 0 })} />
-          Mitarbeiter
+          {t('einstellungen:suchbereich.min_groesse_nach')}
         </label>
       </div>
-      {label && <div className="mt-2 text-xs text-slate-400">In der Jobliste: {label}</div>}
+      {label && <div className="mt-2 text-xs text-slate-400">{t('einstellungen:suchbereich.in_jobliste', { label })}</div>}
       {umbenennung && (
         <div className="mt-2 text-xs text-emerald-600">
-          {umbenennung.jobs} Stellen von „{umbenennung.von}“ auf „{umbenennung.nach}“ umgestellt.
+          {t('einstellungen:suchbereich.umbenennung', { count: umbenennung.jobs, von: umbenennung.von, nach: umbenennung.nach })}
         </div>
       )}
       <div className="mt-3 flex items-center gap-2 border-t border-slate-100 pt-3">
         <button onClick={save} disabled={saving || !dirty}
           className="rounded-lg bg-brand-cyan px-3 py-1.5 text-sm font-medium text-brand-aufAktion hover:bg-brand-cyanHover disabled:cursor-not-allowed disabled:opacity-40">
-          {saving ? 'Speichern…' : 'Speichern'}
+          {saving ? t('einstellungen:allgemein.speichern_laeuft') : t('einstellungen:allgemein.speichern')}
         </button>
-        {saved && <span className="text-sm text-emerald-600">✓ Gespeichert</span>}
+        {saved && <span className="text-sm text-emerald-600">{t('einstellungen:allgemein.gespeichert')}</span>}
         {err && <span className="text-sm text-rose-600">{err}</span>}
       </div>
     </div>
@@ -218,17 +215,17 @@ function SuchbereichKarte({ suchbereich, minMitarbeiter, umkreisLabel, onSaved }
 // „nicht bekannt“ und wird nicht als „nein“ gezeigt. Nach dem Speichern lädt die Seite neu: `modell_optionen`
 // der Karte „KI-Modell je Funktion“ gehören zum Anbieter.
 function KiStatusZeile({ s }: { s: KiAnbieterStatus | undefined }) {
-  if (!s) return <div className="mt-1.5 text-xs text-slate-400">Prüfe…</div>
+  if (!s) return <div className="mt-1.5 text-xs text-slate-400">{t('einstellungen:ki.status_pruefe')}</div>
   const chip = 'rounded-full px-2 py-0.5 text-xs font-medium'
   const gut = 'bg-emerald-100 text-emerald-800'
   return (
     <div className="mt-1.5 flex flex-wrap gap-1.5">
       <span className={`${chip} ${s.installiert ? gut : 'bg-rose-100 text-rose-700'}`}>
-        {s.installiert ? 'installiert' : 'nicht installiert'}
+        {s.installiert ? t('einstellungen:ki.installiert') : t('einstellungen:ki.nicht_installiert')}
       </span>
       {s.installiert && (
         <span className={`${chip} ${s.angemeldet === true ? gut : s.angemeldet === false ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-500'}`}>
-          {s.angemeldet === true ? 'angemeldet' : s.angemeldet === false ? 'nicht angemeldet' : 'Anmeldung nicht bekannt'}
+          {s.angemeldet === true ? t('einstellungen:ki.angemeldet') : s.angemeldet === false ? t('einstellungen:ki.nicht_angemeldet') : t('einstellungen:ki.anmeldung_unbekannt')}
         </span>
       )}
     </div>
@@ -264,18 +261,15 @@ function KiKarte({ ki, optionen, onSaved }: {
       kiAnbieterUebernehmen(out)   // Texte wie „in der Claude-Session starten“ schalten sofort um
       setSaved(true); setTimeout(() => setSaved(false), 2000)
       onSaved()
-    } catch (e: any) { setErr(e?.message || 'Speichern fehlgeschlagen') }
+    } catch (e: any) { setErr(e?.message || t('einstellungen:allgemein.speichern_fehlgeschlagen')) }
     finally { setSaving(false) }
   }
 
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      <div className="mb-1 text-sm font-semibold text-brand-navy">KI</div>
+      <div className="mb-1 text-sm font-semibold text-brand-navy">{t('einstellungen:ki.titel')}</div>
       <p className="mb-3 text-xs text-slate-500">
-        Welche KI die per Button oder Task-Center gestarteten Läufe ausführt. Unter ChatGPT läuft das BMS über Ihr
-        ChatGPT-Abo; die Anmeldung erfolgt im Terminal mit <code className="rounded bg-slate-100 px-1">codex login</code>.
-        Die Daten der KI-Läufe gehen dann an OpenAI statt an Anthropic. ChatGPT ist eine Vorschau. Nach dem Wechsel
-        zeigt „KI-Modell je Funktion“ die Modelle des gewählten Anbieters.
+        <Trans i18nKey="einstellungen:ki.beschreibung" components={{ code: <code className="rounded bg-slate-100 px-1" /> }} />
       </p>
       <div className="grid gap-2 md:grid-cols-2">
         {optionen.map((o) => (
@@ -285,24 +279,24 @@ function KiKarte({ ki, optionen, onSaved }: {
               <input type="radio" name="ki-anbieter" checked={wert === o.wert} onChange={() => setWert(o.wert)} />
               {o.label}
               {o.wert === 'chatgpt' && (
-                <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-medium text-indigo-800">Vorschau</span>
+                <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-medium text-indigo-800">{t('einstellungen:ki.vorschau')}</span>
               )}
             </span>
             <KiStatusZeile s={statusFehler ? undefined : status?.[o.wert]} />
           </label>
         ))}
       </div>
-      {statusFehler && <div className="mt-2 text-sm text-rose-600">Status der KI-Programme konnte nicht geladen werden.</div>}
+      {statusFehler && <div className="mt-2 text-sm text-rose-600">{t('einstellungen:ki.status_fehler')}</div>}
       <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3">
         <button onClick={save} disabled={saving || !dirty}
           className="rounded-lg bg-brand-cyan px-3 py-1.5 text-sm font-medium text-brand-aufAktion hover:bg-brand-cyanHover disabled:cursor-not-allowed disabled:opacity-40">
-          {saving ? 'Speichern…' : 'Speichern'}
+          {saving ? t('einstellungen:allgemein.speichern_laeuft') : t('einstellungen:allgemein.speichern')}
         </button>
         <button onClick={statusLaden} disabled={pruefen}
           className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40">
-          {pruefen ? 'Prüft…' : 'Status erneut prüfen'}
+          {pruefen ? t('einstellungen:ki.pruefen_laeuft') : t('einstellungen:ki.erneut_pruefen')}
         </button>
-        {saved && <span className="text-sm text-emerald-600">✓ Gespeichert</span>}
+        {saved && <span className="text-sm text-emerald-600">{t('einstellungen:allgemein.gespeichert')}</span>}
         {err && <span className="text-sm text-rose-600">{err}</span>}
       </div>
     </div>
@@ -333,20 +327,20 @@ function ModelleKarte({ modelle, modellOptionen, modellStandard, onSaved }: {
       setOriginal(f)
       setSaved(true); setTimeout(() => setSaved(false), 2000)
       onSaved()
-    } catch (e: any) { setErr(e?.message || 'Speichern fehlgeschlagen') }
+    } catch (e: any) { setErr(e?.message || t('einstellungen:allgemein.speichern_fehlgeschlagen')) }
     finally { setSaving(false) }
   }
 
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      <div className="mb-1 text-sm font-semibold text-brand-navy">KI-Modell je Funktion</div>
+      <div className="mb-1 text-sm font-semibold text-brand-navy">{t('einstellungen:modelle.titel')}</div>
       <p className="mb-3 text-xs text-slate-500">
-        Gilt für die per Button/Task-Center gestarteten Läufe. Standard: {standardLabel}.
+        {t('einstellungen:modelle.beschreibung', { standard: standardLabel })}
       </p>
       <div className="space-y-2">
-        {FUNKTIONEN.map(({ key, label }) => (
+        {FUNKTIONEN.map((key) => (
           <div key={key} className="flex items-center justify-between gap-2">
-            <span className="text-sm text-slate-700">{label}</span>
+            <span className="text-sm text-slate-700">{t(`einstellungen:funktion.${key}`)}</span>
             <select className={`${INPUT} ${breit ? 'w-72' : 'w-40'}`} value={f[key] || modellStandard}
               onChange={(e) => setF({ ...f, [key]: e.target.value })}>
               {modellOptionen.map((m) => <option key={m.alias} value={m.alias}>{m.label}</option>)}
@@ -357,9 +351,9 @@ function ModelleKarte({ modelle, modellOptionen, modellStandard, onSaved }: {
       <div className="mt-3 flex items-center gap-2 border-t border-slate-100 pt-3">
         <button onClick={save} disabled={saving || !dirty}
           className="rounded-lg bg-brand-cyan px-3 py-1.5 text-sm font-medium text-brand-aufAktion hover:bg-brand-cyanHover disabled:cursor-not-allowed disabled:opacity-40">
-          {saving ? 'Speichern…' : 'Speichern'}
+          {saving ? t('einstellungen:allgemein.speichern_laeuft') : t('einstellungen:allgemein.speichern')}
         </button>
-        {saved && <span className="text-sm text-emerald-600">✓ Gespeichert</span>}
+        {saved && <span className="text-sm text-emerald-600">{t('einstellungen:allgemein.gespeichert')}</span>}
         {err && <span className="text-sm text-rose-600">{err}</span>}
       </div>
     </div>
@@ -370,10 +364,7 @@ function ModelleKarte({ modelle, modellOptionen, modellStandard, onSaved }: {
 // Zugriffsart ist fest (bestimmt der jobsuche-Skill, nicht die Oberfläche) und erscheint nur
 // als kleiner Hinweis: "websearch" sucht per WebSearch mit Domain-Anker (Bot-Schutz bei
 // LinkedIn/Indeed/StepStone/Xing), "fetch" ruft die URL direkt ab (Nejo/Arbeitsagentur).
-const ZUGRIFF_LABEL: Record<Portal['zugriff'], string> = {
-  websearch: 'per Websuche',
-  fetch: 'direkter Abruf',
-}
+const zugriffLabel = (z: Portal['zugriff']): string => t(`einstellungen:portale.zugriff.${z}`)
 
 interface PruefErgebnis {
   status: 'gruen' | 'amber' | 'rot'
@@ -413,7 +404,7 @@ function PortaleKarte({ portale, onSaved }: { portale: Portal[]; onSaved: () => 
       setOriginal(f)
       setSaved(true); setTimeout(() => setSaved(false), 2000)
       onSaved()
-    } catch (e: any) { setErr(e?.message || 'Speichern fehlgeschlagen') }
+    } catch (e: any) { setErr(e?.message || t('einstellungen:allgemein.speichern_fehlgeschlagen')) }
     finally { setSaving(false) }
   }
 
@@ -429,7 +420,7 @@ function PortaleKarte({ portale, onSaved }: { portale: Portal[]; onSaved: () => 
       })
       setPruefung((cur) => ({ ...cur, [key]: { loading: false, ergebnis: out } }))
     } catch (e: any) {
-      setPruefung((cur) => ({ ...cur, [key]: { loading: false, fehler: e?.message || 'Prüfung fehlgeschlagen' } }))
+      setPruefung((cur) => ({ ...cur, [key]: { loading: false, fehler: e?.message || t('einstellungen:portale.pruefung_fehlgeschlagen') } }))
     }
   }
 
@@ -441,18 +432,18 @@ function PortaleKarte({ portale, onSaved }: { portale: Portal[]; onSaved: () => 
     return (
       <div key={p.key} className="py-1.5">
         <div className="flex flex-wrap items-center gap-2">
-          <input type="checkbox" checked={p.aktiv} title="aktiv"
+          <input type="checkbox" checked={p.aktiv} title={t('einstellungen:allgemein.aktiv')}
             onChange={(e) => setZeile(p.key, { aktiv: e.target.checked })} />
           <input className={`${INPUT} w-32 shrink-0 text-sm`} value={p.name}
             onChange={(e) => setZeile(p.key, { name: e.target.value })}
-            placeholder={p.standard ? undefined : 'Weiteres Portal'} />
+            placeholder={p.standard ? undefined : t('einstellungen:portale.weiteres')} />
           <input className={`${INPUT} min-w-0 flex-1 text-sm`} value={p.url}
             onChange={(e) => setZeile(p.key, { url: e.target.value })}
             placeholder={p.standard ? undefined : 'https://…'} />
-          <span className="w-28 shrink-0 text-[11px] text-slate-400">{ZUGRIFF_LABEL[p.zugriff]}</span>
+          <span className="w-28 shrink-0 text-[11px] text-slate-400">{zugriffLabel(p.zugriff)}</span>
           <button onClick={() => pruefen(p.key)} disabled={status?.loading || !p.url.trim()}
             className="shrink-0 rounded-lg border border-slate-300 px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40">
-            {status?.loading ? 'Prüfe…' : 'Prüfen'}
+            {status?.loading ? t('einstellungen:portale.pruefe') : t('einstellungen:portale.pruefen')}
           </button>
         </div>
         {status?.ergebnis && (
@@ -468,10 +459,9 @@ function PortaleKarte({ portale, onSaved }: { portale: Portal[]; onSaved: () => 
 
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      <div className="mb-1 text-sm font-semibold text-brand-navy">Suchportale</div>
+      <div className="mb-1 text-sm font-semibold text-brand-navy">{t('einstellungen:portale.titel')}</div>
       <p className="mb-3 text-xs text-slate-500">
-        Der Tageslauf durchsucht nur aktive Portale. Voreingestellt sind die in Deutschland
-        üblichen — Name und URL lassen sich anpassen, zwei Zeilen sind für weitere Portale frei.
+        {t('einstellungen:portale.beschreibung')}
       </p>
       <div className="divide-y divide-slate-100">
         {f.filter((p) => p.standard).map(zeile)}
@@ -482,9 +472,9 @@ function PortaleKarte({ portale, onSaved }: { portale: Portal[]; onSaved: () => 
       <div className="mt-3 flex items-center gap-2 border-t border-slate-100 pt-3">
         <button onClick={save} disabled={saving || !dirty}
           className="rounded-lg bg-brand-cyan px-3 py-1.5 text-sm font-medium text-brand-aufAktion hover:bg-brand-cyanHover disabled:cursor-not-allowed disabled:opacity-40">
-          {saving ? 'Speichern…' : 'Speichern'}
+          {saving ? t('einstellungen:allgemein.speichern_laeuft') : t('einstellungen:allgemein.speichern')}
         </button>
-        {saved && <span className="text-sm text-emerald-600">✓ Gespeichert</span>}
+        {saved && <span className="text-sm text-emerald-600">{t('einstellungen:allgemein.gespeichert')}</span>}
         {err && <span className="text-sm text-rose-600">{err}</span>}
       </div>
     </div>
@@ -509,28 +499,27 @@ function UnterlagenKarte({ unterlagen, onSaved }: { unterlagen: EinstellungenT['
       setOriginal(f)
       setSaved(true); setTimeout(() => setSaved(false), 2000)
       onSaved()
-    } catch (e: any) { setErr(e?.message || 'Speichern fehlgeschlagen') }
+    } catch (e: any) { setErr(e?.message || t('einstellungen:allgemein.speichern_fehlgeschlagen')) }
     finally { setSaving(false) }
   }
 
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      <div className="mb-1 text-sm font-semibold text-brand-navy">Bewerbungspaket — Standardumfang</div>
+      <div className="mb-1 text-sm font-semibold text-brand-navy">{t('einstellungen:unterlagen.titel')}</div>
       <p className="mb-3 text-xs text-slate-500">
-        Vorbelegung des Häkchens am Job-Detail; pro Stelle jederzeit übersteuerbar. Der
-        Beirats-Check ist ein eigener, optionaler Schritt und kein Kettenglied.
+        {t('einstellungen:unterlagen.beschreibung')}
       </p>
       <label className="flex items-center gap-2 text-sm text-slate-700">
         <input type="checkbox" checked={f.anschreiben}
           onChange={(e) => setF({ ...f, anschreiben: e.target.checked })} />
-        Anschreiben im Paket
+        {t('einstellungen:unterlagen.anschreiben')}
       </label>
       <div className="mt-3 flex items-center gap-2 border-t border-slate-100 pt-3">
         <button onClick={save} disabled={saving || !dirty}
           className="rounded-lg bg-brand-cyan px-3 py-1.5 text-sm font-medium text-brand-aufAktion hover:bg-brand-cyanHover disabled:cursor-not-allowed disabled:opacity-40">
-          {saving ? 'Speichern…' : 'Speichern'}
+          {saving ? t('einstellungen:allgemein.speichern_laeuft') : t('einstellungen:allgemein.speichern')}
         </button>
-        {saved && <span className="text-sm text-emerald-600">✓ Gespeichert</span>}
+        {saved && <span className="text-sm text-emerald-600">{t('einstellungen:allgemein.gespeichert')}</span>}
         {err && <span className="text-sm text-rose-600">{err}</span>}
       </div>
     </div>
@@ -591,7 +580,7 @@ function BeiratKarte() {
       }
       await load()
       setSaved(true); setTimeout(() => setSaved(false), 2000)
-    } catch (e: any) { setErr(e?.message || 'Speichern fehlgeschlagen') }
+    } catch (e: any) { setErr(e?.message || t('einstellungen:allgemein.speichern_fehlgeschlagen')) }
     finally { setSaving(false) }
   }
 
@@ -614,7 +603,7 @@ function BeiratKarte() {
       })
       neuFeld(id, { starting: false, taskId: out.task_id })
     } catch (e: any) {
-      neuFeld(id, { starting: false, err: e?.message || 'Start fehlgeschlagen' })
+      neuFeld(id, { starting: false, err: e?.message || t('einstellungen:beirat.start_fehlgeschlagen') })
     }
   }
 
@@ -630,37 +619,36 @@ function BeiratKarte() {
             onChange={(e) => setZeile(m.id, { perspektive: e.target.value })} />
           <label className="mt-2 flex shrink-0 items-center gap-1.5 text-xs text-slate-500">
             <input type="radio" name="beirat-vorsitz" checked={m.vorsitz} onChange={() => vorsitzWaehlen(m.id)} />
-            Vorsitz
+            {t('einstellungen:beirat.vorsitz')}
           </label>
           <button onClick={() => neuFeld(m.id, { ...NEU_LEER, offen: !n.offen })}
             className="shrink-0 rounded-lg border border-slate-300 px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50">
-            Neu besetzen
+            {t('einstellungen:beirat.neu_besetzen')}
           </button>
         </div>
         {n.offen && (
           <div className="ml-5 mt-1.5 space-y-1.5 rounded-lg border border-slate-200 bg-slate-50 p-2.5">
             <p className="text-xs text-slate-500">
-              Name und Perspektive (1–2 Sätze) für den neuen Kopf — den vollen Persona-Text
-              erzeugt der Lauf, nicht dieses Feld.
+              {t('einstellungen:beirat.neu_hinweis')}
             </p>
-            <input className={`${INPUT} w-full text-sm`} placeholder="Name" value={n.name}
+            <input className={`${INPUT} w-full text-sm`} placeholder={t('einstellungen:beirat.name')} value={n.name}
               onChange={(e) => neuFeld(m.id, { name: e.target.value })} />
-            <textarea className={`${INPUT} w-full text-sm`} rows={2} placeholder="Perspektive (1–2 Sätze)"
+            <textarea className={`${INPUT} w-full text-sm`} rows={2} placeholder={t('einstellungen:beirat.perspektive_platzhalter')}
               value={n.perspektive} onChange={(e) => neuFeld(m.id, { perspektive: e.target.value })} />
             <div className="flex items-center gap-2">
               <button onClick={() => neuBesetzen(m.id)} disabled={n.starting || !n.name.trim() || !n.perspektive.trim()}
                 className="rounded-lg bg-brand-cyan px-3 py-1.5 text-xs font-medium text-brand-aufAktion hover:bg-brand-cyanHover disabled:cursor-not-allowed disabled:opacity-40">
-                {n.starting ? 'Startet…' : 'Bestätigen'}
+                {n.starting ? t('einstellungen:beirat.startet') : t('einstellungen:beirat.bestaetigen')}
               </button>
               <button onClick={() => neuFeld(m.id, { ...NEU_LEER, offen: false })} disabled={n.starting}
                 className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40">
-                Abbrechen
+                {t('einstellungen:allgemein.abbrechen')}
               </button>
             </div>
             {n.err && <div className="text-xs text-rose-600">{n.err}</div>}
             {n.taskId != null && (
               <div className="text-xs text-emerald-600">
-                ✓ Lauf gestartet — Fortschritt im <Link to="/tasks" className="text-brand-cyan hover:underline">Task-Center</Link>.
+                <Trans i18nKey="einstellungen:beirat.lauf_gestartet" components={{ a: <Link to="/tasks" className="text-brand-cyan hover:underline" /> }} />
               </div>
             )}
           </div>
@@ -670,18 +658,14 @@ function BeiratKarte() {
   }
 
   if (loading) {
-    return <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-400 shadow-sm">Lade Beirat…</div>
+    return <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-400 shadow-sm">{t('einstellungen:beirat.lade')}</div>
   }
 
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      <div className="mb-1 text-sm font-semibold text-brand-navy">Beirat — Besetzung</div>
+      <div className="mb-1 text-sm font-semibold text-brand-navy">{t('einstellungen:beirat.titel')}</div>
       <p className="mb-3 text-xs text-slate-500">
-        Die sieben Mitglieder sind fiktive Archetypen, keine realen Personen. Der eigentliche
-        Persona-Text (Denkschule, Prüffragen, Grenzen) entsteht ausschließlich über „Neu
-        besetzen" per Lauf — hier werden nur Anzeige, Kurzperspektive, Farbe und Vorsitz
-        gepflegt. Es bleibt bei genau sieben Plätzen: Die Abstimmung im Stellen-Check ist auf
-        sieben Stimmen kalibriert.
+        {t('einstellungen:beirat.beschreibung')}
       </p>
       <div className="divide-y divide-slate-100">
         {f.map(zeile)}
@@ -689,9 +673,9 @@ function BeiratKarte() {
       <div className="mt-3 flex items-center gap-2 border-t border-slate-100 pt-3">
         <button onClick={save} disabled={saving || !dirty}
           className="rounded-lg bg-brand-cyan px-3 py-1.5 text-sm font-medium text-brand-aufAktion hover:bg-brand-cyanHover disabled:cursor-not-allowed disabled:opacity-40">
-          {saving ? 'Speichern…' : 'Speichern'}
+          {saving ? t('einstellungen:allgemein.speichern_laeuft') : t('einstellungen:allgemein.speichern')}
         </button>
-        {saved && <span className="text-sm text-emerald-600">✓ Gespeichert</span>}
+        {saved && <span className="text-sm text-emerald-600">{t('einstellungen:allgemein.gespeichert')}</span>}
         {err && <span className="text-sm text-rose-600">{err}</span>}
       </div>
     </div>
@@ -749,7 +733,7 @@ function MailKontoKarte() {
       const out = await api<MailSettings>('/settings/mail', { method: 'PUT', body: JSON.stringify(body) })
       setF(out); setOriginal(out); setPasswort('')
       setSaved(true); setTimeout(() => setSaved(false), 2000)
-    } catch (e: any) { setErr(e?.message || 'Speichern fehlgeschlagen') }
+    } catch (e: any) { setErr(e?.message || t('einstellungen:allgemein.speichern_fehlgeschlagen')) }
     finally { setSaving(false) }
   }
 
@@ -762,76 +746,71 @@ function MailKontoKarte() {
       })
       setTestErgebnis({ ok: true, text: out.meldung })
     } catch (e: any) {
-      setTestErgebnis({ ok: false, text: e?.message || 'Verbindungstest fehlgeschlagen' })
+      setTestErgebnis({ ok: false, text: e?.message || t('einstellungen:allgemein.test_fehlgeschlagen') })
     } finally { setTesting(false) }
   }
 
   if (loading) {
-    return <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-400 shadow-sm">Lade E-Mail-Konto…</div>
+    return <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-400 shadow-sm">{t('einstellungen:mail.lade')}</div>
   }
 
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      <div className="mb-1 text-sm font-semibold text-brand-navy">E-Mail-Konto</div>
+      <div className="mb-1 text-sm font-semibold text-brand-navy">{t('einstellungen:mail.titel')}</div>
       <p className="mb-3 text-xs text-slate-500">
-        Es wird nie automatisch gesendet — nur gelesen und Entwürfe im gewählten Ordner
-        abgelegt. Empfohlener Standard ist IMAP mit einem App-Passwort des Anbieters (nicht
-        das normale Kontopasswort) — das funktioniert auch für Gmail. Die Gmail-API ist die
-        Power-Variante mit voller Suchsyntax und braucht ein eigenes Google-Cloud-Projekt.
-        Outlook.com/Microsoft-Konten werden mangels IMAP-Basic-Auth derzeit nicht
-        unterstützt. Schritt-für-Schritt: docs/SETUP-EMAIL.md.
+        {t('einstellungen:mail.beschreibung')}
       </p>
       <div className="flex flex-wrap gap-4">
         <label className="flex items-center gap-1.5 text-sm text-slate-700">
           <input type="radio" name="mail-provider" checked={f.provider === 'gmail'}
             onChange={() => setF({ ...f, provider: 'gmail' })} />
-          Gmail (API)
+          {t('einstellungen:mail.gmail_api')}
         </label>
         <label className="flex items-center gap-1.5 text-sm text-slate-700">
           <input type="radio" name="mail-provider" checked={f.provider === 'imap'}
             onChange={() => setF({ ...f, provider: 'imap' })} />
-          IMAP (Gmail, GMX, Web.de, mailbox.org, Posteo, iCloud-Mail, …)
+          {t('einstellungen:mail.imap')}
         </label>
       </div>
 
       {f.provider === 'imap' && (
         <div className="mt-3 grid gap-2 sm:grid-cols-2">
           <label className="text-xs text-slate-500">
-            Host
+            {t('einstellungen:allgemein.host')}
             <input className={`${INPUT} mt-0.5 w-full`} value={f.host}
-              onChange={(e) => setF({ ...f, host: e.target.value })} placeholder="imap.gmx.net" />
+              onChange={(e) => setF({ ...f, host: e.target.value })} placeholder={t('einstellungen:mail.host_beispiel')} />
           </label>
           <label className="text-xs text-slate-500">
-            Port
+            {t('einstellungen:allgemein.port')}
             <input type="number" className={`${INPUT} mt-0.5 w-full`} value={f.port}
               onChange={(e) => setF({ ...f, port: Number(e.target.value) || 993 })} />
           </label>
           <label className="text-xs text-slate-500">
-            Sicherheit
+            {t('einstellungen:mail.sicherheit')}
             <select className={`${INPUT} mt-0.5 w-full`} value={f.security}
               onChange={(e) => setF({ ...f, security: e.target.value as MailSettings['security'] })}>
-              <option value="ssl">SSL/TLS</option>
-              <option value="starttls">STARTTLS</option>
+              <option value="ssl">SSL/TLS</option>{/* i18n-ok: Protokollname */}
+              <option value="starttls">STARTTLS</option>{/* i18n-ok: Protokollname */}
             </select>
           </label>
           <label className="text-xs text-slate-500">
-            Benutzer
+            {t('einstellungen:allgemein.benutzer')}
             <input className={`${INPUT} mt-0.5 w-full`} value={f.username}
-              onChange={(e) => setF({ ...f, username: e.target.value })} placeholder="ich@gmx.de" />
+              onChange={(e) => setF({ ...f, username: e.target.value })} placeholder={t('einstellungen:mail.benutzer_beispiel')} />
           </label>
           <label className="text-xs text-slate-500">
-            Passwort
+            {t('einstellungen:allgemein.passwort')}
             <input type="password" className={`${INPUT} mt-0.5 w-full`} value={passwort}
               onChange={(e) => setPasswort(e.target.value)}
-              placeholder={f.password_set ? 'gespeichert' : 'App-Passwort'} />
+              placeholder={f.password_set ? t('einstellungen:allgemein.passwort_gespeichert') : t('einstellungen:mail.app_passwort')} />
             {f.password_set && (
-              <span className="mt-0.5 block text-[11px] text-slate-400">Leer lassen, um das gespeicherte Passwort zu behalten.</span>
+              <span className="mt-0.5 block text-[11px] text-slate-400">{t('einstellungen:allgemein.passwort_behalten')}</span>
             )}
           </label>
           <label className="text-xs text-slate-500">
-            Entwürfe-Ordner
+            {t('einstellungen:mail.entwuerfe_ordner')}
             <input className={`${INPUT} mt-0.5 w-full`} value={f.drafts_folder}
-              onChange={(e) => setF({ ...f, drafts_folder: e.target.value })} placeholder="Entwürfe" />
+              onChange={(e) => setF({ ...f, drafts_folder: e.target.value })} placeholder={t('einstellungen:mail.entwuerfe_platzhalter')} />
           </label>
         </div>
       )}
@@ -839,13 +818,13 @@ function MailKontoKarte() {
       <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3">
         <button onClick={testen} disabled={testing || saving}
           className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40">
-          {testing ? 'Testet…' : 'Verbindung testen'}
+          {testing ? t('einstellungen:allgemein.testet') : t('einstellungen:allgemein.verbindung_testen')}
         </button>
         <button onClick={save} disabled={saving || testing || !dirty}
           className="rounded-lg bg-brand-cyan px-3 py-1.5 text-sm font-medium text-brand-aufAktion hover:bg-brand-cyanHover disabled:cursor-not-allowed disabled:opacity-40">
-          {saving ? 'Speichern…' : 'Speichern'}
+          {saving ? t('einstellungen:allgemein.speichern_laeuft') : t('einstellungen:allgemein.speichern')}
         </button>
-        {saved && <span className="text-sm text-emerald-600">✓ Gespeichert</span>}
+        {saved && <span className="text-sm text-emerald-600">{t('einstellungen:allgemein.gespeichert')}</span>}
         {err && <span className="text-sm text-rose-600">{err}</span>}
       </div>
       {testErgebnis && (
@@ -863,7 +842,7 @@ function MailKontoKarte() {
 // Die Karte erscheint nur, wenn es etwas zu sagen gibt (vorhanden oder entfernt). Ein Ladefehler
 // zählt als „keine Karte“: lieber nichts als eine falsche Aussage.
 interface BeispieldatenStatus {
-  status: 'keine' | 'vorhanden' | 'entfernt'
+  status: 'keine' | 'vorhanden' | 'entfernt' // i18n-ok: API-Wert
   name: string | null
   angelegt_am: string | null
   entfernt_am: string | null
@@ -880,19 +859,15 @@ interface BeispieldatenErgebnis {
 }
 
 // Anzeigenamen der Arten in der Reihenfolge des Backends (beispieldaten.py::_ARTEN, dazu die Dateien).
-const BEISPIEL_ARTEN: [string, string, string][] = [
-  ['stellen', 'Stelle', 'Stellen'], ['firmen', 'Firma', 'Firmen'],
-  ['bewerbungen', 'Bewerbung', 'Bewerbungen'], ['mails', 'Mail', 'Mails'],
-  ['gespraeche', 'Gesprächstermin', 'Gesprächstermine'], ['kontakte', 'Ansprechperson', 'Ansprechpersonen'],
-  ['netzwerk', 'Netzwerk-Kontakt', 'Netzwerk-Kontakte'], ['skills', 'Skill', 'Skills'],
-  ['werdegang', 'Werdegang-Eintrag', 'Werdegang-Einträge'], ['dateien', 'Datei', 'Dateien'],
+const BEISPIEL_ARTEN: string[] = [
+  'stellen', 'firmen', 'bewerbungen', 'mails', 'gespraeche', 'kontakte', 'netzwerk', 'skills', 'werdegang', 'dateien',
 ]
 
 // „5 Stellen, 6 Firmen, …“ — nur Arten mit Anzahl > 0; `nur` schränkt auf einzelne Arten ein.
 function beispielZaehlung(zahlen: Record<string, number>, nur?: string[]): string {
   return BEISPIEL_ARTEN
-    .filter(([art]) => (zahlen[art] ?? 0) > 0 && (!nur || nur.includes(art)))
-    .map(([art, einzahl, mehrzahl]) => `${zahlen[art]} ${zahlen[art] === 1 ? einzahl : mehrzahl}`)
+    .filter((art) => (zahlen[art] ?? 0) > 0 && (!nur || nur.includes(art)))
+    .map((art) => t(`einstellungen:beispieldaten.art.${art}`, { count: zahlen[art] }))
     .join(', ')
 }
 
@@ -915,33 +890,33 @@ function BeispieldatenKarte() {
       // Seitenleiste und Adress-Cache zeigen sonst bis zum Neuladen noch den Beispielnamen.
       window.dispatchEvent(new Event(PROFIL_GEAENDERT))
     } catch (e: any) {
-      setFehler(e?.message || 'Entfernen fehlgeschlagen')
+      setFehler(e?.message || t('einstellungen:beispieldaten.entfernen_fehlgeschlagen'))
     } finally {
       setBusy(false)
     }
   }
 
-  if (!info || info.status === 'keine') return null
+  if (!info || info.status === 'keine') return null // i18n-ok: API-Wert
 
   if (info.status === 'entfernt') {
     // Direkt nach dem Entfernen: Ergebnis mit Sicherung. Nach einem Neuladen nur noch die kleine Zeile.
     if (!ergebnis) {
       return (
         <p className="px-1 text-xs text-slate-400">
-          Beispieldaten entfernt am {deDatum((info.entfernt_am ?? '').slice(0, 10))}.
+          {t('einstellungen:beispieldaten.entfernt_am', { datum: datum((info.entfernt_am ?? '').slice(0, 10)) })}
         </p>
       )
     }
     return (
       <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-        <div className="mb-1 text-sm font-semibold text-brand-navy">Beispieldaten</div>
-        <p className="text-sm text-emerald-700">✓ Beispieldaten entfernt: {beispielZaehlung(ergebnis.entfernt)}.</p>
+        <div className="mb-1 text-sm font-semibold text-brand-navy">{t('einstellungen:beispieldaten.titel')}</div>
+        <p className="text-sm text-emerald-700">{t('einstellungen:beispieldaten.entfernt_ergebnis', { zaehlung: beispielZaehlung(ergebnis.entfernt) })}</p>
         <p className="mt-1 text-xs text-slate-500">
-          Vorher gesichert: <code className="rounded bg-slate-100 px-1">{ergebnis.sicherung}</code>
+          <Trans i18nKey="einstellungen:beispieldaten.vorher_gesichert" values={{ pfad: ergebnis.sicherung }} components={{ code: <code className="rounded bg-slate-100 px-1" /> }} />
         </p>
         {ergebnis.behalten.length > 0 && (
           <p className="mt-1 text-xs text-slate-500">
-            Diese Dateien wurden nicht entfernt, weil Sie sie geändert haben oder sie in Benutzung sind:{' '}
+            {t('einstellungen:beispieldaten.nicht_entfernt')}{' '}
             {ergebnis.behalten.map((pfad, i) => (
               <span key={pfad}>{i > 0 ? ', ' : ''}<code className="rounded bg-slate-100 px-1">{pfad}</code></span>
             ))}.
@@ -953,31 +928,31 @@ function BeispieldatenKarte() {
 
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      <div className="mb-1 text-sm font-semibold text-brand-navy">Beispieldaten</div>
+      <div className="mb-1 text-sm font-semibold text-brand-navy">{t('einstellungen:beispieldaten.titel')}</div>
       <p className="mb-3 text-sm text-slate-700">
-        Diese Installation enthält Beispieldaten von {info.name ?? 'Birne Helene'} zum Ausprobieren:{' '}
-        {beispielZaehlung(info.anzahl, ['stellen', 'firmen', 'bewerbungen', 'mails', 'gespraeche'])}, dazu
-        Profil, Werdegang und ein Lebenslauf. Entfernen Sie sie, bevor Sie Ihre eigenen Daten eintragen.
-        Vorher legt das BMS eine Sicherung an. Eigene Einträge bleiben erhalten.
+        {t('einstellungen:beispieldaten.beschreibung', {
+          name: info.name ?? 'Birne Helene',
+          zaehlung: beispielZaehlung(info.anzahl, ['stellen', 'firmen', 'bewerbungen', 'mails', 'gespraeche']),
+        })}
       </p>
       {frage ? (
         <div className="space-y-2 rounded-lg border border-amber-300 bg-amber-50 p-2.5 text-sm text-amber-900">
-          <p><b>Beispieldaten jetzt entfernen?</b> Das BMS sichert vorher Ihre Datenbank.</p>
+          <p><Trans i18nKey="einstellungen:beispieldaten.frage" components={{ b: <b /> }} /></p>
           <div className="flex gap-2">
             <button onClick={entfernen} disabled={busy}
               className="rounded-md bg-amber-600 px-2.5 py-1 text-xs font-medium text-white hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50">
-              {busy ? 'Entfernt…' : 'Ja, entfernen'}
+              {busy ? t('einstellungen:beispieldaten.entfernt_laeuft') : t('einstellungen:beispieldaten.ja_entfernen')}
             </button>
             <button onClick={() => setFrage(false)} disabled={busy}
               className="rounded-md border border-amber-300 px-2.5 py-1 text-xs hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50">
-              Abbrechen
+              {t('einstellungen:allgemein.abbrechen')}
             </button>
           </div>
         </div>
       ) : (
         <button onClick={() => { setFehler(null); setFrage(true) }}
           className="rounded-lg bg-brand-cyan px-3 py-1.5 text-sm font-medium text-brand-aufAktion hover:bg-brand-cyanHover">
-          Beispieldaten entfernen
+          {t('einstellungen:beispieldaten.entfernen')}
         </button>
       )}
       {fehler && <div className="mt-2 text-sm text-rose-600">{fehler}</div>}
@@ -992,17 +967,17 @@ export default function Einstellungen() {
   const load = () => api<EinstellungenT>('/einstellungen').then(setData).finally(() => setLoading(false))
   useEffect(() => { load() }, [])
 
-  if (loading || !data) return <div className="text-slate-400">Lade…</div>
+  if (loading || !data) return <div className="text-slate-400">{t('einstellungen:allgemein.lade')}</div>
 
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-2xl font-bold text-brand-navy">Einstellungen</h1>
+        <h1 className="text-2xl font-bold text-brand-navy">{t('einstellungen:seite.titel')}</h1>
         <p className="text-sm text-slate-500">
-          Grundsätzliche Parameter für die Jobsuche — Pläne A/B/C sowie Suchbereich und
-          Firmengröße. Wird beim Speichern in <code className="rounded bg-slate-100 px-1">config/suchprofile.yaml</code> übernommen.
+          <Trans i18nKey="einstellungen:seite.beschreibung" components={{ code: <code className="rounded bg-slate-100 px-1" /> }} />
         </p>
       </div>
+      <SpracheKarte />
       <BeispieldatenKarte />
       <MailKontoKarte />
       <KiKarte ki={data.ki_anbieter} optionen={data.ki_anbieter_optionen} onSaved={load} />
@@ -1012,7 +987,7 @@ export default function Einstellungen() {
         <ModelleKarte key={data.ki_anbieter} modelle={data.modelle} modellOptionen={data.modell_optionen} modellStandard={data.modell_standard} onSaved={load} />
       </div>
       <div>
-        <div className="mb-2 text-xs text-slate-500">Reihenfolge der Jobsuche: Plan A → B → C</div>
+        <div className="mb-2 text-xs text-slate-500">{t('einstellungen:seite.reihenfolge')}</div>
         <div className="grid gap-4 md:grid-cols-3">
           {data.plaene.map((p) => <PlanKarte key={p.plan} plan={p} onSaved={load} />)}
         </div>
@@ -1102,7 +1077,7 @@ function CoachSiteKarte() {
       })
       setF(out); setOriginal(out); setSftpPasswort(''); setCoachPasswort('')
       setSaved(true); setTimeout(() => setSaved(false), 2000)
-    } catch (e: any) { setErr(e?.message || 'Speichern fehlgeschlagen') }
+    } catch (e: any) { setErr(e?.message || t('einstellungen:allgemein.speichern_fehlgeschlagen')) }
     finally { setSaving(false) }
   }
 
@@ -1114,7 +1089,7 @@ function CoachSiteKarte() {
       })
       setTestErgebnis({ ok: true, text: out.meldung })
     } catch (e: any) {
-      setTestErgebnis({ ok: false, text: e?.message || 'Verbindungstest fehlgeschlagen' })
+      setTestErgebnis({ ok: false, text: e?.message || t('einstellungen:allgemein.test_fehlgeschlagen') })
     } finally { setTesting(false) }
   }
 
@@ -1129,12 +1104,12 @@ function CoachSiteKarte() {
       })
       setF((cur) => ({ ...cur, authuserfile: out.authuserfile }))
     } catch (e: any) {
-      setErmittelnErr(e?.message || 'Serverpfad konnte nicht ermittelt werden')
+      setErmittelnErr(e?.message || t('einstellungen:coach.serverpfad_fehlgeschlagen'))
     } finally { setErmitteln(false) }
   }
 
   if (loading) {
-    return <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-400 shadow-sm">Lade Coach-Site…</div>
+    return <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-400 shadow-sm">{t('einstellungen:coach.lade')}</div>
   }
 
   // Der Aktualisieren-Button setzt einen echten Upload-Lauf in Gang, der die GESPEICHERTE
@@ -1144,71 +1119,66 @@ function CoachSiteKarte() {
 
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      <div className="mb-1 text-sm font-semibold text-brand-navy">Coach-Site</div>
+      <div className="mb-1 text-sm font-semibold text-brand-navy">{t('einstellungen:coach.titel')}</div>
       <p className="mb-3 text-xs text-slate-500">
-        Passwortgeschützter Read-only-Spiegel für den Coach{f.site_url ? <> unter{' '}
-          <a href={f.site_url} target="_blank" rel="noreferrer" className="font-semibold text-brand-cyan">
-            {f.site_url.replace(/^https:\/\//, '')}
-          </a>
-        </> : ''}: Übersicht, aktive Bewerbungen UND Sichtung/Prüfung (Neu + Prüfen) — je Stelle mit
-        Company-Fit, Match und Stellenausschreibung (ohne internen Erfassungs-Kontext) — plus
-        Absagen mit Gründen. Keine E-Mails, Notizen, Beirats-Checks, Gehälter oder Transkripte.
-        Aktualisiert sich automatisch am Ende des Tageslaufs — oder hier sofort.
-        Schritt-für-Schritt: docs/ANLEITUNG_COACH_SITE.md.
+        {f.site_url ? (
+          <Trans i18nKey="einstellungen:coach.beschreibung_mit_adresse" values={{ adresse: f.site_url.replace(/^https:\/\//, '') }}
+            components={{ a: <a href={f.site_url} target="_blank" rel="noreferrer" className="font-semibold text-brand-cyan" /> }} />
+        ) : t('einstellungen:coach.beschreibung')}
       </p>
 
       <label className="flex items-center gap-2 text-sm text-slate-700">
         <input type="checkbox" checked={f.aktiv} onChange={(e) => setF({ ...f, aktiv: e.target.checked })} />
-        Coach-Site aktiv
+        {t('einstellungen:coach.aktiv')}
       </label>
 
       <div className="mt-3 border-t border-slate-100 pt-3">
         <label className="text-xs text-slate-500">
-          Adresse der Seite
+          {t('einstellungen:coach.adresse')}
           <input className={`${INPUT} mt-0.5 w-full`} value={f.site_url}
-            onChange={(e) => setF({ ...f, site_url: e.target.value })} placeholder="https://coach.meine-domain.de" />
+            onChange={(e) => setF({ ...f, site_url: e.target.value })} placeholder={t('einstellungen:coach.adresse_beispiel')} />
         </label>
       </div>
 
       <div className="mt-3 border-t border-slate-100 pt-3">
-        <div className="mb-1.5 text-xs font-medium uppercase tracking-wide text-slate-500">Upload-Ziel (SFTP)</div>
+        <div className="mb-1.5 text-xs font-medium uppercase tracking-wide text-slate-500">{t('einstellungen:coach.upload_ziel')}</div>
         <div className="grid gap-2 sm:grid-cols-2">
           <label className="text-xs text-slate-500">
-            Host
+            {t('einstellungen:allgemein.host')}
             <input className={`${INPUT} mt-0.5 w-full`} value={f.sftp_host}
-              onChange={(e) => setF({ ...f, sftp_host: e.target.value })} placeholder="access-xyz.webspace-host.com" />
+              onChange={(e) => setF({ ...f, sftp_host: e.target.value })} placeholder="access-xyz.webspace-host.com" /* i18n-ok: Beispielhost */ />
           </label>
           <label className="text-xs text-slate-500">
-            Benutzer
+            {t('einstellungen:allgemein.benutzer')}
             <input className={`${INPUT} mt-0.5 w-full`} value={f.sftp_user}
               onChange={(e) => setF({ ...f, sftp_user: e.target.value })} />
           </label>
           <label className="text-xs text-slate-500">
-            Passwort
+            {t('einstellungen:allgemein.passwort')}
             <input type="password" className={`${INPUT} mt-0.5 w-full`} value={sftpPasswort}
               onChange={(e) => setSftpPasswort(e.target.value)}
-              placeholder={f.sftp_password_set ? 'gespeichert' : 'SFTP-Passwort'} />
+              placeholder={f.sftp_password_set ? t('einstellungen:allgemein.passwort_gespeichert') : t('einstellungen:coach.sftp_passwort_platzhalter')} />
             {f.sftp_password_set && (
-              <span className="mt-0.5 block text-[11px] text-slate-400">Leer lassen, um das gespeicherte Passwort zu behalten.</span>
+              <span className="mt-0.5 block text-[11px] text-slate-400">{t('einstellungen:allgemein.passwort_behalten')}</span>
             )}
           </label>
           <label className="text-xs text-slate-500">
-            Zielverzeichnis
+            {t('einstellungen:coach.zielverzeichnis')}
             <input className={`${INPUT} mt-0.5 w-full`} value={f.sftp_dir}
-              onChange={(e) => setF({ ...f, sftp_dir: e.target.value })} placeholder="/coach" />
+              onChange={(e) => setF({ ...f, sftp_dir: e.target.value })} placeholder="/coach" /* i18n-ok: Beispielpfad */ />
           </label>
         </div>
       </div>
 
       <div className="mt-3 border-t border-slate-100 pt-3">
         <label className="text-xs text-slate-500">
-          Serverpfad zur Zugangsdatei
+          {t('einstellungen:coach.serverpfad')}
           <div className="mt-0.5 flex gap-2">
             <input className={`${INPUT} flex-1`} value={f.authuserfile}
-              onChange={(e) => setF({ ...f, authuserfile: e.target.value })} placeholder="/serverpfad/zum/verzeichnis/.htpasswd" />
+              onChange={(e) => setF({ ...f, authuserfile: e.target.value })} placeholder={t('einstellungen:coach.serverpfad_beispiel')} />
             <button onClick={serverpfadErmitteln} disabled={ermitteln}
               className="shrink-0 rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40">
-              {ermitteln ? 'Ermittelt…' : 'automatisch ermitteln'}
+              {ermitteln ? t('einstellungen:coach.ermittelt') : t('einstellungen:coach.ermitteln')}
             </button>
           </div>
         </label>
@@ -1216,21 +1186,21 @@ function CoachSiteKarte() {
       </div>
 
       <div className="mt-3 border-t border-slate-100 pt-3">
-        <div className="text-xs font-medium uppercase tracking-wide text-slate-500">Coach-Login</div>
-        <p className="mb-1.5 mt-0.5 text-[11px] text-slate-400">Damit meldet sich dein Coach auf der Seite an.</p>
+        <div className="text-xs font-medium uppercase tracking-wide text-slate-500">{t('einstellungen:coach.login')}</div>
+        <p className="mb-1.5 mt-0.5 text-[11px] text-slate-400">{t('einstellungen:coach.login_hinweis')}</p>
         <div className="grid gap-2 sm:grid-cols-2">
           <label className="text-xs text-slate-500">
-            Benutzer
+            {t('einstellungen:allgemein.benutzer')}
             <input className={`${INPUT} mt-0.5 w-full`} value={f.coach_user}
               onChange={(e) => setF({ ...f, coach_user: e.target.value })} />
           </label>
           <label className="text-xs text-slate-500">
-            Passwort
+            {t('einstellungen:allgemein.passwort')}
             <input type="password" className={`${INPUT} mt-0.5 w-full`} value={coachPasswort}
               onChange={(e) => setCoachPasswort(e.target.value)}
-              placeholder={f.coach_password_set ? 'gespeichert' : 'Coach-Passwort'} />
+              placeholder={f.coach_password_set ? t('einstellungen:allgemein.passwort_gespeichert') : t('einstellungen:coach.coach_passwort_platzhalter')} />
             {f.coach_password_set && (
-              <span className="mt-0.5 block text-[11px] text-slate-400">Leer lassen, um das gespeicherte Passwort zu behalten.</span>
+              <span className="mt-0.5 block text-[11px] text-slate-400">{t('einstellungen:allgemein.passwort_behalten')}</span>
             )}
           </label>
         </div>
@@ -1239,13 +1209,13 @@ function CoachSiteKarte() {
       <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3">
         <button onClick={testen} disabled={testing || saving}
           className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40">
-          {testing ? 'Testet…' : 'Verbindung testen'}
+          {testing ? t('einstellungen:allgemein.testet') : t('einstellungen:allgemein.verbindung_testen')}
         </button>
         <button onClick={save} disabled={saving || testing || !dirty}
           className="rounded-lg bg-brand-cyan px-3 py-1.5 text-sm font-medium text-brand-aufAktion hover:bg-brand-cyanHover disabled:cursor-not-allowed disabled:opacity-40">
-          {saving ? 'Speichern…' : 'Speichern'}
+          {saving ? t('einstellungen:allgemein.speichern_laeuft') : t('einstellungen:allgemein.speichern')}
         </button>
-        {saved && <span className="text-sm text-emerald-600">✓ Gespeichert</span>}
+        {saved && <span className="text-sm text-emerald-600">{t('einstellungen:allgemein.gespeichert')}</span>}
         {err && <span className="text-sm text-rose-600">{err}</span>}
       </div>
       {testErgebnis && (
@@ -1256,9 +1226,9 @@ function CoachSiteKarte() {
 
       <div className="mt-3 border-t border-slate-100 pt-3">
         {bereit ? (
-          <AgentTaskButton kind="coach-site" label="Coach-Site jetzt aktualisieren" />
+          <AgentTaskButton kind="coach-site" label={t('einstellungen:coach.jetzt_aktualisieren')} />
         ) : (
-          <div className="text-xs text-slate-400">Erst aktivieren und speichern, dann kann die Seite hochgeladen werden.</div>
+          <div className="text-xs text-slate-400">{t('einstellungen:coach.erst_aktivieren')}</div>
         )}
       </div>
     </div>
@@ -1277,14 +1247,14 @@ type SicherungEinstellungen = { aktiv: boolean; taeglich: number; woechentlich: 
 // dem übereinstimmt, was der Nutzer im Ordner sieht.
 function mb(bytes: number): string {
   const m = bytes / 1_000_000
-  return m >= 10 ? `${Math.round(m)} MB` : `${m.toFixed(1).replace('.', ',')} MB`
+  return m >= 10 ? `${Math.round(m)} MB` : `${zahl(m, { minimumFractionDigits: 1, maximumFractionDigits: 1 })} MB`
 }
 
 // Datum + Uhrzeit aus dem ISO-Zeitpunkt mit Offset (V4: `.astimezone().isoformat()`) — anders als
-// `deDatum()` (reines Datum ohne Uhrzeit) hier über `toLocaleString`, Muster Inbox.tsx::fmt.
+// `datum()` (reines Datum ohne Uhrzeit) hier über `toLocaleString`, Muster Inbox.tsx::fmt.
 function fmtZeitpunkt(iso: string): string {
   try {
-    return new Date(iso).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+    return datumZeit(iso, { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
   } catch { return iso }
 }
 
@@ -1323,7 +1293,7 @@ function SicherungKarte() {
       const out = await api<SicherungStatus>('/sicherung/einstellungen', { method: 'PATCH', body: JSON.stringify(f) })
       uebernehmen(out)
       setSaved(true); setTimeout(() => setSaved(false), 2000)
-    } catch (e: any) { setSaveErr(e?.message || 'Speichern fehlgeschlagen') }
+    } catch (e: any) { setSaveErr(e?.message || t('einstellungen:allgemein.speichern_fehlgeschlagen')) }
     finally { setSaving(false) }
   }
 
@@ -1338,41 +1308,39 @@ function SicherungKarte() {
       setSichernErgebnis(`${out.neu.datei} (${mb(out.neu.groesse)})`)
       setStatus(out.status)
     } catch (e: any) {
-      setSichernErr(e?.message || 'Sicherung fehlgeschlagen')
+      setSichernErr(e?.message || t('einstellungen:sicherung.fehlgeschlagen'))
     } finally {
       setSichernBusy(false)
     }
   }
 
   if (loading) {
-    return <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-400 shadow-sm">Lade Datensicherung…</div>
+    return <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-400 shadow-sm">{t('einstellungen:sicherung.lade')}</div>
   }
 
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      <div className="mb-1 text-sm font-semibold text-brand-navy">Datensicherung</div>
+      <div className="mb-1 text-sm font-semibold text-brand-navy">{t('einstellungen:sicherung.titel')}</div>
       <p className="mb-3 text-xs text-slate-500">
-        Das BMS sichert Ihre Datenbank einmal täglich als ZIP-Datei, solange es läuft. Ältere
-        automatische Sicherungen entfernt es nach der Aufbewahrungsregel.
+        {t('einstellungen:sicherung.beschreibung')}
       </p>
 
-      {ladeFehler && <div className="mb-3 text-sm text-rose-600">Sicherungsstatus konnte nicht geladen werden.</div>}
+      {ladeFehler && <div className="mb-3 text-sm text-rose-600">{t('einstellungen:sicherung.status_fehler')}</div>}
 
       {!ladeFehler && status && (
         <>
           <div className="space-y-1 text-sm text-slate-700">
             <div>
               {status.letzte
-                ? `Letzte Sicherung: ${fmtZeitpunkt(status.letzte.zeitpunkt)} (${mb(status.letzte.groesse)})`
-                : 'Noch keine automatische Sicherung.'}
+                ? t('einstellungen:sicherung.letzte', { zeitpunkt: fmtZeitpunkt(status.letzte.zeitpunkt), groesse: mb(status.letzte.groesse) })
+                : t('einstellungen:sicherung.noch_keine')}
             </div>
             <div className="text-xs text-slate-500">
-              {status.anzahl} automatische {status.anzahl === 1 ? 'Sicherung' : 'Sicherungen'}, zusammen {mb(status.gesamtgroesse)}
+              {t('einstellungen:sicherung.anzahl', { count: status.anzahl, groesse: mb(status.gesamtgroesse) })}
             </div>
             {status.weitere.anzahl > 0 && (
               <div className="text-xs text-slate-500">
-                Dazu {status.weitere.anzahl} {status.weitere.anzahl === 1 ? 'weitere Sicherung' : 'weitere Sicherungen'} direkt
-                in data/backups ({mb(status.weitere.gesamtgroesse)}). Diese entfernt das BMS nie.
+                {t('einstellungen:sicherung.weitere', { count: status.weitere.anzahl, groesse: mb(status.weitere.gesamtgroesse) })}
               </div>
             )}
           </div>
@@ -1385,32 +1353,32 @@ function SicherungKarte() {
           {/* Bei ausgeschalteter Automatik gibt das Backend bewusst keine Warnung (V4) — die Karte
               sagt es trotzdem ausdrücklich, sonst wirkt eine alte „Letzte Sicherung" aktuell. */}
           {!status.aktiv && (
-            <div className="mt-2 text-sm text-slate-500">Die automatische Sicherung ist ausgeschaltet.</div>
+            <div className="mt-2 text-sm text-slate-500">{t('einstellungen:sicherung.ausgeschaltet')}</div>
           )}
 
           <div className="mt-3 space-y-2 border-t border-slate-100 pt-3">
             <label className="flex items-center gap-2 text-sm text-slate-700">
               <input type="checkbox" checked={f.aktiv} onChange={(e) => setF({ ...f, aktiv: e.target.checked })} />
-              Täglich automatisch sichern
+              {t('einstellungen:sicherung.taeglich_sichern')}
             </label>
             <div className="flex flex-wrap items-center gap-1.5 text-sm text-slate-700">
-              <span>Aufbewahren:</span>
+              <span>{t('einstellungen:sicherung.aufbewahren')}</span>
               <input type="number" className={`${INPUT} w-16`} value={f.taeglich}
                 onChange={(e) => setF({ ...f, taeglich: Number(e.target.value) || 0 })} />
-              <span>tägliche,</span>
+              <span>{t('einstellungen:sicherung.taegliche')}</span>
               <input type="number" className={`${INPUT} w-16`} value={f.woechentlich}
                 onChange={(e) => setF({ ...f, woechentlich: Number(e.target.value) || 0 })} />
-              <span>wöchentliche,</span>
+              <span>{t('einstellungen:sicherung.woechentliche')}</span>
               <input type="number" className={`${INPUT} w-16`} value={f.monatlich}
                 onChange={(e) => setF({ ...f, monatlich: Number(e.target.value) || 0 })} />
-              <span>monatliche</span>
+              <span>{t('einstellungen:sicherung.monatliche')}</span>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <button onClick={save} disabled={saving || !dirty}
                 className="rounded-lg bg-brand-cyan px-3 py-1.5 text-sm font-medium text-brand-aufAktion hover:bg-brand-cyanHover disabled:cursor-not-allowed disabled:opacity-40">
-                {saving ? 'Speichern…' : 'Speichern'}
+                {saving ? t('einstellungen:allgemein.speichern_laeuft') : t('einstellungen:allgemein.speichern')}
               </button>
-              {saved && <span className="text-sm text-emerald-600">✓ Gespeichert</span>}
+              {saved && <span className="text-sm text-emerald-600">{t('einstellungen:allgemein.gespeichert')}</span>}
               {saveErr && <span className="text-sm text-rose-600">{saveErr}</span>}
             </div>
           </div>
@@ -1418,22 +1386,20 @@ function SicherungKarte() {
           <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3">
             <button onClick={jetztSichern} disabled={sichernBusy}
               className="rounded-lg bg-brand-cyan px-3 py-1.5 text-sm font-medium text-brand-aufAktion hover:bg-brand-cyanHover disabled:cursor-not-allowed disabled:opacity-40">
-              {sichernBusy ? 'Sichere…' : 'Jetzt sichern'}
+              {sichernBusy ? t('einstellungen:sicherung.sichere') : t('einstellungen:sicherung.jetzt_sichern')}
             </button>
-            {sichernErgebnis && <span className="text-sm text-emerald-600">✓ Gesichert: {sichernErgebnis}</span>}
+            {sichernErgebnis && <span className="text-sm text-emerald-600">{t('einstellungen:sicherung.gesichert', { datei: sichernErgebnis })}</span>}
             {sichernErr && <span className="text-sm text-rose-600">{sichernErr}</span>}
           </div>
 
           <div className="mt-3 border-t border-slate-100 pt-3 text-xs text-slate-500">
-            Ordner: <code className="break-all rounded bg-slate-100 px-1">{status.ordner}</code>
+            {t('einstellungen:sicherung.ordner')} <code className="break-all rounded bg-slate-100 px-1">{status.ordner}</code>
           </div>
         </>
       )}
 
       <p className="mt-3 border-t border-slate-100 pt-3 text-xs text-slate-500">
-        Zurückspielen: BMS beenden und wiederherstellen.command (Mac) bzw.
-        wiederherstellen_windows.bat (Windows) doppelklicken. Schritt für Schritt steht es in der
-        Anleitung unter „Datensicherung“.
+        {t('einstellungen:sicherung.zurueckspielen')}
       </p>
     </div>
   )
@@ -1445,10 +1411,10 @@ function SicherungKarte() {
 // Eltern-`data` (das speist ausschliesslich /api/einstellungen — eine andere Ressource).
 function versionHauptzeile(v: VersionInfo): string {
   if (v.installation === 'git') {
-    return v.entwicklungsstand ? `Entwicklungsstand: ${v.entwicklungsstand}` : 'Entwicklungsstand: unbekannt'
+    return t('common:layout.entwicklungsstand', { stand: v.entwicklungsstand || t('einstellungen:version.unbekannt') })
   }
-  if (!v.version || v.version === '0.0.0') return 'Noch keine freigegebene Version'
-  return v.datum ? `Version ${v.version} · Stand ${deDatum(v.datum)}` : `Version ${v.version}`
+  if (!v.version || v.version === '0.0.0') return t('einstellungen:version.keine_freigabe')
+  return v.datum ? t('einstellungen:version.mit_stand', { version: v.version, datum: datum(v.datum) }) : t('common:layout.version', { version: v.version })
 }
 
 // CHANGELOG-Abschnitt (V2 in der Spec) roh in <li> zerlegen — nur „- "-Zeilen, Backticks als
@@ -1479,13 +1445,12 @@ function updateAnleitung(betriebssystem: VersionInfo['betriebssystem'], installa
   return (
     <>
       <ol className="list-decimal space-y-0.5 pl-4">
-        <li>BMS beenden (<code className="rounded bg-slate-100 px-1">{stop}</code>).</li>
-        <li>Im Programmordner (<code className="rounded bg-slate-100 px-1">{installationsordner}</code>) <code className="rounded bg-slate-100 px-1">{update}</code> doppelklicken. Es lädt die neue Version selbst von GitHub; folgen Sie den Anweisungen.</li>
-        <li>BMS wie gewohnt starten.</li>
+        <li><Trans i18nKey="einstellungen:version.schritt_beenden" values={{ datei: stop }} components={{ code: <code className="rounded bg-slate-100 px-1" /> }} /></li>
+        <li><Trans i18nKey="einstellungen:version.schritt_update" values={{ ordner: installationsordner, datei: update }} components={{ code: <code className="rounded bg-slate-100 px-1" /> }} /></li>
+        <li>{t('einstellungen:version.schritt_starten')}</li>
       </ol>
       <p className="mt-1.5 text-xs text-slate-500">
-        Ohne Internet: die Datei <code className="rounded bg-slate-100 px-1">BMS_&lt;Version&gt;.zip</code> von
-        der GitHub-Seite in den Download-Ordner legen, dann Schritt 2.
+        <Trans i18nKey="einstellungen:version.ohne_internet" components={{ code: <code className="rounded bg-slate-100 px-1" /> }} shouldUnescape />
       </p>
     </>
   )
@@ -1498,20 +1463,22 @@ function updateAnleitung(betriebssystem: VersionInfo['betriebssystem'], installa
 // kein HTML); der Link zur GitHub-Seite erscheint nur bei einer https-Adresse.
 function updateErgebnis(e: NeuesteVersion): ReactNode {
   if (e.fehler) return <div className="text-sm text-rose-600">{e.fehler}</div>
-  if (e.neuer === null || !e.neueste) return <div className="text-sm text-rose-600">Die Antwort ist ungültig.</div>
+  if (e.neuer === null || !e.neueste) return <div className="text-sm text-rose-600">{t('einstellungen:update.ungueltig')}</div>
   if (!e.neuer) {
-    return <div className="text-sm text-emerald-600">✓ Ihr BMS ist auf dem neuesten Stand (Version {e.installiert ?? e.neueste}).</div>
+    return <div className="text-sm text-emerald-600">{t('einstellungen:update.aktuell', { version: e.installiert ?? e.neueste })}</div>
   }
   return (
     <div className="space-y-1.5 text-sm text-slate-700">
       <div className="font-medium text-brand-navy">
-        Version {e.neueste} ist erschienen{e.veroeffentlicht ? ` (${deDatum(e.veroeffentlicht)})` : ''}.
+        {e.veroeffentlicht
+          ? t('einstellungen:update.erschienen_datum', { version: e.neueste, datum: datum(e.veroeffentlicht) })
+          : t('einstellungen:update.erschienen', { version: e.neueste })}
       </div>
       {e.aenderungen && aenderungenListe(e.aenderungen)}
       {e.seite && e.seite.startsWith('https://') && (
         <a href={e.seite} target="_blank" rel="noopener noreferrer"
           className="inline-block font-semibold text-brand-cyan hover:underline">
-          Auf GitHub ansehen ↗
+          {t('einstellungen:update.github_ansehen')}
         </a>
       )}
     </div>
@@ -1530,7 +1497,7 @@ function UpdateSuche() {
     } catch {
       // Der Endpunkt antwortet bei GitHub-Problemen mit 200 und `fehler`; hierher kommt nur, wenn
       // das BMS selbst nicht antwortet.
-      setFehler('Die Suche ließ sich nicht ausführen. Das BMS antwortet nicht.')
+      setFehler(t('einstellungen:update.nicht_ausfuehrbar'))
     } finally {
       setSucht(false)
     }
@@ -1540,10 +1507,10 @@ function UpdateSuche() {
     <div className="mt-3 border-t border-slate-100 pt-3">
       <button onClick={suchen} disabled={sucht}
         className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40">
-        {sucht ? 'Suche …' : 'Nach Updates suchen'}
+        {sucht ? t('einstellungen:update.sucht') : t('einstellungen:update.suchen')}
       </button>
       <p className="mt-1.5 text-xs text-slate-500">
-        Fragt bei GitHub nach der neuesten Version. GitHub erhält dabei die IP-Adresse dieses Rechners.
+        {t('einstellungen:update.hinweis')}
       </p>
       <div className="mt-2" role="status" aria-live="polite">
         {ergebnis && updateErgebnis(ergebnis)}
@@ -1566,32 +1533,35 @@ function VersionKarte() {
   }, [])
 
   if (loading) {
-    return <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-400 shadow-sm">Lade Programmversion…</div>
+    return <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-400 shadow-sm">{t('einstellungen:version.lade')}</div>
   }
 
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      <div className="mb-1 text-sm font-semibold text-brand-navy">Programmversion</div>
+      <div className="mb-1 text-sm font-semibold text-brand-navy">{t('einstellungen:version.titel')}</div>
 
       {ladeFehler || !info ? (
-        <div className="text-sm text-slate-400">Versionsstand konnte nicht geladen werden.</div>
+        <div className="text-sm text-slate-400">{t('einstellungen:version.fehler')}</div>
       ) : (
         <>
           <p className="text-sm text-slate-700">
             {versionHauptzeile(info)}
-            {info.installation === 'git' && info.commit ? ` · Commit ${info.commit}` : ''}
+            {info.installation === 'git' && info.commit ? ` · ${t('einstellungen:version.commit', { commit: info.commit })}` : ''}
           </p>
           {info.letztes_update && (
             <p className="mt-1 text-xs text-slate-500">
-              Zuletzt aktualisiert am {deDatum(info.letztes_update.zeitpunkt.slice(0, 10))} von{' '}
-              {info.letztes_update.von ?? 'unbekannt'} auf {info.letztes_update.nach}.
+              {t('einstellungen:version.zuletzt', {
+                datum: datum(info.letztes_update.zeitpunkt.slice(0, 10)),
+                von: info.letztes_update.von ?? t('einstellungen:version.unbekannt'),
+                nach: info.letztes_update.nach,
+              })}
             </p>
           )}
           {info.aenderungen && (
             <div className="mt-3 border-t border-slate-100 pt-3">
               <div className="mb-1 text-xs font-medium uppercase tracking-wide text-slate-500">
                 {/* Git-Installation: der Abschnitt „Unveröffentlicht“ (V5), also noch nicht freigegeben */}
-                {info.installation === 'git' ? 'Seit der letzten Freigabe' : 'Neu in dieser Version'}
+                {info.installation === 'git' ? t('einstellungen:version.seit_freigabe') : t('einstellungen:version.neu_in_version')}
               </div>
               <div className="text-sm text-slate-700">{aenderungenListe(info.aenderungen)}</div>
             </div>
@@ -1599,13 +1569,13 @@ function VersionKarte() {
           <UpdateSuche />
           {info.installation === 'git' ? (
             <div className="mt-3 border-t border-slate-100 pt-3 text-sm text-slate-700">
-              Entwicklungsinstallation: Updates kommen über Git.
+              {t('einstellungen:version.entwicklung')}
             </div>
           ) : (
             <div className="mt-3 border-t border-slate-100 pt-3 text-sm text-slate-700">
-              <div className="mb-1.5 text-xs font-medium uppercase tracking-wide text-slate-500">Update einspielen</div>
+              <div className="mb-1.5 text-xs font-medium uppercase tracking-wide text-slate-500">{t('einstellungen:version.update_einspielen')}</div>
               {updateAnleitung(info.betriebssystem, info.installationsordner)}
-              <p className="mt-1.5 text-xs text-slate-500">Vor dem Einspielen sichert das Update Datenbank und ersetzte Dateien.</p>
+              <p className="mt-1.5 text-xs text-slate-500">{t('einstellungen:version.vor_einspielen')}</p>
             </div>
           )}
         </>

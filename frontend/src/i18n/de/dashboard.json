@@ -1,0 +1,105 @@
+{
+  "untertitel": "Überblick über deine Pipeline · Kacheln sind klickbar · Quelle: zentrale SQLite-DB",
+  "lade": "Lade Dashboard…",
+  "fehler": "Fehler: {{meldung}}",
+  "prozent": "{{wert}} %",
+  "prozent_kompakt": "{{wert}}%",
+  "digest": "📄 Tages-Digest",
+  "excel_export": "⬇ Excel-Export",
+  "absagen": {
+    "titel": "Neuester Muster-Bericht der Absagen-Analyse",
+    "link": "📉 Absagen-Analyse · {{datum}}",
+    "neu": "Absagen-Analyse neu erstellen"
+  },
+  "beispieldaten": "Sie sehen Beispieldaten von {{name}}. Entfernen Sie sie in den Einstellungen, bevor Sie eigene Daten eintragen.",
+  "followup": {
+    "titel": "Follow-ups",
+    "leer": "Keine offenen Aktionen — setz Fälligkeitsdaten in Job-Details oder bei Netzwerk-Kontakten.",
+    "faellig_one": "{{count}} Aktion fällig/überfällig",
+    "faellig_other": "{{count}} Aktionen fällig/überfällig",
+    "im_blick": "Follow-ups im Blick",
+    "stellen_offen": "Stellen: {{anzahl}} offen",
+    "faellig_n": "{{anzahl}} fällig",
+    "netzwerk_offen": "Netzwerk: {{anzahl}} offen"
+  },
+  "stat": {
+    "stellen": "Stellen gesamt",
+    "top": "Top-Zielstellen (≥4)",
+    "bewerbungen": "Bewerbungen (laufend)",
+    "bewerbungen_sub": "{{anzahl}} gesamt erfasst",
+    "offline": "Beworbene offline",
+    "emails": "E-Mails erfasst",
+    "antworten": "Antworten",
+    "antwortzeit": "Ø Antwortzeit",
+    "antwortquote": "Antwortquote"
+  },
+  "gesamtprozess": {
+    "titel": "Gesamtprozess seit Beginn",
+    "bewerbungen": "Bewerbungen gesamt",
+    "gespraeche": "Gespräche gesamt",
+    "absagen": "Absagen gesamt",
+    "keine_reaktion": "Keine Reaktion",
+    "ausschreibungen": "Ausschreibungen",
+    "netzwerk": "Netzwerk"
+  },
+  "keine_reaktion": {
+    "leer": "Keine Einträge.",
+    "tage_one": "{{count}} Tage",
+    "tage_other": "{{count}} Tage",
+    "speichert": "Speichert…",
+    "wiedervorlage": "Wiedervorlage +7 Tage"
+  },
+  "trichter": {
+    "titel": "Funnel",
+    "untertitel": "· vom Sichten zum Interview",
+    "der_vorstufe": "{{prozent}} der Vorstufe"
+  },
+  "engstellen": {
+    "titel": "Engstellen im Funnel",
+    "screening": "Screening: nur {{prozent}} der gesichteten Stellen sind relevant",
+    "bewerbungsquote": "Bewerbungsquote: {{prozent}} der relevanten Stellen wurden beworben",
+    "antwortquote_one": "Antwortquote {{prozent}} auf {{count}} Bewerbungen",
+    "antwortquote_other": "Antwortquote {{prozent}} auf {{count}} Bewerbungen",
+    "interview_konversion": "Interview-Konversion: {{prozent}} der Antworten führten zum Interview",
+    "keine_daten": "{{stufe}}: keine Daten",
+    "ende_zu_ende": "Ende-zu-Ende: {{prozent}} — {{stellen}} → {{interviews}}",
+    "n_stellen_one": "{{count}} Stellen",
+    "n_stellen_other": "{{count}} Stellen",
+    "n_interviews_one": "{{count}} Interviews",
+    "n_interviews_other": "{{count}} Interviews"
+  },
+  "chips": {
+    "vor_ort": "📍 vor Ort {{anzahl}}"
+  },
+  "pipeline_funnel": {
+    "titel": "Pipeline-Funnel",
+    "untertitel": "· Klick öffnet die Stellen"
+  },
+  "balken": {
+    "status": "Nach Status",
+    "fit": "Nach Zielstellen-Fit",
+    "portal": "Nach Portal",
+    "situation": "Nach Situation (Plan {{plan}})",
+    "ohne_plan_one": "{{count}} Stellen ohne Plan-Zuordnung",
+    "ohne_plan_other": "{{count}} Stellen ohne Plan-Zuordnung"
+  },
+  "wert": {
+    "Ausschreibung": "Ausschreibung",
+    "Ausschreibungen": "Ausschreibungen",
+    "Netzwerk": "Netzwerk",
+    "Gesichtet": "Gesichtet",
+    "Relevant": "Relevant",
+    "Beworben": "Beworben",
+    "Antworten": "Antworten",
+    "Interviews": "Interviews",
+    "Headhunter": "Headhunter",
+    "Recruiter (Firma)": "Recruiter (Firma)",
+    "Hiring Manager": "Hiring Manager",
+    "Fachbereich/Sonstige": "Fachbereich/Sonstige",
+    "Unbekannt": "Unbekannt",
+    "Firmenseite": "Firmenseite",
+    "Empfehlung": "Empfehlung",
+    "Sonstiges": "Sonstiges",
+    "E-Mail": "E-Mail"
+  }
+}

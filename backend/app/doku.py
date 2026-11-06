@@ -35,6 +35,7 @@ import re
 from pathlib import Path, PurePosixPath
 from typing import Optional
 
+from app import sprache
 from pipeline import changelog
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
@@ -64,6 +65,25 @@ _KATALOG_BASIS: tuple[dict, ...] = (
     {"id": "release", "titel": "Release", "gruppe": "intern", "datei": "docs/RELEASE.md"},
     {"id": "entwicklung", "titel": "Entwickler-Installation", "gruppe": "intern", "datei": "docs/INSTALLATION.md"},
 )
+
+
+def englische_datei(datei: str) -> str:
+    """Pfad der englischen Fassung (P2-91): `docs/X.md` → `docs/en/X.md`, im Projekt-Root `X.md` → `X.en.md`."""
+    p = PurePosixPath(datei)
+    return str(p.parent / "en" / p.name) if p.parent.name == "docs" else f"{p.stem}.en.md"
+
+
+_TITEL_EN = {
+    "version": "Version", "funktionen": "Features", "anleitung": "User guide",
+    "installation": "Installation & updates", "email": "Email setup", "windows": "Windows",
+    "coach-site": "Coach site", "beirat": "Advisory Board", "technik": "Technical", "automatik": "Automation",
+    "release": "Release", "entwicklung": "Developer installation",
+}
+
+
+def titel(eintrag: dict) -> str:
+    """Titel des Reiters in der aktuellen Sprache."""
+    return _TITEL_EN[eintrag["id"]] if sprache.aktuell() == "en" else eintrag["titel"]
 
 
 def installationsdatei(systemname: Optional[str] = None) -> str:
@@ -145,7 +165,8 @@ def eintrag_fuer(name: str, projekt_root: Optional[Path] = None,
     (etwa Zeichen, die sich beim Kleinschreiben in ASCII verwandeln) einen Treffer erzeugt."""
     if not isinstance(name, str) or not name.isascii():
         return None
-    gesucht = name.lower()
+    # P2-91: Links in der englischen Doku nennen `BMS_Install_MAC.en.md`, gemeint ist derselbe Reiter.
+    gesucht = name.lower().replace(".en.", ".")
     root = _root(projekt_root)
     for eintrag in katalog(systemname):
         stamme = [PurePosixPath(datei).stem.lower() for datei in _dateien_des_eintrags(eintrag)]
@@ -194,8 +215,14 @@ def rendern(eintrag: dict, projekt_root: Optional[Path] = None) -> str:
     from pipeline import design
     from pipeline.docs_render import render_markdown
 
-    pfad = _pfad(eintrag, _root(projekt_root))
+    root = _root(projekt_root)
+    pfad = _pfad(eintrag, root)
+    englisch = root / englische_datei(eintrag["datei"])
+    if sprache.aktuell() == "en" and englisch.is_file():
+        pfad, lang = englisch, "en"
+    else:
+        lang = "de"
     text = pfad.read_text(encoding="utf-8")
-    if pfad.name == "CHANGELOG.md":
+    if pfad.name in ("CHANGELOG.md", "CHANGELOG.en.md"):
         text = _ohne_leeren_abschnitt(text)
-    return _externe_links_im_neuen_tab(render_markdown(text, pfad.name, design.laden()))
+    return _externe_links_im_neuen_tab(render_markdown(text, pfad.name, design.laden(), sprache=lang))

@@ -28,6 +28,7 @@ import subprocess
 from pathlib import Path
 from typing import Optional
 
+from app.sprache import aktuell, tx
 from pipeline import changelog
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
@@ -80,15 +81,18 @@ def _entwicklungsstand(root: Path) -> tuple[Optional[str], bool]:
     statt eine falsche Freigabe zu melden."""
     beschreibung = _git(root, "describe", "--tags", "--long", "--dirty", "--match", "v[0-9]*")
     if not beschreibung:
-        return "noch keine Freigabe", False
+        return tx("noch keine Freigabe"), False
     treffer = _DESCRIBE_RE.match(beschreibung)
     if not treffer:
-        return "noch keine Freigabe", False
+        return tx("noch keine Freigabe"), False
     abstand = int(treffer.group("abstand"))
     dirty = bool(treffer.group("dirty"))
-    text = f"{abstand} {'Commit' if abstand == 1 else 'Commits'} nach {treffer.group('version')}"
+    if abstand == 1:
+        text = tx("{abstand} Commit nach {version}", abstand=abstand, version=treffer.group("version"))
+    else:
+        text = tx("{abstand} Commits nach {version}", abstand=abstand, version=treffer.group("version"))
     if dirty:
-        text += ", mit lokalen Änderungen"
+        text += tx(", mit lokalen Änderungen")
     return text, (abstand == 0 and not dirty)
 
 
@@ -97,7 +101,9 @@ def _aenderungen_aus_changelog(root: Path, version: Optional[str], *, unveroeffe
     `git` zuerst „Unveröffentlicht“ (falls nicht leer), sonst die `version` aus `VERSION`.
     Jeder Lesefehler (Datei fehlt, kaputtes Encoding) -> None statt Ausnahme."""
     try:
-        text = (root / "CHANGELOG.md").read_text(encoding="utf-8")
+        # P2-91: die Fassung der Oberflächensprache, wenn es sie gibt
+        en = root / "CHANGELOG.en.md"
+        text = (en if aktuell() == "en" and en.is_file() else root / "CHANGELOG.md").read_text(encoding="utf-8")
     except OSError:
         return None
     if unveroeffentlicht_zuerst:

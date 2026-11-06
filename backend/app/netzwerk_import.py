@@ -52,6 +52,8 @@ from sqlmodel import select
 
 from app.models import Headhunter, NetworkContact, TargetCompany
 from app.normalize import slug_parts
+from app.sprache import aktuell, datum as sprach_datum, tx, uebersetzt
+from app.terminal import tt
 from app.zeit import jetzt_utc
 
 MAX_BYTES = 5 * 1024 * 1024       # Obergrenze der Datei, geprüft vor dem Lesen
@@ -62,6 +64,8 @@ _PROBE_ZEICHEN = 100_000          # Ausschnitt für Kopfzeilen- und Trennzeichen
 _MAX_ENTPACKT = 200 * 1024 * 1024  # entpackte Größe einer .xlsx, Schutz vor Zip-Bomben
 
 # ── Texte für Kunden (Sie-Form, keine Gedankenstriche, nichts Internes) ──────────────────────
+# Die Konstanten sind deutsch und stehen als Schlüssel im Katalog; `ImportFehler` und die Stellen, an denen
+# sie als Meldung in die Antwort gehen, übersetzen sie erst beim Auslösen (`uebersetzt`).
 TEXT_ZU_GROSS = "Die Datei ist größer als 5 MB. Bitte teilen Sie sie in mehrere Dateien auf."
 TEXT_SICHERUNG_LAEUFT = "Es läuft gerade eine Sicherung. Bitte versuchen Sie es gleich noch einmal."
 _TEXT_UNBEKANNTE_LISTE = "Diese Liste gibt es nicht. Möglich sind zielfirmen, headhunter und kontakte."
@@ -78,8 +82,6 @@ _TEXT_KEIN_BLATT = "Die Excel-Datei enthält kein Tabellenblatt."
 _TEXT_XLSX_ZU_GROSS = "Die Excel-Datei ist zu umfangreich. Bitte teilen Sie sie in mehrere Dateien auf."
 _TEXT_KEIN_KOPF = ("In der Datei wurde keine Kopfzeile gefunden. Die erste Zeile mit Inhalt muss "
                    "die Spaltenüberschriften enthalten.")
-_TEXT_ZU_VIELE_ZEILEN = (f"Die Datei enthält mehr als {MAX_ZEILEN:,}".replace(",", ".")
-                         + " Zeilen. Bitte teilen Sie sie in mehrere Dateien auf.")
 _TEXT_DB_BELEGT = "Die Datenbank ist gerade belegt. Bitte versuchen Sie es gleich noch einmal."
 _TEXT_LINKEDIN = ("LinkedIn-Exporte enthalten alle Verbindungen. Die Liste Netzwerk-Kontakte ist für "
                   "Kontakte gedacht, die Sie aktiv pflegen. Löschen Sie vorher Zeilen, die Sie dort "
@@ -94,6 +96,7 @@ class ImportFehler(Exception):
     """Ein Fehler, den der Nutzer lesen soll: `status` ist der HTTP-Status, `text` der Kundentext."""
 
     def __init__(self, status: int, text: str):
+        text = uebersetzt(text)
         super().__init__(text)
         self.status = status
         self.text = text
@@ -108,6 +111,12 @@ def _schluessel(text) -> str:
     0 bis 9. NFC zuerst, denn ein „ü“ aus macOS-Dateien kann aus „u“ und einem Trema bestehen."""
     klein = unicodedata.normalize("NFC", str(text or "")).lower().translate(_UMLAUTE)
     return re.sub(r"[^a-z0-9]+", "", klein)
+
+
+def _tausender(zahl: int) -> str:
+    """5000 als „5.000“ (de) beziehungsweise „5,000“ (en)."""
+    text = f"{zahl:,}"
+    return text if aktuell() == "en" else text.replace(",", ".")
 
 
 def _leer(wert) -> bool:
@@ -177,8 +186,9 @@ def _datum_streng(text: str) -> str | None:
 
 
 def _de_datum(iso_oder_text: str) -> str:
-    if (m := re.fullmatch(r"(\d{4})-(\d{2})-(\d{2})", iso_oder_text)):
-        return f"{m.group(3)}.{m.group(2)}.{m.group(1)}"
+    """ISO-Datum in der Schreibweise der Oberflächensprache (de `TT.MM.JJJJ`, en `TT/MM/JJJJ`)."""
+    if re.fullmatch(r"(\d{4})-(\d{2})-(\d{2})", iso_oder_text):
+        return sprach_datum(iso_oder_text)
     return iso_oder_text
 
 
@@ -462,7 +472,8 @@ def _kopf_und_daten(zeilen: Iterator, liste: Liste) -> tuple[list, list]:
     daten: list = []
     for nr, zellen in itertools.chain(anfang[index + 1:], nicht_leer):
         if len(daten) >= MAX_ZEILEN:
-            raise ImportFehler(400, _TEXT_ZU_VIELE_ZEILEN)
+            raise ImportFehler(400, tx("Die Datei enthält mehr als {anzahl} Zeilen. Bitte teilen Sie sie in "
+                                       "mehrere Dateien auf.", anzahl=_tausender(MAX_ZEILEN)))
         daten.append((nr, zellen))
     return kopf, daten
 
@@ -538,8 +549,8 @@ def _einlesen(liste: Liste, dateiname: str, inhalt: bytes) -> _Tabelle:
         blatt, mehrere, kopf, daten = _xlsx_lesen(liste, inhalt)
         art = "xlsx"
         if mehrere:
-            hinweise.append("Die Datei enthält mehrere Tabellenblätter. "
-                            f"Gelesen wird das Blatt „{blatt}“.")
+            hinweise.append(tx("Die Datei enthält mehrere Tabellenblätter. "
+                               "Gelesen wird das Blatt „{blatt}“.", blatt=blatt))
     else:
         blatt = None
         kopf, daten = _csv_lesen(liste, inhalt)
@@ -549,13 +560,13 @@ def _einlesen(liste: Liste, dateiname: str, inhalt: bytes) -> _Tabelle:
     # Notizen (Profil-Adresse, Mailadresse, Verbindungsdatum) verloren.
     if liste.kennung == "kontakte" and _ist_linkedin_kopf(kopf):
         art = "linkedin"
-        hinweise.append(_TEXT_LINKEDIN)
+        hinweise.append(uebersetzt(_TEXT_LINKEDIN))
     felder = liste.felder + (_LINKEDIN_ZUSATZ if art == "linkedin" else ())
     zuordnung, erkannt, ignoriert = _spalten_zuordnen(kopf, felder)
     if not any(feld.name in liste.pflicht_spalten for feld in zuordnung.values()):
         raise ImportFehler(400, liste.spalte_fehlt)
     if not daten:
-        hinweise.append(_TEXT_NUR_KOPFZEILE)
+        hinweise.append(uebersetzt(_TEXT_NUR_KOPFZEILE))
     return _Tabelle(art, blatt, daten, hinweise, zuordnung, erkannt, ignoriert)
 
 
@@ -594,8 +605,9 @@ def _zeilenwerte(liste: Liste, zuordnung: dict, zellen: list, linkedin: bool) ->
         if roh is not None:
             wert = feld.norm(roh) if feld.norm else roh
             if wert is None:
-                meldungen.append(f"Das Datum in der Spalte „{feld.vorlage}“ ist nicht lesbar und wurde "
-                                 "nicht übernommen. Erwartet wird zum Beispiel 31.12.2026.")
+                meldungen.append(tx("Das Datum in der Spalte „{spalte}“ ist nicht lesbar und wurde "
+                                    "nicht übernommen. Erwartet wird zum Beispiel 31.12.2026.",
+                                    spalte=feld.vorlage))
         werte[feld.name] = wert
     if liste.kennung == "kontakte":
         _kontakt_aufloesen(werte, linkedin)
@@ -613,11 +625,11 @@ def _kontakt_aufloesen(werte: dict, linkedin: bool) -> None:
             werte["kanal"] = "LinkedIn"
         teile = []
         if werte.get("li_url"):
-            teile.append(f"LinkedIn: {werte['li_url']}")
+            teile.append(tx("LinkedIn: {adresse}", adresse=werte["li_url"]))
         if werte.get("li_email"):
-            teile.append(f"E-Mail: {werte['li_email']}")
+            teile.append(tx("E-Mail: {adresse}", adresse=werte["li_email"]))
         if werte.get("li_seit"):
-            teile.append(f"verbunden seit {_de_datum(werte['li_seit'])}")
+            teile.append(tx("verbunden seit {datum}", datum=_de_datum(werte["li_seit"])))
         if teile and _leer(werte.get("notizen")):
             werte["notizen"] = " · ".join(teile)
     for hilfsfeld in ("vorname", "nachname", "li_url", "li_email", "li_seit"):
@@ -627,7 +639,7 @@ def _kontakt_aufloesen(werte: dict, linkedin: bool) -> None:
 def _anzeige(liste: Liste, werte: dict) -> str:
     text = " · ".join(" ".join(str(werte[f]).split()) for f in liste.anzeige if not _leer(werte.get(f)))
     if not text:
-        return "(ohne Angabe)"
+        return tx("(ohne Angabe)")
     return text if len(text) <= 120 else text[:119] + "…"
 
 
@@ -697,8 +709,8 @@ def _pflicht_fehler(liste: Liste, werte: dict) -> str | None:
     if any(slug_parts(werte.get(f)) for f in liste.pflicht_werte):
         return None
     if any(not _leer(werte.get(f)) for f in liste.pflicht_werte):
-        return liste.zeile_unlesbar
-    return liste.zeile_fehlt
+        return uebersetzt(liste.zeile_unlesbar)
+    return uebersetzt(liste.zeile_fehlt)
 
 
 def _planen(liste: Liste, tabelle: _Tabelle, session) -> _Plan:
@@ -723,7 +735,7 @@ def _planen(liste: Liste, tabelle: _Tabelle, session) -> _Plan:
         stand = stand_je_schluessel.get(schluessel)
         doppelt = stand is not None
         if doppelt:
-            meldungen.insert(0, f"Doppelt in der Datei, siehe Zeile {stand.erste_nr}.")
+            meldungen.insert(0, tx("Doppelt in der Datei, siehe Zeile {nr}.", nr=stand.erste_nr))
         elif schluessel in bestand:
             vorhanden = bestand[schluessel]
             stand = _Stand(_modellwerte(liste, vorhanden), bool(vorhanden.deleted_at), nr, None)
@@ -737,7 +749,7 @@ def _planen(liste: Liste, tabelle: _Tabelle, session) -> _Plan:
             continue
 
         if stand.geloescht:
-            meldungen.append(_TEXT_GELOESCHT)
+            meldungen.append(uebersetzt(_TEXT_GELOESCHT))
             ergebnisse.append(_ZeileErgebnis(nr, "geloescht", anzeige, [], " ".join(meldungen)))
             continue
         neu = _luecken(liste, stand, werte)
@@ -771,8 +783,9 @@ def _sicherung_anlegen(session, daten_dir) -> str:
     except sicherung.SicherungLaeuft:
         raise ImportFehler(409, TEXT_SICHERUNG_LAEUFT) from None
     except Exception as exc:               # noqa: BLE001 -- der Nutzer bekommt den Grund als Klartext
-        raise ImportFehler(500, "Die Sicherung vor dem Import ist fehlgeschlagen, es wurde nichts "
-                                f"importiert. Grund: {str(exc) or type(exc).__name__}") from exc
+        raise ImportFehler(500, tx("Die Sicherung vor dem Import ist fehlgeschlagen, es wurde nichts "
+                                   "importiert. Grund: {grund}",
+                                   grund=str(exc) or type(exc).__name__)) from exc
 
 
 def _schreibtransaktion_beginnen(session) -> None:
@@ -878,15 +891,14 @@ def importieren(liste: str, dateiname: str, inhalt: bytes, *, session, daten_dir
         raise
     except Exception as exc:               # noqa: BLE001 -- der Nutzer bekommt den Grund als Klartext
         session.rollback()
-        raise ImportFehler(500, "Der Import ist fehlgeschlagen, es wurde nichts importiert. "
-                                f"Grund: {str(exc) or type(exc).__name__}") from exc
+        raise ImportFehler(500, tx("Der Import ist fehlgeschlagen, es wurde nichts importiert. "
+                                   "Grund: {grund}", grund=str(exc) or type(exc).__name__)) from exc
 
     anzahl = plan.anzahl()
     for ergebnis in rennen:
         anzahl["neu"] -= 1
         anzahl[ergebnis] += 1
-    print(f"[netzwerk-import] {cfg.kennung}: {anzahl['neu']} neu, {anzahl['ergaenzt']} ergänzt, "
-          f"Sicherung {sicherungsdatei}", flush=True)
+    print(tt("[netzwerk-import] {kennung}: {neu} neu, {ergaenzt} ergänzt, Sicherung {sicherung}", kennung=cfg.kennung, neu=anzahl['neu'], ergaenzt=anzahl['ergaenzt'], sicherung=sicherungsdatei), flush=True)
     return {"anzahl": anzahl, "sicherung": sicherungsdatei}
 
 
@@ -922,17 +934,19 @@ def _vorlage_xlsx(liste: Liste) -> bytes:
         blatt.column_dimensions[get_column_letter(index)].width = max(14, len(feld.vorlage) + 4)
     blatt.freeze_panes = "A2"
 
-    hinweise = arbeitsmappe.create_sheet("Hinweise")
-    hinweise.append(["Spalte", "Pflicht", "Erlaubte Werte und Format", "Weitere erkannte Spaltennamen"])
+    hinweise = arbeitsmappe.create_sheet(tx("Hinweise"))
+    hinweise.append([tx("Spalte"), tx("Pflicht"), tx("Erlaubte Werte und Format"),
+                     tx("Weitere erkannte Spaltennamen")])
     for zelle in hinweise[1]:
         zelle.font = Font(bold=True)
     for feld in felder:
-        hinweise.append([feld.vorlage, feld.pflicht or "Nein", feld.hinweis, ", ".join(feld.synonyme)])
+        hinweise.append([feld.vorlage, uebersetzt(feld.pflicht or "Nein"), uebersetzt(feld.hinweis),
+                         ", ".join(feld.synonyme)])
     hinweise.append([])
-    for satz in ("Jede Zeile des ersten Blatts ist ein Eintrag. Die Reihenfolge der Spalten ist beliebig, "
-                 "Spalten mit anderen Überschriften werden ignoriert.",
-                 "Bestehende Einträge werden nie überschrieben. Es werden nur leere Felder ergänzt.",
-                 "Einträge, die Sie in der App gelöscht haben, bleiben gelöscht."):
+    for satz in (tx("Jede Zeile des ersten Blatts ist ein Eintrag. Die Reihenfolge der Spalten ist beliebig, "
+                    "Spalten mit anderen Überschriften werden ignoriert."),
+                 tx("Bestehende Einträge werden nie überschrieben. Es werden nur leere Felder ergänzt."),
+                 tx("Einträge, die Sie in der App gelöscht haben, bleiben gelöscht.")):
         hinweise.append([satz])
     for spalte, breite in zip("ABCD", (24, 40, 80, 50)):
         hinweise.column_dimensions[spalte].width = breite

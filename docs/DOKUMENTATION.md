@@ -557,6 +557,8 @@ wie bei den Suchläufen. Spec: P2-76.
   Listen liefert seit P2-80 `pipeline/mail_suchlisten.py` (vorher ein Schnipsel im Skill): Kontakt-
   Adressen, Domains der Berater-Kontakte und der laufenden Bewerbungen (Beworben/Interview/Angebot,
   aus Mails an der Stelle und Kontaktadressen), gefiltert gegen ATS, Freemail und große Jobportale.
+  Schritt 1c sucht zusätzlich nach Wörtern in Französisch, Italienisch, Spanisch und Portugiesisch, aber nur, wenn
+  `mail_suchlisten --sprachen` eine solche Sprache meldet (Basis-CV oder laufende Bewerbung).
   Der Ingest trägt die Adresse an einem gleichnamigen Kontakt derselben Firma ohne Adresse nach,
   statt eine Dublette anzulegen (P2-80). *Headless-fähig, read-only.*
 - **beworben-check** *(Phase 74)* — wöchentliche Verfügbarkeitsprüfung aller laufenden Bewerbungen
@@ -1969,6 +1971,13 @@ kompatibel) — das Klartext-Passwort wird nirgends gespeichert. Auslöser: Butt
 aktualisieren" (Einstellungen) und automatisch als letztes, nicht-fatales Glied des Tageslaufs —
 ohne vollständige Konfiguration bzw. bei abgeschaltetem Schalter endet der Schritt grün (Exit 0),
 der Tageslauf wird davon nie rot. Details: `docs/COACH_SITE.md`.
+
+### Vier Sprachen
+
+- **Oberfläche und KI-Ausgaben:** `de` oder `en`, Einstellung in `sucheinstellung.sprache` (`app/sprache.py`, `frontend/src/i18n`).
+- **Bewerbung:** Lebenslauf und Anschreiben folgen der Anzeige (`pipeline/bewerbungssprache.py`).
+- **Terminal:** Meldungen folgen dem Betriebssystem, unabhängig von der App: Deutsch auf einem deutschen System, sonst Englisch. `BMS_TERMINAL_SPRACHE` (`de`, `en`) gewinnt. Quellen: `app/terminal.py` mit `texte/en_terminal.json` für den Server, eigene Tabellen in `scripts/bms_update.py` und `scripts/bms_wiederherstellen.py`, Verzweigungen in den `.command`- und `.bat`-Dateien.
+- **Maschinenwerte** in Datenbank, Skills und Personas bleiben deutsch.
 
 ### Tests & CI (`backend/tests/`, `.github/workflows/ci.yml`, Phase 57)
 

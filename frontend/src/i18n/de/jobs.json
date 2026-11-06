@@ -1,0 +1,59 @@
+{
+  "titel": {
+    "stellen": "Stellen",
+    "laufend": "Laufende Bewerbungen",
+    "laufend_hint": "Beworben · Interview · Angebot",
+    "ohne_fit": "Stellen · ohne Zielstellen-Fit",
+    "fit": "Stellen · Zielstellen-Fit {{score}}/5",
+    "situation": "Stellen · Situation {{situation}}",
+    "situation_plan": "Stellen · Situation {{situation}} · Plan {{plan}}",
+    "ohne_plan": "Stellen · ohne Plan-Zuordnung",
+    "plan": "Stellen · Plan {{plan}}",
+    "portal": "Stellen · Portal {{portal}}",
+    "verfuegbarkeit": "Beworbene Stellen · {{status}}",
+    "top": "Top-Zielstellen",
+    "top_hint": "Zielstellen-Fit ≥ 4",
+    "status": "Stellen · {{status}}"
+  },
+  "treffer_one": "{{count}} Treffer",
+  "treffer_other": "{{count}} Treffer",
+  "klick_hinweis": "Klick auf eine Zeile öffnet die Details",
+  "filter_zuruecksetzen": "✕ Filter zurücksetzen",
+  "stelle_anlegen": "+ Stelle anlegen",
+  "filter": {
+    "suche": "Suche Firma / Titel…",
+    "alle_status": "Alle Status",
+    "alle_tabs": "Alle Tabs",
+    "alle_fit": "Alle Fit-Werte",
+    "fit_min": "Zielstellen-Fit ≥ {{wert}}",
+    "sortieren": "Sortieren:",
+    "sort_score": "Zielstellen-Fit",
+    "sort_found": "Datum (neueste zuerst)",
+    "sort_company": "Firma",
+    "sort_status": "Status"
+  },
+  "chip": {
+    "laufend": "Laufende Bewerbungen",
+    "ohne_fit": "ohne Zielstellen-Fit",
+    "fit": "Zielstellen-Fit = {{score}}",
+    "situation": "Situation: {{wert}}",
+    "plan": "Plan: {{wert}}",
+    "plan_ohne": "ohne Zuordnung",
+    "portal": "Portal: {{wert}}",
+    "verfuegbarkeit": "Verfügbarkeit: {{wert}}"
+  },
+  "segment_titel": "{{status}}: {{anzahl}} ({{prozent}} %)",
+  "spalte": {
+    "fit": "Fit",
+    "firma": "Firma",
+    "rolle": "Rolle",
+    "ebene": "Ebene",
+    "standort": "Standort",
+    "gefunden": "Gefunden",
+    "status": "Status"
+  },
+  "lade": "Lade…",
+  "keine_treffer": "Keine Treffer",
+  "follow_up_faellig": "Follow-up fällig",
+  "verfuegbarkeit_geprueft": "Verfügbarkeit geprüft am {{datum}}"
+}

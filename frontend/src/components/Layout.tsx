@@ -4,6 +4,8 @@ import { useReviewCount } from '../context/ReviewCount'
 import TageslaufButton from './TageslaufButton'
 import { api, type VersionInfo } from '../api'
 import { PROFIL_GEAENDERT } from '../profil'
+import { aktuelleSprache, t } from '../i18n'
+import SpracheUmschalter from './SpracheUmschalter'
 
 // P2-51: eine Zeile im Sidebar-Fuß (s. GET /api/version, backend/app/version.py).
 // P2-59: Sie nennt immer die Versionsnummer, auch bei einer Git-Arbeitskopie (z. B. die laufende
@@ -14,39 +16,39 @@ import { PROFIL_GEAENDERT } from '../profil'
 // Tooltip, denn ein Tooltip braucht eine Zeile, an der er hängt.
 function versionFusszeile(v: VersionInfo): { text: string; hinweis?: string } | null {
   if (!v.version || v.version === '0.0.0') return null
-  const hinweis = v.installation === 'git' && v.entwicklungsstand ? `Entwicklungsstand: ${v.entwicklungsstand}` : undefined
-  return { text: `Version ${v.version}`, hinweis }
+  const hinweis = v.installation === 'git' && v.entwicklungsstand ? t('common:layout.entwicklungsstand', { stand: v.entwicklungsstand }) : undefined
+  return { text: t('common:layout.version', { version: v.version }), hinweis }
 }
 
 const NAV = [
-  { to: '/', label: 'Dashboard', icon: '📊', end: true },
-  { to: '/suche', label: 'Suche', icon: '🔍' },
-  { to: '/review', label: 'Neu / Review', icon: '✨' },
-  { to: '/followups', label: 'Follow-ups', icon: '⏰' },
-  { to: '/pipeline', label: 'Pipeline', icon: '📋' },
-  { to: '/jobs', label: 'Stellen', icon: '💼' },
-  { to: '/inbox', label: 'Inbox', icon: '📧' },
+  { to: '/', labelKey: 'common:nav.dashboard', icon: '📊', end: true },
+  { to: '/suche', labelKey: 'common:nav.suche', icon: '🔍' },
+  { to: '/review', labelKey: 'common:nav.review', icon: '✨' },
+  { to: '/followups', labelKey: 'common:nav.followups', icon: '⏰' },
+  { to: '/pipeline', labelKey: 'common:nav.pipeline', icon: '📋' },
+  { to: '/jobs', labelKey: 'common:nav.jobs', icon: '💼' },
+  { to: '/inbox', labelKey: 'common:nav.inbox', icon: '📧' },
   // P2-61: Outreach zeigt eine einmalige Übernahme aus einer früheren Excel-Liste; im BMS lässt sich dort
   // nichts anlegen. Der Punkt erscheint deshalb nur, wenn es Outreach-Zeilen gibt (s. outreachDa).
-  { to: '/outreach', label: 'Outreach', icon: '📇' },
-  { to: '/netzwerk', label: 'Netzwerk', icon: '🌐' },
+  { to: '/outreach', labelKey: 'common:nav.outreach', icon: '📇' },
+  { to: '/netzwerk', labelKey: 'common:nav.netzwerk', icon: '🌐' },
   // P2-61: Phase 40 hatte den Beirat aus der Leiste genommen, weil die Stellenprüfung in die
   // Stellenansicht wanderte. Die freie Debatte ohne Stellenbezug war seitdem nur über die Adresse
   // erreichbar, für Kunden also eine versteckte Funktion.
-  { to: '/beirat', label: 'Beirat', icon: '🏛️' },
-  { to: '/companies', label: 'Firmen', icon: '🏢' },
-  { to: '/radar', label: 'Restructuring-Radar', icon: '📡' },
+  { to: '/beirat', labelKey: 'common:nav.beirat', icon: '🏛️' },
+  { to: '/companies', labelKey: 'common:nav.companies', icon: '🏢' },
+  { to: '/radar', labelKey: 'common:nav.radar', icon: '📡' },
   { divider: true },
-  { to: '/tasks', label: 'Task-Center', icon: '⚙️' },
-  { to: '/budget', label: 'Budget', icon: '💶' },
+  { to: '/tasks', labelKey: 'common:nav.tasks', icon: '⚙️' },
+  { to: '/budget', labelKey: 'common:nav.budget', icon: '💶' },
   { divider: true },
-  { to: '/profil', label: 'Profil', icon: '🪪' },
-  { to: '/einstellungen', label: 'Einstellungen', icon: '🎯' },
+  { to: '/profil', labelKey: 'common:nav.profil', icon: '🪪' },
+  { to: '/einstellungen', labelKey: 'common:nav.einstellungen', icon: '🎯' },
   { divider: true },
   // P2-59: Dokumentation und Rechtliches sind beides Lesetexte; sie stehen zusammen im letzten
   // Block, abgesetzt von den Arbeitsbereichen darüber.
-  { to: '/dokumentation', label: 'Dokumentation', icon: '📖' },
-  { to: '/rechtliches', label: 'Rechtliches', icon: '⚖️' },
+  { to: '/dokumentation', labelKey: 'common:nav.dokumentation', icon: '📖' },
+  { to: '/rechtliches', labelKey: 'common:nav.rechtliches', icon: '⚖️' },
 ]
 
 // P2-72: Titel des Dokuments beim Start (index.html), einmal beim Laden des Moduls gelesen und damit
@@ -88,7 +90,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   // P2-72: Der Produktname kommt aus dem geltenden Design (GET /api/design, Rolle `produktname`).
   // Bis die Antwort da ist, gilt der Anfangswert des Dokuments (TITEL_BEIM_START, aus index.html);
   // schlägt der Aufruf fehl, bleibt er stehen. Der Name steht damit nirgends im TypeScript.
-  const [produktname, setProduktname] = useState(TITEL_BEIM_START)
+  const [produktnameDesign, setProduktname] = useState(TITEL_BEIM_START)
+  // P2-88: Der Name aus dem Design ist der deutsche. Er ist fest (pipeline/design.py), Englisch hat seinen eigenen.
+  const produktname = aktuelleSprache() === 'de' ? produktnameDesign : t('common:produkt.name')
   useEffect(() => {
     api<{ produktname?: string }>('/design')
       .then((d) => { if (typeof d?.produktname === 'string' && d.produktname) setProduktname(d.produktname) })
@@ -147,7 +151,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               }
             >
               <span>{n.icon}</span>
-              <span className="flex-1">{n.label}</span>
+              <span className="flex-1">{t(n.labelKey)}</span>
               {n.to === '/review' && reviewCount > 0 && (
                 <span className="rounded-full bg-brand-cyan px-2 py-0.5 text-xs font-bold text-brand-navy">{reviewCount}</span>
               )}
@@ -158,9 +162,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             )
           )}
         </nav>
+        {/* P2-88: außerhalb des Fußblocks, der unter lg verborgen ist: Der Umschalter bleibt überall erreichbar. */}
+        <div className="px-5 pb-2 lg:pt-2"><SpracheUmschalter dunkel /></div>
         <div className="hidden px-5 py-4 text-[11px] leading-relaxed text-brand-steel/70 lg:block">
           {fusszeile && <div title={fusszeile.hinweis}>{fusszeile.text}</div>}
-          Engine: Skills headless im Backend<br />Quelle: bewerbung.sqlite
+          {t('common:layout.engine')}<br />{t('common:layout.quelle')}
         </div>
       </aside>
       <main className="min-w-0 flex-1 overflow-x-hidden">

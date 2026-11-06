@@ -56,6 +56,7 @@ from app.models import (
 from app import naming
 from app.naming import dated_filename
 from app.favicon import favicon_link
+from app.sprache import html_lang, tx
 from pipeline.bericht_stil import DRUCK_SEITENFARBE_BEHALTEN, bericht_css
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent  # Bewerbung_Mgmt_System/
@@ -82,7 +83,7 @@ _ORPHAN_DIRS: dict = {
 }
 # Innerhalb der Orphan-Ordner: einzelne Dateien/Unterordner, die NIE als Orphan gelten.
 _ORPHAN_DATEI_AUSNAHMEN = {"data/interview_prep/fragenbank.md"}
-_ORPHAN_UNTERORDNER_AUSNAHMEN = {"data/job_files/_geloescht"}
+_ORPHAN_UNTERORDNER_AUSNAHMEN = {"data/job_files/_geloescht", "data/beirat/en"}
 
 
 def _beirat_ausnahme(p: Path) -> bool:
@@ -429,7 +430,7 @@ def _liste_html(eintraege, formatter, leer_text, limit=25) -> str:
         return f"<p>{leer_text}</p>"
     zeilen = "".join(f"<li>{formatter(e)}</li>" for e in eintraege[:limit])
     rest = len(eintraege) - limit
-    mehr = f"<li><i>… und {rest} weitere</i></li>" if rest > 0 else ""
+    mehr = f"<li><i>{tx('… und {anzahl} weitere', anzahl=rest)}</i></li>" if rest > 0 else ""
     return f'<ul class="clean">{zeilen}{mehr}</ul>'
 
 
@@ -437,77 +438,86 @@ def _build_html(ergebnis: dict) -> str:
     erzeugt = ergebnis["erzeugt_am"][:16].replace("T", " ")
     orphans_html = _liste_html(
         ergebnis["orphans"]["dateien"],
-        lambda o: (f'{_esc(o["pfad"])} <span class="kv">({_esc(o["ordner"])}, '
-                  f'{o["groesse_bytes"] // 1024} KB, {o["alter_tage"]} Tage)</span>'),
-        "Keine Orphan-Dateien gefunden.")
+        lambda o: (f'{_esc(o["pfad"])} <span class="kv">'
+                   + tx("({ordner}, {kb} KB, {tage} Tage)", ordner=_esc(o["ordner"]),
+                        kb=o["groesse_bytes"] // 1024, tage=o["alter_tage"])
+                   + '</span>'),
+        tx("Keine Orphan-Dateien gefunden."))
     dangling_html = _liste_html(
         ergebnis["dangling_referenzen"]["eintraege"],
-        lambda d: f'{d["modell"]}#{d["id"]}.{d["feld"]} → <code>{_esc(d["pfad"])}</code> (Datei fehlt)',
-        "Keine toten Referenzen gefunden.")
+        lambda d: f'{d["modell"]}#{d["id"]}.{d["feld"]} → <code>{_esc(d["pfad"])}</code> ' + tx("(Datei fehlt)"),
+        tx("Keine toten Referenzen gefunden."))
     rot_zeilen = "".join(
         f'<tr><td>{_esc(ordner)}</td><td>{info["anzahl"]}</td>'
         f'<td>{round(info["groesse_bytes"] / 1_000_000, 2)} MB</td></tr>'
         for ordner, info in ergebnis["rotation"]["je_ordner"].items()
     )
     meta_html = (
-        f'<div><p class="k">Orphans</p><p class="v">{ergebnis["orphans"]["anzahl"]}</p></div>'
-        f'<div><p class="k">Tote Referenzen</p><p class="v">{ergebnis["dangling_referenzen"]["anzahl"]}</p></div>'
-        f'<div><p class="k">Rotierbar</p><p class="v">{ergebnis["rotation"]["anzahl"]}</p></div>'
-        f'<div><p class="k">Im Papierkorb</p><p class="v">{ergebnis["papierkorb"]["anzahl"]}</p></div>'
-        f'<div><p class="k">Datum</p><p class="v">{_esc(erzeugt)}</p></div>'
+        f'<div><p class="k">{tx("Orphans")}</p><p class="v">{ergebnis["orphans"]["anzahl"]}</p></div>'
+        f'<div><p class="k">{tx("Tote Referenzen")}</p><p class="v">{ergebnis["dangling_referenzen"]["anzahl"]}</p></div>'
+        f'<div><p class="k">{tx("Rotierbar")}</p><p class="v">{ergebnis["rotation"]["anzahl"]}</p></div>'
+        f'<div><p class="k">{tx("Im Papierkorb")}</p><p class="v">{ergebnis["papierkorb"]["anzahl"]}</p></div>'
+        f'<div><p class="k">{tx("Datum")}</p><p class="v">{_esc(erzeugt)}</p></div>'
     )
     auffaellig_hinweis = (
-        '<div class="caveat"><b>Auffällig:</b> Schwellenwert überschritten (&gt;50 MB rotierbar '
-        'oder &gt;10 Orphans) — der Tageslauf würde das kurz erwähnen (löscht aber nie selbst).</div>'
+        '<div class="caveat"><b>' + tx("Auffällig:") + '</b> '
+        + _esc(tx("Schwellenwert überschritten (>50 MB rotierbar oder >10 Orphans) — "
+                  "der Tageslauf würde das kurz erwähnen (löscht aber nie selbst).")) + '</div>'
         if ergebnis["auffaellig"] else ""
     )
     _FAVICON = favicon_link()      # P2-72: Icon des geltenden Designs, bei jedem Bericht frisch
+    # Die Überschrift und die beiden Absätze brechen im Quelltext an festen Stellen um (die Leerzeichen gehören zur
+    # deutschen Ausgabe); die Texte stehen deshalb vorab hier, nicht im f-String.
+    rotation_titel = (tx("Rotation (Schwelle {tage} Tage ·", tage=ergebnis["rotation"]["schwelle_tage"]) + "\n    "
+                      + tx("{anzahl} Dateien · {mb} MB)", anzahl=ergebnis["rotation"]["anzahl"],
+                           mb=ergebnis["rotation"]["groesse_mb"]))
+    db_pflege_text = tx("{agenttasks} AgentTask-Rows,\n    {runs} Run-Rows mit großen Feldern zu leeren\n"
+                        "    (Rows selbst bleiben erhalten — Kosten-Historie).",
+                        agenttasks=ergebnis["row_pflege"]["agenttask_kandidaten"], runs=ergebnis["row_pflege"]["run_kandidaten"])
+    papierkorb_text = tx("{anzahl} Dateien · {mb} MB\n    — läuft nie automatisch leer, s. <code>cleanup leeren</code>.",
+                         anzahl=ergebnis["papierkorb"]["anzahl"], mb=ergebnis["papierkorb"]["groesse_mb"])
     return f"""<!DOCTYPE html>
-<html lang="de">
+<html lang="{html_lang()}">
 <head>
 <meta charset="utf-8">{_FAVICON}
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>System-Cleanup · Analyse</title>
+<title>{tx("System-Cleanup · Analyse")}</title>
 <style>{_css()}</style>
 </head>
 <body>
 <div class="wrap">
   <header class="head">
-    <p class="eyebrow">Analyse</p>
-    <h1>System-Cleanup</h1>
-    <p class="sub">scan · Ändert nichts — reiner Bericht (dry-run)</p>
+    <p class="eyebrow">{tx("Analyse")}</p>
+    <h1>{tx("System-Cleanup")}</h1>
+    <p class="sub">{tx("scan · Ändert nichts — reiner Bericht (dry-run)")}</p>
     <div class="meta">{meta_html}</div>
   </header>
 
   {auffaellig_hinweis}
 
-  <h2 class="sec">Orphan-Dateien ({ergebnis["orphans"]["anzahl"]} · {ergebnis["orphans"]["groesse_mb"]} MB)</h2>
+  <h2 class="sec">{tx("Orphan-Dateien ({anzahl} · {mb} MB)", anzahl=ergebnis["orphans"]["anzahl"], mb=ergebnis["orphans"]["groesse_mb"])}</h2>
   <div class="card">{orphans_html}</div>
 
-  <h2 class="sec">Dangling-Referenzen ({ergebnis["dangling_referenzen"]["anzahl"]})</h2>
+  <h2 class="sec">{tx("Dangling-Referenzen ({anzahl})", anzahl=ergebnis["dangling_referenzen"]["anzahl"])}</h2>
   <div class="card">{dangling_html}</div>
 
-  <h2 class="sec">Rotation (Schwelle {ergebnis["rotation"]["schwelle_tage"]} Tage ·
-    {ergebnis["rotation"]["anzahl"]} Dateien · {ergebnis["rotation"]["groesse_mb"]} MB)</h2>
+  <h2 class="sec">{rotation_titel}</h2>
   <div class="card">
     <table style="width:100%;border-collapse:collapse">
-      <tr style="text-align:left;color:var(--muted)"><th>Ordner</th><th>Anzahl</th><th>Größe</th></tr>
+      <tr style="text-align:left;color:var(--muted)"><th>{tx("Ordner")}</th><th>{tx("Anzahl")}</th><th>{tx("Größe")}</th></tr>
       {rot_zeilen}
     </table>
   </div>
 
-  <h2 class="sec">DB-Pflege (Schwelle {ergebnis["row_pflege"]["schwelle_tage"]} Tage)</h2>
-  <div class="card"><p>{ergebnis["row_pflege"]["agenttask_kandidaten"]} AgentTask-Rows,
-    {ergebnis["row_pflege"]["run_kandidaten"]} Run-Rows mit großen Feldern zu leeren
-    (Rows selbst bleiben erhalten — Kosten-Historie).</p></div>
+  <h2 class="sec">{tx("DB-Pflege (Schwelle {tage} Tage)", tage=ergebnis["row_pflege"]["schwelle_tage"])}</h2>
+  <div class="card"><p>{db_pflege_text}</p></div>
 
-  <h2 class="sec">Papierkorb</h2>
-  <div class="card"><p>{ergebnis["papierkorb"]["anzahl"]} Dateien · {ergebnis["papierkorb"]["groesse_mb"]} MB
-    — läuft nie automatisch leer, s. <code>cleanup leeren</code>.</p></div>
+  <h2 class="sec">{tx("Papierkorb")}</h2>
+  <div class="card"><p>{papierkorb_text}</p></div>
 
   <div class="foot">
-    <span>Bewerbungs-Mgmt · System-Cleanup · erzeugt am {erzeugt}</span>
-    <span>scan — read-only, kein Löschen/Verschieben</span>
+    <span>{tx("Bewerbungs-Mgmt · System-Cleanup · erzeugt am {datum}", datum=erzeugt)}</span>
+    <span>{tx("scan — read-only, kein Löschen/Verschieben")}</span>
   </div>
 </div>
 </body>

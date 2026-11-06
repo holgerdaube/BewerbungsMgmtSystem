@@ -1,0 +1,59 @@
+{
+  "titel": "Outreach / Netzwerk",
+  "untertitel": "Einmalig aus einer Excel-Tabelle übernommen und hier weitergepflegt. Zeile anklicken: bearbeiten und Aktivitäten-Log.",
+  "export": "⬇ Outreach-Tracker (Original-Format)",
+  "lade": "Lade…",
+  "wert": {
+    "Initiated": "Initiated",
+    "Responded": "Responded",
+    "In Dialogue": "In Dialogue",
+    "Meeting Scheduled": "Meeting Scheduled",
+    "Opportunity": "Opportunity",
+    "On Hold": "On Hold",
+    "Closed Positive": "Closed Positive",
+    "Closed Negative": "Closed Negative",
+    "auto": "auto",
+    "manuell": "manuell"
+  },
+  "kachel": {
+    "kontakte": "Kontakte gesamt",
+    "antworten": "Antworten",
+    "response_rate": "Response Rate",
+    "ueberfaellig": "Überfällige Follow-ups",
+    "filter_aktiv": "Filter aktiv — Klick hebt auf",
+    "filter_hinweis": "Klick filtert die Liste"
+  },
+  "alle_status": "Alle Status ({{anzahl}})",
+  "chip_ueberfaellig": "Nur überfällige Follow-ups",
+  "eintraege_one": "{{count}} Einträge",
+  "eintraege_other": "{{count}} Einträge",
+  "spalte": {
+    "datum": "Datum",
+    "kontakt": "Kontakt",
+    "unternehmen": "Unternehmen",
+    "position": "Position",
+    "kanal": "Kanal",
+    "status": "Status",
+    "naechster_schritt": "Nächster Schritt",
+    "next_action": "Next-Action"
+  },
+  "keine_eintraege": "Keine Einträge",
+  "keine_eintraege_nichts_ueberfaellig": "Keine Einträge — nichts überfällig 👍",
+  "detail": {
+    "aktion_bearbeiten": "Nächste Aktion bearbeiten",
+    "naechster_schritt_platzhalter": "Nächster Schritt…",
+    "datum_loeschen": "✕ Datum löschen",
+    "beworben_am": "Beworben am ⓘ",
+    "beworben_am_hinweis": "Nur setzen, wenn keine Bewerbung im Stellen-Tracker existiert — sonst zählt dieselbe Bewerbung doppelt (im Zweifel gewinnt der Stellen-Tracker).",
+    "beworben_am_titel": "Nur setzen, wenn keine Bewerbung im Stellen-Tracker existiert",
+    "speichern": "Speichern",
+    "speichern_laeuft": "Speichern…",
+    "gespeichert": "✓ Gespeichert & protokolliert",
+    "template": "Template:",
+    "notizen": "Notizen:",
+    "log_titel": "Aktivitäten-Log ({{anzahl}})",
+    "log_platzhalter": "Aktivität protokollieren — z. B. Telefonat, meldet sich nächste Woche…",
+    "eintrag": "+ Eintrag",
+    "log_leer": "Noch keine Aktivitäten — Status-/Schritt-Änderungen landen ab jetzt automatisch hier."
+  }
+}

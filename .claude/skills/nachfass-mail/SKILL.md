@@ -1,6 +1,6 @@
 ---
 name: nachfass-mail
-description: Erzeugt für eine Stelle aus dem Bewerbungs-Management-System einen Mail-ENTWURF in Gmail (nie senden) — Modus A "Nachfassen" bei Funkstille (höfliche Statusanfrage mit Wert-Anker, wenn auf eine Bewerbung keine Antwort kam) oder Modus B "Absage-Nachfrage" (dankende Bitte um konkretes Feedback nach einer Absage, füllt rejection_reason mit echten Signalen). Wählt den Modus automatisch nach Job-Status. Nutze diesen Skill bei "Nachfass-Entwurf für Job <id>", "fass bei Job <id> nach", "Nach Absagegrund fragen für Job <id>", "Absage-Nachfrage für Job <id>", "Feedback erfragen für Job <id>".
+description: Erzeugt für eine Stelle aus dem Bewerbungs-Management-System einen Mail-ENTWURF in Gmail (nie senden) — Modus A "Nachfassen" bei Funkstille (höfliche Statusanfrage mit Wert-Anker, wenn auf eine Bewerbung keine Antwort kam) oder Modus B "Absage-Nachfrage" (dankende Bitte um konkretes Feedback nach einer Absage, füllt rejection_reason mit echten Signalen). Wählt den Modus automatisch nach Job-Status. Nutze diesen Skill bei "Nachfass-Entwurf für Job <id>", "Follow-up draft for job <id>", "Ask for the rejection reason for job <id>", "fass bei Job <id> nach", "Nach Absagegrund fragen für Job <id>", "Absage-Nachfrage für Job <id>", "Feedback erfragen für Job <id>".
 ---
 
 # Nachfass-Mail (Funkstille & Absage-Nachfrage)

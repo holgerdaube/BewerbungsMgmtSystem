@@ -4,6 +4,11 @@ import lizenzMd from '../rechtliches/lizenz.md?raw'
 import lizenzTxt from '../rechtliches/lizenz.txt?raw'
 import datenschutzMd from '../rechtliches/datenschutz.md?raw'
 import drittlizenzenMd from '../rechtliches/drittlizenzen.md?raw'
+import ueberEnMd from '../rechtliches/ueber.en.md?raw'
+import lizenzEnMd from '../rechtliches/lizenz.en.md?raw'
+import datenschutzEnMd from '../rechtliches/datenschutz.en.md?raw'
+import drittlizenzenEnMd from '../rechtliches/drittlizenzen.en.md?raw'
+import { aktuelleSprache, t } from '../i18n'
 
 // ── Mini-Markdown-Renderer (Phase 71E) ──────────────────────────────────────────────
 // Bewusst von Hand statt einer npm-Dependency (Spec-Vorgabe: kein neues Paket nur für
@@ -189,20 +194,19 @@ function Lizenztexte() {
     <div className="space-y-3">
       <button type="button" onClick={umschalten} aria-expanded={offen} aria-controls="lizenztexte"
         className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50">
-        {offen ? 'Lizenztexte ausblenden' : 'Lizenztexte anzeigen'}
+        {offen ? t('rechtliches:lizenztexte.ausblenden') : t('rechtliches:lizenztexte.anzeigen')}
       </button>
 
       {offen && (
         <div id="lizenztexte">
-          {laedt && <p role="status" className="text-sm text-slate-500">Lädt …</p>}
+          {laedt && <p role="status" className="text-sm text-slate-500">{t('rechtliches:lizenztexte.laedt')}</p>}
           {fehler && (
             <p role="alert" className="text-sm text-rose-600">
-              Die Lizenztexte konnten nicht geladen werden. Den Wortlaut enthält die Datei{' '}
-              {LIZENZTEXTE_DATEI} im Programmordner.
+              {t('rechtliches:lizenztexte.fehler', { datei: LIZENZTEXTE_DATEI })}
             </p>
           )}
           {text !== null && (
-            <pre tabIndex={0} aria-label="Lizenztexte der Open-Source-Bestandteile"
+            <pre tabIndex={0} aria-label={t('rechtliches:lizenztexte.aria')}
               className="max-h-96 overflow-auto whitespace-pre-wrap rounded-lg border border-slate-200 bg-slate-100 p-3 font-mono text-xs leading-relaxed text-slate-700">
               {text}
             </pre>
@@ -215,10 +219,10 @@ function Lizenztexte() {
 
 // ── Seite ─────────────────────────────────────────────────────────────────────────────
 const SECTIONS = [
-  { id: 'ueber', label: 'Über dieses Programm', md: ueberMd },
-  { id: 'lizenz', label: 'Open-Source-Lizenz', md: lizenzMd },
-  { id: 'datenschutz', label: 'Datenschutz', md: datenschutzMd },
-  { id: 'drittlizenzen', label: 'Drittanbieter-Lizenzen', md: drittlizenzenMd },
+  { id: 'ueber', labelKey: 'rechtliches:tab.ueber', md: () => (aktuelleSprache() === 'en' ? ueberEnMd : ueberMd) },
+  { id: 'lizenz', labelKey: 'rechtliches:tab.lizenz', md: () => (aktuelleSprache() === 'en' ? lizenzEnMd : lizenzMd) },
+  { id: 'datenschutz', labelKey: 'rechtliches:tab.datenschutz', md: () => (aktuelleSprache() === 'en' ? datenschutzEnMd : datenschutzMd) },
+  { id: 'drittlizenzen', labelKey: 'rechtliches:tab.drittlizenzen', md: () => (aktuelleSprache() === 'en' ? drittlizenzenEnMd : drittlizenzenMd) },
 ] as const
 
 export default function Rechtliches() {
@@ -228,10 +232,9 @@ export default function Rechtliches() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-2xl font-bold text-brand-navy">Rechtliches</h1>
+        <h1 className="text-2xl font-bold text-brand-navy">{t('rechtliches:titel')}</h1>
         <p className="text-sm text-slate-500">
-          Herausgeber, Lizenz des Programms, Hinweise zum Datenschutz und die Lizenzen der
-          Open-Source-Bestandteile.
+          {t('rechtliches:einleitung')}
         </p>
       </div>
 
@@ -241,18 +244,18 @@ export default function Rechtliches() {
             className={`rounded-t-lg px-4 py-2 text-sm font-medium ${
               activeId === s.id ? 'border-b-2 border-brand-cyan text-brand-navy' : 'text-slate-500 hover:text-slate-700'
             }`}>
-            {s.label}
+            {t(s.labelKey)}
           </button>
         ))}
       </div>
 
       <div className="space-y-3 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-        {renderMarkdown(active.md)}
+        {renderMarkdown(active.md())}
         {/* Wortlaut der eigenen Lizenz: lizenz.txt ist eine Kopie von LICENSE im Projektordner, die
             der Build-Spiegel (frontend/build.sh kopiert nur frontend/) sonst nicht sähe. Ein Test
             hält beide bytegleich (test_open_source_lizenz.py). */}
         {active.id === 'lizenz' && (
-          <pre tabIndex={0} aria-label="Wortlaut der Apache License 2.0"
+          <pre tabIndex={0} aria-label={t('rechtliches:lizenz_aria')}
             className="max-h-[32rem] overflow-auto whitespace-pre-wrap rounded-lg border border-slate-200 bg-slate-100 p-3 font-mono text-xs leading-relaxed text-slate-700">
             {lizenzTxt}
           </pre>

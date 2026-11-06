@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { t } from '../i18n'
 
 /** Gemeinsame Live-Ansicht einer Beirats-Debatte (Phase 39, aus Beirat.tsx extrahiert für den
  *  Stellen-Check in JobDetail — Phase 40, Design-Entscheidung 7: „kein Fork"). Verbindet sich
@@ -85,7 +86,7 @@ export default function BeiratLive({ debatteId, compact, onFortschritt, onFertig
           const b = [...n].reverse().find((x) => x.art === 'beitrag' && !x.fertig) as any
           if (b) { b.text = ev.text; b.fertig = true }
         }
-        if (ev.typ === 'abstimmung_start') n.push({ art: 'status', text: 'Abstimmung — alle 7 Köpfe bewerten unabhängig …' })
+        if (ev.typ === 'abstimmung_start') n.push({ art: 'status', text: t('beirat:live.abstimmung_start') })
         if (ev.typ === 'votum') n.push({ art: 'votum', kopf: ev.kopf, anzeige: ev.anzeige, farbe: ev.farbe, stimme: ev.stimme, enthaltung: ev.enthaltung })
         if (ev.typ === 'entscheidung') { onEntscheidung?.(ev.entscheidung) }
         if (ev.typ === 'synthese_start') n.push({ art: 'synthese', text: '', fertig: false })
@@ -116,7 +117,7 @@ export default function BeiratLive({ debatteId, compact, onFortschritt, onFertig
         if (z.art === 'status') return <div key={i} className="text-center text-xs text-slate-400">{z.text}</div>
         if (z.art === 'moderation') return (
           <div key={i} className={`flex items-start gap-2 rounded-lg bg-slate-50 px-2.5 py-1.5 text-slate-600 ${compact ? 'text-xs' : 'text-sm'}`}>
-            <span className="mt-0.5 shrink-0 rounded-full bg-brand-navy px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white">Vorsitz</span>
+            <span className="mt-0.5 shrink-0 rounded-full bg-brand-navy px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white">{t('beirat:live.vorsitz')}</span>
             <span>{z.text}</span>
           </div>
         )
@@ -125,8 +126,8 @@ export default function BeiratLive({ debatteId, compact, onFortschritt, onFertig
             <Initialen name={z.anzeige} farbe={z.farbe} klein />
             <span className="font-medium text-slate-600">{z.anzeige}</span>
             {z.enthaltung
-              ? <span className="rounded-full bg-slate-100 px-2 py-0.5 italic text-slate-400">Enthaltung</span>
-              : <span className={`rounded-full px-2 py-0.5 font-semibold ${VOTUM_STYLE[z.stimme?.votum] || 'bg-slate-100 text-slate-500'}`}>{z.stimme?.votum}</span>}
+              ? <span className="rounded-full bg-slate-100 px-2 py-0.5 italic text-slate-400">{t('beirat:live.enthaltung')}</span>
+              : <span className={`rounded-full px-2 py-0.5 font-semibold ${VOTUM_STYLE[z.stimme?.votum] || 'bg-slate-100 text-slate-500'}`}>{z.stimme?.votum ? t(`beirat:wert.${z.stimme.votum}`, { defaultValue: z.stimme.votum }) : z.stimme?.votum}</span>}
           </div>
         )
         if (z.art === 'beitrag') return (
@@ -135,8 +136,8 @@ export default function BeiratLive({ debatteId, compact, onFortschritt, onFertig
             <div className={`min-w-0 flex-1 rounded-xl border px-3 py-2 ${compact ? 'py-1.5' : ''}`} style={{ borderColor: z.farbe + '55', backgroundColor: z.farbe + '0d' }}>
               <div className="mb-1 flex items-baseline gap-2">
                 <span className={`font-semibold ${compact ? 'text-xs' : 'text-sm'}`} style={{ color: z.farbe }}>{z.anzeige}</span>
-                {!compact && <span className="text-xs text-slate-400">Beitrag {z.nr}</span>}
-                {!z.fertig && <span className="animate-pulse text-xs text-slate-400">schreibt…</span>}
+                {!compact && <span className="text-xs text-slate-400">{t('beirat:live.beitrag_nr', { nr: z.nr })}</span>}
+                {!z.fertig && <span className="animate-pulse text-xs text-slate-400">{t('beirat:live.schreibt')}</span>}
               </div>
               <div className={`whitespace-pre-wrap text-slate-700 ${compact ? 'text-xs' : 'text-sm'}`}>{z.text}{!z.fertig && <span className="animate-pulse">▋</span>}</div>
             </div>
@@ -145,7 +146,7 @@ export default function BeiratLive({ debatteId, compact, onFortschritt, onFertig
         return (
           <div key={i} className={`rounded-xl border-2 border-brand-cyan/50 bg-brand-cyan/5 ${compact ? 'p-2.5' : 'p-4'}`}>
             <div className={`mb-1.5 font-bold uppercase tracking-wide text-brand-navy ${compact ? 'text-xs' : 'text-sm'}`}>
-              📋 Synthese{!z.fertig && <span className="ml-2 animate-pulse font-normal normal-case text-slate-400">entsteht…</span>}
+              {t('beirat:live.synthese')}{!z.fertig && <span className="ml-2 animate-pulse font-normal normal-case text-slate-400">{t('beirat:live.entsteht')}</span>}
             </div>
             <div className={`whitespace-pre-wrap text-slate-700 ${compact ? 'text-xs' : 'text-sm'}`}>{z.text}{!z.fertig && <span className="animate-pulse">▋</span>}</div>
           </div>

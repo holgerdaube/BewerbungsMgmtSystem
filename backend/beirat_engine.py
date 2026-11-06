@@ -67,7 +67,10 @@ from app import agent_runner, ki_anbieter  # Phase 77: ENV_FILE zur LAUFZEIT üb
 from app.agent_runner import LOG_DIR as AGENT_LOG_DIR, modell_fuer_beirat, neue_log_datei
 from app.db import artefakt_pfad, engine
 from app.models import AgentTask, JobFile
+from app import sprache
+from app.sprache import tx
 from app.naming import report_filename
+from pipeline import bewerbungssprache
 from pipeline import zustandsfarben
 from pipeline.htmltext import entkleiden
 from app.favicon import favicon_link
@@ -135,6 +138,123 @@ BEREICHS_KURZ = {   # für enge Tabellenspalten (Abstimmungs-Matrix)
 }
 STIMMEN_WERTE = ("Bewerben", "Bedingt", "Nicht")
 
+# ── Ausgabesprache der KI-Turns (P2-90) ───────────────────────────────────────────────────────
+# Prompts, Charta und Personas bleiben deutsch. Bei Sprache "en" hängt jeder Prompt am Ende eine englische
+# Anweisung an, bei "de" bleibt er byte-gleich. Maschinenwerte (Stimmen, Aktionen, Schwere, Status, JSON-
+# Feldnamen, Kopf-IDs) bleiben deutsch, denn der Code liest sie (STIMMEN_WERTE, _stimme_gueltig, Dispatch,
+# Risiko-Board). Die Turns laufen ohne Werkzeuge und ohne Dateizugriff (`--tools ""`), deshalb steht das
+# Glossar (config/glossar_de_en.md) im Hinweis selbst und wird nicht nur genannt.
+GLOSSAR_PFAD = PROJEKT_ROOT / "config" / "glossar_de_en.md"
+
+
+def _glossar_zeilen() -> str:
+    """Die Begriffstabelle aus config/glossar_de_en.md als Zeilen „Deutsch = English“. Fehlt die Datei, bleibt der
+    Hinweis ohne Begriffsliste, der Turn läuft trotzdem."""
+    try:
+        text = GLOSSAR_PFAD.read_text(encoding="utf-8")
+    except OSError:
+        return ""
+    zeilen = []
+    for z in text.splitlines():
+        if not z.startswith("|"):
+            continue
+        teile = [t.strip() for t in z.strip().strip("|").split("|")]
+        if len(teile) == 2 and teile[0] != "Deutsch" and not set(teile[0]) <= {"-", " "}:
+            zeilen.append(f"{teile[0]} = {teile[1]}")
+    return "\n".join(zeilen)
+
+
+def _ausgabesprache_wort() -> str:
+    return "Englisch" if sprache.aktuell() == "en" else "Deutsch"
+
+
+def _ausgabesprache_hinweis(json_antwort: bool) -> str:
+    """Englische Anweisung am Ende eines Prompts. Bei Sprache "de" leer, der Prompt bleibt byte-gleich.
+    `json_antwort=True`: Der Code parst die Antwort (Dispatch, Votum, Synthese des Stellen-Checks), deshalb bleiben
+    Feldnamen und feste Werte wie geschrieben."""
+    if sprache.aktuell() != "en":
+        return ""
+    glossar = _glossar_zeilen()
+    begriffe = ("\nUse these terms consistently (German = English):\n" + glossar + "\n") if glossar else "\n"
+    if json_antwort:
+        return (
+            "\n\nLANGUAGE: The user works in English. Although the instructions above are in German, write every "
+            "free-text value of the JSON object in English (British English): questions, reasons, summaries, risks, "
+            "next steps, recommendation." + begriffe
+            + "Keep the JSON structure exactly as specified: field names and every fixed value stay exactly as "
+            'written in German ("dispatch", "abschluss", the IDs of the board members, "Bewerben", "Bedingt", '
+            '"Nicht", "hoch", "mittel", "gering", "ungeklaert", "in_klaerung", "geklaert"). '
+            "Answer with the JSON object only."
+        )
+    return (
+        "\n\nLANGUAGE: The user works in English. Although the instructions above are in German, write your entire "
+        "contribution in English (British English)." + begriffe
+        + "Keep the required structure exactly as specified. Names of people and board members stay unchanged."
+    )
+
+
+# Falls das Modell trotz Anweisung einen festen Wert übersetzt, fängt das der Code bei Sprache "en" auf, statt
+# eine Stimme oder das Risiko-Board zu verwerfen. Bei "de" greift nichts davon.
+_WERT_ALIASE = {
+    "aktion": {"conclude": "abschluss", "close": "abschluss", "finish": "abschluss", "end": "abschluss",
+               "conclusion": "abschluss"},
+    "votum": {"apply": "Bewerben", "conditional": "Bedingt", "conditionally": "Bedingt",
+              "do not apply": "Nicht", "don't apply": "Nicht", "no": "Nicht"},
+    "schwere": {"high": "hoch", "medium": "mittel", "low": "gering"},
+    "status": {"unresolved": "ungeklaert", "open": "ungeklaert", "in clarification": "in_klaerung",
+               "in progress": "in_klaerung", "in_progress": "in_klaerung", "resolved": "geklaert",
+               "clarified": "geklaert"},
+}
+
+
+def _wert_normalisieren(feld: str, wert):
+    if sprache.aktuell() != "en" or not isinstance(wert, str):
+        return wert
+    return _WERT_ALIASE[feld].get(wert.strip().lower(), wert)
+
+
+def _risiko_board_normalisieren(parsed) -> None:
+    if sprache.aktuell() != "en" or not isinstance(parsed, dict):
+        return
+    for z in parsed.get("risiko_board") or []:
+        if isinstance(z, dict):
+            for feld in ("schwere", "status"):
+                if feld in z:
+                    z[feld] = _wert_normalisieren(feld, z[feld])
+
+
+def _bereichs_label_anzeige(bereich: str) -> str:
+    """Beschriftung eines Prüfbereichs im Dashboard. Die Prompts nehmen weiter `BEREICHS_LABEL` (deutsch)."""
+    return {
+        "rollenfit": tx("Fachlicher/funktionaler Rollenfit"),
+        "cv_ergebnisse": tx("Nachweisbare CV-Ergebnisse"),
+        "unternehmen": tx("Unternehmen/Geschäftsmodell"),
+        "uebertragbarkeit": tx("Übertragbarkeit der Erfahrungen"),
+        "karrierewirkung": tx("Langfristige Karrierewirkung"),
+        "interview_chance": tx("Chance auf Interview/Angebot"),
+    }[bereich]
+
+
+def _bereichs_kurz_anzeige(bereich: str) -> str:
+    return {
+        "rollenfit": tx("Rollenfit"), "cv_ergebnisse": tx("CV-Ergebnisse"), "unternehmen": tx("Unternehmen"),
+        "uebertragbarkeit": tx("Übertragb."), "karrierewirkung": tx("Karriere"), "interview_chance": tx("Interview"),
+    }[bereich]
+
+
+def _votum_anzeige(votum: str) -> str:
+    """Anzeige einer Stimme. Gespeichert und ausgewertet wird immer der deutsche Wert."""
+    return {"Bewerben": tx("Bewerben"), "Bedingt": tx("Bedingt"), "Nicht": tx("Nicht")}.get(votum, votum)
+
+
+def _ampel_anzeige(ampel: str) -> str:
+    return {"Bewerben": tx("BEWERBEN"), "Bedingt": tx("BEDINGT BEWERBEN"), "Nicht": tx("NICHT BEWERBEN")}[ampel]
+
+
+def _schwere_anzeige(schwere) -> str:
+    anzeige = {"hoch": tx("Hoch"), "mittel": tx("Mittel"), "gering": tx("Gering")}.get(schwere)
+    return anzeige if anzeige else (schwere or "").capitalize()
+
 # ── Personas laden ────────────────────────────────────────────────────────────────────
 
 def _frontmatter_parsen(text: str) -> tuple[str, str] | None:
@@ -144,6 +264,12 @@ def _frontmatter_parsen(text: str) -> tuple[str, str] | None:
     anders zurückschreibt."""
     m = re.match(r"^---\n(.*?)\n---\n(.*)$", text, re.S)
     return (m.group(1), m.group(2)) if m else None
+
+
+def _beschreibung_feld() -> str:
+    """Die Beschreibung eines Kopfes steht je Sprache in einem eigenen Feld. Fehlt `description_en` (neu besetzter
+    Kopf), gilt `description`, in welcher Sprache sie auch geschrieben ist."""
+    return "description_en" if sprache.aktuell() == "en" else "description"
 
 
 def _frontmatter_feld(front: str, k: str) -> str | None:
@@ -176,7 +302,9 @@ def lade_mitglieder() -> list[dict]:
         # Anzeigename aus der Rollen-Zeile ("Du bist **<Name>** (…)")
         nm = re.search(r"Du bist \*\*(.+?)\*\*", body)
         anzeige = nm.group(1) if nm else name_id.replace("beirat-", "").title()
-        beschreibung_voll = _frontmatter_feld(front, "description") or ""
+        # P2-90: übersetzt wird VOR dem Kürzen. Eine vom Nutzer neu besetzte Persona hat keine Übersetzung
+        # und bleibt, wie sie ist (`uebersetzt` liefert dann den Text unverändert).
+        beschreibung_voll = (_frontmatter_feld(front, _beschreibung_feld()) or _frontmatter_feld(front, "description") or "")
         out.append({
             "id": name_id, "anzeige": anzeige,
             "beschreibung": beschreibung_voll[:300],
@@ -252,7 +380,7 @@ def _frontmatter_feld_setzen(pfad: Path, feld: str, wert: str) -> None:
     text = pfad.read_text(encoding="utf-8")
     geparst = _frontmatter_parsen(text)
     if not geparst:
-        raise MitgliedFehler(f"„{pfad.name}“ hat kein gültiges Frontmatter — Datei beschädigt?")
+        raise MitgliedFehler(tx("„{datei}“ hat kein gültiges Frontmatter — Datei beschädigt?", datei=pfad.name))
     front, body = geparst
     zeilen = front.split("\n")
     neue_zeile = f"{feld}: {wert}"
@@ -275,7 +403,7 @@ def _anzeige_umbenennen(pfad: Path, neue_anzeige: str) -> None:
     text = pfad.read_text(encoding="utf-8")
     geparst = _frontmatter_parsen(text)
     if not geparst:
-        raise MitgliedFehler(f"„{pfad.name}“ hat kein gültiges Frontmatter — Datei beschädigt?")
+        raise MitgliedFehler(tx("„{datei}“ hat kein gültiges Frontmatter — Datei beschädigt?", datei=pfad.name))
     front, body = geparst
     nm = re.search(r"Du bist \*\*(.+?)\*\*", body)
     if nm and nm.group(1) != neue_anzeige:
@@ -315,24 +443,24 @@ def _persona_pruefen(text: str, erlaubte_ids: set[str]) -> str:
     """
     laenge = len(text.encode("utf-8"))
     if not PERSONA_MIN_BYTES <= laenge <= PERSONA_MAX_BYTES:
-        raise MitgliedFehler(
-            "Persona-Datei hat " + str(laenge) + " Bytes — erwartet werden "
-            + str(PERSONA_MIN_BYTES) + " bis " + str(PERSONA_MAX_BYTES)
-            + " (eine vollständige Persona ist rund 8 KB groß)")
+        raise MitgliedFehler(tx(
+            "Persona-Datei hat {laenge} Bytes — erwartet werden {minimum} bis {maximum} "
+            "(eine vollständige Persona ist rund 8 KB groß)",
+            laenge=laenge, minimum=PERSONA_MIN_BYTES, maximum=PERSONA_MAX_BYTES))
     geparst = _frontmatter_parsen(text)
     if not geparst:
-        raise MitgliedFehler("Persona-Datei hat kein gültiges Frontmatter")
+        raise MitgliedFehler(tx("Persona-Datei hat kein gültiges Frontmatter"))
     front, body = geparst
     platz_id = _frontmatter_feld(front, "name")
     if not platz_id:
-        raise MitgliedFehler("Im Frontmatter fehlt das Feld `name` (die Platz-ID)")
+        raise MitgliedFehler(tx("Im Frontmatter fehlt das Feld `name` (die Platz-ID)"))
     if platz_id not in erlaubte_ids:
-        raise MitgliedFehler(
-            "`name: " + platz_id + "` ist kein bestehender Beiratsplatz — über diesen Weg "
-            "lassen sich nur vorhandene Plätze neu besetzen, keine neuen anlegen")
+        raise MitgliedFehler(tx(
+            "`name: {platz_id}` ist kein bestehender Beiratsplatz — über diesen Weg "
+            "lassen sich nur vorhandene Plätze neu besetzen, keine neuen anlegen", platz_id=platz_id))
     fehlend = [a for a in PFLICHT_ABSCHNITTE if a not in body]
     if fehlend:
-        raise MitgliedFehler("In der Persona fehlen Pflichtabschnitte: " + ", ".join(fehlend))
+        raise MitgliedFehler(tx("In der Persona fehlen Pflichtabschnitte: {abschnitte}", abschnitte=", ".join(fehlend)))
     return platz_id
 
 
@@ -356,15 +484,15 @@ def uebernehme_neubesetzung(platz_id: str) -> dict:
     """
     dateien = _mitglieder_dateien()
     if platz_id not in dateien:
-        raise MitgliedNichtGefunden("Beiratsplatz '" + platz_id + "' nicht gefunden")
+        raise MitgliedNichtGefunden(tx("Beiratsplatz '{platz_id}' nicht gefunden", platz_id=platz_id))
     if not UEBERNAHME_DIR.is_dir():
-        raise MitgliedFehler(
-            "Kein Übernahme-Verzeichnis " + _kurzpfad(UEBERNAHME_DIR)
-            + " — der Lauf hat dort nichts abgelegt")
+        raise MitgliedFehler(tx(
+            "Kein Übernahme-Verzeichnis {pfad} — der Lauf hat dort nichts abgelegt",
+            pfad=_kurzpfad(UEBERNAHME_DIR)))
 
     kandidaten = sorted(p for p in UEBERNAHME_DIR.glob("beirat-*.md") if p.is_file())
     if not kandidaten:
-        raise MitgliedFehler("Im Übernahme-Verzeichnis liegt keine `beirat-*.md`")
+        raise MitgliedFehler(tx("Im Übernahme-Verzeichnis liegt keine `beirat-*.md`"))
 
     # ALLES zuerst prüfen, dann schreiben (Muster `aktualisiere_mitglied`).
     geprueft = []
@@ -374,9 +502,9 @@ def uebernehme_neubesetzung(platz_id: str) -> dict:
         ziel_id = _persona_pruefen(text, erlaubte)
         geprueft.append((quelle, ziel_id, text))
     if platz_id not in [z for _q, z, _t in geprueft]:
-        raise MitgliedFehler(
-            "Für den neu zu besetzenden Platz '" + platz_id + "' liegt keine Datei bereit "
-            "(gefunden: " + ", ".join(sorted(z for _q, z, _t in geprueft)) + ")")
+        raise MitgliedFehler(tx(
+            "Für den neu zu besetzenden Platz '{platz_id}' liegt keine Datei bereit (gefunden: {gefunden})",
+            platz_id=platz_id, gefunden=", ".join(sorted(z for _q, z, _t in geprueft))))
 
     BACKUP_DIR.mkdir(parents=True, exist_ok=True)
     stempel = datetime.now().strftime("%Y_%m_%d_%H%M")
@@ -391,7 +519,7 @@ def uebernehme_neubesetzung(platz_id: str) -> dict:
         uebernommen.append(ziel_id)
 
     return dict(platz_id=platz_id, uebernommen=uebernommen, gesichert=gesichert,
-                hinweis="Backup unter " + _kurzpfad(BACKUP_DIR))
+                hinweis=tx("Backup unter {pfad}", pfad=_kurzpfad(BACKUP_DIR)))
 
 
 def aktualisiere_mitglied(platz_id: str, felder: dict) -> dict:
@@ -413,25 +541,25 @@ def aktualisiere_mitglied(platz_id: str, felder: dict) -> dict:
     """
     dateien = _mitglieder_dateien()
     if platz_id not in dateien:
-        raise MitgliedNichtGefunden(f"Beiratsplatz '{platz_id}' nicht gefunden")
+        raise MitgliedNichtGefunden(tx("Beiratsplatz '{platz_id}' nicht gefunden", platz_id=platz_id))
 
     farbe = None
     if "farbe" in felder:
         farbe = (felder.get("farbe") or "").strip()
         if not _HEX_FARBE_RE.match(farbe):
-            raise MitgliedFehler("Farbe muss ein Hex-Wert im Format #RRGGBB sein")
+            raise MitgliedFehler(tx("Farbe muss ein Hex-Wert im Format #RRGGBB sein"))
 
     perspektive = None
     if "perspektive" in felder:
         perspektive = (felder.get("perspektive") or "").strip()
         if not perspektive:
-            raise MitgliedFehler("perspektive darf nicht leer sein")
+            raise MitgliedFehler(tx("perspektive darf nicht leer sein"))
 
     neue_anzeige = None
     if "anzeige" in felder:
         neue_anzeige = (felder.get("anzeige") or "").strip()
         if not neue_anzeige:
-            raise MitgliedFehler("anzeige darf nicht leer sein")
+            raise MitgliedFehler(tx("anzeige darf nicht leer sein"))
 
     neuer_vorsitz_wert = None
     andere_zu_entfernen: list[str] = []
@@ -441,10 +569,10 @@ def aktualisiere_mitglied(platz_id: str, felder: dict) -> dict:
         bisherige_vorsitzende = [i for i, v in aktuell.items() if v]
         ist_bisheriger_vorsitz = aktuell.get(platz_id, False)
         if not neuer_vorsitz_wert and ist_bisheriger_vorsitz and len(bisherige_vorsitzende) <= 1:
-            raise MitgliedFehler(
+            raise MitgliedFehler(tx(
                 "Der Beirat braucht eine Vorsitzende — markiere zuerst ein anderes Mitglied als "
                 "Vorsitz. Ohne Vorsitz kann die Engine nicht dispatchen."
-            )
+            ))
         if neuer_vorsitz_wert:
             andere_zu_entfernen = [i for i in bisherige_vorsitzende if i != platz_id]
 
@@ -454,7 +582,7 @@ def aktualisiere_mitglied(platz_id: str, felder: dict) -> dict:
     if farbe is not None:
         _frontmatter_feld_setzen(dateien[platz_id], "farbe", f'"{farbe}"')
     if perspektive is not None:
-        _frontmatter_feld_setzen(dateien[platz_id], "description", perspektive)
+        _frontmatter_feld_setzen(dateien[platz_id], _beschreibung_feld(), perspektive)
     if neuer_vorsitz_wert is not None:
         _frontmatter_feld_setzen(dateien[platz_id], "vorsitz", "true" if neuer_vorsitz_wert else "false")
     if neue_anzeige is not None:
@@ -474,20 +602,11 @@ def _charta_kern() -> str:
 # als fehlend markiert (Anti-Halluzination), nie stillschweigend weggelassen oder erraten —
 # die Köpfe tragen das dann selbst als ❓ ins Risiko-Board.
 
-_DE_WOERTER = {"und", "für", "mit", "ist", "sind", "eine", "einer", "unternehmen", "wir", "sie",
-              "unser", "unsere", "ihre", "aufgaben", "erfahrung", "kenntnisse", "verantwortung",
-              "als", "bei", "der", "die", "das", "sowie", "werden", "haben"}
-_EN_WOERTER = {"and", "for", "with", "is", "are", "our", "you", "we", "the", "responsibilities",
-              "experience", "requirements", "role", "team", "will", "have", "your", "about"}
-
-
 def _erkenne_sprache(text: str) -> str:
-    """Grobe DE/EN-Heuristik über Stopwort-Häufigkeit — reicht, um zwischen base_de.docx und
-    base_en.docx zu wählen. Bei Gleichstand/leer: Default Deutsch (Kernmarkt DACH)."""
-    woerter = re.findall(r"[a-zA-ZäöüÄÖÜß]+", (text or "").lower())
-    de = sum(1 for w in woerter if w in _DE_WOERTER)
-    en = sum(1 for w in woerter if w in _EN_WOERTER)
-    return "en" if en > de else "de"
+    """Sprache der Anzeige über Stoppwort-Häufigkeit, in Kleinbuchstaben: `de`, `en`, `fr`, `it`, `es`
+    oder `pt`. Die Wörter stehen in `pipeline.bewerbungssprache` (DE und EN wortgleich zur früheren
+    Beirat-Liste). Bei Gleichstand/leer: Deutsch (Kernmarkt DACH)."""
+    return bewerbungssprache.erkenne_sprache(text, standard="DE").lower()
 
 
 def _html_text(rel_path: str, limit: int) -> str:
@@ -500,10 +619,22 @@ def _html_text(rel_path: str, limit: int) -> str:
 
 
 def _cv_text(sprache: str, limit: int) -> tuple[str, str]:
-    rel = f"data/cv_basis/base_{'en' if sprache == 'en' else 'de'}.docx"
+    """Basis-CV-Text in der Sprache der Anzeige: `base_<sprache>.docx`. Fehlt diese Fassung (nur bei fr, it,
+    es, pt möglich, ohne Übersetzung): zuerst Englisch, sonst Deutsch. Die zweite Rückgabe ist der Pfad der
+    benutzten Datei; fehlt auch die Rückfall-Fassung, der Pfad der gewünschten (für die Lücken-Meldung)."""
+    code = sprache if sprache in ("de", "en", "fr", "it", "es", "pt") else "de"
+    gewuenscht = f"data/cv_basis/base_{code}.docx"
     # Phase 79: gemeinsame Auflösung — schließt auch den LESENDEN Zugriff auf die echten
     # Basis-CVs unter Test-Isolation (s. app/db.py::artefakt_pfad).
-    p = artefakt_pfad(rel)
+    rel, p = gewuenscht, artefakt_pfad(gewuenscht)
+    if not p.is_file() and code not in ("de", "en"):
+        for ersatz in ("en", "de"):
+            rel = f"data/cv_basis/base_{ersatz}.docx"
+            p = artefakt_pfad(rel)
+            if p.is_file():
+                break
+        else:
+            rel = gewuenscht
     if not p.is_file():
         return "", rel
     import docx
@@ -548,7 +679,8 @@ def sammle_stellen_kontext(job, company) -> tuple[str, bool]:
     sprache = _erkenne_sprache(anzeige or job.title or "")
     cv, cv_pfad = _cv_text(sprache, 6000)
     if cv:
-        teile.append(f"CV-BASIS ({sprache.upper()}, {cv_pfad}):\n{cv}")
+        # Sprache der benutzten Datei, nicht der Anzeige: Beim Rückfall (z. B. Anzeige fr, Fassung en) steht sonst FR.
+        teile.append(f"CV-BASIS ({Path(cv_pfad).stem.removeprefix('base_').upper()}, {cv_pfad}):\n{cv}")
     else:
         teile.append(f"CV-BASIS: NICHT VERFÜGBAR ({cv_pfad} nicht gefunden) — echte Lücke.")
 
@@ -700,8 +832,8 @@ def _result_event_auswerten(obj: dict) -> tuple[str, float, str | None]:
     kosten = obj.get("total_cost_usd") or 0.0
     if obj.get("is_error"):
         status = obj.get("api_error_status")
-        praefix = f"API-Fehler {status}" if status else "API-Fehler"
-        meldung = obj.get("result") or "(keine Fehlermeldung im result-Feld)"
+        praefix = tx("API-Fehler {status}", status=status) if status else tx("API-Fehler")
+        meldung = obj.get("result") or tx("(keine Fehlermeldung im result-Feld)")
         return "", kosten, f"{praefix}: {meldung}"
     return (obj.get("result") or ""), kosten, None
 
@@ -790,10 +922,10 @@ def _auth_fehler_uebersetzen(rohtext: str, auth_weg: str) -> str | None:
     if not any(m in tief for m in _AUTH_FEHLER_MUSTER):
         return None
     if auth_weg == "keychain":
-        return ("Claude-Abo-Login abgelaufen — im Terminal `claude` öffnen und per /login neu "
-                "anmelden, dann den Check erneut starten.")
-    return (f"CLAUDE_CODE_OAUTH_TOKEN in {agent_runner.ENV_FILE} ist ungültig/abgelaufen — "
-            "mit `claude setup-token` erneuern.")
+        return tx("Claude-Abo-Login abgelaufen — im Terminal `claude` öffnen und per /login neu "
+                  "anmelden, dann den Check erneut starten.")
+    return tx("CLAUDE_CODE_OAUTH_TOKEN in {datei} ist ungültig/abgelaufen — "
+              "mit `claude setup-token` erneuern.", datei=agent_runner.ENV_FILE)
 
 
 _VORWAERM_LOCK = asyncio.Lock()
@@ -834,9 +966,10 @@ async def _keychain_vorwaermen(task_id: int | None = None) -> tuple[str | None, 
                                               task_id=task_id, timeout=30)
         except Exception as ex:
             kosten = getattr(ex, "kosten_usd", 0.0) or 0.0
-            fehler = _auth_fehler_uebersetzen(str(ex), "keychain") or (
-                f"Vorwärmung der Claude-Abo-Session fehlgeschlagen ({str(ex)[:200]}) — im "
-                "Terminal `claude` öffnen und per /login neu anmelden, dann erneut versuchen.")
+            fehler = _auth_fehler_uebersetzen(str(ex), "keychain") or tx(
+                "Vorwärmung der Claude-Abo-Session fehlgeschlagen ({detail}) — im "
+                "Terminal `claude` öffnen und per /login neu anmelden, dann erneut versuchen.",
+                detail=str(ex)[:200])
             return fehler, kosten
         _vorwaerm_ok_bis = time.monotonic() + 300     # 5 Minuten, s. Entscheidung 2
         return None, kosten
@@ -937,7 +1070,7 @@ async def _turn_anthropic(system_prompt: str, user_prompt: str, model: str, on_d
     voll = "".join(text).strip() or (result_text or "").strip()
     if not voll:
         diagnose = "".join(roh_ausgabe)[-500:]
-        ex = RuntimeError(f"Leerer Anthropic-Turn (exit {proc.returncode}): {diagnose}")
+        ex = RuntimeError(tx("Leerer Anthropic-Turn (exit {rc}): {diagnose}", rc=proc.returncode, diagnose=diagnose))
         ex.kosten_usd = kosten
         raise ex
     return voll, kosten
@@ -952,7 +1085,7 @@ async def _turn_openai(system_prompt: str, user_prompt: str, model: str, on_delt
     Rückgabe (Text, 0.0)."""
     key = keys_lesen().get("openai")
     if not key:
-        raise RuntimeError("Kein OpenAI-Key hinterlegt (Beirat → Schlüssel).")
+        raise RuntimeError(tx("Kein OpenAI-Key hinterlegt (Beirat → Schlüssel)."))
     text = []
     async with httpx.AsyncClient(timeout=MAX_TURN_SEKUNDEN) as client:
         async with client.stream(
@@ -964,7 +1097,7 @@ async def _turn_openai(system_prompt: str, user_prompt: str, model: str, on_delt
         ) as r:
             if r.status_code != 200:
                 body = (await r.aread())[:300].decode("utf-8", "ignore")
-                raise RuntimeError(f"OpenAI {r.status_code}: {body}")
+                raise RuntimeError(tx("OpenAI {status}: {body}", status=r.status_code, body=body))
             async for zeile in r.aiter_lines():
                 if not zeile.startswith("data: "):
                     continue
@@ -980,7 +1113,7 @@ async def _turn_openai(system_prompt: str, user_prompt: str, model: str, on_delt
                     await on_delta(delta)
     voll = "".join(text).strip()
     if not voll:
-        raise RuntimeError("Leerer OpenAI-Turn")
+        raise RuntimeError(tx("Leerer OpenAI-Turn"))
     _log_notiz(task_id, voll[:2000])   # kein rohes SSE-Format wie bei Anthropic, aber sichtbar
     return voll, 0.0
 
@@ -1023,8 +1156,9 @@ async def _turn_codex(system_prompt: str, user_prompt: str, modell_alias: str | 
     ersten, seriellen Turn jeder Debatte (Dispatch) an. Gegen einen echten Codex-Lauf ist das nicht geprüft."""
     programm = ki_anbieter._programm(ki_anbieter.CODEX_BIN)
     if not programm:
-        raise RuntimeError(f"Das ChatGPT-Programm „{ki_anbieter.CODEX_BIN}“ (Codex) wurde nicht gefunden. "
-                           "Bitte installieren und im Terminal mit `codex login` anmelden.")
+        raise RuntimeError(tx("Das ChatGPT-Programm „{programm}“ (Codex) wurde nicht gefunden. "
+                              "Bitte installieren und im Terminal mit `codex login` anmelden.",
+                              programm=ki_anbieter.CODEX_BIN))
     modell = ki_anbieter.CODEX_MODELL.get(modell_alias or "") or ki_anbieter.CODEX_MODELL[modell_fuer_beirat()]
     WORK_DIR.mkdir(parents=True, exist_ok=True)
     _log_notiz(task_id, f"Motor: ChatGPT-Abo (Codex), Modell {modell}")
@@ -1034,7 +1168,7 @@ async def _turn_codex(system_prompt: str, user_prompt: str, modell_alias: str | 
             stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.STDOUT,
             limit=16 * 1024 * 1024)       # eine Antwortzeile kann länger sein als die 64 KB des Standards
     except OSError as ex:
-        raise RuntimeError(f"Codex ließ sich nicht starten: {ex}") from ex
+        raise RuntimeError(tx("Codex ließ sich nicht starten: {fehler}", fehler=ex)) from ex
     auswertung = ki_anbieter.CodexAuswertung()
     letzte = ""                           # letzte nicht leere Zeile (auch stderr), Meldung bei einem Abbruch ohne Turn
     eingabe = _codex_eingabe(system_prompt, user_prompt).encode("utf-8")
@@ -1069,7 +1203,7 @@ async def _turn_codex(system_prompt: str, user_prompt: str, modell_alias: str | 
     try:
         _, rc = await asyncio.wait_for(asyncio.gather(_eingeben(), _lesen()), timeout=timeout)
     except asyncio.TimeoutError:
-        raise RuntimeError(f"ChatGPT-Turn nach {timeout} s abgebrochen (Zeitlimit).") from None
+        raise RuntimeError(tx("ChatGPT-Turn nach {sekunden} s abgebrochen (Zeitlimit).", sekunden=timeout)) from None
     finally:
         if proc.returncode is None:
             proc.kill()
@@ -1078,7 +1212,7 @@ async def _turn_codex(system_prompt: str, user_prompt: str, modell_alias: str | 
         raise RuntimeError(ergebnis["result"])
     text = (ergebnis["result"] or "").strip()
     if not text:
-        raise RuntimeError(f"Leerer ChatGPT-Turn (exit {rc}): {letzte[-500:]}")
+        raise RuntimeError(tx("Leerer ChatGPT-Turn (exit {rc}): {letzte}", rc=rc, letzte=letzte[-500:]))
     return text, 0.0
 
 
@@ -1180,10 +1314,11 @@ class Debatte:
 
     def _notbremse_pruefen(self) -> None:
         if self.kosten_usd >= NOTBREMSE_USD:
-            raise RuntimeError(
-                f"Notbremse: Kosten-Limit ${NOTBREMSE_USD:.2f} je Lauf erreicht "
-                f"(${self.kosten_usd:.2f} nach {self.num_turns} Turns) — Lauf abgebrochen. "
-                "Artefakte können unvollständig sein.")
+            raise RuntimeError(tx(
+                "Notbremse: Kosten-Limit ${limit} je Lauf erreicht "
+                "(${kosten} nach {turns} Turns) — Lauf abgebrochen. "
+                "Artefakte können unvollständig sein.",
+                limit=f"{NOTBREMSE_USD:.2f}", kosten=f"{self.kosten_usd:.2f}", turns=self.num_turns))
 
     def _abbruch_pruefen(self) -> None:
         if self.hart_abgebrochen:
@@ -1224,7 +1359,7 @@ class Debatte:
             "unabhängig ab (Charta-Scoring) — hier geht es nur um die Debatten-Teilnahme.\n"
             if self.modus == "stellen_check" else ""
         )
-        return (
+        prompt = (
             f"DEBATTEN-STEUERUNG.\n\nThema der Debatte:\n{self.thema}\n\n"
             f"Kontext des Nutzers:\n{self.kontext or '(keiner)'}\n\n"
             f"Köpfe am Tisch:\n{koepfe}\n{stellen_check_hinweis}\n"
@@ -1239,12 +1374,14 @@ class Debatte:
             '"begruendung": "<1 Satz, warum dieser Kopf jetzt>"}\n'
             'oder — nur wenn erlaubt — {"aktion": "abschluss", "begruendung": "<1 Satz>"}'
         )
+        return prompt + _ausgabesprache_hinweis(json_antwort=True)
 
     def _persona_system(self, m: dict) -> str:
         return (
             f"{m['persona']}\n\n---\n\nDu sitzt in einer MODERIERTEN DEBATTE des Bewerbungs-Beirats. "
             "Es gelten Antwortformat (Position → Brille → Empfehlung, max. ~120 Wörter) und "
-            "MiroFish-Regeln der folgenden Charta. Sprich als dein Kopf, in der Ich-Form, auf Deutsch.\n\n"
+            "MiroFish-Regeln der folgenden Charta. Sprich als dein Kopf, in der Ich-Form, auf "
+            + _ausgabesprache_wort() + ".\n\n"
             + _charta_kern()
         )
 
@@ -1260,6 +1397,7 @@ class Debatte:
             f"Thema der Debatte:\n{self.thema}\n\nKontext des Nutzers:\n{self.kontext or '(keiner)'}\n\n"
             f"Bisherige Beiträge:\n{self._transkript()}\n\n"
             f"Die Vorsitzende {vorsitz_name} ruft dich auf: „{frage}“\n\n{mirofish}"
+            + _ausgabesprache_hinweis(json_antwort=False)
         )
 
     def _synthese_prompt(self) -> str:
@@ -1269,6 +1407,7 @@ class Debatte:
             "Offene Punkte; Risiken gern als Board). Markdown erlaubt. Bevorzuge keinen Kopf heimlich.\n\n"
             f"Thema:\n{self.thema}\n\nKontext:\n{self.kontext or '(keiner)'}\n\n"
             f"Vollständiger Verlauf:\n{self._transkript()}"
+            + _ausgabesprache_hinweis(json_antwort=False)
         )
 
     # — Stellen-Check: Abstimmung ALLER 7 Köpfe (Charta „Stellen-Check: Scoring &
@@ -1284,7 +1423,7 @@ class Debatte:
     def _abstimmung_prompt(self, m: dict) -> str:
         bereiche_text = "\n".join(f'- "{b}" ({int(GEWICHTE[b]*100)}%): {BEREICHS_LABEL[b]}'
                                   for b in ABSTIMMUNGS_BEREICHE)
-        return (
+        prompt = (
             f"STELLE: {self.thema}\n\nKontext (Anzeigentext, CV-Basis, Company-Fit, Eckdaten):\n"
             f"{self.kontext or '(keiner)'}\n\n"
             f"Debatten-Digest — Kernaussagen der Debatte (falls du selbst nicht dabei warst, ist das "
@@ -1298,6 +1437,7 @@ class Debatte:
             '"uebertragbarkeit": 0-10, "karrierewirkung": 0-10, "interview_chance": 0-10}, '
             '"votum": "Bewerben|Bedingt|Nicht", "begruendung": "<2-3 Sätze aus deiner Brille>"}'
         )
+        return prompt + _ausgabesprache_hinweis(json_antwort=True)
 
     @staticmethod
     def _stimme_gueltig(parsed: dict | None) -> bool:
@@ -1328,6 +1468,8 @@ class Debatte:
                                           task_id=self.task_id)
                         self._erfassen(kosten)     # kein Notbremse-Raise hier — s. _erfassen-Docstring
                         parsed = self._json_extrahieren(roh)
+                        if isinstance(parsed, dict) and "votum" in parsed:
+                            parsed["votum"] = _wert_normalisieren("votum", parsed["votum"])
                         if self._stimme_gueltig(parsed):
                             await self._ev("votum", kopf=m["id"], anzeige=m["anzeige"], farbe=m["farbe"],
                                           stimme=parsed, enthaltung=False)
@@ -1395,7 +1537,7 @@ class Debatte:
             else:
                 stimmen_detail.append(f"- {m['anzeige']}: ENTHALTUNG (Abstimmung technisch fehlgeschlagen)")
         koepfe_liste = ", ".join(f"{m['id']} = {m['anzeige']}" for m in self.mitglieder.values())
-        return (
+        prompt = (
             f"STELLE: {self.thema}\n\nKontext:\n{self.kontext or '(keiner)'}\n\n"
             f"Debatten-Verlauf ({len(self.beitraege)} Beiträge):\n{self._transkript()}\n\n"
             f"BEREITS BERECHNETE ENTSCHEIDUNG (übernimm diese Zahlen EXAKT, erfinde keine eigenen):\n"
@@ -1418,12 +1560,14 @@ class Debatte:
             "kern_je_kopf für ALLE sieben Köpfe aus der Liste, auch wer nicht in der Debatte saß "
             "(dann aus dem Votum-Grund)."
         )
+        return prompt + _ausgabesprache_hinweis(json_antwort=True)
 
     # — Hauptlauf —
     async def laufen(self):
         try:
-            await self._ev("status", text=f"Debatte eröffnet — mindestens {self.min_beitraege} Beiträge, "
-                                          f"{len(self.teilnehmer)} Köpfe am Tisch.")
+            await self._ev("status", text=tx("Debatte eröffnet — mindestens {minimum} Beiträge, "
+                                             "{koepfe} Köpfe am Tisch.",
+                                             minimum=self.min_beitraege, koepfe=len(self.teilnehmer)))
             # Phase 77 (Bau-Stufe B): Vorwärm-Schleuse NUR im Keychain-Fallback (Auth-Weg c,
             # Entscheidung 1 — weder keys.json-Key noch agent.env-Token vorhanden). Bei
             # vorhandenem Key/Token läuft der Turn ohnehin über eine stabile, nicht-rotierende
@@ -1458,21 +1602,25 @@ class Debatte:
                                           task_id=self.task_id)
                         self._erfassen(kosten)
                         entscheidung = self._json_extrahieren(roh)
+                        if isinstance(entscheidung, dict) and "aktion" in entscheidung:
+                            entscheidung["aktion"] = _wert_normalisieren("aktion", entscheidung["aktion"])
                         if entscheidung:
                             break
-                        letzter_fehler = f"nicht als JSON parsebar: {roh[:200]}"
+                        letzter_fehler = tx("nicht als JSON parsebar: {roh}", roh=roh[:200])
                     except Exception as ex:
                         self._erfassen(getattr(ex, "kosten_usd", 0.0) or 0.0)
                         letzter_fehler = str(ex)[:300]
                 self._notbremse_pruefen()
                 self._abbruch_pruefen()
                 if not entscheidung:
-                    raise RuntimeError(f"Vorsitz-Antwort fehlgeschlagen (nach Retry): {letzter_fehler}")
+                    raise RuntimeError(tx("Vorsitz-Antwort fehlgeschlagen (nach Retry): {fehler}",
+                                          fehler=letzter_fehler))
                 if entscheidung.get("aktion") == "abschluss":
                     if len(self.beitraege) >= self.min_beitraege:
                         vorsitz_name = self.mitglieder[self.vorsitz_id]["anzeige"]
-                        await self._ev("moderation", text=f"{vorsitz_name} schließt die Debatte: "
-                                                          f"{entscheidung.get('begruendung', '')}")
+                        await self._ev("moderation", text=tx("{vorsitz} schließt die Debatte: {begruendung}",
+                                                             vorsitz=vorsitz_name,
+                                                             begruendung=entscheidung.get('begruendung', '')))
                         break
                     entscheidung = None  # verfrühter Abschluss → ignorieren, weiter dispatchen
                 if not entscheidung or entscheidung.get("kopf") not in self.mitglieder:
@@ -1481,14 +1629,16 @@ class Debatte:
                     for b in self.beitraege:
                         zaehler[b["kopf"]] = zaehler.get(b["kopf"], 0) + 1
                     kopf_id = min(zaehler, key=lambda k: zaehler[k])
-                    frage, begruendung = f"Deine Sicht auf: {self.thema}", "Reihum-Fallback"
+                    frage = tx("Deine Sicht auf: {thema}", thema=self.thema)
+                    begruendung = tx("Reihum-Fallback")
                 else:
                     kopf_id = entscheidung["kopf"]
-                    frage = entscheidung.get("frage") or f"Deine Sicht auf: {self.thema}"
+                    frage = entscheidung.get("frage") or tx("Deine Sicht auf: {thema}", thema=self.thema)
                     begruendung = entscheidung.get("begruendung", "")
                 m = self.mitglieder[kopf_id]
                 vorsitz_name = self.mitglieder[self.vorsitz_id]["anzeige"]
-                mod_text = f"{vorsitz_name} ruft {m['anzeige']} auf — {begruendung} „{frage}“"
+                mod_text = tx("{vorsitz} ruft {kopf} auf — {begruendung} „{frage}“",
+                              vorsitz=vorsitz_name, kopf=m['anzeige'], begruendung=begruendung, frage=frage)
                 mod_ts = datetime.now().isoformat(timespec="seconds")
                 await self._ev("moderation", text=mod_text)
 
@@ -1531,8 +1681,8 @@ class Debatte:
                     # Die Live-Ansicht bekommt trotzdem ein ehrliches Ende für die offene
                     # "schreibt…"-Bubble (beitrag_ende), statt für immer hängen zu bleiben.
                     await self._ev("beitrag_ende", kopf=kopf_id, nr=nr,
-                                   text=f"(kein Beitrag — nach Fehler übersprungen: {letzter_fehler})")
-                    await self._ev("status", text=f"{m['anzeige']} übersprungen (Fehler nach Retry).")
+                                   text=tx("(kein Beitrag — nach Fehler übersprungen: {fehler})", fehler=letzter_fehler))
+                    await self._ev("status", text=tx("{kopf} übersprungen (Fehler nach Retry).", kopf=m['anzeige']))
                     self._notbremse_pruefen()
                     self._abbruch_pruefen()
                     continue
@@ -1547,7 +1697,7 @@ class Debatte:
                 self._abbruch_pruefen()
 
             if self.stop_gewuenscht:
-                await self._ev("status", text="Debatte auf Wunsch gestoppt.")
+                await self._ev("status", text=tx("Debatte auf Wunsch gestoppt."))
             self._abbruch_pruefen()   # hart abgebrochen während/nach der letzten Runde? → raus,
                                       # OHNE Abstimmung/Synthese (anders als der sanfte Stopp oben)
 
@@ -1574,9 +1724,10 @@ class Debatte:
                                           task_id=self.task_id)
                         self._erfassen(kosten)     # kein Notbremse-Raise hier — s. _erfassen-Docstring
                         parsed = self._json_extrahieren(roh)
+                        _risiko_board_normalisieren(parsed)
                         if parsed:
                             break
-                        letzter_fehler = f"nicht als JSON parsebar: {roh[:200]}"
+                        letzter_fehler = tx("nicht als JSON parsebar: {roh}", roh=roh[:200])
                     except Exception as ex:
                         letzter_fehler = str(ex)[:300]
                 self._notbremse_pruefen()
@@ -1588,13 +1739,13 @@ class Debatte:
                     # aber im Dashboard aus, statt das Ergebnis wegzuwerfen.
                     self.synthese_fehler = letzter_fehler
                     parsed = {
-                        "begruendung": ("Die zusammenfassende Einordnung der Vorsitzenden konnte "
-                                        "technisch nicht erzeugt werden. Ampel, Gesamtscore und die "
-                                        "sieben Einzelvoten unten sind davon unberührt — sie werden "
-                                        "deterministisch aus der Abstimmung berechnet, nicht aus "
-                                        "diesem Text."),
-                        "empfehlung": ("Die Einzelbeiträge der Runde und die Voten unten geben den "
-                                       "Diskussionsstand vollständig wieder."),
+                        "begruendung": tx("Die zusammenfassende Einordnung der Vorsitzenden konnte "
+                                          "technisch nicht erzeugt werden. Ampel, Gesamtscore und die "
+                                          "sieben Einzelvoten unten sind davon unberührt — sie werden "
+                                          "deterministisch aus der Abstimmung berechnet, nicht aus "
+                                          "diesem Text."),
+                        "empfehlung": tx("Die Einzelbeiträge der Runde und die Voten unten geben den "
+                                         "Diskussionsstand vollständig wieder."),
                     }
                 self.check_synthese = parsed
                 await self._ev("synthese_ende", text=json.dumps(parsed, ensure_ascii=False))
@@ -1619,7 +1770,7 @@ class Debatte:
             await self._ev("fertig", beitraege=len(self.beitraege))
         except _HartAbbruch:
             self.status = "abgebrochen"
-            self.fehler = "Vom Nutzer über das Task-Center abgebrochen."
+            self.fehler = tx("Vom Nutzer über das Task-Center abgebrochen.")
             await self._ev("fehler", text=self.fehler)
         except Exception as e:
             self.status = "fehler"
@@ -1709,7 +1860,7 @@ class Debatte:
     # — Persistenz —
     def _speichern(self):
         DATEN_DIR.mkdir(parents=True, exist_ok=True)
-        (DATEN_DIR / f"{self.id}.json").write_text(json.dumps(self.als_dict(), ensure_ascii=False, indent=1))
+        (DATEN_DIR / f"{self.id}.json").write_text(json.dumps(self.als_dict(), ensure_ascii=False, indent=1), encoding="utf-8")
 
     def als_dict(self) -> dict:
         return {"id": self.id, "thema": self.thema, "kontext": self.kontext,
@@ -1794,9 +1945,9 @@ def _task_abschliessen(d: Debatte) -> None:
     else:
         result = {"debatte_id": d.id, "beitraege": len(d.beitraege)}
     if d.provider == "openai":
-        result["hinweis"] = "OpenAI-Kosten nicht erfasst (nur Anthropic-Turns fließen in cost_usd ein)"
+        result["hinweis"] = tx("OpenAI-Kosten nicht erfasst (nur Anthropic-Turns fließen in cost_usd ein)")
     elif d.provider == "codex":
-        result["hinweis"] = "ChatGPT-Abo: keine Kosten in USD erfasst (cost_usd bleibt 0), der Verbrauch hängt am Abo"
+        result["hinweis"] = tx("ChatGPT-Abo: keine Kosten in USD erfasst (cost_usd bleibt 0), der Verbrauch hängt am Abo")
     with Session(engine) as s:
         t = s.get(AgentTask, d.task_id)
         if not t:
@@ -1856,14 +2007,51 @@ def stop(debatte_id: str) -> bool:
     return True
 
 
+# Alte Debatten auf Englisch (P2-96): Die deutschen Originale bleiben, Übersetzungen liegen in `data/beirat/en/`
+# (`pipeline/beirat_uebersetzen.py`). Fehlt eine, erscheint das Original.
+_TITEL_DE_RE = re.compile(r"^Stellen-Check: Soll sich (?P<name>.+?) auf „(?P<titel>.+)“ bei (?P<firma>.+) bewerben\? "
+                          r"\(Job (?P<job_id>\d+)\)$", re.S)
+
+
+def _thema_auf_englisch(thema: str) -> str:
+    """Der Titel einer alten Stellen-Prüfung folgt einem festen Muster und braucht keine KI."""
+    treffer = _TITEL_DE_RE.match(thema or "")
+    if not treffer:
+        return thema
+    return tx("Stellen-Check: Soll sich {name} auf „{titel}“ bei {firma} bewerben? (Job {job_id})",
+              name=treffer["name"], titel=treffer["titel"], firma=treffer["firma"], job_id=treffer["job_id"])
+
+
+def debatte_aus_datei(f: Path) -> dict:
+    """Debatten sind UTF-8. Ältere Dateien unter Windows wurden ohne feste Kodierung geschrieben, also als cp1252."""
+    roh = f.read_bytes()
+    try:
+        return json.loads(roh.decode("utf-8"))
+    except UnicodeDecodeError:
+        return json.loads(roh.decode("cp1252"))
+
+
+def _englische_fassung(debatte_id: str) -> dict | None:
+    f = DATEN_DIR / "en" / f"{debatte_id}.json"
+    try:
+        return debatte_aus_datei(f) if f.is_file() else None
+    except (OSError, ValueError):
+        return None
+
+
 def debatten_liste() -> list[dict]:
     """Alle gespeicherten Debatten (Dateien), neueste zuerst — schlank für die Übersicht."""
     out = []
+    englisch = sprache.aktuell() == "en"
     if DATEN_DIR.exists():
         for f in sorted(DATEN_DIR.glob("*.json"), reverse=True):
             try:
-                d = json.loads(f.read_text())
-                out.append({"id": d["id"], "thema": d["thema"], "status": d["status"],
+                d = debatte_aus_datei(f)
+                thema = d["thema"]
+                if englisch:
+                    fassung = _englische_fassung(d["id"])
+                    thema = fassung["thema"] if fassung else _thema_auf_englisch(thema)
+                out.append({"id": d["id"], "thema": thema, "status": d["status"],
                             "gestartet": d["gestartet"], "beitraege": len(d.get("beitraege", [])),
                             "min_beitraege": d.get("min_beitraege"),
                             "modus": d.get("modus", "frei"), "job_id": d.get("job_id")})
@@ -1878,7 +2066,14 @@ def debatte_lesen(debatte_id: str) -> dict | None:
         return d.als_dict()
     f = DATEN_DIR / f"{debatte_id}.json"
     if f.exists() and f.resolve().parent == DATEN_DIR.resolve():
-        return json.loads(f.read_text())
+        if sprache.aktuell() == "en":
+            fassung = _englische_fassung(debatte_id)
+            if fassung:
+                return fassung
+            original = debatte_aus_datei(f)
+            original["thema"] = _thema_auf_englisch(original.get("thema", ""))
+            return original
+        return debatte_aus_datei(f)
     return None
 
 
@@ -1963,6 +2158,13 @@ def _de_zahl(x: float, nachkomma: int = 1) -> str:
     return f"{x:.{nachkomma}f}".replace(".", ",")
 
 
+def _zahl(x: float, nachkomma: int = 1) -> str:
+    """Zahl im Dashboard: deutsch mit Komma, englisch mit Punkt. Die Notiz an der Datei (`_jobfile_registrieren`)
+    bleibt bei `_de_zahl`, weil `export_excel` sie mit Komma liest."""
+    text = f"{x:.{nachkomma}f}"
+    return text if sprache.aktuell() == "en" else text.replace(".", ",")
+
+
 def _score_balken_html(bereichs_avg: dict) -> str:
     zeilen = []
     for bereich in ABSTIMMUNGS_BEREICHE:
@@ -1970,17 +2172,17 @@ def _score_balken_html(bereichs_avg: dict) -> str:
         pct = max(0, min(100, wert / 10 * 100))
         stufe = max(1, min(5, round(wert)))   # Phase 80 §18.4: Score 0-10 → Stufe 1..5 für die Fill-Farbe
         zeilen.append(
-            f'<div class="scorebar-row"><span>{_esc(BEREICHS_LABEL[bereich])}</span>'
+            f'<div class="scorebar-row"><span>{_esc(_bereichs_label_anzeige(bereich))}</span>'
             f'<div class="scorebar-track"><div class="scorebar-fill" '
             f'style="width:{pct:.0f}%;background:{zustandsfarben.score_farbe(stufe)[0]}"></div></div>'
-            f'<span class="scorebar-val">{_de_zahl(wert)}</span></div>'
+            f'<span class="scorebar-val">{_zahl(wert)}</span></div>'
         )
     return "\n".join(zeilen)
 
 
 def _risiko_board_html(zeilen: list) -> str:
     if not zeilen:
-        return '<p class="kv">Kein Risiko-Board geliefert — im Zweifel selbst nachfragen.</p>'
+        return '<p class="kv">' + tx("Kein Risiko-Board geliefert — im Zweifel selbst nachfragen.") + '</p>'
     zeilen = sorted(zeilen, key=lambda z: {"hoch": 0, "mittel": 1, "gering": 2}.get(z.get("schwere"), 3))
     rows = []
     for z in zeilen:
@@ -1989,34 +2191,35 @@ def _risiko_board_html(zeilen: list) -> str:
         status_icon = _STATUS_ICON.get(z.get("status"), "❓")
         rows.append(
             f'<tr><td>{icon}</td><td>{_esc(z.get("risiko"))}</td>'
-            f'<td class="{klasse}">{_esc((z.get("schwere") or "").capitalize())}</td>'
+            f'<td class="{klasse}">{_esc(_schwere_anzeige(z.get("schwere")))}</td>'
             f'<td>{status_icon}</td><td>{_esc(z.get("naechster_schritt") or "—")}</td></tr>'
         )
     return (
-        '<table class="score risiko"><thead><tr><th></th><th>Risiko / Offener Punkt</th>'
-        '<th>Schwere</th><th>Status</th><th>Nächster Schritt</th></tr></thead>'
+        '<table class="score risiko"><thead><tr><th></th>'
+        f'<th>{tx("Risiko / Offener Punkt")}</th><th>{tx("Schwere")}</th><th>{tx("Status")}</th>'
+        f'<th>{tx("Nächster Schritt")}</th></tr></thead>'
         f'<tbody>{"".join(rows)}</tbody></table>'
     )
 
 
 def _stimmen_matrix_html(abstimmung: dict, mitglieder: dict) -> str:
     kopf_ids = sorted(mitglieder.keys())
-    head_labels = "".join(f'<th>{_esc(BEREICHS_KURZ[b])}</th>' for b in ABSTIMMUNGS_BEREICHE)
+    head_labels = "".join(f'<th>{_esc(_bereichs_kurz_anzeige(b))}</th>' for b in ABSTIMMUNGS_BEREICHE)
     rows = []
     for kid in kopf_ids:
         m = mitglieder[kid]
         stimme = abstimmung.get(kid)
         if not stimme:
             rows.append(f'<tr><td>{_esc(m["anzeige"])}</td>' + "<td>—</td>" * len(ABSTIMMUNGS_BEREICHE)
-                       + '<td class="enthaltung">Enthaltung</td></tr>')
+                       + '<td class="enthaltung">' + tx("Enthaltung") + '</td></tr>')
             continue
         scores = stimme.get("scores", {})
         score_cells = "".join(f'<td>{scores.get(b, 0):.0f}</td>' for b in ABSTIMMUNGS_BEREICHE)
         votum = stimme.get("votum", "")
         klasse = _VOTUM_KLASSE.get(votum, "")
-        rows.append(f'<tr><td>{_esc(m["anzeige"])}</td>{score_cells}<td class="{klasse}">{_esc(votum)}</td></tr>')
+        rows.append(f'<tr><td>{_esc(m["anzeige"])}</td>{score_cells}<td class="{klasse}">{_esc(_votum_anzeige(votum))}</td></tr>')
     return (
-        f'<table class="stimmen"><thead><tr><th>Kopf</th>{head_labels}<th>Votum</th></tr></thead>'
+        f'<table class="stimmen"><thead><tr><th>{tx("Kopf")}</th>{head_labels}<th>{tx("Votum")}</th></tr></thead>'
         f'<tbody>{"".join(rows)}</tbody></table>'
     )
 
@@ -2026,7 +2229,7 @@ def _kern_je_kopf_html(kern_liste: list, mitglieder: dict) -> str:
     items = []
     for kid in sorted(mitglieder.keys()):
         m = mitglieder[kid]
-        kern = kern_map.get(kid) or "(kein Kern geliefert)"
+        kern = kern_map.get(kid) or tx("(kein Kern geliefert)")
         items.append(f'<li><b>{_esc(m["anzeige"])}:</b> {_esc(kern)}</li>')
     return f'<ul class="clean">{"".join(items)}</ul>'
 
@@ -2040,45 +2243,57 @@ def _verlauf_html(beitraege: list, moderationen: list) -> str:
             f'{_esc(b.get("anzeige"))}</p><p class="frage">{_esc(mod.get("text"))}</p>'
             f'<p>{_esc(b.get("text"))}</p></div>'
         )
-    return "\n".join(teile) if teile else "<p>(keine Debatten-Beiträge)</p>"
+    return "\n".join(teile) if teile else "<p>" + tx("(keine Debatten-Beiträge)") + "</p>"
 
 
-def _dashboard_html(d: "Debatte") -> str:
+def _dashboard_html(d: "Debatte", stand: datetime | None = None) -> str:
+    """`stand`: Datum im Bericht, sonst jetzt. Eine spätere Übersetzung behält so das Datum der Debatte (P2-96)."""
     e, cs = d.entscheidung, d.check_synthese
-    emoji, klasse, dotklasse, label = _AMPEL_META[e["ampel"]]
-    heute_iso = datetime.now().strftime("%Y-%m-%d")
-    heute_de = datetime.now().strftime("%d.%m.%Y %H:%M")
+    emoji, klasse, dotklasse, _label_de = _AMPEL_META[e["ampel"]]
+    label = _ampel_anzeige(e["ampel"])
+    stand = stand or datetime.now()
+    heute_iso = stand.strftime("%Y-%m-%d")
+    heute_de = stand.strftime("%d/%m/%Y %H:%M" if sprache.aktuell() == "en" else "%d.%m.%Y %H:%M")
     n_enthaltungen = len(e["enthaltungen"])
-    stimmen_text = f'{e["stimmen"]["Bewerben"]}/7 Bewerben'
-    if n_enthaltungen:
-        stimmen_text += f" ({n_enthaltungen} Enthaltung{'en' if n_enthaltungen != 1 else ''})"
+    stimmen_text = tx("{n}/7 Bewerben", n=e["stimmen"]["Bewerben"])
+    if n_enthaltungen == 1:
+        stimmen_text += " " + tx("({n} Enthaltung)", n=n_enthaltungen)
+    elif n_enthaltungen:
+        stimmen_text += " " + tx("({n} Enthaltungen)", n=n_enthaltungen)
 
     bedingt_html = ""
     if e["ampel"] == "Bedingt" and cs.get("bedingt_bedingungen"):
         punkte = "".join(f"<li>{_esc(p)}</li>" for p in cs["bedingt_bedingungen"])
-        bedingt_html = f'<div style="margin-top:12px"><p class="kv">Bedingungen</p><ul class="clean">{punkte}</ul></div>'
+        bedingt_html = (f'<div style="margin-top:12px"><p class="kv">{tx("Bedingungen")}</p>'
+                        f'<ul class="clean">{punkte}</ul></div>')
 
-    titel_seite = f"Beirats-Stellen-Check · {_esc(d.job_firma)}"
+    titel_seite = tx("Beirats-Stellen-Check") + f" · {_esc(d.job_firma)}"
     meta_html = (
-        f'<div><p class="k">Ampel</p><p class="v"><span class="dot {dotklasse}"></span>{label}</p></div>'
-        f'<div><p class="k">Gesamtscore</p><p class="v">{_de_zahl(e["gesamt"])} / 10</p></div>'
-        f'<div><p class="k">Stimmen</p><p class="v">{_esc(stimmen_text)}</p></div>'
-        f'<div><p class="k">Datum</p><p class="v">{heute_iso}</p></div>'
+        f'<div><p class="k">{tx("Ampel")}</p><p class="v"><span class="dot {dotklasse}"></span>{label}</p></div>'
+        f'<div><p class="k">{tx("Gesamtscore")}</p><p class="v">{_zahl(e["gesamt"])} / 10</p></div>'
+        f'<div><p class="k">{tx("Stimmen")}</p><p class="v">{_esc(stimmen_text)}</p></div>'
+        f'<div><p class="k">{tx("Datum")}</p><p class="v">{heute_iso}</p></div>'
     )
+    hinweis_wort = tx("Hinweis:")
     warn_html = ""
     if d.company_fit_fehlt:
-        warn_html = ('<div class="caveat"><b>Hinweis:</b> Für diese Firma lag noch kein '
-                     "Company-Fit-Check vor — der Beirat hat auf dieser Lücke ausdrücklich debattiert, "
-                     "keine Annahmen ersetzt.</div>")
+        warn_html = ('<div class="caveat"><b>' + hinweis_wort + '</b> '
+                     + tx("Für diese Firma lag noch kein Company-Fit-Check vor — der Beirat hat auf dieser "
+                          "Lücke ausdrücklich debattiert, keine Annahmen ersetzt.") + "</div>")
     if getattr(d, "synthese_fehler", None):
-        warn_html += ('<div class="caveat"><b>Hinweis:</b> Die zusammenfassende Einordnung der '
-                      "Vorsitzenden fehlt — sie konnte technisch nicht erzeugt werden ("
-                      + _esc(str(d.synthese_fehler)[:160]) + "). Ampel, Gesamtscore und die sieben "
-                      "Voten sind davon unberührt.</div>")
+        warn_html += ('<div class="caveat"><b>' + hinweis_wort + '</b> '
+                      + tx("Die zusammenfassende Einordnung der Vorsitzenden fehlt — sie konnte technisch "
+                           "nicht erzeugt werden ({grund}). Ampel, Gesamtscore und die sieben "
+                           "Voten sind davon unberührt.", grund=_esc(str(d.synthese_fehler)[:160])) + "</div>")
+    unbekannte_rolle = tx("Unbekannte Rolle")
+    firma_zeile = tx("{firma} · Job {job_id} · {datum}", firma=_esc(d.job_firma), job_id=d.job_id, datum=heute_iso)
+    banner_sub = tx("Gesamtscore {score} / 10 · {stimmen}", score=_zahl(e["gesamt"]), stimmen=_esc(stimmen_text))
+    verlauf_titel = tx("{n} Beiträge anzeigen/verbergen", n=len(d.beitraege))
+    fuss_links = tx("Bewerbungs-Mgmt · erzeugt am {datum}", datum=heute_de)
 
     _FAVICON = favicon_link()      # P2-72: Icon des geltenden Designs, bei jedem Dashboard frisch
     return f"""<!DOCTYPE html>
-<html lang="de">
+<html lang="{sprache.html_lang()}">
 <head>
 <meta charset="utf-8">{_FAVICON}
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -2088,47 +2303,47 @@ def _dashboard_html(d: "Debatte") -> str:
 <body>
 <div class="wrap">
   <header class="head">
-    <p class="eyebrow">Beirats-Stellen-Check</p>
-    <h1>{_esc(d.job_titel) or "Unbekannte Rolle"}</h1>
-    <p class="sub">{_esc(d.job_firma)} · Job {d.job_id} · {heute_iso}</p>
+    <p class="eyebrow">{tx("Beirats-Stellen-Check")}</p>
+    <h1>{_esc(d.job_titel) or unbekannte_rolle}</h1>
+    <p class="sub">{firma_zeile}</p>
     <div class="meta">{meta_html}</div>
   </header>
 
   {warn_html}
 
-  <h2 class="sec">1. Kurzentscheidung</h2>
+  <h2 class="sec">{tx("1. Kurzentscheidung")}</h2>
   <div class="ampel-banner {klasse}">
     <div><div class="titel">{emoji} {label}</div>
-      <div class="sub">Gesamtscore {_de_zahl(e["gesamt"])} / 10 · {_esc(stimmen_text)}</div></div>
+      <div class="sub">{banner_sub}</div></div>
   </div>
   <div class="scorebars">{_score_balken_html(e["bereichs_avg"])}</div>
   {bedingt_html}
 
-  <h2 class="sec">2. Risiko-Board</h2>
+  <h2 class="sec">{tx("2. Risiko-Board")}</h2>
   {_risiko_board_html(cs.get("risiko_board"))}
 
-  <h2 class="sec">3. Begründung, Kern je Kopf &amp; Empfehlung</h2>
+  <h2 class="sec">{tx("3. Begründung, Kern je Kopf &amp; Empfehlung")}</h2>
   <div class="card">
-    <p class="kv">Begründung</p>
+    <p class="kv">{tx("Begründung")}</p>
     <p>{_esc(cs.get("begruendung"))}</p>
-    <p class="kv" style="margin-top:14px">Kern je Kopf</p>
+    <p class="kv" style="margin-top:14px">{tx("Kern je Kopf")}</p>
     {_kern_je_kopf_html(cs.get("kern_je_kopf"), d.mitglieder)}
-    <p class="kv" style="margin-top:14px">Empfehlung</p>
+    <p class="kv" style="margin-top:14px">{tx("Empfehlung")}</p>
     <p>{_esc(cs.get("empfehlung"))}</p>
   </div>
 
-  <h2 class="sec">4. Abstimmungs-Matrix (alle 7 Köpfe)</h2>
+  <h2 class="sec">{tx("4. Abstimmungs-Matrix (alle 7 Köpfe)")}</h2>
   {_stimmen_matrix_html(d.abstimmung, d.mitglieder)}
 
-  <h2 class="sec">5. Debatten-Verlauf</h2>
+  <h2 class="sec">{tx("5. Debatten-Verlauf")}</h2>
   <details class="volltext">
-    <summary>{len(d.beitraege)} Beiträge anzeigen/verbergen</summary>
+    <summary>{verlauf_titel}</summary>
     <div class="inner">{_verlauf_html(d.beitraege, d.moderationen)}</div>
   </details>
 
   <div class="foot">
-    <span>Bewerbungs-Mgmt · erzeugt am {heute_de}</span>
-    <span>Beirats-Einschätzung — empfiehlt, entscheidet nicht. Das letzte Wort hast du.</span>
+    <span>{fuss_links}</span>
+    <span>{tx("Beirats-Einschätzung — empfiehlt, entscheidet nicht. Das letzte Wort hast du.")}</span>
   </div>
 </div>
 </body>

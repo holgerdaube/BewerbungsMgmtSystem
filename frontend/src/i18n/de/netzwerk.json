@@ -1,0 +1,243 @@
+{
+  "lade": "Lade…",
+  "untertitel": "Zielfirmen, Headhunter und Netzwerk-Kontakte, die Sie hier pflegen. Zielfirmen-Sweep und Headhunter-Suche prüfen die ersten beiden Listen reihum auf passende Stellen.",
+  "tab": {
+    "targets": "Zielfirmen",
+    "hh": "Headhunter",
+    "nc": "Netzwerk-Kontakte"
+  },
+  "knopf": {
+    "abbrechen": "Abbrechen",
+    "anlegen": "Anlegen",
+    "anlegen_laeuft": "Anlegen…",
+    "speichern": "Speichern",
+    "speichern_laeuft": "Speichern…",
+    "gespeichert": "✓ Gespeichert",
+    "loeschen": "🗑 Löschen",
+    "schliessen": "Schließen"
+  },
+  "fehler": {
+    "speichern": "Speichern fehlgeschlagen",
+    "anlegen": "Anlegen fehlgeschlagen",
+    "wiederherstellen": "Wiederherstellen fehlgeschlagen",
+    "name_pflicht": "Name ist Pflicht",
+    "firma_pflicht": "Firma ist Pflicht",
+    "datum_pflicht": "Datum ist Pflicht",
+    "import_abgelehnt": "Der Server hat die Datei nicht angenommen (Status {{status}}).",
+    "import_unerwartet": "Der Server hat eine unerwartete Antwort geschickt.",
+    "anfrage_netz": "Die Anfrage ist fehlgeschlagen. Der Server antwortet nicht, oder die Datei wurde nach der Auswahl geändert. Wählen Sie die Datei dann erneut aus.",
+    "anfrage": "Die Anfrage ist fehlgeschlagen."
+  },
+  "loeschen_bestaetigung": "„{{name}}\" wirklich löschen? (Der Eintrag verschwindet aus allen Listen und wird nicht mehr geprüft.)",
+  "feld": {
+    "company": "Firma",
+    "industry": "Branche",
+    "size_ma": "Größe (MA)",
+    "revenue": "Umsatz",
+    "location_hq": "HQ",
+    "ownership": "Eigentümer",
+    "tier": "Tier",
+    "scenario": "Szenario",
+    "key_contact": "Key Contact",
+    "connection_status": "Status",
+    "website": "Webseite",
+    "karriere_url": "Karriereseite",
+    "wachstumssignal": "Wachstumssignal",
+    "ki_readiness": "KI-Readiness",
+    "einschaetzung": "Einschätzung",
+    "ranking": "Ranking",
+    "last_update": "Letzte Aktualisierung",
+    "firma": "Firma",
+    "ansprechpartner": "Ansprechpartner",
+    "fokus": "Fokus",
+    "region": "Region",
+    "kanal": "Kanal",
+    "linkedin_gefolgt": "LinkedIn gefolgt",
+    "letzter_kontakt": "Letzter Kontakt",
+    "status": "Status",
+    "webseite": "Webseite",
+    "notizen": "Notizen",
+    "name": "Name",
+    "beziehung": "Beziehung",
+    "unternehmen": "Unternehmen",
+    "rolle": "Rolle",
+    "prioritaet": "Priorität",
+    "next_action": "Nächste Aktion",
+    "next_action_date": "Fällig am",
+    "source": "Quelle"
+  },
+  "form": {
+    "groesse": "Größe",
+    "website": "Website",
+    "faellig_default": "Fällig am (Default +10 Werktage)"
+  },
+  "platzhalter": {
+    "name_pflicht": "Name *",
+    "firma_pflicht": "Firma *",
+    "prioritaet": "Priorität…",
+    "tier": "Tier…",
+    "szenario": "Szenario…",
+    "webseite_hh": "Webseite (https://… — Basis für die Mandats-Suche)",
+    "person": "Person",
+    "notiz": "Notiz…",
+    "gegenueber": "Gegenüber…"
+  },
+  "wert": {
+    "Hoch": "Hoch",
+    "Mittel": "Mittel",
+    "Niedrig": "Niedrig",
+    "Netzwerk": "Netzwerk",
+    "Recruiter": "Recruiter",
+    "Hiring Manager": "Hiring Manager",
+    "Fachbereich": "Fachbereich",
+    "Headhunter": "Headhunter",
+    "Sonstige": "Sonstige",
+    "LinkedIn": "LinkedIn",
+    "E-Mail": "E-Mail",
+    "Telefon": "Telefon",
+    "Persönlich": "Persönlich",
+    "Offen": "Offen"
+  },
+  "nc": {
+    "neu_titel": "Neuen Kontakt anlegen",
+    "anlegen": "+ Kontakt anlegen",
+    "zaehler_one": "{{count}} Kontakte · Zeile anklicken = bearbeiten",
+    "zaehler_other": "{{count}} Kontakte · Zeile anklicken = bearbeiten",
+    "leer": "Noch keine Kontakte."
+  },
+  "tc": {
+    "neu_titel": "Neue Zielfirma anlegen",
+    "anlegen": "+ Zielfirma anlegen",
+    "zaehler_one": "{{count}} Zielfirmen · Zeile anklicken = bearbeiten",
+    "zaehler_other": "{{count}} Zielfirmen · Zeile anklicken = bearbeiten"
+  },
+  "hh": {
+    "neu_titel": "Neuen Headhunter anlegen",
+    "anlegen": "+ Headhunter anlegen",
+    "zaehler_one": "{{count}} Headhunter-Einträge · Zeile anklicken = bearbeiten",
+    "zaehler_other": "{{count}} Headhunter-Einträge · Zeile anklicken = bearbeiten",
+    "zaehler_blatt_one": "{{count}} Headhunter-Einträge · Zeile anklicken = bearbeiten (nur „Blatt\")",
+    "zaehler_blatt_other": "{{count}} Headhunter-Einträge · Zeile anklicken = bearbeiten (nur „Blatt\")"
+  },
+  "zeile_outreach_tooltip": "Outreach-Zeile — über /outreach pflegen",
+  "eintraege_one": "{{count}} Eintrag",
+  "eintraege_other": "{{count}} Einträge",
+  "karriere": {
+    "pruefung": "Karriere-Check: {{datum}}",
+    "zielfirmen_sweep": "(vom zielfirmen-sweep gepflegt, nicht hier editierbar)",
+    "headhunter_suche": "(von der headhunter-suche gepflegt, nicht hier editierbar)"
+  },
+  "papierkorb": {
+    "titel": "🗑 Papierkorb ({{anzahl}})",
+    "hinweis": "gelöschte Einträge — wiederherstellbar",
+    "geloescht": "gelöscht {{datum}}",
+    "wiederherstellen_laeuft": "Wird wiederhergestellt…",
+    "wiederherstellen": "↩ Wiederherstellen"
+  },
+  "gespraech": {
+    "titel": "Gespräche ({{anzahl}})",
+    "erfassen": "🎙 Gespräch erfassen",
+    "vor_ort_titel": "Persönlich vor Ort",
+    "loeschen_titel": "Löschen",
+    "vor_ort": "vor Ort",
+    "loeschen_bestaetigung": "Dieses Gespräch wirklich löschen?"
+  },
+  "import": {
+    "titel_zielfirmen": "Zielfirmen aus Datei importieren",
+    "titel_headhunter": "Headhunter aus Datei importieren",
+    "titel_kontakte": "Netzwerk-Kontakte aus Datei importieren",
+    "info": "Laden Sie eine CSV- oder Excel-Datei hoch. Die Spalten werden an ihrer Überschrift erkannt. Zuerst sehen Sie eine Vorschau. Vorhandene Einträge werden nur um leere Felder ergänzt, in der App gelöschte bleiben gelöscht.",
+    "info_kontakte": "Laden Sie eine CSV- oder Excel-Datei hoch. Die Spalten werden an ihrer Überschrift erkannt. Auch die Datei Connections.csv aus dem LinkedIn-Datenexport können Sie verwenden. Zuerst sehen Sie eine Vorschau. Vorhandene Einträge werden nur um leere Felder ergänzt, in der App gelöschte bleiben gelöscht.",
+    "knopf": "Aus Datei importieren",
+    "datei_waehlen": "Datei auswählen",
+    "keine_datei": "Keine Datei ausgewählt",
+    "vorlage": "Vorlage:",
+    "vorlage_csv": "Vorlage als CSV-Datei herunterladen",
+    "vorlage_excel": "Vorlage als Excel-Datei herunterladen",
+    "pruefen": "Datei wird geprüft…",
+    "erkannt": "Erkannt: <fett>{{format}}</fett>",
+    "datenzeilen_one": "{{zahl}} Datenzeile",
+    "datenzeilen_other": "{{zahl}} Datenzeilen",
+    "spalten_erkannt": "Erkannte Spalten",
+    "spalten_keine": "Keine Spalte erkannt.",
+    "spalten_ignoriert": "Nicht verwendete Spalten",
+    "keine_datenzeilen": "Die Datei enthält keine Datenzeilen. Tragen Sie Einträge unter der Kopfzeile ein.",
+    "gekuerzt": "Weitere Zeilen ohne Besonderheiten sind nicht aufgeführt.",
+    "importieren": "Importieren",
+    "importieren_mit": "Importieren ({{teile}})",
+    "importiert_laufend": "Sichert und importiert…",
+    "nichts_zu_importieren": "Es gibt nichts zu importieren: Alle Zeilen sind bereits vorhanden, in der App gelöscht oder fehlerhaft.",
+    "fehler_nicht_importiert": "Zeilen mit Fehlern werden nicht importiert."
+  },
+  "format": {
+    "linkedin": "LinkedIn-Export (Connections.csv)",
+    "xlsx_blatt": "Excel-Datei, Blatt „{{blatt}}“",
+    "xlsx": "Excel-Datei",
+    "csv": "CSV-Datei"
+  },
+  "tabelle": {
+    "caption": "Zeilen der Datei mit Aktion und Hinweis",
+    "zeile": "Zeile",
+    "eintrag": "Eintrag",
+    "aktion": "Aktion",
+    "hinweis": "Hinweis",
+    "ohne_angabe": "ohne Angabe",
+    "ergaenzt": "Ergänzt: {{felder}}",
+    "geloescht_standard": "In der App gelöscht, wird nicht wieder angelegt."
+  },
+  "aktion": {
+    "neu": "Neu",
+    "ergaenzt": "Ergänzt",
+    "unveraendert": "Unverändert",
+    "geloescht": "Gelöscht",
+    "fehler": "Fehler"
+  },
+  "zaehler": {
+    "neu": {
+      "label": "Neu",
+      "hilfe": "werden angelegt"
+    },
+    "ergaenzt": {
+      "label": "Ergänzt",
+      "hilfe": "leere Felder werden gefüllt"
+    },
+    "unveraendert": {
+      "label": "Unverändert",
+      "hilfe": "vorhanden, nichts zu ergänzen"
+    },
+    "geloescht": {
+      "label": "Gelöscht, übersprungen",
+      "hilfe": "in der App gelöscht, bleiben gelöscht"
+    },
+    "fehler": {
+      "label": "Fehler",
+      "hilfe": "werden nicht importiert"
+    }
+  },
+  "teil": {
+    "angelegt": "{{zahl}} angelegt",
+    "ergaenzt": "{{zahl}} ergänzt",
+    "unveraendert": "{{zahl}} unverändert",
+    "in_app_geloescht": "{{zahl}} in der App gelöscht",
+    "mit_fehlern_one": "{{zahl}} mit Fehlern",
+    "mit_fehlern_other": "{{zahl}} mit Fehlern",
+    "neu": "{{zahl}} neu",
+    "geloescht": "{{zahl}} gelöscht",
+    "fehler_one": "{{zahl}} Fehler",
+    "fehler_other": "{{zahl}} Fehler",
+    "ergaenzen": "{{zahl}} ergänzen"
+  },
+  "ergebnis": {
+    "satz": "{{inhalt}}.",
+    "nichts": "Nichts angelegt oder ergänzt",
+    "sicherung": "Vorher gesichert: <code>{{sicherung}}</code>",
+    "uebersprungen": "Übersprungen: {{teile}}."
+  },
+  "ansage": {
+    "pruefen": "Datei wird geprüft.",
+    "import": "Import läuft.",
+    "sicherung": "{{ergebnis}} Vorher gesichert: {{sicherung}}.",
+    "vorschau": "Vorschau bereit: {{teile}}.",
+    "keine_datenzeilen": "keine Datenzeilen"
+  }
+}

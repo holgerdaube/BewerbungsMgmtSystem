@@ -71,10 +71,21 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
+from app import sprache
 from pipeline import design as design_modul
 
 PROJEKT_ROOT = Path(__file__).resolve().parents[2]
 VORLAGE = PROJEKT_ROOT / "assets" / "report_theme_bms.html"
+
+def fassungen(deutsch: str) -> tuple:
+    """Der deutsche Text und seine englische Fassung, unabhängig von der Sprache, die gerade gilt.
+
+    Berichte bleiben in der Sprache, in der sie entstanden. Wer Überschriften aus bestehenden Berichten
+    wiederfinden muss (Anzeigen-Snapshot, Export für die Coach-Site), sucht deshalb nach beiden Fassungen.
+    Der englische Text kommt aus dem Katalog der Übersetzungen (`app/sprache.py`), steht also nur dort."""
+    englisch = sprache._laden().get(deutsch, deutsch)
+    return (deutsch,) if englisch == deutsch else (deutsch, englisch)
+
 
 EXIT_OK = 0
 EXIT_VORLAGE_ABWEICHT = 1

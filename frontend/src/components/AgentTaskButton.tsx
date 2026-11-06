@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { api, type AgentTaskRow } from '../api'
 import { codexZeile, laufKosten, useKiAnbieter } from './ui'
+import { t } from '../i18n'
 
 const ACTIVE = ['queued', 'running']
 
@@ -12,9 +13,6 @@ const CHIP: Record<string, string> = {
   failed: 'bg-rose-100 text-rose-700',
   cancelled: 'bg-slate-100 text-slate-500',
 }
-const CHIP_TEXT: Record<string, string> = {
-  queued: 'wartet…', running: 'läuft…', done: '✓ fertig', failed: '✗ fehlgeschlagen', cancelled: 'abgebrochen',
-}
 
 /** Eine Zeile des Logs lesbar machen: stream-json von Claude, daneben das JSONL von Codex (ChatGPT, `codexZeile`). */
 function pretty(line: string): string | null {
@@ -23,9 +21,9 @@ function pretty(line: string): string | null {
     if (ev.type === 'system') {
       // stream-json kennt mehrere system-Subtypen — nur `init` ist der Lauf-Start mit Tool-Liste.
       // (Bug bis 11.07.: JEDE system-Zeile wurde als „Lauf gestartet (0 Tools)" gerendert.)
-      if (ev.subtype === 'init') return `· Lauf gestartet (${(ev.tools || []).length} Tools)`
-      if (ev.subtype === 'task_started') return `⤷ Subagent: ${String(ev.description || 'gestartet').slice(0, 140)}`
-      if (ev.subtype === 'task_notification' && ev.summary) return `⤷ Subagent fertig: ${String(ev.summary).slice(0, 140)}`
+      if (ev.subtype === 'init') return t('tasks:log.lauf_gestartet', { anzahl: (ev.tools || []).length })
+      if (ev.subtype === 'task_started') return t('tasks:log.subagent', { text: String(ev.description || t('common:ui.subagent_gestartet')).slice(0, 140) })
+      if (ev.subtype === 'task_notification' && ev.summary) return t('tasks:log.subagent_fertig', { text: String(ev.summary).slice(0, 140) })
       return null // task_progress/thinking_tokens etc. — Rauschen, nicht anzeigen
     }
     if (ev.type === 'assistant') {
@@ -164,7 +162,7 @@ export default function AgentTaskButton({ kind, jobId, label, onFinished, watchK
       setShowLog(true)
       setBestaetigt({})
     } catch (e: any) {
-      const msg = e?.message || 'Start fehlgeschlagen'
+      const msg = e?.message || t('tasks:button.start_fehlgeschlagen')
       // Zielstellen-Fit-≤2-Guard (27.07.2026): Server antwortet 409 „LOW_MATCH: …" → Rückfrage INLINE
       // statt `window.confirm` (27.07.: der Browser-Dialog erschien im eingebetteten
       // Fenster gar nicht, der Lauf war damit faktisch blockiert). Bestätigung startet
@@ -210,11 +208,11 @@ export default function AgentTaskButton({ kind, jobId, label, onFinished, watchK
   // Kopf des Laufs aus zwei Bausteinen: Status und Herkunft (`laufChips`), Werte und Log-Schalter
   // (`laufWerte`). Ohne `zweizeilig` stehen beide in einer umbrechenden Zeile, mit in zwei festen.
   const kette = task?.chain_id
-    ? (isChain ? `${task.chain_label} · Schritt ${task.chain_pos}: ${task.label}` : `aus: ${task.chain_label}`)
+    ? (isChain ? t('tasks:button.kette_schritt', { kette: task.chain_label, pos: task.chain_pos, label: task.label }) : t('tasks:button.kette_aus', { kette: task.chain_label }))
     : null
   const laufChips = task && (
     <>
-      <span className={`rounded-full px-2 py-0.5 font-medium ${zweizeilig ? 'shrink-0 ' : ''}${CHIP[task.status]}`}>{CHIP_TEXT[task.status]}</span>
+      <span className={`rounded-full px-2 py-0.5 font-medium ${zweizeilig ? 'shrink-0 ' : ''}${CHIP[task.status]}`}>{t(`tasks:button_chip.${task.status}`, { defaultValue: task.status })}</span>
       {kette && (
         <span className={`rounded-full bg-indigo-100 px-2 py-0.5 font-medium text-indigo-800${zweizeilig ? ' min-w-0 truncate' : ''}`}
           {...(zweizeilig ? { title: kette } : {})}>
@@ -227,11 +225,11 @@ export default function AgentTaskButton({ kind, jobId, label, onFinished, watchK
   const laufWerte = task && (
     <>
       {task.duration_s != null && <span className="text-slate-400">{task.duration_s}s</span>}
-      {task.num_turns != null && <span className="text-slate-400">· {task.num_turns} Turns</span>}
+      {task.num_turns != null && <span className="text-slate-400">{t('tasks:button.turns', { count: task.num_turns })}</span>}
       {kosten && <span className="text-slate-400">· {kosten}</span>}
       {(task.log?.length || active) && (
         <button onClick={() => setShowLog((v) => !v)} className="ml-auto text-brand-cyan hover:underline">
-          {showLog ? 'Log ausblenden' : 'Log anzeigen'}
+          {showLog ? t('tasks:button.log_ausblenden') : t('tasks:button.log_anzeigen')}
         </button>
       )}
     </>
@@ -246,7 +244,7 @@ export default function AgentTaskButton({ kind, jobId, label, onFinished, watchK
       {/* P2-75: Direkt unter dem Knopf — der Start wartet, weil der Server den Anzeigentext der
           Stelle nachholt (LinkedIn bremst manchmal und der Abruf wird mit Pausen wiederholt). */}
       {nachholHinweis && (
-        <div role="status" className="px-1 text-xs text-slate-500">Anzeigentext wird nachgeholt …</div>
+        <div role="status" className="px-1 text-xs text-slate-500">{t('tasks:button.anzeige_nachholen')}</div>
       )}
       {/* Kompakt-Modus: Meta/Meldung/Links nur bei laufendem Lauf zeigen (Live-Feedback) —
           im Fertig-Zustand bleibt allein der kleine Button; Details liefert das Task-Center. */}
@@ -269,7 +267,7 @@ export default function AgentTaskButton({ kind, jobId, label, onFinished, watchK
         // Eingeklappt exakt 3 Zeilen (CSS-line-clamp statt Zeichenzählen — 18.07., Popup zu groß);
         // „mehr anzeigen" holt den vollen Text. Nichts wird abgeschnitten, nur eingeklappt.
         <div className="rounded-lg border border-slate-200 bg-slate-50 p-2 text-xs text-slate-500">
-          <span className="font-medium text-slate-400">Abschlussmeldung des Laufs:</span>
+          <span className="font-medium text-slate-400">{t('tasks:button.abschlussmeldung')}</span>
           <div
             className="mt-0.5 whitespace-pre-wrap"
             style={showFullResult ? undefined : { display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
@@ -278,7 +276,7 @@ export default function AgentTaskButton({ kind, jobId, label, onFinished, watchK
           </div>
           {(task.result.length > 220 || (task.result.match(/\n/g)?.length ?? 0) >= 3) && (
             <button onClick={() => setShowFullResult((v) => !v)} className="mt-1 text-brand-cyan hover:underline">
-              {showFullResult ? '▴ weniger anzeigen' : '▸ mehr anzeigen'}
+              {showFullResult ? t('tasks:button.weniger') : t('tasks:button.mehr')}
             </button>
           )}
         </div>
@@ -300,15 +298,15 @@ export default function AgentTaskButton({ kind, jobId, label, onFinished, watchK
           Override; der Klick des Nutzers IST die Freigabe (Human-in-the-Loop, Muster Phase 40). */}
       {lowMatch && (
         <div className="space-y-2 rounded-lg border border-amber-300 bg-amber-50 p-2 text-xs text-amber-900">
-          <p><b>Bist du dir wirklich sicher?</b> {lowMatch}</p>
+          <p><b>{t('tasks:button.low_match_frage')}</b> {lowMatch}</p>
           <div className="flex gap-2">
             <button onClick={() => start({ low_match_ok: true })} disabled={busy}
               className="rounded-md bg-amber-600 px-2.5 py-1 font-medium text-white hover:brightness-110 disabled:opacity-50">
-              Ja, trotzdem starten
+              {t('tasks:button.low_match_ja')}
             </button>
             <button onClick={rueckfrageAbbrechen} disabled={busy}
               className="rounded-md border border-amber-300 px-2.5 py-1 hover:bg-amber-100 disabled:opacity-50">
-              Abbrechen
+              {t('tasks:abbrechen')}
             </button>
           </div>
         </div>
@@ -319,15 +317,15 @@ export default function AgentTaskButton({ kind, jobId, label, onFinished, watchK
           starten" sendet `ohne_anzeigentext_ok` (zusammen mit schon bestätigten Overrides). */}
       {anzeigeFehlt && (
         <div className="space-y-2 rounded-lg border border-amber-300 bg-amber-50 p-2 text-xs text-amber-900">
-          <p><b>Ohne Anzeigentext starten?</b> {anzeigeFehlt}</p>
+          <p><b>{t('tasks:button.anzeige_fehlt_frage')}</b> {anzeigeFehlt}</p>
           <div className="flex gap-2">
             <button onClick={() => start({ ohne_anzeigentext_ok: true })} disabled={busy}
               className="rounded-md bg-amber-600 px-2.5 py-1 font-medium text-white hover:brightness-110 disabled:opacity-50">
-              Trotzdem starten
+              {t('tasks:button.anzeige_fehlt_ja')}
             </button>
             <button onClick={rueckfrageAbbrechen} disabled={busy}
               className="rounded-md border border-amber-300 px-2.5 py-1 hover:bg-amber-100 disabled:opacity-50">
-              Abbrechen
+              {t('tasks:abbrechen')}
             </button>
           </div>
         </div>
@@ -336,13 +334,13 @@ export default function AgentTaskButton({ kind, jobId, label, onFinished, watchK
       {showLog && (
         <div className="max-h-48 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-2 font-mono text-[11px] leading-relaxed text-slate-600">
           {lines.length === 0
-            ? <span className="text-slate-400">Noch keine Ausgabe…</span>
+            ? <span className="text-slate-400">{t('tasks:noch_keine_ausgabe')}</span>
             : (showFullLog ? lines : lines.slice(-3)).map((l, i) => <div key={i} className="truncate" title={l}>{l}</div>)}
           {/* Eingeklappt die LETZTEN 3 Zeilen (beim Live-Lauf zählt das Neueste); „mehr anzeigen"
               holt die volle Liste in den bestehenden Scroll-Container (18.07., Popup zu groß). */}
           {lines.length > 3 && (
             <button onClick={() => setShowFullLog((v) => !v)} className="mt-1 font-sans text-brand-cyan hover:underline">
-              {showFullLog ? '▴ weniger anzeigen' : `▸ mehr anzeigen (${lines.length - 3} weitere Zeilen)`}
+              {showFullLog ? t('tasks:button.weniger') : t('tasks:button.mehr_zeilen', { count: lines.length - 3 })}
             </button>
           )}
         </div>
@@ -360,11 +358,11 @@ export default function AgentTaskButton({ kind, jobId, label, onFinished, watchK
           className={subtle
             ? 'whitespace-nowrap rounded-lg border border-brand-cyan/40 px-3 py-1.5 text-xs font-medium text-brand-navy transition hover:bg-brand-cyan/10 disabled:cursor-not-allowed disabled:opacity-50'
             : 'flex-1 rounded-lg bg-brand-cyan px-3 py-2 text-sm font-semibold text-brand-aufAktion transition hover:bg-brand-cyanHover disabled:cursor-not-allowed disabled:opacity-50'}>
-          {active ? '⏳ Läuft…' : busy ? 'Starte…' : subtle ? label : `▶ ${label}`}
+          {active ? t('tasks:button.laeuft') : busy ? t('tasks:button.starte') : subtle ? label : `▶ ${label}`}
         </button>
         {active && (
           <button onClick={cancel} className="rounded-lg border border-slate-300 px-2.5 py-2 text-xs text-slate-600 hover:bg-slate-50">
-            Abbrechen
+            {t('tasks:abbrechen')}
           </button>
         )}
       </div>

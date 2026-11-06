@@ -146,6 +146,22 @@ def test_cv_version_wird_aus_der_fertigen_cvversion_vorbefuellt(session, seed, t
     assert gefunden.value == "Tailored (DE)"
 
 
+def test_cv_version_nennt_auch_die_uebrigen_bewerbungssprachen(session, seed, tmp_path, monkeypatch):
+    """Eine fertige französische Fassung steht in der Spalte, die Dropdown-Liste bleibt nur ein Vorschlag."""
+    from app.models import CVVersion
+
+    suffix = uuid.uuid4().hex[:8]
+    job = _job(session, suffix, status="Beworben")
+    session.add(CVVersion(job_id=job.id, language="fr", kind="tailored", status="fertig"))
+    session.commit()
+
+    wb, export_excel = _workbook(tmp_path, monkeypatch)
+    ws = wb["Stellen"]
+    idx_cv = export_excel.JOB_HEADERS.index("CV-Version") + 1
+    werte = [row[idx_cv - 1].value for row in ws.iter_rows(min_row=2) if row[0].value == job.company_name]
+    assert werte == ["Tailored (FR)"]
+
+
 def test_cv_version_dropdown_erlaubt_freien_text(session, seed, tmp_path, monkeypatch):
     """`showErrorMessage=False` ist das „weich" aus dem Auftrag: die Liste ist ein
     Vorschlag, freies Tippen bleibt erlaubt. Ein hartes Dropdown (showErrorMessage=True) wäre
@@ -231,3 +247,27 @@ def test_blattreihenfolge(session, seed, tmp_path, monkeypatch):
     i_referenzen = namen.index("Referenzen")
     i_kontakte = namen.index("Kontakte")
     assert i_aussortiert < i_referenzen < i_kontakte
+
+
+def test_maschinenwerte_folgen_der_ausgabesprache(session, seed, tmp_path, monkeypatch):
+    """Auf Englisch standen im Excel „Mittel“, „Persönlich“ und das Portal „Beispieldaten“, obwohl die Oberfläche
+    sie übersetzt. Auf Deutsch bleiben dieselben Zellen unverändert."""
+    from app import sprache
+    from app.models import Job, NetworkContact
+
+    firma = _firma(session, uuid.uuid4().hex[:8])
+    session.add(Job(company_id=firma.id, company_name=firma.name, title="Rolle", portal="Beispieldaten", status="Prüfen",
+                    dedup_key=uuid.uuid4().hex, found_date="2026-11-04"))
+    session.add(NetworkContact(name="Zeile Sprache", prioritaet="Mittel", kanal="Persönlich"))
+    session.commit()
+
+    def werte(wb):
+        return {str(z) for ws in wb.worksheets for reihe in ws.iter_rows(values_only=True) for z in reihe if z}
+
+    deutsch = werte(_workbook(tmp_path, monkeypatch)[0])
+    assert {"Mittel", "Persönlich", "Beispieldaten"} <= deutsch
+
+    monkeypatch.setattr(sprache, "aktuell", lambda: "en")
+    englisch = werte(_workbook(tmp_path, monkeypatch)[0])
+    assert {"Medium", "In person", "Sample data"} <= englisch
+    assert not {"Mittel", "Persönlich", "Beispieldaten"} & englisch

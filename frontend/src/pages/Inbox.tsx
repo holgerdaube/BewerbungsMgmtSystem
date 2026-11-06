@@ -3,12 +3,15 @@ import { Link } from 'react-router-dom'
 import { api } from '../api'
 import EmailDetail from '../components/EmailDetail'
 import { tagVon } from '../zeit'
+import { t } from '../i18n'
+import { datumZeit } from '../i18n/format'
+import { wert } from '../i18n/werte'
 
 const CAT_STYLE: Record<string, string> = {
-  'Eingangsbestätigung': 'bg-sky-100 text-sky-800',
+  'Eingangsbestätigung': 'bg-sky-100 text-sky-800', // i18n-ok: DB-Wert
   'Einladung': 'bg-emerald-100 text-emerald-800',
   'Absage': 'bg-rose-100 text-rose-800',
-  'Rückfrage': 'bg-amber-100 text-amber-800',
+  'Rückfrage': 'bg-amber-100 text-amber-800', // i18n-ok: DB-Wert
   'Angebot': 'bg-violet-100 text-violet-800',
   'Sonstige': 'bg-slate-100 text-slate-500',
 }
@@ -17,7 +20,7 @@ function fmt(dt: string | null) {
   if (!dt) return '–'
   try {
     const d = new Date(dt)
-    return d.toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
+    return datumZeit(d, { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
   } catch { return dt }
 }
 
@@ -40,7 +43,7 @@ function ArchivPanel({ signal, onRestored }: { signal: any; onRestored: () => vo
     try {
       await api(`/emails/${m.id}/restore`, { method: 'POST' })
       await load(); onRestored()
-    } catch (e: any) { setErr(e?.message || 'Zurückholen fehlgeschlagen') }
+    } catch (e: any) { setErr(e?.message || t('inbox:fehler.zurueckholen')) }
     finally { setBusy(null) }
   }
 
@@ -50,8 +53,8 @@ function ArchivPanel({ signal, onRestored }: { signal: any; onRestored: () => vo
     <div className="rounded-xl border border-slate-200 bg-slate-50/60">
       <button onClick={() => setOpen(!open)} className="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-slate-500 hover:text-slate-700">
         <span className="text-slate-400">{open ? '▾' : '▸'}</span>
-        <span className="font-medium">🗄 Archiv ({items.length})</span>
-        <span className="text-xs text-slate-400">Ausgeblendete Mails ohne Stelle. In Gmail bleiben sie unverändert.</span>
+        <span className="font-medium">{t('inbox:archiv.titel', { anzahl: items.length })}</span>
+        <span className="text-xs text-slate-400">{t('inbox:archiv.hinweis')}</span>
       </button>
       {open && (
         <div className="divide-y divide-slate-100 border-t border-slate-200">
@@ -59,14 +62,14 @@ function ArchivPanel({ signal, onRestored }: { signal: any; onRestored: () => vo
           {items.map((m) => (
             <div key={m.id} className="flex items-center justify-between gap-3 px-4 py-2">
               <div className="min-w-0 truncate">
-                <span className="font-medium text-slate-600">{m.subject || '(kein Betreff)'}</span>
+                <span className="font-medium text-slate-600">{m.subject || t('inbox:archiv.kein_betreff')}</span>
                 <span className="ml-2 text-xs text-slate-400">{m.from_addr}</span>
               </div>
               <div className="flex shrink-0 items-center gap-3">
-                <span className="text-xs text-slate-400">archiviert {tagVon(m.archived_at)}</span>
+                <span className="text-xs text-slate-400">{t('inbox:archiv.archiviert', { datum: tagVon(m.archived_at) })}</span>
                 <button onClick={() => restore(m)} disabled={busy === m.id}
                   className="rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-100 disabled:opacity-40">
-                  {busy === m.id ? 'Wird zurückgeholt…' : '↩ Zurückholen'}
+                  {busy === m.id ? t('inbox:archiv.wird_zurueckgeholt') : t('inbox:archiv.zurueckholen')}
                 </button>
               </div>
             </div>
@@ -108,7 +111,7 @@ export default function Inbox() {
       await api(`/emails/${id}/archive`, { method: 'POST' })
       setArchivStand((n) => n + 1)
     } catch (e: any) {
-      setArchivFehler(e?.message || 'Archivieren fehlgeschlagen')
+      setArchivFehler(e?.message || t('inbox:fehler.archivieren'))
       await load()
     } finally {
       setArchivBusyId(null)
@@ -127,31 +130,31 @@ export default function Inbox() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-2xl font-bold text-brand-navy">Inbox</h1>
+        <h1 className="text-2xl font-bold text-brand-navy">{t('inbox:titel')}</h1>
         <p className="text-sm text-slate-500">
-          {loading ? 'Lade…' : `${mails.length} bewerbungsrelevante Mails · Ø Antwortzeit ${stats.avg != null ? stats.avg + ' h' : '–'} · ${stats.needsReply} zu beantworten · Zeile anklicken = Volltext & Antwort`}
+          {loading ? t('inbox:lade') : t('inbox:kopf', { count: mails.length, antwortzeit: stats.avg != null ? t('inbox:stunden', { wert: stats.avg }) : '–', offen: stats.needsReply })}
         </p>
       </div>
 
       {stats.ohneStelle > 0 && (
         <button onClick={() => setOnlyOhneStelle((v) => !v)}
                 className={`rounded-xl border p-3 text-left shadow-sm transition ${onlyOhneStelle ? 'border-amber-400 bg-amber-50' : 'border-amber-200 bg-amber-50/50 hover:bg-amber-50'}`}>
-          <span className="text-xs font-medium uppercase tracking-wide text-amber-700">⚠ Ohne Stelle</span>
+          <span className="text-xs font-medium uppercase tracking-wide text-amber-700">{t('inbox:ohne_stelle')}</span>
           <p className="text-lg font-bold text-amber-800">{stats.ohneStelle}</p>
-          <span className="text-xs text-amber-600">{onlyOhneStelle ? 'Filter aktiv — klicken zum Aufheben' : 'Mails ohne Stellen-Zuordnung — klicken zum Filtern'}</span>
+          <span className="text-xs text-amber-600">{onlyOhneStelle ? t('inbox:filter_aktiv') : t('inbox:filter_hinweis')}</span>
         </button>
       )}
 
       <div className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
         <select value={cat} onChange={(e) => setCat(e.target.value)} className="rounded-lg border border-slate-300 px-2 py-1.5 text-sm">
-          <option value="">Alle Kategorien</option>
-          {Object.keys(CAT_STYLE).map((c) => <option key={c} value={c}>{c} {stats.byCat[c] ? `(${stats.byCat[c]})` : ''}</option>)}
+          <option value="">{t('inbox:alle_kategorien')}</option>
+          {Object.keys(CAT_STYLE).map((c) => <option key={c} value={c}>{wert('mail_kategorie', c)} {stats.byCat[c] ? `(${stats.byCat[c]})` : ''}</option>)}
         </select>
         <label className="flex items-center gap-1.5 text-sm text-slate-600">
-          <input type="checkbox" checked={onlyReply} onChange={(e) => setOnlyReply(e.target.checked)} /> nur „zu beantworten"
+          <input type="checkbox" checked={onlyReply} onChange={(e) => setOnlyReply(e.target.checked)} /> {t('inbox:nur_zu_beantworten')}
         </label>
         <label className="flex items-center gap-1.5 text-sm text-slate-600">
-          <input type="checkbox" checked={onlyOhneStelle} onChange={(e) => setOnlyOhneStelle(e.target.checked)} /> nur ohne Stelle
+          <input type="checkbox" checked={onlyOhneStelle} onChange={(e) => setOnlyOhneStelle(e.target.checked)} /> {t('inbox:nur_ohne_stelle')}
         </label>
       </div>
 
@@ -163,19 +166,19 @@ export default function Inbox() {
         <table className="w-full text-sm">
           <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
             <tr>
-              <th className="px-3 py-2">Kategorie</th>
-              <th className="px-3 py-2">Betreff</th>
-              <th className="px-3 py-2">Firma / Stelle</th>
-              <th className="px-3 py-2">Von</th>
-              <th className="px-3 py-2">Empfangen</th>
-              <th className="px-3 py-2 text-right">Antwortzeit</th>
+              <th className="px-3 py-2">{t('inbox:spalte.kategorie')}</th>
+              <th className="px-3 py-2">{t('inbox:spalte.betreff')}</th>
+              <th className="px-3 py-2">{t('inbox:spalte.firma_stelle')}</th>
+              <th className="px-3 py-2">{t('inbox:spalte.von')}</th>
+              <th className="px-3 py-2">{t('inbox:spalte.empfangen')}</th>
+              <th className="px-3 py-2 text-right">{t('inbox:spalte.antwortzeit')}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
             {loading ? (
-              <tr><td colSpan={6} className="px-3 py-8 text-center text-slate-400">Lade…</td></tr>
+              <tr><td colSpan={6} className="px-3 py-8 text-center text-slate-400">{t('inbox:lade')}</td></tr>
             ) : filtered.length === 0 ? (
-              <tr><td colSpan={6} className="px-3 py-8 text-center text-slate-400">Keine Mails. Der Gmail-Check (email-check) füllt diese Ansicht.</td></tr>
+              <tr><td colSpan={6} className="px-3 py-8 text-center text-slate-400">{t('inbox:keine_mails')}</td></tr>
             ) : filtered.map((m) => {
               const isOpen = open === m.id
               return (
@@ -183,9 +186,9 @@ export default function Inbox() {
                   <tr onClick={() => setOpen(isOpen ? null : m.id)}
                       className={`cursor-pointer align-top hover:bg-brand-cyan/5 ${isOpen ? 'bg-brand-cyan/5' : ''}`}>
                     <td className="px-3 py-2 whitespace-nowrap">
-                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${CAT_STYLE[m.category] || 'bg-slate-100'}`}>{m.category}</span>
-                      {m.needs_reply && <span className="ml-1 rounded-full bg-amber-500 px-1.5 py-0.5 text-[10px] font-bold text-white">Reply</span>}
-                      {m.reply_draft_at && <span className="ml-1 rounded-full bg-slate-200 px-1.5 py-0.5 text-[10px] font-bold text-slate-600" title={`Entwurf seit ${fmt(m.reply_draft_at)}`}>Entwurf</span>}
+                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${CAT_STYLE[m.category] || 'bg-slate-100'}`}>{wert('mail_kategorie', m.category)}</span>
+                      {m.needs_reply && <span className="ml-1 rounded-full bg-amber-500 px-1.5 py-0.5 text-[10px] font-bold text-white">{t('inbox:badge_reply')}</span>}
+                      {m.reply_draft_at && <span className="ml-1 rounded-full bg-slate-200 px-1.5 py-0.5 text-[10px] font-bold text-slate-600" title={t('inbox:entwurf_seit', { datum: fmt(m.reply_draft_at) })}>{t('inbox:badge_entwurf')}</span>}
                     </td>
                     <td className="px-3 py-2 text-slate-700">
                       <span className="mr-1 text-slate-400">{m.direction === 'outgoing' ? '↗' : '↙'}</span>{m.subject}
@@ -196,10 +199,10 @@ export default function Inbox() {
                         : m.ohne_stelle
                           ? (
                             <div>
-                              <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">⚠ Ohne Stelle</span>
+                              <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">{t('inbox:ohne_stelle')}</span>
                               <button onClick={(e) => { e.stopPropagation(); archivieren(m.id) }} disabled={archivBusyId === m.id}
                                       className="mt-1 block text-xs text-slate-400 hover:text-slate-700 disabled:opacity-40">
-                                Archivieren
+                                {t('inbox:archivieren')}
                               </button>
                             </div>
                           )
@@ -208,7 +211,7 @@ export default function Inbox() {
                     </td>
                     <td className="px-3 py-2 text-xs text-slate-500">{m.from_addr}</td>
                     <td className="px-3 py-2 whitespace-nowrap text-slate-500">{fmt(m.received_at)}</td>
-                    <td className="px-3 py-2 text-right tabular-nums text-slate-600">{m.response_time_hours != null ? `${m.response_time_hours} h` : '–'}</td>
+                    <td className="px-3 py-2 text-right tabular-nums text-slate-600">{m.response_time_hours != null ? t('inbox:stunden', { wert: m.response_time_hours }) : '–'}</td>
                   </tr>
                   {isOpen && (
                     <tr>

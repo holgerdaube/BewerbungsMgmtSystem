@@ -1,0 +1,173 @@
+{
+  "produkt": {
+    "name": "Bewerbungs-Management-System"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "suche": "Suche",
+    "review": "Neu / Review",
+    "followups": "Follow-ups",
+    "pipeline": "Pipeline",
+    "jobs": "Stellen",
+    "inbox": "Inbox",
+    "outreach": "Outreach",
+    "netzwerk": "Netzwerk",
+    "beirat": "Beirat",
+    "companies": "Firmen",
+    "radar": "Restructuring-Radar",
+    "tasks": "Task-Center",
+    "budget": "Budget",
+    "profil": "Profil",
+    "einstellungen": "Einstellungen",
+    "dokumentation": "Dokumentation",
+    "rechtliches": "Rechtliches"
+  },
+  "layout": {
+    "version": "Version {{version}}",
+    "entwicklungsstand": "Entwicklungsstand: {{stand}}",
+    "engine": "Engine: Skills headless im Backend",
+    "quelle": "Quelle: bewerbung.sqlite"
+  },
+  "sprache": {
+    "umschalter": "Sprache der Oberfläche",
+    "karte_titel": "Sprache",
+    "karte_text": "Die Oberfläche und die KI-Berichte folgen dieser Einstellung. Lebenslauf und Anschreiben folgen der Sprache der Stellenanzeige.",
+    "fehler": "Die Sprache konnte nicht gewechselt werden."
+  },
+  "ui": {
+    "score_nicht_bewertet": "Nicht bewertet",
+    "score_titel": "Zielstellen-Fit {{score}}/5",
+    "verify_geprueft": "✓ geprüft",
+    "verify_quelle": "~ Quelle vertraut",
+    "dublette_titel": "Text-Ähnlichkeitsverdacht {{prozent}} % — vermuteter Repost, s. Notizen & Verlauf",
+    "dublette_label": "Dublette? → Job {{jobId}}",
+    "neuausschreibung_titel": "Diese Stelle war schon im Tracker ({{status}}). Neue Anzeige mit neuem Link — bitte neu entscheiden.",
+    "neuausschreibung_label": "Neuausschreibung → Job {{jobId}}",
+    "klickbar": "klickbar",
+    "keine_stellen": "keine Stellen",
+    "token_tsd": "{{wert}} Tsd.",
+    "token_mio": "{{wert}} Mio.",
+    "token_anzahl": "{{wert}} Token",
+    "lauf_gestartet": "· Lauf gestartet",
+    "turn_fertig": "· Turn fertig",
+    "turn_fertig_neu": "· Turn fertig ({{token}} Token neu)",
+    "lauf_fehlgeschlagen": "Lauf fehlgeschlagen",
+    "fehler": "Fehler",
+    "subagent_gestartet": "gestartet",
+    "websuche": "🔍 Websuche: {{anfrage}}",
+    "dateien_geaendert": "Dateien geändert",
+    "copy_initiativ": "🚀 Initiativ",
+    "copy_titel": "Kopiert „{{phrase}}\" — in der {{name}}-Session einfügen & senden",
+    "copy_ok": "✓ kopiert",
+    "copy_trigger_ok": "✓ kopiert — in {{name}} einfügen & senden"
+  },
+  "status": {
+    "Neu": "Neu",
+    "Prüfen": "Prüfen",
+    "Beworben": "Beworben",
+    "Interview": "Interview",
+    "Angebot": "Angebot",
+    "Absage": "Absage",
+    "Keine Rückmeldung": "Keine Rückmeldung",
+    "Kein Match": "Kein Match",
+    "Beirat abgelehnt": "Beirat abgelehnt",
+    "Nicht verfügbar": "Nicht verfügbar",
+    "Geparkt": "Geparkt"
+  },
+  "situation": {
+    "BUILD": "BUILD",
+    "CARVE-OUT": "CARVE-OUT",
+    "POST-MERGER": "POST-MERGER",
+    "PE": "PE",
+    "SCALE-UP": "SCALE-UP",
+    "RESTRUCT": "RESTRUCT",
+    "RUN": "RUN",
+    "UNKLAR": "UNKLAR"
+  },
+  "work_model": {
+    "Remote": "Remote",
+    "Hybrid": "Hybrid",
+    "Onsite": "Onsite"
+  },
+  "seniority": {
+    "C-Level": "C-Level",
+    "VP": "VP",
+    "Senior Director": "Senior Director",
+    "Director": "Director",
+    "Head": "Head",
+    "Senior Manager": "Senior Manager",
+    "Manager": "Manager",
+    "Teamlead": "Teamlead",
+    "Experte": "Experte",
+    "Erfahrener Mitarbeiter": "Erfahrener Mitarbeiter",
+    "Angestellter": "Angestellter",
+    "Berufseinsteiger": "Berufseinsteiger",
+    "Trainee": "Trainee",
+    "Auszubildender": "Auszubildender",
+    "Werkstudent": "Werkstudent",
+    "Praktikant": "Praktikant",
+    "Sonstige": "Sonstige"
+  },
+  "tab": {
+    "Remote": "Remote",
+    "Deutschlandweit": "Deutschlandweit"
+  },
+  "verfuegbarkeit": {
+    "offen": "offen",
+    "karriereseite_offen": "karriereseite_offen",
+    "offline": "offline",
+    "unklar": "unklar"
+  },
+  "mail_kategorie": {
+    "Eingangsbestätigung": "Eingangsbestätigung",
+    "Einladung": "Einladung",
+    "Absage": "Absage",
+    "Rückfrage": "Rückfrage",
+    "Angebot": "Angebot",
+    "Sonstige": "Sonstige"
+  },
+  "ausloeser": {
+    "nachfass": "Nachfass-Entwurf für Job {{id}}",
+    "absagegrund": "Nach Absagegrund fragen für Job {{id}}",
+    "firma": "Firma prüfen für Job {{id}}",
+    "initiativ": "Initiativbewerbung für {{name}}",
+    "tageslauf": "Tageslauf"
+  },
+  "verlauf": {
+    "fest": {
+      "Notizen aktualisiert": "Notizen aktualisiert",
+      "Nächster Schritt entfernt": "Nächster Schritt entfernt"
+    },
+    "naechster_schritt": "Nächster Schritt: „{{wert}}“",
+    "neuausschreibung": "NEUAUSSCHREIBUNG? Job {{id}} „{{titel}}“ — {{status}}, zuerst gefunden {{datum}}",
+    "dublette": "DUBLETTE? Job {{id}} „{{titel}}“ — Text-Ähnlichkeit {{prozent}} % (geprüft {{datum}})",
+    "label": {
+      "Status": "Status",
+      "Bewerbung": "Bewerbung",
+      "Fällig am": "Fällig am",
+      "Gehalt": "Gehalt",
+      "URL": "URL",
+      "Karriereseite": "Karriereseite",
+      "Portal geschlossen": "Portal geschlossen",
+      "Verfügbarkeit": "Verfügbarkeit",
+      "Nächster Schritt": "Nächster Schritt",
+      "Antwort": "Antwort",
+      "Kanal": "Kanal",
+      "Typ": "Typ",
+      "Position": "Position",
+      "Beworben am": "Beworben am"
+    },
+    "ja": "Ja",
+    "nein": "Nein",
+    "review": "(Review)"
+  },
+  "portal": {
+    "Beispieldaten": "Beispieldaten",
+    "Initiativ": "Initiativ"
+  },
+  "listensuche": {
+    "platzhalter": "Suchen …",
+    "treffer": "{{treffer}} von {{gesamt}}",
+    "keine": "Keine Treffer."
+  }
+}

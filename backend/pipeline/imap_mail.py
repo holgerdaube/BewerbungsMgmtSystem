@@ -103,8 +103,10 @@ def provider() -> str:
 def _require_imap_settings(settings: dict) -> None:
     fehlend = [f for f in _REQUIRED_IMAP_FIELDS if not str(settings.get(f) or "").strip()]
     if fehlend:
-        _die("IMAP-Konfiguration unvollstaendig (" + ", ".join(fehlend) + " fehlt) - "
-             "bitte unter Einstellungen > E-Mail-Konto ausfuellen und speichern.")
+        from app.sprache import tx    # erst hier: Dieses Modul läuft auch als reines Werkzeug ohne Datenbank
+        _die(tx("IMAP-Konfiguration unvollstaendig ({felder} fehlt) - "
+                "bitte unter Einstellungen > E-Mail-Konto ausfuellen und speichern.",
+                felder=", ".join(fehlend)))
 
 
 # ── IMAP "modified UTF-7" (RFC 3501 §5.1.3) ─────────────────────────────────────────────
@@ -148,6 +150,7 @@ def _quote_search_string(s: str) -> str:
 
 # ── Verbindung ────────────────────────────────────────────────────────────────────────────
 def _connect(settings: dict) -> imaplib.IMAP4:
+    from app.sprache import tx    # erst hier: Dieses Modul läuft auch als reines Werkzeug ohne Datenbank
     host = str(settings.get("host") or "").strip()
     port = int(settings.get("port") or 993)
     security = str(settings.get("security") or "ssl").strip().lower()
@@ -160,13 +163,13 @@ def _connect(settings: dict) -> imaplib.IMAP4:
         else:
             imap = imaplib.IMAP4_SSL(host, port)
     except (OSError, imaplib.IMAP4.error) as exc:
-        _die(f"IMAP-Verbindung zu {host}:{port} fehlgeschlagen: {exc}")
+        _die(tx("IMAP-Verbindung zu {host}:{port} fehlgeschlagen: {grund}", host=host, port=port, grund=exc))
     try:
         imap.login(username, password)
     except imaplib.IMAP4.error as exc:
         with contextlib.suppress(Exception):
             imap.logout()
-        _die(f"IMAP-Login fuer {username!r} fehlgeschlagen: {exc}")
+        _die(tx("IMAP-Login fuer {benutzer} fehlgeschlagen: {grund}", benutzer=repr(username), grund=exc))
     return imap
 
 
@@ -186,16 +189,18 @@ def test_connection(settings: dict) -> dict:
     `gmail_client.cmd_get` bereits tut (stderr umleiten, Klartext an den Client reichen)."""
     _require_imap_settings(settings)
     folder = str(settings.get("drafts_folder") or DEFAULT_DRAFTS_FOLDER).strip() or DEFAULT_DRAFTS_FOLDER
+    from app.sprache import tx    # erst hier: Dieses Modul läuft auch als reines Werkzeug ohne Datenbank
     imap = _connect(settings)
     try:
         typ, data = imap.select(_mailbox_arg(folder), readonly=True)
         if typ != "OK":
-            _die(f"IMAP verbunden, aber Entwuerfe-Ordner '{folder}' nicht auswaehlbar: {data}")
+            _die(tx("IMAP verbunden, aber Entwuerfe-Ordner '{ordner}' nicht auswaehlbar: {grund}",
+                    ordner=folder, grund=data))
     finally:
         _safe_logout(imap)
     return {"ok": True,
-            "meldung": f"IMAP-Verbindung erfolgreich: {settings.get('username')} @ "
-                       f"{settings.get('host')}, Ordner '{folder}' gefunden."}
+            "meldung": tx("IMAP-Verbindung erfolgreich: {benutzer} @ {host}, Ordner '{ordner}' gefunden.",
+                          benutzer=settings.get('username'), host=settings.get('host'), ordner=folder)}
 
 
 # ── Query-Übersetzung (Gmail-Suchsyntax → IMAP-Datumsfenster + Python-Nachfilter) ──────────

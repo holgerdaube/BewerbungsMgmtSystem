@@ -5,6 +5,8 @@ from pathlib import Path
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import SQLModel, Session, create_engine
 
+from app.terminal import tt
+
 BACKEND_DIR = Path(__file__).resolve().parent.parent   # .../backend
 PROJECT_ROOT = BACKEND_DIR.parent
 DATA_DIR = Path(os.environ.get("BMS_DATA_DIR", PROJECT_ROOT / "data"))
@@ -135,6 +137,8 @@ _ADD_COLUMNS = {
     "sucheinstellung": [
         # P2-86 — bestehende Installationen bleiben bei Claude.
         ("ki_anbieter", "TEXT DEFAULT 'claude'"),
+        # P2-88 — bestehende Installationen bleiben auf Deutsch (Modell-Vorgabe "": s. models.py).
+        ("sprache", "TEXT DEFAULT 'de'"),
         # Phase 50 — SQL-DEFAULT, damit die bestehende Singleton-Zeile (id=1, seit Phase 49)
         # beim ALTER TABLE automatisch mit '{}' befüllt wird statt NULL zu bleiben.
         ("modelle_json", "TEXT DEFAULT '{}'"),
@@ -171,8 +175,7 @@ def _ensure_columns() -> None:
                 # auftretendes "no such column" war dann nicht mehr zuordenbar. Jetzt laut:
                 # Tabellenname + Fehler auf stdout. Weiter zur nächsten Tabelle (ein kaputter
                 # PRAGMA-Aufruf für EINE Tabelle darf die Migration der übrigen nicht verhindern).
-                print(f"[db] WARNUNG: Spalten-Migration für Tabelle '{table}' übersprungen "
-                      f"(PRAGMA table_info fehlgeschlagen): {type(e).__name__}: {e}", flush=True)
+                print(tt("[db] WARNUNG: Spalten-Migration für Tabelle '{table}' übersprungen (PRAGMA table_info fehlgeschlagen): {art}: {fehler}", table=table, art=type(e).__name__, fehler=e), flush=True)
                 continue
             if not existing:
                 continue
@@ -192,8 +195,7 @@ def _ensure_columns() -> None:
                     # gesperrte DB, falscher Typ, ...) MUSS laut sein (F4).
                     if "duplicate column" in str(e).lower():
                         continue
-                    print(f"[db] WARNUNG: Spalte '{name}' auf Tabelle '{table}' konnte nicht "
-                          f"ergänzt werden: {type(e).__name__}: {e}", flush=True)
+                    print(tt("[db] WARNUNG: Spalte '{name}' auf Tabelle '{table}' konnte nicht ergänzt werden: {art}: {fehler}", name=name, table=table, art=type(e).__name__, fehler=e), flush=True)
         conn.commit()
 
 
@@ -242,9 +244,7 @@ def _ensure_indexes() -> None:
             try:
                 conn.exec_driver_sql(f"CREATE UNIQUE INDEX IF NOT EXISTS {name} ON {table}({expr})")
             except Exception as e:
-                print(f"[db] WARNUNG: UNIQUE-Index '{name}' auf '{table}({expr})' konnte nicht "
-                      f"angelegt werden (vermutlich Kollision im Bestand): {type(e).__name__}: {e}",
-                      flush=True)
+                print(tt("[db] WARNUNG: UNIQUE-Index '{name}' auf '{table}({expr})' konnte nicht angelegt werden (vermutlich Kollision im Bestand): {art}: {fehler}", name=name, table=table, expr=expr, art=type(e).__name__, fehler=e), flush=True)
         conn.commit()
 
 

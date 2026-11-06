@@ -1,0 +1,68 @@
+{
+  "titel": "Budget & API-Kosten",
+  "letzter_sync": "Letzter Sync: {{wann}}",
+  "nie": "nie",
+  "sync_button": "🔄 Verbrauch syncen",
+  "sync_laeuft": "Synct…",
+  "sync_ok_one": "✓ {{count}} Tage übernommen",
+  "sync_ok_other": "✓ {{count}} Tage übernommen",
+  "sync_fehlgeschlagen": "Sync fehlgeschlagen",
+  "laden": "Lade…",
+  "ki_agent_laeufe": "KI (Agent-Läufe)",
+  "chatgpt_box": {
+    "titel": "KI-Läufe über Ihr ChatGPT-Abo",
+    "text": "Die Läufe der App laufen über Ihr ChatGPT-Abo. ChatGPT meldet keine Kosten in USD, darum zeigt die Zeile „KI (Agent-Läufe)“ nur Beträge aus früheren Läufen unter Claude. Eine Budgetgrenze je Lauf gibt es nicht: Es gelten das Zeitlimit je Lauf, die Grenzen Ihres Abos und die Grenze für Läufe pro Tag. Den Verbrauch in Token zeigt das Task-Center."
+  },
+  "heute": "Heute",
+  "monat": "Monat",
+  "stat": {
+    "dieser_monat": "Dieser Monat",
+    "jahres_prognose": "Jahres-Prognose",
+    "geschaetzt": "geschätzt",
+    "fixkosten": "Fixkosten / Monat"
+  },
+  "dienste": {
+    "titel": "Dienste",
+    "dienst": "Dienst",
+    "art": "Art",
+    "jahr_prognose": "Jahr (Prognose)",
+    "status": "Status"
+  },
+  "art": {
+    "abo": "Abo",
+    "verbrauch": "Verbrauch"
+  },
+  "limit_status": {
+    "ok": "im Rahmen",
+    "warn": "⚠ ≥ 80 %",
+    "over": "über Limit",
+    "pausiert": "pausiert"
+  },
+  "steuerung": {
+    "titel": "Budget-Steuerung",
+    "keine_dienste": "Keine steuerbaren Dienste.",
+    "dienst_aktiv": "Dienst aktiv",
+    "tageslimit": "Tageslimit ($)",
+    "monatslimit": "Monatslimit ($)",
+    "kein_limit": "kein Limit",
+    "max_laeufe": "Max. Läufe/Tag",
+    "modus_hinweis": "hart = Aufrufe werden blockiert · weich = nur Warnung",
+    "ohne_usd": "Unter ChatGPT gibt es keine Kosten in USD und keine Budgetgrenze je Lauf. Es gelten das Zeitlimit je Lauf und die Grenzen Ihres ChatGPT-Abos; die Grenze für Läufe pro Tag wirkt weiter.",
+    "laeufe_heute_one": "{{count}} Läufe heute",
+    "laeufe_heute_other": "{{count}} Läufe heute",
+    "speichern": "Speichern",
+    "speichert": "Speichert…",
+    "gespeichert": "✓ Gespeichert",
+    "speichern_fehlgeschlagen": "Speichern fehlgeschlagen"
+  },
+  "balken": {
+    "kein_limit_gesetzt": "{{label}}: kein Limit gesetzt",
+    "rest": "Rest {{betrag}}"
+  },
+  "kosten_monat": "Kosten diesen Monat (EUR)",
+  "fussnote": "Verbrauch: Apify per API-Sync; Abos aus config/budgets.yaml. Limits wirken sofort auf alle kostenpflichtigen Aufrufe dieser App (hart = blockiert). Ausgaben außerhalb der App (Apify-Konsole, interaktive {{name}}-Sessions) sieht sie erst nach dem nächsten Sync und kann sie nicht verhindern. Kurs USD→EUR: {{kurs}}.",
+  "wert": {
+    "hart": "hart",
+    "weich": "weich"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "loeschen_frage": "Really delete “{{name}}”? (The company’s contacts are deleted too, and the company fit file is moved to the bin.)",
+  "loeschen_fehlgeschlagen": "Could not delete",
+  "loeschen_titel": "Delete company",
+  "anzahl_radar_one": "{{count}} company with a restructuring/layoff signal",
+  "anzahl_radar_other": "{{count}} companies with a restructuring/layoff signal",
+  "anzahl_one": "{{count}} company in the database",
+  "anzahl_other": "{{count}} companies in the database",
+  "lade": "Loading…",
+  "spalte": {
+    "firma": "Company",
+    "situation": "Situation",
+    "signal": "Signal",
+    "rebuild_abbau": "Rebuild/cutbacks",
+    "rolle_offen": "Role open?",
+    "branche": "Industry",
+    "region": "Region"
+  }
+}

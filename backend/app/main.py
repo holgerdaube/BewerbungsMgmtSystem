@@ -19,7 +19,7 @@ from fastapi import Depends, FastAPI, File, Form, HTTPException, Query, UploadFi
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
-from sqlmodel import Session, or_, select
+from sqlmodel import Session, func, or_, select
 
 from app.db import engine, flush_or_duplicate, get_session, init_db
 
@@ -37,7 +37,11 @@ from app.routes_beispieldaten import router as beispieldaten_router
 from app.routes_netzwerk_import import router as netzwerk_import_router
 from app.routes_profil_identitaet import router as profil_identitaet_router
 from app.routes_design import router as design_router
+from app.routes_sprache import router as sprache_router
+from app.sprache import aktuell as sprache_aktuell, datum as sprach_datum, tx, uebersetzt
+from app.terminal import tt
 from app.version import version_text
+from pipeline import bewerbungssprache
 from pipeline import posting_snapshot
 
 app = FastAPI(title="Bewerbungs-Management-System", version=version_text())
@@ -167,16 +171,16 @@ def _abweisung(scope) -> Optional[str]:
     if host:
         teile = _host_teile(host)
         if teile is None or not _host_erlaubt(teile[0]):
-            return (f"Adresse nicht freigegeben: {host}. Das BMS antwortet nur unter localhost, einer "
-                    "IP-Adresse, einem Namen auf .local oder einem Rechnernamen ohne Punkt. Öffnen Sie "
-                    "es über die Adresse aus dem Startfenster; weitere Namen gibt die "
-                    "Umgebungsvariable BMS_HOSTS frei.")
+            return (tx("Adresse nicht freigegeben: {host}. Das BMS antwortet nur unter localhost, "
+                       "einer IP-Adresse, einem Namen auf .local oder einem Rechnernamen ohne "
+                       "Punkt. Öffnen Sie es über die Adresse aus dem Startfenster; weitere Namen "
+                       "gibt die Umgebungsvariable BMS_HOSTS frei.", host=host))
     origin = kopf.get(b"origin")
     if origin is not None and scope["method"] not in _LESENDE_METHODEN:
         sec_fetch_site = kopf.get(b"sec-fetch-site")
         if not _herkunft_erlaubt(origin, host, sec_fetch_site.lower() if sec_fetch_site else None):
-            return ("Schreibzugriff abgelehnt: Die Anfrage kommt nicht von der BMS-Oberfläche "
-                    f"(Origin: {origin}).")
+            return (tx("Schreibzugriff abgelehnt: Die Anfrage kommt nicht von der BMS-Oberfläche "
+                       "(Origin: {origin}).", origin=origin))
     return None
 
 
@@ -209,6 +213,7 @@ app.include_router(beispieldaten_router)  # P2-59, s. app/routes_beispieldaten.p
 app.include_router(netzwerk_import_router)  # P2-62, s. app/routes_netzwerk_import.py
 app.include_router(profil_identitaet_router)  # P2-69, s. app/routes_profil_identitaet.py
 app.include_router(design_router)  # P2-72, s. app/routes_design.py
+app.include_router(sprache_router)  # P2-88, s. app/routes_sprache.py
 
 # Endstatus: hier ist ein Follow-up gegenstandslos (kein aktiver Vorgang mehr).
 # Phase 85: "Keine Rückmeldung" (Ghosting-Endstatus, manuell gesetzt) ergänzt — kein Follow-up
@@ -265,7 +270,7 @@ def _validiere_status(status, erlaubt: set, feldname: str = "status") -> None:
     übernehmen. Wird nur aufgerufen, wenn das Feld überhaupt im Payload steht."""
     if status not in erlaubt:
         raise HTTPException(
-            422, f"Ungültiger {feldname}: {status!r}. Erlaubt: {', '.join(sorted(erlaubt))}")
+            422, tx("Ungültiger {feldname}: {status}. Erlaubt: {liste}", feldname=feldname, status=repr(status), liste=', '.join(sorted(erlaubt))))
 
 
 def _normalisiere_portal_closed(wert) -> int:
@@ -282,7 +287,7 @@ def _normalisiere_portal_closed(wert) -> int:
             return 1
         if normalisiert in ("0", "false"):
             return 0
-    raise HTTPException(422, f"Ungültiger Wert für portal_closed: {wert!r}. Erlaubt: 0/1/true/false")
+    raise HTTPException(422, tx("Ungültiger Wert für portal_closed: {wert}. Erlaubt: 0/1/true/false", wert=repr(wert)))
 
 
 def _date_sort_key(s: Optional[str]) -> str:
@@ -324,19 +329,20 @@ def _startup():
     try:
         umgestellt = _portal_adressen_nachziehen()
         if umgestellt:
-            print("[einstellungen] Portal-Adressen auf den aktuellen Standard umgestellt: "
-                  + ", ".join(umgestellt), flush=True)
+            print(tt("[einstellungen] Portal-Adressen auf den aktuellen Standard umgestellt: {liste}", liste=", ".join(umgestellt)), flush=True)
     except Exception as exc:  # noqa: BLE001 -- der Start darf daran nie scheitern
-        print(f"[einstellungen] WARNUNG: Portal-Adressen nicht umgestellt: {exc}", flush=True)
+        print(tt("[einstellungen] WARNUNG: Portal-Adressen nicht umgestellt: {fehler}", fehler=exc), flush=True)
     # P2-59: Beispieldaten einer frischen Paket-Installation. Die Funktion prüft alle Bedingungen
     # selbst und wirft nie; die abgeleitete Profil-Struktur folgt den neuen Skills und dem Werdegang.
     from app import beispieldaten
+    # P2-90: Die englische Installationsanleitung legt `data/startsprache` an. Vor den Beispieldaten, damit sie gleich englisch sind.
+    beispieldaten.startsprache_uebernehmen()
     if beispieldaten.einspielen_falls_neu(db_war_da):
         try:
             with Session(engine) as session:
                 _profil_struktur_schreiben(session)
         except Exception as exc:  # noqa: BLE001 -- der Start darf daran nie scheitern
-            print(f"[beispieldaten] WARNUNG: Profil-Struktur nicht geschrieben: {exc}", flush=True)
+            print(tt("[beispieldaten] WARNUNG: Profil-Struktur nicht geschrieben: {fehler}", fehler=exc), flush=True)
     # P2-83: `config/profil_struktur.md` ist abgeleitet und nicht im Git, jede Installation erzeugt
     # sie selbst. Fehlt sie (frischer Klon, erster Start nach dem Update), wird sie jetzt aus der
     # Datenbank geschrieben, damit die Skills sie finden. Eine vorhandene Datei bleibt unberührt.
@@ -345,7 +351,7 @@ def _startup():
             with Session(engine) as session:
                 _profil_struktur_schreiben(session)
     except Exception as exc:  # noqa: BLE001 -- der Start darf daran nie scheitern
-        print(f"[profil] WARNUNG: Profil-Struktur nicht geschrieben: {exc}", flush=True)
+        print(tt("[profil] WARNUNG: Profil-Struktur nicht geschrieben: {fehler}", fehler=exc), flush=True)
     agent_runner.start_workers()
     # P2-52: täglicher Sicherungstakt (erste Prüfung nach 60 s, die Arbeit läuft in einem
     # Thread, blockiert den Start also nicht). Tests laufen ohne Lifespan und starten ihn nie.
@@ -373,7 +379,7 @@ def health():
 @app.get("/api/search")
 def search(q: str, limit: int = 30, session: Session = Depends(get_session)):
     if len(q.strip()) < 2:
-        raise HTTPException(422, "Suchbegriff braucht mindestens 2 Zeichen")
+        raise HTTPException(422, tx("Suchbegriff braucht mindestens 2 Zeichen"))
     from pipeline import search_index
     res = search_index.query(q, limit=limit)
     for e in res["ergebnisse"]:
@@ -633,7 +639,7 @@ def create_job(payload: dict, session: Session = Depends(get_session)):
     name = (payload.get("company_name") or "").strip()
     title = (payload.get("title") or "").strip()
     if not name or not title:
-        raise HTTPException(422, "company_name und title sind Pflicht")
+        raise HTTPException(422, tx("company_name und title sind Pflicht"))
 
     treffer = _manuelle_dublette(session, payload.get("url"), name, title)
     if treffer:
@@ -641,7 +647,7 @@ def create_job(payload: dict, session: Session = Depends(get_session)):
 
     comp = next((c for c in session.exec(select(Company)).all() if _norm_name(c.name) == name.lower()), None)
     if not comp:
-        neue_comp = Company(name=name, notes="Manuell angelegt")
+        neue_comp = Company(name=name, notes=tx("Manuell angelegt"))
         # `session.add(neue_comp)` bewusst ERST im Callback — s. Docstring von flush_or_duplicate
         # (begin_nested() autoflusht sonst vorher pending Änderungen AUSSERHALB der Savepoint-
         # Absicherung).
@@ -686,7 +692,7 @@ def create_job(payload: dict, session: Session = Depends(get_session)):
         status=status,
         found_date=date.today().isoformat(),
         dedup_key=dedup_key,
-        source_note="Manuell eingetragen",
+        source_note=tx("Manuell eingetragen"),
         **data,
     )
     if not flush_or_duplicate(session, lambda: session.add(job)):
@@ -696,7 +702,7 @@ def create_job(payload: dict, session: Session = Depends(get_session)):
         vorhanden = session.exec(select(Job).where(Job.dedup_key == dedup_key)).first()
         if vorhanden:
             return {"existing": True, "art": "firma_titel", "job": vorhanden}
-        raise HTTPException(409, "Job konnte wegen einer Dublette nicht angelegt werden")
+        raise HTTPException(409, tx("Job konnte wegen einer Dublette nicht angelegt werden"))
     # Schon beworben? Dann die Bewerbung gleich mit anlegen (wie beim Gmail-Ingest).
     if status == "Beworben":
         session.add(Application(
@@ -743,30 +749,30 @@ def _virtuelle_dateien(job, company, cvs, application, interviews, transcripts):
 
     if job:
         add("job", job.id, "posting", "Stellenausschreibung", job.posting_snapshot_path,
-            job.updated_at or job.created_at, "Anzeige-Kopie")
+            job.updated_at or job.created_at, tx("Anzeige-Kopie"))
     if company:
-        add("company", company.id, "fit", "Analyse", company.fit_analysis_path,
-            company.updated_at or company.created_at, "Company-Fit-Dashboard")
+        add("company", company.id, "fit", tx("Analyse"), company.fit_analysis_path,
+            company.updated_at or company.created_at, tx("Company-Fit-Dashboard"))
     for c in cvs or []:
         lang = (c.language or "").upper()
         cv_note = f"CV {lang}".strip()
         add("cv", c.id, "docx", "CV (.docx)", c.file_path, c.created_at, cv_note)
         add("cv", c.id, "pdf", "CV (.pdf)", c.pdf_path, c.created_at, cv_note)
-        add("cv", c.id, "match", "Analyse", c.match_dashboard_path, c.created_at, "Match-Dashboard")
-        add("cv", c.id, "ats", "Analyse", c.ats_scan_path, c.created_at, "ATS-Scan")
+        add("cv", c.id, "match", tx("Analyse"), c.match_dashboard_path, c.created_at, tx("Match-Dashboard"))
+        add("cv", c.id, "ats", tx("Analyse"), c.ats_scan_path, c.created_at, tx("ATS-Scan"))
     if application:
-        add("app", application.id, "cover", "Anschreiben (.docx)",
-            application.cover_letter_path, application.created_at, "Anschreiben")
+        add("app", application.id, "cover", tx("Anschreiben (.docx)"),
+            application.cover_letter_path, application.created_at, tx("Anschreiben"))
         # cover_letter_pdf_path kommt in Stufe D — getattr bleibt vorwärtskompatibel.
-        add("app", application.id, "coverpdf", "Anschreiben (.pdf)",
-            getattr(application, "cover_letter_pdf_path", None), application.created_at, "Anschreiben")
+        add("app", application.id, "coverpdf", tx("Anschreiben (.pdf)"),
+            getattr(application, "cover_letter_pdf_path", None), application.created_at, tx("Anschreiben"))
     for iv in interviews or []:
-        add("interview", iv.id, "prep", "Briefing", iv.prep_path, iv.created_at, f"Runde {iv.runde}")
+        add("interview", iv.id, "prep", "Briefing", iv.prep_path, iv.created_at, tx("Runde {runde}", runde=iv.runde))
     for t in transcripts or []:
         add("transcript", t.id, "debrief", "Debrief", t.debrief_path, t.created_at, "Debrief")
         # Phase 30: neuer Transkript-Report (Basis/Vollversion) — Altbestand ohne report_path zeigt
         # weiter nur den Debrief-Eintrag oben (add() überspringt leere Pfade selbst).
-        add("transcript", t.id, "report", "Transkript-Report", t.report_path, t.created_at, "Transkript-Report")
+        add("transcript", t.id, "report", tx("Transkript-Report"), t.report_path, t.created_at, tx("Transkript-Report"))
     return out
 
 
@@ -774,7 +780,7 @@ def _virtuelle_dateien(job, company, cvs, application, interviews, transcripts):
 def get_job(job_id: int, session: Session = Depends(get_session)):
     job = session.get(Job, job_id)
     if not job:
-        raise HTTPException(404, "Job nicht gefunden")
+        raise HTTPException(404, tx("Job nicht gefunden"))
     company = session.get(Company, job.company_id) if job.company_id else None
     contacts = session.exec(select(Contact).where(Contact.job_id == job_id)).all()
     if company:
@@ -814,7 +820,7 @@ def cv_entwurf(job_id: int, session: Session = Depends(get_session)):
     gespeicherte Entwurf bleibt erhalten, ein erneuter Lauf ist idempotent — s.
     `cv_export.entwurf_zurueckschreiben`/`export`). `null`, wenn noch kein CV-Match lief."""
     if not session.get(Job, job_id):
-        raise HTTPException(404, "Job nicht gefunden")
+        raise HTTPException(404, tx("Job nicht gefunden"))
     return session.exec(
         select(CVVersion).where(CVVersion.job_id == job_id, CVVersion.entwurf_text.is_not(None))
         .order_by(CVVersion.created_at.desc())
@@ -840,10 +846,10 @@ def update_cv_entwurf(cv_id: int, payload: dict, session: Session = Depends(get_
     ATS-Scan entstehen erst beim nächsten `cv-erstellen`-Lauf, den der Nutzer bewusst auslöst."""
     cv = session.get(CVVersion, cv_id)
     if not cv:
-        raise HTTPException(404, "CV-Version nicht gefunden")
+        raise HTTPException(404, tx("CV-Version nicht gefunden"))
     entwurf_text = payload.get("entwurf_text")
     if entwurf_text is None:
-        raise HTTPException(422, "entwurf_text fehlt")
+        raise HTTPException(422, tx("entwurf_text fehlt"))
     cv.entwurf_text = json.dumps(entwurf_text, ensure_ascii=False)
     session.add(cv)
     session.commit()
@@ -858,7 +864,7 @@ def update_application(application_id: int, payload: dict, session: Session = De
     auch nachdem Word/PDF schon erzeugt wurden (erneutes „Word + PDF erzeugen" holt den Stand nach)."""
     application = session.get(Application, application_id)
     if not application:
-        raise HTTPException(404, "Bewerbung nicht gefunden")
+        raise HTTPException(404, tx("Bewerbung nicht gefunden"))
     editable = {"cover_letter_text"}
     for k, v in payload.items():
         if k in editable:
@@ -877,12 +883,12 @@ def cover_letter_text_from_docx(application_id: int, session: Session = Depends(
 
     application = session.get(Application, application_id)
     if not application:
-        raise HTTPException(404, "Bewerbung nicht gefunden")
+        raise HTTPException(404, tx("Bewerbung nicht gefunden"))
     if not application.cover_letter_path:
-        raise HTTPException(422, "Kein Anschreiben-Dokument vorhanden")
+        raise HTTPException(422, tx("Kein Anschreiben-Dokument vorhanden"))
     docx_path = (_PROJECT_ROOT / application.cover_letter_path).resolve()
     if not docx_path.exists():
-        raise HTTPException(404, "Anschreiben-Datei fehlt auf der Platte")
+        raise HTTPException(404, tx("Anschreiben-Datei fehlt auf der Platte"))
     return {"text": extract_text_from_docx(docx_path)}
 
 
@@ -906,7 +912,7 @@ _JOB_LOG_FIELDS = {"next_step", "follow_up_date", "notes", "status", "salary", "
 def update_job(job_id: int, payload: dict, session: Session = Depends(get_session)):
     job = session.get(Job, job_id)
     if not job:
-        raise HTTPException(404, "Job nicht gefunden")
+        raise HTTPException(404, tx("Job nicht gefunden"))
     if "status" in payload:
         _validiere_status(payload["status"], ALLOWED_JOB_STATUSES)
     if "portal_closed" in payload:
@@ -960,19 +966,22 @@ def update_job(job_id: int, payload: dict, session: Session = Depends(get_sessio
             old = getattr(job, k)
             if (old or "") != (v or ""):
                 if k == "notes":
-                    changes.append("Notizen aktualisiert")
+                    changes.append(tx("Notizen aktualisiert"))
                 elif k == "next_step":
-                    changes.append(f"Nächster Schritt: „{v}“" if v else "Nächster Schritt entfernt")
+                    changes.append(tx("Nächster Schritt: „{v}“", v=v) if v
+                               else tx("Nächster Schritt entfernt"))
                 elif k == "portal_closed":
                     # Phase 73, Design-Entscheidung 5: Ja/Nein im Log, NICHT die rohen 0/1-Werte.
-                    changes.append(f"{_JOB_LOG_LABELS[k]}: {'Ja' if old else 'Nein'} → {'Ja' if v else 'Nein'}")
+                    changes.append(f"{uebersetzt(_JOB_LOG_LABELS[k])}: {tx('Ja') if old else tx('Nein')} → "
+                                   f"{tx('Ja') if v else tx('Nein')}")
                 elif k == "availability_status":
                     # Phase 74, Design-Entscheidung 4: Anzeige-Labels im Log, NICHT die rohen Codes;
                     # None (noch nie geprüft) → „—" (Muster AVAILABILITY_LABELS.get-Fallback).
-                    changes.append(f"{_JOB_LOG_LABELS[k]}: {AVAILABILITY_LABELS.get(old, '—')} → "
-                                   f"{AVAILABILITY_LABELS.get(v, '—')}")
+                    changes.append(f"{uebersetzt(_JOB_LOG_LABELS[k])}: "
+                                   f"{uebersetzt(AVAILABILITY_LABELS.get(old, '—'))} → "
+                                   f"{uebersetzt(AVAILABILITY_LABELS.get(v, '—'))}")
                 else:
-                    changes.append(f"{_JOB_LOG_LABELS[k]}: {old or '—'} → {v or '—'}")
+                    changes.append(f"{uebersetzt(_JOB_LOG_LABELS[k])}: {old or '—'} → {v or '—'}")
 
     for k, v in payload.items():
         if k in editable:
@@ -994,7 +1003,7 @@ def update_job(job_id: int, payload: dict, session: Session = Depends(get_sessio
             select(Application).where(Application.job_id == job_id)
         ).first()
         if bewerbung and bewerbung.status != payload["status"]:
-            changes.append(f"Bewerbung: {bewerbung.status or '—'} → {payload['status']}")
+            changes.append(tx("Bewerbung: {alt} → {neu}", alt=bewerbung.status or '—', neu=payload['status']))
             bewerbung.status = payload["status"]
             session.add(bewerbung)
 
@@ -1019,7 +1028,7 @@ def delete_job(job_id: int, session: Session = Depends(get_session)):
     from datetime import datetime
     job = session.get(Job, job_id)
     if not job or job.deleted_at:
-        raise HTTPException(404, "Stelle nicht gefunden oder bereits gelöscht")
+        raise HTTPException(404, tx("Stelle nicht gefunden oder bereits gelöscht"))
 
     application = session.exec(select(Application).where(Application.job_id == job_id)).first()
     interviews = session.exec(select(Interview).where(Interview.job_id == job_id)).all()
@@ -1093,8 +1102,7 @@ def delete_job(job_id: int, session: Session = Depends(get_session)):
                 dateien_verschoben += 1
         except OSError as exc:
             dateien_fehlgeschlagen += 1
-            print(f"[papierkorb] FEHLER beim Verschieben von '{p}' (Job {job_id}, "
-                  f"delete_job): {exc}", flush=True)
+            print(tt("[papierkorb] FEHLER beim Verschieben von '{pfad}' (Job {job_id}, delete_job): {fehler}", pfad=p, job_id=job_id, fehler=exc), flush=True)
 
     return {
         "ok": True,
@@ -1122,10 +1130,10 @@ def job_log_add(job_id: int, payload: dict, session: Session = Depends(get_sessi
     """Manuellen Notiz-Eintrag anfügen."""
     job = session.get(Job, job_id)
     if not job:
-        raise HTTPException(404, "Job nicht gefunden")
+        raise HTTPException(404, tx("Job nicht gefunden"))
     eintrag = (payload.get("eintrag") or "").strip()
     if not eintrag:
-        raise HTTPException(422, "eintrag fehlt")
+        raise HTTPException(422, tx("eintrag fehlt"))
     row = JobLog(job_id=job_id, eintrag=eintrag, art="manuell")
     session.add(row)
     session.commit()
@@ -1139,7 +1147,7 @@ def update_company(company_id: int, payload: dict, session: Session = Depends(ge
     Bewusst kleines editable-Set. `situation` läuft durch norm_situation (norm + raw-Paar)."""
     comp = session.get(Company, company_id)
     if not comp:
-        raise HTTPException(404, "Firma nicht gefunden")
+        raise HTTPException(404, tx("Firma nicht gefunden"))
     from app import normalize as N
     if "situation" in payload:
         norm, raw = N.norm_situation(payload["situation"])
@@ -1197,11 +1205,11 @@ def _task_dto(t: AgentTask, log: Optional[list] = None, job: Optional[Job] = Non
         "job_title": job.title if job else None,
         "prompt": t.prompt, "error": t.error, "exit_code": t.exit_code,
         "duration_s": t.duration_s, "num_turns": t.num_turns, "cost_usd": t.cost_usd, "tokens": t.tokens,
-        "chain_id": t.chain_id, "chain_label": t.chain_label, "chain_pos": t.chain_pos,
+        "chain_id": t.chain_id, "chain_label": uebersetzt(t.chain_label), "chain_pos": t.chain_pos,
         "depends_on": t.depends_on,
         "retry_count": t.retry_count or 0,
         "max_retries": agent_runner.MAX_RETRIES if agent_runner.PROMPTS.get(t.kind, {}).get("retryable") else 0,
-        "label": agent_runner.PROMPTS.get(t.kind, {}).get("label", t.kind),
+        "label": uebersetzt(agent_runner.PROMPTS.get(t.kind, {}).get("label", t.kind)),
         # P2-20: iso_utc statt isoformat — ein handgebautes dict geht am UtcZeit-Mixin
         # vorbei, ohne diesen Aufruf blieben die Zeiten im Task-Center ohne Zeitzone.
         "created_at": zeit.iso_utc(t.created_at),
@@ -1223,11 +1231,11 @@ def _task_dto(t: AgentTask, log: Optional[list] = None, job: Optional[Job] = Non
 @app.get("/api/task-kinds")
 def task_kinds():
     """Alle Task-Arten inkl. der NICHT headless-fähigen (mit Begründung) — für die UI."""
-    kinds = [{"kind": k, "label": v["label"], "needs_job": v.get("needs_job", False),
+    kinds = [{"kind": k, "label": uebersetzt(v["label"]), "needs_job": v.get("needs_job", False),
               "needs_params": list(v.get("needs_params", ())),
-              "headless": bool(v.get("headless")), "reason": v.get("reason")}
+              "headless": bool(v.get("headless")), "reason": uebersetzt(v.get("reason"))}
              for k, v in agent_runner.PROMPTS.items()]
-    recipes = [{"kind": k, "label": v["label"], "needs_job": v.get("needs_job", False),
+    recipes = [{"kind": k, "label": uebersetzt(v["label"]), "needs_job": v.get("needs_job", False),
                 "steps": v["steps"], "headless": True, "is_recipe": True,
                 # P2-41: optionale Bausteine als Task-Art-Liste — leer für Rezepte ohne
                 # optional-Block (z. B. tageslauf).
@@ -1248,7 +1256,7 @@ def _guard_doppellauf(session: Session, kinds: list, job_id) -> None:
                                 AgentTask.status.in_(("queued", "running")))
     ).first()
     if aktiv:
-        raise HTTPException(409, f"'{aktiv.kind}' läuft für diesen Job bereits (Task {aktiv.id})")
+        raise HTTPException(409, tx("'{kind}' läuft für diesen Job bereits (Task {id})", kind=aktiv.kind, id=aktiv.id))
 
 
 def _guard_tagesbudget(session: Session) -> None:
@@ -1288,10 +1296,10 @@ def _guard_low_match(job, kinds: set, params: dict) -> None:
         return
     if (params or {}).get("low_match_ok"):
         return
-    grund = f" — Bewertung: „{job.match_rationale[:100]}…“" if job.match_rationale else ""
+    grund = tx(" — Bewertung: „{wert}…“", wert=job.match_rationale[:100]) if job.match_rationale else ""
     raise HTTPException(409, (
-        f"LOW_MATCH: Zielstellen-Fit {job.match_score}/5{grund} Unterlagen-Lauf für diese Stelle nur "
-        f"mit ausdrücklicher Bestätigung (params.low_match_ok=true)."
+        tx("LOW_MATCH: Zielstellen-Fit {match_score}/5{grund} Unterlagen-Lauf für diese Stelle "
+           "nur mit ausdrücklicher Bestätigung (params.low_match_ok=true).", match_score=job.match_score, grund=grund)
     ))
 
 
@@ -1320,17 +1328,17 @@ async def _guard_anzeigentext(job, kinds: set, params: dict, session: Session) -
     try:
         erg = await run_in_threadpool(posting_snapshot.anzeigentext_sichern, job.id)
     except Exception as e:                  # noqa: BLE001 — Rückfrage statt 500, der Nutzer entscheidet
-        print(f"[anzeigentext] Job {job.id}: {type(e).__name__}: {e}", flush=True)
-        erg = {"status": "fehlt", "grund": "Der Abruf der Anzeige ist fehlgeschlagen."}
+        print(tt("[anzeigentext] Job {job_id}: {art}: {fehler}", job_id=job.id, art=type(e).__name__, fehler=e), flush=True)
+        erg = {"status": "fehlt", "grund": tx("Der Abruf der Anzeige ist fehlgeschlagen.")}
     session.refresh(job)
     if erg.get("status") != "fehlt":
         return
     grund = (erg.get("grund") or "").strip()
     grund_teil = f"{grund} " if grund else ""
     raise HTTPException(409, (
-        f"ANZEIGE_FEHLT: Der Anzeigentext dieser Stelle liegt nicht vor. {grund_teil}"
-        f"Ohne ihn arbeiten Firma-Prüfung, CV-Match, CV und Anschreiben nur mit Titel und Firma. "
-        f"(params.ohne_anzeigentext_ok=true)"
+        tx("ANZEIGE_FEHLT: Der Anzeigentext dieser Stelle liegt nicht vor. {grund_teil}Ohne ihn "
+           "arbeiten Firma-Prüfung, CV-Match, CV und Anschreiben nur mit Titel und Firma. "
+           "(params.ohne_anzeigentext_ok=true)", grund_teil=grund_teil)
     ))
 
 
@@ -1342,7 +1350,7 @@ async def create_task(payload: dict, session: Session = Depends(get_session)):
     params = payload.get("params") or {}
     job = session.get(Job, job_id) if job_id is not None else None
     if job_id is not None and not job:
-        raise HTTPException(404, "Job nicht gefunden")
+        raise HTTPException(404, tx("Job nicht gefunden"))
     _guard_tagesbudget(session)     # gilt für Einzel-Tasks wie für Ketten
     # P2-41: Rezepte tragen jetzt optionale Bausteine (z. B. „anschreiben“ im Bewerbungspaket) —
     # die tatsächliche Schrittfolge hängt vom Param `mit_<baustein>` bzw. dem Standardwert aus
@@ -1367,7 +1375,7 @@ async def create_task(payload: dict, session: Session = Depends(get_session)):
     #    hat — absichtliche Doppelprüfung, s. deren Docstring, kein Bug.
     if kind == "beirat-stellen-check":
         if not job:
-            raise HTTPException(422, "'beirat-stellen-check' braucht eine job_id")
+            raise HTTPException(422, tx("'beirat-stellen-check' braucht eine job_id"))
         d, _ = _beirat_stellen_check_starten(job, session, int(params.get("min_beitraege") or 8))
         return _task_dto(session.get(AgentTask, d.task_id), job=job)
 
@@ -1375,7 +1383,7 @@ async def create_task(payload: dict, session: Session = Depends(get_session)):
     if kind in agent_runner.RECIPES:
         rec = agent_runner.RECIPES[kind]
         if rec.get("needs_job") and not job_id:
-            raise HTTPException(422, f"'{kind}' braucht eine job_id")
+            raise HTTPException(422, tx("'{kind}' braucht eine job_id", kind=kind))
         # `schritte`/`ketten_label` kommen bereits oben aus `rezept_aufloesen()` (P2-41) —
         # dieselbe aufgelöste Schrittfolge, die auch der Low-Match-Guard geprüft hat.
         _guard_doppellauf(session, schritte, job_id)
@@ -1398,7 +1406,7 @@ async def create_task(payload: dict, session: Session = Depends(get_session)):
             erstellt.append(t)
             vorher = t.id
         agent_runner.enqueue(erstellt[0].id)          # Folgeschritte weckt der Vorgänger
-        return {"chain_id": chain_id, "label": ketten_label,
+        return {"chain_id": chain_id, "label": uebersetzt(ketten_label),
                 "tasks": [_task_dto(t, job=job) for t in erstellt]}
 
     # ── Einzel-Task ──────────────────────────────────────────────────────────
@@ -1437,11 +1445,22 @@ def list_tasks(job_id: Optional[int] = None, status: Optional[str] = None,
     return [_task_dto(t, job=jobs_by_id.get(t.job_id)) for t in tasks]
 
 
+@app.get("/api/tasks/summen")
+def task_summen(session: Session = Depends(get_session)):
+    """Kennzahlen über ALLE Läufe für die Kacheln im Task-Center. Die Liste `/api/tasks` liefert nur die letzten Läufe,
+    Summen daraus blieben bei 100 stehen. Steht vor `/api/tasks/{task_id}`, sonst fiele `summen` dort als ID durch."""
+    gesamt, kosten, token = session.exec(
+        select(func.count(AgentTask.id), func.coalesce(func.sum(AgentTask.cost_usd), 0.0),
+               func.coalesce(func.sum(AgentTask.tokens), 0))).one()
+    fehlgeschlagen = session.exec(select(func.count(AgentTask.id)).where(AgentTask.status == "failed")).one()
+    return {"gesamt": gesamt, "fehlgeschlagen": fehlgeschlagen, "kosten_usd": kosten, "token": token}
+
+
 @app.get("/api/tasks/{task_id}")
 def get_task(task_id: int, tail: int = 200, session: Session = Depends(get_session)):
     t = session.get(AgentTask, task_id)
     if not t:
-        raise HTTPException(404, "Task nicht gefunden")
+        raise HTTPException(404, tx("Task nicht gefunden"))
     job = session.get(Job, t.job_id) if t.job_id else None
     return _task_dto(t, log=agent_runner.log_tail(t, tail), job=job)
 
@@ -1450,7 +1469,7 @@ def get_task(task_id: int, tail: int = 200, session: Session = Depends(get_sessi
 async def cancel_task(task_id: int, session: Session = Depends(get_session)):
     t = session.get(AgentTask, task_id)
     if not t:
-        raise HTTPException(404, "Task nicht gefunden")
+        raise HTTPException(404, tx("Task nicht gefunden"))
     if t.kind.startswith("beirat-"):
         # Cancel-Weiche (Phase 42 Stufe B, Design-Entscheidung 4): In-Server-Engine statt
         # Runner-Prozess — der bestehende „Abbrechen"-Button im Task-Center bleibt derselbe.
@@ -1461,7 +1480,7 @@ async def cancel_task(task_id: int, session: Session = Depends(get_session)):
     else:
         ok = await agent_runner.cancel(task_id)
     if not ok:
-        raise HTTPException(409, f"Task ist bereits '{t.status}'")
+        raise HTTPException(409, tx("Task ist bereits '{status}'", status=t.status))
     return {"ok": True}
 
 
@@ -1470,7 +1489,7 @@ async def cancel_task(task_id: int, session: Session = Depends(get_session)):
 def job_chat_list(job_id: int, session: Session = Depends(get_session)):
     """Chat-Verlauf eines Jobs, chronologisch aufsteigend (klein, kein Paging nötig)."""
     if not session.get(Job, job_id):
-        raise HTTPException(404, "Job nicht gefunden")
+        raise HTTPException(404, tx("Job nicht gefunden"))
     return session.exec(select(JobChat).where(JobChat.job_id == job_id)
                         .order_by(JobChat.created_at, JobChat.id)).all()
 
@@ -1484,12 +1503,12 @@ async def job_chat_ask(job_id: int, payload: dict, session: Session = Depends(ge
     nochmal — billige SELECTs, kein Problem — statt eine eigene Kopie der Guard-Logik zu pflegen)."""
     job = session.get(Job, job_id)
     if not job:
-        raise HTTPException(404, "Job nicht gefunden")
+        raise HTTPException(404, tx("Job nicht gefunden"))
     frage = (payload.get("frage") or "").strip()
     if not frage:
-        raise HTTPException(422, "frage fehlt")
+        raise HTTPException(422, tx("frage fehlt"))
     if len(frage) > 2000:
-        raise HTTPException(422, "frage zu lang (max. 2000 Zeichen)")
+        raise HTTPException(422, tx("frage zu lang (max. 2000 Zeichen)"))
     _guard_tagesbudget(session)
     _guard_doppellauf(session, ["job-frage"], job_id)
     user_row = JobChat(job_id=job_id, rolle="user", text=frage)
@@ -1523,42 +1542,43 @@ def update_budget_limit(provider: str, payload: dict, session: Session = Depends
     B.seed_limits()
     lim = session.exec(select(BudgetLimit).where(BudgetLimit.provider == provider)).first()
     if not lim:
-        raise HTTPException(404, f"Kein Budget-Dienst '{provider}' — steuerbar sind nur bekannte Dienste")
+        raise HTTPException(404, tx("Kein Budget-Dienst '{provider}' — steuerbar sind nur "
+                                    "bekannte Dienste", provider=provider))
 
     editierbar = {"daily_limit_usd", "monthly_limit_usd", "enforcement", "active", "label",
                  "max_runs_per_day"}
     unbekannt = set(payload) - editierbar
     if unbekannt:
-        raise HTTPException(422, f"Nicht editierbare Felder: {', '.join(sorted(unbekannt))}")
+        raise HTTPException(422, tx("Nicht editierbare Felder: {liste}", liste=', '.join(sorted(unbekannt))))
 
     if "enforcement" in payload and payload["enforcement"] not in ("hart", "weich"):
-        raise HTTPException(422, "enforcement muss 'hart' oder 'weich' sein")
+        raise HTTPException(422, tx("enforcement muss 'hart' oder 'weich' sein"))
 
     for feld in ("daily_limit_usd", "monthly_limit_usd"):
         if feld in payload and payload[feld] is not None:
             try:
                 wert = float(payload[feld])
             except (TypeError, ValueError):
-                raise HTTPException(422, f"{feld} muss eine Zahl oder null sein")
+                raise HTTPException(422, tx("{feld} muss eine Zahl oder null sein", feld=feld))
             if wert < 0:
-                raise HTTPException(422, f"{feld} darf nicht negativ sein")
+                raise HTTPException(422, tx("{feld} darf nicht negativ sein", feld=feld))
             payload[feld] = wert
 
     if "max_runs_per_day" in payload and payload["max_runs_per_day"] is not None:
         try:
             wert = int(payload["max_runs_per_day"])
         except (TypeError, ValueError):
-            raise HTTPException(422, "max_runs_per_day muss eine ganze Zahl oder null sein")
+            raise HTTPException(422, tx("max_runs_per_day muss eine ganze Zahl oder null sein"))
         if wert < 0:
-            raise HTTPException(422, "max_runs_per_day darf nicht negativ sein")
+            raise HTTPException(422, tx("max_runs_per_day darf nicht negativ sein"))
         payload["max_runs_per_day"] = wert
 
     # Plausibilität gegen den ZUKÜNFTIGEN Zustand prüfen, nicht gegen den alten.
     neu_tag = payload.get("daily_limit_usd", lim.daily_limit_usd)
     neu_monat = payload.get("monthly_limit_usd", lim.monthly_limit_usd)
     if neu_tag is not None and neu_monat is not None and neu_tag > neu_monat:
-        raise HTTPException(422, f"Tageslimit (${neu_tag:.2f}) darf nicht über dem "
-                                 f"Monatslimit (${neu_monat:.2f}) liegen")
+        raise HTTPException(422, tx("Tageslimit (${neu_tag}) darf nicht über dem Monatslimit "
+                                    "(${neu_monat}) liegen", neu_tag=format(neu_tag, '.2f'), neu_monat=format(neu_monat, '.2f')))
 
     for k, v in payload.items():
         setattr(lim, k, v)
@@ -1567,7 +1587,7 @@ def update_budget_limit(provider: str, payload: dict, session: Session = Depends
     session.add(lim)
     session.commit()
     session.refresh(lim)
-    return {"provider": lim.provider, "label": lim.label, "daily_limit_usd": lim.daily_limit_usd,
+    return {"provider": lim.provider, "label": uebersetzt(lim.label), "daily_limit_usd": lim.daily_limit_usd,
             "monthly_limit_usd": lim.monthly_limit_usd, "enforcement": lim.enforcement,
             "active": lim.active, "max_runs_per_day": lim.max_runs_per_day}
 
@@ -1737,9 +1757,9 @@ def intern_pdf(payload: dict):
     docx, pdf = (Path(str(payload.get(k) or "")).resolve() for k in ("docx", "pdf"))
     for pfad, endung in ((docx, ".docx"), (pdf, ".pdf")):
         if pfad.suffix.lower() != endung or not any(pfad.is_relative_to(w) for w in wurzeln):
-            raise HTTPException(422, f"Pfad außerhalb des Programms oder falsche Endung: {pfad.name}")
+            raise HTTPException(422, tx("Pfad außerhalb des Programms oder falsche Endung: {name}", name=pfad.name))
     if not docx.is_file():
-        raise HTTPException(422, f"Datei nicht gefunden: {docx.name}")
+        raise HTTPException(422, tx("Datei nicht gefunden: {name}", name=docx.name))
     ok, fehler = cv_export._to_pdf_soffice(str(docx), str(pdf))
     return {"ok": ok, "fehler": fehler}
 
@@ -1764,45 +1784,45 @@ _PLAN_PFLICHTFELDER = {"plan", "label", "aktiv", "prioritaet", "titel", "seniori
 
 def _validiere_plaene(plaene) -> None:
     if not isinstance(plaene, list) or len(plaene) > 3:
-        raise HTTPException(422, "plaene muss eine Liste mit höchstens 3 Einträgen sein")
+        raise HTTPException(422, tx("plaene muss eine Liste mit höchstens 3 Einträgen sein"))
     gesehen = set()
     for p in plaene:
         if not isinstance(p, dict):
-            raise HTTPException(422, "jeder Plan-Eintrag muss ein Objekt sein")
+            raise HTTPException(422, tx("jeder Plan-Eintrag muss ein Objekt sein"))
         fehlend = _PLAN_PFLICHTFELDER - set(p)
         if fehlend:
-            raise HTTPException(422, f"Plan-Eintrag fehlt Felder: {', '.join(sorted(fehlend))}")
+            raise HTTPException(422, tx("Plan-Eintrag fehlt Felder: {liste}", liste=', '.join(sorted(fehlend))))
         if p["plan"] not in ("A", "B", "C"):
-            raise HTTPException(422, f"plan muss A, B oder C sein, nicht {p['plan']!r}")
+            raise HTTPException(422, tx("plan muss A, B oder C sein, nicht {plan}", plan=repr(p['plan'])))
         if p["plan"] in gesehen:
-            raise HTTPException(422, f"Plan {p['plan']} mehrfach angegeben")
+            raise HTTPException(422, tx("Plan {plan} mehrfach angegeben", plan=p['plan']))
         gesehen.add(p["plan"])
         if not isinstance(p["aktiv"], bool):
-            raise HTTPException(422, "aktiv muss ein Boolean sein")
+            raise HTTPException(422, tx("aktiv muss ein Boolean sein"))
         if not isinstance(p["prioritaet"], int):
-            raise HTTPException(422, "prioritaet muss eine Zahl sein")
+            raise HTTPException(422, tx("prioritaet muss eine Zahl sein"))
         for feld in ("titel", "senioritaet", "branche"):
             if not isinstance(p[feld], list) or not all(isinstance(x, str) for x in p[feld]):
-                raise HTTPException(422, f"{feld} muss eine Liste von Texten sein")
+                raise HTTPException(422, tx("{feld} muss eine Liste von Texten sein", feld=feld))
 
 
 def _validiere_suchbereich(suchbereich) -> None:
     if not isinstance(suchbereich, dict):
-        raise HTTPException(422, "suchbereich muss ein Objekt sein")
+        raise HTTPException(422, tx("suchbereich muss ein Objekt sein"))
     for key in ("remote", "deutschlandweit"):
         if key in suchbereich:
             if not isinstance(suchbereich[key], dict) or not isinstance(suchbereich[key].get("aktiv"), bool):
-                raise HTTPException(422, f"suchbereich.{key}.aktiv muss ein Boolean sein")
+                raise HTTPException(422, tx("suchbereich.{key}.aktiv muss ein Boolean sein", key=key))
     if "umkreis" in suchbereich:
         u = suchbereich["umkreis"]
         if not isinstance(u, dict):
-            raise HTTPException(422, "suchbereich.umkreis muss ein Objekt sein")
+            raise HTTPException(422, tx("suchbereich.umkreis muss ein Objekt sein"))
         if "aktiv" in u and not isinstance(u["aktiv"], bool):
-            raise HTTPException(422, "suchbereich.umkreis.aktiv muss ein Boolean sein")
+            raise HTTPException(422, tx("suchbereich.umkreis.aktiv muss ein Boolean sein"))
         if "stadt" in u and not isinstance(u["stadt"], str):
-            raise HTTPException(422, "suchbereich.umkreis.stadt muss Text sein")
+            raise HTTPException(422, tx("suchbereich.umkreis.stadt muss Text sein"))
         if "umkreis_km" in u and not isinstance(u["umkreis_km"], int):
-            raise HTTPException(422, "suchbereich.umkreis.umkreis_km muss eine Zahl sein")
+            raise HTTPException(422, tx("suchbereich.umkreis.umkreis_km muss eine Zahl sein"))
 
 
 def _modell_aliase_text() -> str:
@@ -1813,34 +1833,34 @@ def _modell_aliase_text() -> str:
     aliase = list(agent_runner.MODELL_ALIASE)
     if len(aliase) <= 1:
         return aliase[0] if aliase else ""
-    return ", ".join(aliase[:-1]) + " oder " + aliase[-1]
+    return ", ".join(aliase[:-1]) + tx(" oder ") + aliase[-1]
 
 
 def _validiere_modelle(modelle) -> None:
     if not isinstance(modelle, dict):
-        raise HTTPException(422, "modelle muss ein Objekt sein")
+        raise HTTPException(422, tx("modelle muss ein Objekt sein"))
     unbekannt = set(modelle) - set(_MODELLE_FUNKTIONEN)
     if unbekannt:
-        raise HTTPException(422, f"Unbekannte Funktion(en) in modelle: {', '.join(sorted(unbekannt))}")
+        raise HTTPException(422, tx("Unbekannte Funktion(en) in modelle: {liste}", liste=', '.join(sorted(unbekannt))))
     for fn, alias in modelle.items():
         # P2-59: Erlaubnisliste ist MODELL_ALIASE, nicht „alles außer GESPERRTE_MODELLE“. Ein
         # gesperrtes Modell (Fable) fällt damit wie jeder unbekannte Wert durch, und ein neues,
         # nie geprüftes Modell kommt nicht stillschweigend hinein.
         if alias not in agent_runner.MODELL_ALIASE:
-            raise HTTPException(422, f"modelle.{fn} muss {_modell_aliase_text()} sein, nicht {alias!r}")
+            raise HTTPException(422, tx("modelle.{fn} muss {wert} sein, nicht {alias}", fn=fn, wert=_modell_aliase_text(), alias=repr(alias)))
 
 
 def _validiere_unterlagen(unterlagen) -> None:
     """P2-41 — Muster `_validiere_modelle`: Objekt, Schlüssel ⊆ `_UNTERLAGEN_BAUSTEINE`, Werte
     echte Booleans."""
     if not isinstance(unterlagen, dict):
-        raise HTTPException(422, "unterlagen muss ein Objekt sein")
+        raise HTTPException(422, tx("unterlagen muss ein Objekt sein"))
     unbekannt = set(unterlagen) - set(_UNTERLAGEN_BAUSTEINE)
     if unbekannt:
-        raise HTTPException(422, f"Unbekannter Baustein in unterlagen: {', '.join(sorted(unbekannt))}")
+        raise HTTPException(422, tx("Unbekannter Baustein in unterlagen: {liste}", liste=', '.join(sorted(unbekannt))))
     for name, wert in unterlagen.items():
         if not isinstance(wert, bool):
-            raise HTTPException(422, f"unterlagen.{name} muss ein Boolean sein, nicht {wert!r}")
+            raise HTTPException(422, tx("unterlagen.{name} muss ein Boolean sein, nicht {wert}", name=name, wert=repr(wert)))
 
 
 # Phase 87 — Pflichtfelder je Portal-Eintrag; `standard` gehört bewusst NICHT dazu (s.
@@ -1859,38 +1879,38 @@ def _validiere_portale(portale) -> None:
     Eine nicht-leere URL muss mit http:// oder https:// beginnen (schützt vor z. B. `ftp://`,
     das der Prüf-Endpunkt ohnehin ablehnen würde, s. B4)."""
     if not isinstance(portale, list) or len(portale) > 8:
-        raise HTTPException(422, "portale muss eine Liste mit höchstens 8 Einträgen sein")
+        raise HTTPException(422, tx("portale muss eine Liste mit höchstens 8 Einträgen sein"))
     from pipeline import suchprofil
     bekannte_keys = {p["key"] for p in suchprofil.PORTALE_DEFAULT}
     gesehen = set()
     for p in portale:
         if not isinstance(p, dict):
-            raise HTTPException(422, "jeder Portal-Eintrag muss ein Objekt sein")
+            raise HTTPException(422, tx("jeder Portal-Eintrag muss ein Objekt sein"))
         fehlend = _PORTAL_PFLICHTFELDER - set(p)
         if fehlend:
-            raise HTTPException(422, f"Portal-Eintrag fehlt Felder: {', '.join(sorted(fehlend))}")
+            raise HTTPException(422, tx("Portal-Eintrag fehlt Felder: {liste}", liste=', '.join(sorted(fehlend))))
         key = p["key"]
         if key not in bekannte_keys:
-            raise HTTPException(422, f"Unbekannter Portal-key: {key!r}")
+            raise HTTPException(422, tx("Unbekannter Portal-key: {key}", key=repr(key)))
         if key in gesehen:
-            raise HTTPException(422, f"Portal-key {key} mehrfach angegeben")
+            raise HTTPException(422, tx("Portal-key {key} mehrfach angegeben", key=key))
         gesehen.add(key)
         if not isinstance(p["name"], str):
-            raise HTTPException(422, "name muss Text sein")
+            raise HTTPException(422, tx("name muss Text sein"))
         if not isinstance(p["url"], str):
-            raise HTTPException(422, "url muss Text sein")
+            raise HTTPException(422, tx("url muss Text sein"))
         if p["zugriff"] not in ("websearch", "fetch"):
-            raise HTTPException(422, f"zugriff muss websearch oder fetch sein, nicht {p['zugriff']!r}")
+            raise HTTPException(422, tx("zugriff muss websearch oder fetch sein, nicht {zugriff}", zugriff=repr(p['zugriff'])))
         if not isinstance(p["aktiv"], bool):
-            raise HTTPException(422, "aktiv muss ein Boolean sein")
+            raise HTTPException(422, tx("aktiv muss ein Boolean sein"))
         url = p["url"].strip()
         if not url:
             if key not in _PORTAL_FREI_KEYS:
-                raise HTTPException(422, f"url darf bei {key} nicht leer sein")
+                raise HTTPException(422, tx("url darf bei {key} nicht leer sein", key=key))
             if p["aktiv"]:
-                raise HTTPException(422, f"{key} ohne url kann nicht aktiv sein")
+                raise HTTPException(422, tx("{key} ohne url kann nicht aktiv sein", key=key))
         elif not (url.startswith("http://") or url.startswith("https://")):
-            raise HTTPException(422, f"url muss mit http:// oder https:// beginnen, nicht {p['url']!r}")
+            raise HTTPException(422, tx("url muss mit http:// oder https:// beginnen, nicht {url}", url=repr(p['url'])))
 
 
 @app.patch("/api/einstellungen")
@@ -1919,15 +1939,15 @@ def update_einstellungen(payload: dict, session: Session = Depends(get_session))
     editierbar = {"min_mitarbeiter", "suchbereich", "plaene", "modelle", "portale", "unterlagen", "ki_anbieter"}
     unbekannt = set(payload) - editierbar
     if unbekannt:
-        raise HTTPException(422, f"Nicht editierbare Felder: {', '.join(sorted(unbekannt))}")
+        raise HTTPException(422, tx("Nicht editierbare Felder: {liste}", liste=', '.join(sorted(unbekannt))))
 
     if "min_mitarbeiter" in payload:
         try:
             wert = int(payload["min_mitarbeiter"])
         except (TypeError, ValueError):
-            raise HTTPException(422, "min_mitarbeiter muss eine Zahl sein")
+            raise HTTPException(422, tx("min_mitarbeiter muss eine Zahl sein"))
         if wert < 0:
-            raise HTTPException(422, "min_mitarbeiter darf nicht negativ sein")
+            raise HTTPException(422, tx("min_mitarbeiter darf nicht negativ sein"))
         e.min_mitarbeiter = wert
 
     label_vorher = label_nachher = None
@@ -1948,10 +1968,10 @@ def update_einstellungen(payload: dict, session: Session = Depends(get_session))
         # nichts bewirkt hätte).
         if umkreis_nachher.get("aktiv"):
             if not (umkreis_nachher.get("stadt") or "").strip():
-                raise HTTPException(422, "Für den Umkreis fehlt die Stadt.")
+                raise HTTPException(422, tx("Für den Umkreis fehlt die Stadt."))
             km = umkreis_nachher.get("umkreis_km")
             if not isinstance(km, int) or isinstance(km, bool) or not (1 <= km <= 1000):
-                raise HTTPException(422, "Der Umkreis-Radius muss zwischen 1 und 1000 km liegen.")
+                raise HTTPException(422, tx("Der Umkreis-Radius muss zwischen 1 und 1000 km liegen."))
         e.suchbereich_json = json.dumps(bestehend, ensure_ascii=False)
         label_nachher = suchprofil.umkreis_label(umkreis_nachher)
 
@@ -1965,7 +1985,7 @@ def update_einstellungen(payload: dict, session: Session = Depends(get_session))
 
     if "ki_anbieter" in payload:
         if payload["ki_anbieter"] not in ki_anbieter.LABEL:
-            raise HTTPException(422, f"ki_anbieter muss {' oder '.join(ki_anbieter.LABEL)} sein")
+            raise HTTPException(422, tx("ki_anbieter muss {liste} sein", liste=tx(" oder ").join(ki_anbieter.LABEL)))
         e.ki_anbieter = payload["ki_anbieter"]
 
     if "modelle" in payload:
@@ -2100,11 +2120,11 @@ def _portal_ziel_erlaubt(url: str):
     from urllib.parse import urlsplit
     teile = urlsplit(url)
     if teile.scheme not in ("http", "https"):
-        return f"nicht erlaubtes Protokoll: {teile.scheme or '(keins)'}"
+        return tx("nicht erlaubtes Protokoll: {scheme}", scheme=teile.scheme or tx("(keins)"))
     if not teile.hostname:
-        return "keine gültige URL"
+        return tx("keine gültige URL")
     if _portal_ziel_privat(teile.hostname):
-        return "Zieladresse ist privat/lokal — aus Sicherheitsgründen gesperrt"
+        return tx("Zieladresse ist privat/lokal — aus Sicherheitsgründen gesperrt")
     return None
 
 
@@ -2141,7 +2161,7 @@ def _portal_abrufen(client, url: str, max_redirects: int = 5):
                 if groesse >= _PORTAL_CHECK_MAX_BYTES:
                     break
             return resp.status_code, groesse, str(resp.url)
-    raise _PortalPruefungVerweigert("zu viele Weiterleitungen", aktuelle_url)
+    raise _PortalPruefungVerweigert(tx("zu viele Weiterleitungen"), aktuelle_url)
 
 
 def _portal_anderer_host(start_url, final_url: str):
@@ -2170,29 +2190,30 @@ def _portal_bewerten(http_status: int, groesse: int, final_url: str, start_url: 
     kb = groesse / 1024
     if http_status in _PORTAL_CHECK_AMBER_CODES:
         return {"status": "amber", "http": http_status, "bytes": groesse, "final_url": final_url,
-                "meldung": (f"erreichbar, aber Zugriff eingeschränkt (Bot-Schutz, HTTP {http_status}) "
-                            "— als Websuche-Kanal weiterhin nutzbar")}
+                "meldung": (tx("erreichbar, aber Zugriff eingeschränkt (Bot-Schutz, HTTP "
+                               "{http_status}) — als Websuche-Kanal weiterhin nutzbar", http_status=http_status))}
     if 200 <= http_status < 300:
         if groesse >= _PORTAL_CHECK_GRUEN_MIN_BYTES:
             anderer_host = _portal_anderer_host(start_url, final_url)
             if anderer_host:
                 return {"status": "amber", "http": http_status, "bytes": groesse, "final_url": final_url,
-                        "meldung": (f"antwortet, leitet aber auf {anderer_host} um "
-                                    f"(HTTP {http_status}, {kb:.0f} KB) — bitte die neue Adresse "
-                                    "eintragen, sonst braucht die Suche für jeden Abruf zwei Versuche")}
+                        "meldung": (tx("antwortet, leitet aber auf {anderer_host} um (HTTP "
+                                       "{http_status}, {kb} KB) — bitte die neue Adresse "
+                                       "eintragen, sonst braucht die Suche für jeden Abruf zwei "
+                                       "Versuche", anderer_host=anderer_host, http_status=http_status, kb=format(kb, '.0f')))}
             return {"status": "gruen", "http": http_status, "bytes": groesse, "final_url": final_url,
-                    "meldung": f"antwortet, liefert Inhalt (HTTP {http_status}, {kb:.0f} KB)"}
+                    "meldung": tx("antwortet, liefert Inhalt (HTTP {http_status}, {kb} KB)", http_status=http_status, kb=format(kb, '.0f'))}
         return {"status": "amber", "http": http_status, "bytes": groesse, "final_url": final_url,
-                "meldung": (f"antwortet, liefert aber kaum Inhalt (HTTP {http_status}, {kb:.0f} KB) "
-                            "— vermutlich JS-Seite oder Weiterleitung")}
+                "meldung": (tx("antwortet, liefert aber kaum Inhalt (HTTP {http_status}, {kb} KB) "
+                               "— vermutlich JS-Seite oder Weiterleitung", http_status=http_status, kb=format(kb, '.0f')))}
     if http_status == 404:
         return {"status": "rot", "http": http_status, "bytes": groesse, "final_url": final_url,
-                "meldung": "Seite nicht gefunden (HTTP 404)"}
+                "meldung": tx("Seite nicht gefunden (HTTP 404)")}
     if 500 <= http_status < 600:
         return {"status": "rot", "http": http_status, "bytes": groesse, "final_url": final_url,
-                "meldung": f"Server-Fehler (HTTP {http_status})"}
+                "meldung": tx("Server-Fehler (HTTP {http_status})", http_status=http_status)}
     return {"status": "rot", "http": http_status, "bytes": groesse, "final_url": final_url,
-            "meldung": f"unerwarteter Status (HTTP {http_status})"}
+            "meldung": tx("unerwarteter Status (HTTP {http_status})", http_status=http_status)}
 
 
 @app.post("/api/einstellungen/portale/pruefen")
@@ -2209,13 +2230,13 @@ def portal_pruefen(payload: dict):
     Status (Muster `agent_runner.HEADLESS_SUFFIX`-Begründung: Fremdtext bleibt draußen)."""
     url = payload.get("url")
     if not isinstance(url, str) or not url.strip():
-        raise HTTPException(422, "url ist erforderlich")
+        raise HTTPException(422, tx("url ist erforderlich"))
 
     ziel = _portal_url_auffuellen(url.strip())
     fehler = _portal_ziel_erlaubt(ziel)
     if fehler:
         return {"status": "rot", "http": None, "bytes": 0,
-                "meldung": f"Prüfung verweigert: {fehler}", "final_url": ziel}
+                "meldung": tx("Prüfung verweigert: {fehler}", fehler=fehler), "final_url": ziel}
 
     import httpx
     try:
@@ -2223,16 +2244,16 @@ def portal_pruefen(payload: dict):
             http_status, groesse, final_url = _portal_abrufen(client, ziel)
     except _PortalPruefungVerweigert as e:
         return {"status": "rot", "http": None, "bytes": 0,
-                "meldung": f"Prüfung verweigert: {e.meldung}", "final_url": e.url}
+                "meldung": tx("Prüfung verweigert: {meldung}", meldung=e.meldung), "final_url": e.url}
     except httpx.TimeoutException:
         return {"status": "rot", "http": None, "bytes": 0,
-                "meldung": "Zeitüberschreitung (Timeout nach 20 s)", "final_url": ziel}
+                "meldung": tx("Zeitüberschreitung (Timeout nach 20 s)"), "final_url": ziel}
     except httpx.ConnectError as e:
         return {"status": "rot", "http": None, "bytes": 0,
-                "meldung": f"Verbindung fehlgeschlagen: {e}", "final_url": ziel}
+                "meldung": tx("Verbindung fehlgeschlagen: {e}", e=e), "final_url": ziel}
     except httpx.HTTPError as e:
         return {"status": "rot", "http": None, "bytes": 0,
-                "meldung": f"Fehler beim Abruf: {type(e).__name__}", "final_url": ziel}
+                "meldung": tx("Fehler beim Abruf: {art}", art=type(e).__name__), "final_url": ziel}
 
     return _portal_bewerten(http_status, groesse, final_url, ziel)
 
@@ -2262,7 +2283,7 @@ def upcoming_interviews(session: Session = Depends(get_session)):
 def create_interview(job_id: int, payload: dict, session: Session = Depends(get_session)):
     job = session.get(Job, job_id)
     if not job:
-        raise HTTPException(404, "Job nicht gefunden")
+        raise HTTPException(404, tx("Job nicht gefunden"))
     application = session.exec(select(Application).where(Application.job_id == job_id)).first()
     # "gegenueber"/"vor_ort" (Phase 69, Stufe B) — Gesamtprozess-KPI "Gespräche gesamt".
     fields = {"runde", "art", "scheduled_at", "interviewer", "status", "notes", "gegenueber", "vor_ort"}
@@ -2293,7 +2314,7 @@ def create_interview(job_id: int, payload: dict, session: Session = Depends(get_
 def update_interview(interview_id: int, payload: dict, session: Session = Depends(get_session)):
     iv = session.get(Interview, interview_id)
     if not iv:
-        raise HTTPException(404, "Interview nicht gefunden")
+        raise HTTPException(404, tx("Interview nicht gefunden"))
     if "status" in payload:
         _validiere_status(payload["status"], ALLOWED_INTERVIEW_STATUSES)
     if payload.get("gegenueber"):
@@ -2319,7 +2340,7 @@ def update_interview(interview_id: int, payload: dict, session: Session = Depend
 def delete_interview(interview_id: int, session: Session = Depends(get_session)):
     iv = session.get(Interview, interview_id)
     if not iv:
-        raise HTTPException(404, "Interview nicht gefunden")
+        raise HTTPException(404, tx("Interview nicht gefunden"))
     # Zugehörige Transkripte NICHT löschen, nur die Verknüpfung lösen.
     for t in session.exec(select(Transcript).where(Transcript.interview_id == interview_id)).all():
         t.interview_id = None
@@ -2388,10 +2409,10 @@ def create_transcript(job_id: int, payload: dict, session: Session = Depends(get
     POST .../transcripts/upload weiter unten). Delegiert an _speichere_transkript_und_report."""
     job = session.get(Job, job_id)
     if not job:
-        raise HTTPException(404, "Job nicht gefunden")
+        raise HTTPException(404, tx("Job nicht gefunden"))
     content = (payload.get("content") or "").strip()
     if not content:
-        raise HTTPException(422, "content (Transkript-Text) fehlt")
+        raise HTTPException(422, tx("content (Transkript-Text) fehlt"))
 
     interview_id = payload.get("interview_id")
     interview = session.get(Interview, interview_id) if interview_id else None
@@ -2437,12 +2458,11 @@ async def upload_transcript(job_id: int,
     Teilt sich den Kern mit create_transcript (_speichere_transkript_und_report)."""
     job = session.get(Job, job_id)
     if not job:
-        raise HTTPException(404, "Job nicht gefunden")
+        raise HTTPException(404, tx("Job nicht gefunden"))
 
     ext = (file.filename or "").rsplit(".", 1)[-1].lower() if "." in (file.filename or "") else ""
     if ext not in _TRANSCRIPT_UPLOAD_EXT:
-        raise HTTPException(422, f"Dateityp '.{ext or '?'}' nicht erlaubt für Transkripte. "
-                                 f"Erlaubt: {', '.join(sorted(_TRANSCRIPT_UPLOAD_EXT))}")
+        raise HTTPException(422, tx("Dateityp '.{ext}' nicht erlaubt für Transkripte. Erlaubt: {liste}", ext=ext or '?', liste=', '.join(sorted(_TRANSCRIPT_UPLOAD_EXT))))
 
     stuecke, groesse = [], 0
     while True:
@@ -2451,17 +2471,17 @@ async def upload_transcript(job_id: int,
             break
         groesse += len(block)
         if groesse > _TRANSCRIPT_MAX_UPLOAD:
-            raise HTTPException(422, f"Datei größer als {_TRANSCRIPT_MAX_UPLOAD // 1024 // 1024} MB")
+            raise HTTPException(422, tx("Datei größer als {mb} MB", mb=_TRANSCRIPT_MAX_UPLOAD // 1024 // 1024))
         stuecke.append(block)
     if not stuecke:
-        raise HTTPException(422, "Datei ist leer")
+        raise HTTPException(422, tx("Datei ist leer"))
 
     text = b"".join(stuecke).decode("utf-8", errors="replace")
     if ext == "vtt":
         text = _strip_vtt(text)
     text = text.strip()
     if not text:
-        raise HTTPException(422, "Datei enthält keinen verwertbaren Text")
+        raise HTTPException(422, tx("Datei enthält keinen verwertbaren Text"))
 
     interview = session.get(Interview, interview_id) if interview_id else None
     application = session.exec(select(Application).where(Application.job_id == job_id)).first()
@@ -2481,7 +2501,7 @@ def delete_transcript(transcript_id: int, session: Session = Depends(get_session
     seit vor Phase 64A)."""
     t = session.get(Transcript, transcript_id)
     if not t:
-        raise HTTPException(404, "Transkript nicht gefunden")
+        raise HTTPException(404, tx("Transkript nicht gefunden"))
 
     # Pfade vorab merken — verschoben wird ERST NACH dem Commit (Phase 64A Stufe 2 / P1-7;
     # Begründung s. Kommentar in delete_job: ein späterer Move-Fehlschlag erzeugt eine verwaiste
@@ -2500,8 +2520,7 @@ def delete_transcript(transcript_id: int, session: Session = Depends(get_session
             _in_papierkorb(p)
         except OSError as exc:
             dateien_fehlgeschlagen += 1
-            print(f"[papierkorb] FEHLER beim Verschieben von '{p}' (Transcript {transcript_id}, "
-                  f"delete_transcript): {exc}", flush=True)
+            print(tt("[papierkorb] FEHLER beim Verschieben von '{pfad}' (Transcript {transcript_id}, delete_transcript): {fehler}", pfad=p, transcript_id=transcript_id, fehler=exc), flush=True)
     return {"ok": True, "dateien_fehlgeschlagen": dateien_fehlgeschlagen}
 
 
@@ -2597,12 +2616,11 @@ async def upload_job_file(job_id: int,
 
     job = session.get(Job, job_id)
     if not job:
-        raise HTTPException(404, "Job nicht gefunden")
+        raise HTTPException(404, tx("Job nicht gefunden"))
 
     ext = (file.filename or "").rsplit(".", 1)[-1].lower() if "." in (file.filename or "") else ""
     if ext not in _FILE_EXT:
-        raise HTTPException(422, f"Dateityp '.{ext or '?'}' nicht erlaubt. "
-                                 f"Erlaubt: {', '.join(sorted(_FILE_EXT))}")
+        raise HTTPException(422, tx("Dateityp '.{ext}' nicht erlaubt. Erlaubt: {liste}", ext=ext or '?', liste=', '.join(sorted(_FILE_EXT))))
 
     # Stückweise lesen und bei Überschreitung abbrechen — eine 2-GB-Datei soll nicht erst
     # komplett in den RAM wandern, nur um dann abgelehnt zu werden.
@@ -2613,11 +2631,11 @@ async def upload_job_file(job_id: int,
             break
         groesse += len(block)
         if groesse > _MAX_UPLOAD:
-            raise HTTPException(413, f"Datei größer als {_MAX_UPLOAD // 1024 // 1024} MB")
+            raise HTTPException(413, tx("Datei größer als {mb} MB", mb=_MAX_UPLOAD // 1024 // 1024))
         stuecke.append(block)
     inhalt = b"".join(stuecke)
     if not inhalt:
-        raise HTTPException(422, "Datei ist leer")
+        raise HTTPException(422, tx("Datei ist leer"))
 
     if kind not in _FILE_KINDS:
         kind = "Sonstiges"
@@ -2641,7 +2659,8 @@ async def upload_job_file(job_id: int,
     transcript_id = None
     if kind == "Transkript":
         application = session.exec(select(Application).where(Application.job_id == job_id)).first()
-        titel = f"{gespraechsart or 'Gespräch'} mit {kontakt}" if kontakt else (file.filename or "Transkript")
+        titel = (tx("{art} mit {kontakt}", art=gespraechsart or tx("Gespräch"), kontakt=kontakt)
+                 if kontakt else (file.filename or "Transkript"))
         t = Transcript(job_id=job_id,
                        interview_id=interview.id if interview else None,
                        application_id=application.id if application else None,
@@ -2670,7 +2689,7 @@ def delete_job_file(file_id: int, session: Session = Depends(get_session)):
     liegen, neue Löschungen laufen über `_in_papierkorb`."""
     f = session.get(JobFile, file_id)
     if not f:
-        raise HTTPException(404, "Datei nicht gefunden")
+        raise HTTPException(404, tx("Datei nicht gefunden"))
 
     # Pfad vorab merken — verschoben wird ERST NACH dem Commit (Phase 64A / P1-7; Begründung
     # s. Kommentar in delete_job: ein späterer Move-Fehlschlag erzeugt eine verwaiste Datei
@@ -2689,8 +2708,7 @@ def delete_job_file(file_id: int, session: Session = Depends(get_session)):
         _in_papierkorb(pfad)
     except OSError as exc:
         dateien_fehlgeschlagen = 1
-        print(f"[papierkorb] FEHLER beim Verschieben von '{pfad}' (JobFile {file_id}, "
-              f"delete_job_file): {exc}", flush=True)
+        print(tt("[papierkorb] FEHLER beim Verschieben von '{pfad}' (JobFile {file_id}, delete_job_file): {fehler}", pfad=pfad, file_id=file_id, fehler=exc), flush=True)
     return {"ok": True, "dateien_fehlgeschlagen": dateien_fehlgeschlagen}
 
 
@@ -2724,11 +2742,11 @@ _VIRT_SLOTS: dict = {
 def delete_virtual_file(quelle: str, pk: int, slot: str, session: Session = Depends(get_session)):
     mapping = _VIRT_SLOTS.get(quelle, {}).get(slot)
     if not mapping:
-        raise HTTPException(404, f"Unbekannter Slot '{quelle}/{slot}'")
+        raise HTTPException(404, tx("Unbekannter Slot '{quelle}/{slot}'", quelle=quelle, slot=slot))
     model, feld = mapping
     row = session.get(model, pk)
     if not row:
-        raise HTTPException(404, f"{quelle} #{pk} nicht gefunden")
+        raise HTTPException(404, tx("{quelle} #{pk} nicht gefunden", quelle=quelle, pk=pk))
 
     # Pfad vorab merken — verschoben wird ERST NACH dem Commit (Phase 64A / P1-7; Begründung
     # s. Kommentar in delete_job: ein späterer Move-Fehlschlag erzeugt eine verwaiste Datei
@@ -2744,8 +2762,7 @@ def delete_virtual_file(quelle: str, pk: int, slot: str, session: Session = Depe
     except OSError as exc:
         papierkorb = None
         dateien_fehlgeschlagen = 1
-        print(f"[papierkorb] FEHLER beim Verschieben von '{pfad}' ({quelle}/{slot} #{pk}, "
-              f"delete_virtual_file): {exc}", flush=True)
+        print(tt("[papierkorb] FEHLER beim Verschieben von '{pfad}' ({quelle}/{slot} #{pk}, delete_virtual_file): {fehler}", pfad=pfad, quelle=quelle, slot=slot, pk=pk, fehler=exc), flush=True)
     return {"ok": True, "papierkorb": papierkorb, "dateien_fehlgeschlagen": dateien_fehlgeschlagen}
 
 
@@ -2772,7 +2789,7 @@ def _set_status(session, job_id, status, next_step=None):
     from datetime import datetime
     job = session.get(Job, job_id)
     if not job:
-        raise HTTPException(404, "Job nicht gefunden")
+        raise HTTPException(404, tx("Job nicht gefunden"))
     alt = job.status
     job.status = status
     if next_step is not None:
@@ -2816,7 +2833,7 @@ def list_companies(radar: Optional[bool] = None, session: Session = Depends(get_
 def get_company(company_id: int, session: Session = Depends(get_session)):
     comp = session.get(Company, company_id)
     if not comp:
-        raise HTTPException(404, "Firma nicht gefunden")
+        raise HTTPException(404, tx("Firma nicht gefunden"))
     jobs = session.exec(select(Job).where(Job.company_id == company_id)).all()
     contacts = session.exec(select(Contact).where(Contact.company_id == company_id)).all()
     return {"company": comp, "jobs": jobs, "contacts": contacts}
@@ -2846,14 +2863,14 @@ def delete_company(company_id: int, session: Session = Depends(get_session)):
     Dedup-Zwang" oben."""
     comp = session.get(Company, company_id)
     if not comp:
-        raise HTTPException(404, "Firma nicht gefunden")
+        raise HTTPException(404, tx("Firma nicht gefunden"))
 
     aktive_jobs = session.exec(
         select(Job).where(Job.company_id == company_id, Job.deleted_at.is_(None))
     ).all()
     if aktive_jobs:
         liste = "; ".join(f"{j.title} (#{j.id})" for j in aktive_jobs[:15])
-        raise HTTPException(409, f"Erst {len(aktive_jobs)} Stelle(n) löschen: {liste}")
+        raise HTTPException(409, tx("Erst {anzahl} Stelle(n) löschen: {liste}", anzahl=len(aktive_jobs), liste=liste))
 
     # Pfad vorab merken — verschoben wird ERST NACH dem Commit (Phase 64A Stufe 2 / P1-7).
     pfad = comp.fit_analysis_path
@@ -2883,8 +2900,7 @@ def delete_company(company_id: int, session: Session = Depends(get_session)):
         _in_papierkorb(pfad)
     except OSError as exc:
         dateien_fehlgeschlagen = 1
-        print(f"[papierkorb] FEHLER beim Verschieben von '{pfad}' (Company {company_id}, "
-              f"delete_company): {exc}", flush=True)
+        print(tt("[papierkorb] FEHLER beim Verschieben von '{pfad}' (Company {company_id}, delete_company): {fehler}", pfad=pfad, company_id=company_id, fehler=exc), flush=True)
     return {"ok": True, "dateien_fehlgeschlagen": dateien_fehlgeschlagen}
 
 
@@ -2906,9 +2922,9 @@ def email_body(email_id: int, session: Session = Depends(get_session)):
     wirft SystemExit; das fangen wir ab und liefern den Klartext als lesbaren Hinweis."""
     e = session.get(Email, email_id)
     if not e:
-        raise HTTPException(404, "E-Mail nicht gefunden")
+        raise HTTPException(404, tx("E-Mail nicht gefunden"))
     if not e.gmail_message_id:
-        return {"body": None, "hinweis": "keine Gmail-Zuordnung"}
+        return {"body": None, "hinweis": tx("keine Gmail-Zuordnung")}
     import contextlib
     import io
     from pipeline import gmail_client
@@ -2917,10 +2933,10 @@ def email_body(email_id: int, session: Session = Depends(get_session)):
         with contextlib.redirect_stderr(stderr_puffer):
             rec = gmail_client.cmd_get(e.gmail_message_id)
     except SystemExit:
-        hinweis = stderr_puffer.getvalue().strip() or "Gmail-Fehler (unbekannt)"
+        hinweis = stderr_puffer.getvalue().strip() or tx("Gmail-Fehler (unbekannt)")
         return {"body": None, "hinweis": hinweis}
     except Exception as ex:                  # noqa: BLE001 — nie 500, immer lesbarer Hinweis
-        return {"body": None, "hinweis": f"Gmail-Fehler: {ex}"}
+        return {"body": None, "hinweis": tx("Gmail-Fehler: {ex}", ex=ex)}
     return {"body": rec.get("body"), "from": rec.get("from_addr"), "subject": rec.get("subject")}
 
 
@@ -2929,7 +2945,7 @@ def update_email(email_id: int, payload: dict, session: Session = Depends(get_se
     """Bewusst minimal (Phase 27): NUR reply_draft_at/needs_reply — kein genereller Email-Edit."""
     e = session.get(Email, email_id)
     if not e:
-        raise HTTPException(404, "E-Mail nicht gefunden")
+        raise HTTPException(404, tx("E-Mail nicht gefunden"))
     editable = {"reply_draft_at", "needs_reply"}
     for k, v in payload.items():
         if k in editable:
@@ -2950,7 +2966,7 @@ def assign_email(email_id: int, payload: dict, session: Session = Depends(get_se
 
     e = session.get(Email, email_id)
     if not e:
-        raise HTTPException(404, "E-Mail nicht gefunden")
+        raise HTTPException(404, tx("E-Mail nicht gefunden"))
 
     job_id = payload.get("job_id")
     if job_id is None:
@@ -2961,17 +2977,19 @@ def assign_email(email_id: int, payload: dict, session: Session = Depends(get_se
         e.response_time_hours = None
         session.add(e)
         if old_job:
-            betreff = e.subject or "(kein Betreff)"
-            datum = e.received_at.strftime("%d.%m.%Y") if e.received_at else "?"
+            betreff = e.subject or tx("(kein Betreff)")
+            datum = sprach_datum(e.received_at) if e.received_at else "?"
             session.add(JobLog(job_id=old_job.id, art="auto",
-                               eintrag=f"E-Mail-Zuordnung gelöst: „{betreff}“ ({e.category or 'Sonstige'}, {datum})"))
+                               eintrag=tx("E-Mail-Zuordnung gelöst: „{betreff}“ ({kategorie}, {datum})",
+                                          betreff=betreff, kategorie=uebersetzt(e.category or "Sonstige"),
+                                          datum=datum)))
         session.commit()
         session.refresh(e)
         return {"email": e, "hinweis": None}
 
     job = session.get(Job, job_id)
     if not job or job.deleted_at:
-        raise HTTPException(404, "Stelle nicht gefunden")
+        raise HTTPException(404, tx("Stelle nicht gefunden"))
 
     e.job_id = job.id
     e.company_id = job.company_id
@@ -2989,20 +3007,24 @@ def assign_email(email_id: int, payload: dict, session: Session = Depends(get_se
     e.response_time_hours = rt
 
     session.add(e)
-    betreff = e.subject or "(kein Betreff)"
-    datum = e.received_at.strftime("%d.%m.%Y") if e.received_at else "?"
+    betreff = e.subject or tx("(kein Betreff)")
+    datum = sprach_datum(e.received_at) if e.received_at else "?"
     session.add(JobLog(job_id=job.id, art="auto",
-                       eintrag=f"E-Mail zugeordnet: „{betreff}“ ({e.category or 'Sonstige'}, {datum})"))
+                       eintrag=tx("E-Mail zugeordnet: „{betreff}“ ({kategorie}, {datum})",
+                                  betreff=betreff, kategorie=uebersetzt(e.category or "Sonstige"),
+                                  datum=datum)))
     session.commit()
     session.refresh(e)
 
     hinweis = None
     if e.category == "Absage":
-        hinweis = "Kategorie Absage — Job-Status auf „Absage“ setzen? (Absagegrund lässt sich in der Bewerbung ergänzen.)"
+        hinweis = tx("Kategorie Absage — Job-Status auf „Absage“ setzen? (Absagegrund lässt sich "
+                     "in der Bewerbung ergänzen.)")
     elif e.category == "Angebot":
-        hinweis = "Kategorie Angebot — Job-Status auf „Angebot“ setzen?"
+        hinweis = tx("Kategorie Angebot — Job-Status auf „Angebot“ setzen?")
     elif e.category == "Einladung":
-        hinweis = "Kategorie Einladung — Job-Status auf „Interview“ setzen? Ggf. Interview-Termin anlegen."
+        hinweis = tx("Kategorie Einladung — Job-Status auf „Interview“ setzen? Ggf. "
+                     "Interview-Termin anlegen.")
     return {"email": e, "hinweis": hinweis}
 
 
@@ -3016,9 +3038,10 @@ def archive_email(email_id: int, session: Session = Depends(get_session)):
     (Job-Historie UND Archiv)."""
     e = session.get(Email, email_id)
     if not e:
-        raise HTTPException(404, "E-Mail nicht gefunden")
+        raise HTTPException(404, tx("E-Mail nicht gefunden"))
     if e.job_id or e.application_id:
-        raise HTTPException(409, "Nur Mails ohne Stelle lassen sich archivieren. Lösen Sie zuerst die Zuordnung.")
+        raise HTTPException(409, tx("Nur Mails ohne Stelle lassen sich archivieren. Lösen Sie "
+                                    "zuerst die Zuordnung."))
     if not e.archived_at:
         e.archived_at = zeit.jetzt_utc().isoformat()   # naives UTC wie deleted_at, ohne utcnow()
         session.add(e)
@@ -3032,9 +3055,9 @@ def restore_email(email_id: int, session: Session = Depends(get_session)):
     """Holt eine archivierte Mail zurück in die Inbox (P2-52) — Gegenstück zu archive_email."""
     e = session.get(Email, email_id)
     if not e:
-        raise HTTPException(404, "E-Mail nicht gefunden")
+        raise HTTPException(404, tx("E-Mail nicht gefunden"))
     if not e.archived_at:
-        raise HTTPException(404, "E-Mail ist nicht archiviert")
+        raise HTTPException(404, tx("E-Mail ist nicht archiviert"))
     e.archived_at = None
     session.add(e)
     session.commit()
@@ -3177,7 +3200,7 @@ def _artefakt_datei(path: str) -> Path:
     (Prüfung s. `_erlaubter_artefakt`)."""
     p = _erlaubter_artefakt(path)
     if p is None:
-        raise HTTPException(403, "Pfad nicht erlaubt")
+        raise HTTPException(403, tx("Pfad nicht erlaubt"))
     return p
 
 
@@ -3202,7 +3225,8 @@ def _briefing_pfad(wert):
             basis = (_PROJECT_ROOT / ordner).resolve()
             if basis in p.parents:
                 return f"{ordner}/{p.relative_to(basis).as_posix()}"
-    raise HTTPException(422, "prep_path muss auf ein vorhandenes Briefing in data/interview_prep/ zeigen (.html)")
+    raise HTTPException(422, tx("prep_path muss auf ein vorhandenes Briefing in "
+                                "data/interview_prep/ zeigen (.html)"))
 
 
 def _netzpfad(pfad: Path) -> bool:
@@ -3225,8 +3249,11 @@ def artifact(path: str, download: bool = False):
     unten."""
     from urllib.parse import unquote
     p = _artefakt_datei(unquote(path))
+    # P2-96: Alte Beirats-Berichte haben eine englische Fassung im Unterordner `en`, das Original bleibt.
+    if p.parent.name == "beirat" and sprache_aktuell() == "en" and os.path.isfile(p.parent / "en" / p.name):
+        p = p.parent / "en" / p.name
     if not os.path.isfile(p):       # anders als Path.is_file() ohne 500 bei überlangem Namen
-        raise HTTPException(404, "Datei nicht gefunden")
+        raise HTTPException(404, tx("Datei nicht gefunden"))
     headers = {"X-Content-Type-Options": "nosniff"}
     typ = _INLINE_TYPEN.get(p.suffix.lower())
     if typ and not download:
@@ -3302,7 +3329,7 @@ def update_outreach(oid: int, payload: dict, session: Session = Depends(get_sess
     """Felder ändern + Änderungen automatisch ins Aktivitäten-Log schreiben (ein Eintrag je PATCH)."""
     o = session.get(Outreach, oid)
     if not o:
-        raise HTTPException(404, "Outreach-Eintrag nicht gefunden")
+        raise HTTPException(404, tx("Outreach-Eintrag nicht gefunden"))
     # "bewerbung_datum" (Phase 69) additiv aufgenommen — trägt außerdem die Wiedervorlage-
     # Funktion des Dashboards ("+7 Tage" schreibt hier next_action_datum über denselben PATCH).
     editable = {"status", "next_step", "next_action_datum", "notizen", "antwort", "kanal", "typ",
@@ -3313,11 +3340,12 @@ def update_outreach(oid: int, payload: dict, session: Session = Depends(get_sess
             old = getattr(o, k)
             if (old or "") != (v or ""):
                 if k == "notizen":
-                    changes.append("Notizen aktualisiert")
+                    changes.append(tx("Notizen aktualisiert"))
                 elif k == "next_step":
-                    changes.append(f"Nächster Schritt: „{v}“" if v else "Nächster Schritt entfernt")
+                    changes.append(tx("Nächster Schritt: „{v}“", v=v) if v
+                               else tx("Nächster Schritt entfernt"))
                 else:
-                    changes.append(f"{_OUTREACH_LABELS[k]}: {old or '—'} → {v or '—'}")
+                    changes.append(f"{uebersetzt(_OUTREACH_LABELS[k])}: {old or '—'} → {v or '—'}")
             setattr(o, k, v)
     from datetime import datetime
     o.updated_at = datetime.utcnow()
@@ -3341,10 +3369,10 @@ def outreach_log_add(oid: int, payload: dict, session: Session = Depends(get_ses
     """Manuellen Log-Eintrag anfügen (z. B. „Telefonat — meldet sich nächste Woche")."""
     o = session.get(Outreach, oid)
     if not o:
-        raise HTTPException(404, "Outreach-Eintrag nicht gefunden")
+        raise HTTPException(404, tx("Outreach-Eintrag nicht gefunden"))
     eintrag = (payload.get("eintrag") or "").strip()
     if not eintrag:
-        raise HTTPException(422, "eintrag fehlt")
+        raise HTTPException(422, tx("eintrag fehlt"))
     row = OutreachLog(outreach_id=oid, eintrag=eintrag, art="manuell")
     session.add(row)
     session.commit()
@@ -3378,15 +3406,15 @@ def create_netzwerkgespraech(payload: dict, session: Session = Depends(get_sessi
     Headhunter-Zeile (Mini-Form: Datum, Person, Gegenüber, vor Ort, Notiz)."""
     datum = (payload.get("datum") or "").strip()
     if not datum:
-        raise HTTPException(422, "datum ist Pflicht")
+        raise HTTPException(422, tx("datum ist Pflicht"))
     if payload.get("gegenueber"):
         _validiere_status(payload["gegenueber"], ALLOWED_GEGENUEBER_NETZWERK, "gegenueber")
     outreach_id = payload.get("outreach_id")
     if outreach_id is not None and not session.get(Outreach, outreach_id):
-        raise HTTPException(404, "Outreach-Eintrag nicht gefunden")
+        raise HTTPException(404, tx("Outreach-Eintrag nicht gefunden"))
     headhunter_id = payload.get("headhunter_id")
     if headhunter_id is not None and not session.get(Headhunter, headhunter_id):
-        raise HTTPException(404, "Headhunter nicht gefunden")
+        raise HTTPException(404, tx("Headhunter nicht gefunden"))
     ng = NetzwerkGespraech(
         datum=datum,
         person=payload.get("person") or None,
@@ -3409,7 +3437,7 @@ def delete_netzwerkgespraech(ng_id: int, session: Session = Depends(get_session)
     über das bestehende Bestätigungs-UI-Muster (window.confirm vor dem Aufruf)."""
     ng = session.get(NetzwerkGespraech, ng_id)
     if not ng:
-        raise HTTPException(404, "Gespräch nicht gefunden")
+        raise HTTPException(404, tx("Gespräch nicht gefunden"))
     session.delete(ng)
     session.commit()
     return {"ok": True}
@@ -3436,14 +3464,14 @@ def create_target_company(payload: dict, session: Session = Depends(get_session)
 
     company = (payload.get("company") or "").strip()
     if not company:
-        raise HTTPException(422, "Firma ist Pflicht")
+        raise HTTPException(422, tx("Firma ist Pflicht"))
     key = N.slug_parts(company)
     fields = {k: (payload.get(k) or None) for k in _TC_EDITABLE}
     fields["company"] = company
     existing = session.exec(select(TargetCompany).where(TargetCompany.dedup_key == key)).first()
     if existing:
         if existing.deleted_at is None:
-            raise HTTPException(409, f"Zielfirma existiert bereits: {company}")
+            raise HTTPException(409, tx("Zielfirma existiert bereits: {company}", company=company))
         for k, v in fields.items():
             setattr(existing, k, v)
         existing.deleted_at = None
@@ -3457,7 +3485,7 @@ def create_target_company(payload: dict, session: Session = Depends(get_session)
     if not flush_or_duplicate(session, lambda: session.add(tc)):
         # P2-3 (Phase 67F): echte Race (zwei fast gleichzeitige Anfragen legen dieselbe
         # Zielfirma an) — dieselbe Antwort wie der reguläre Dublettencheck oben, nicht 500.
-        raise HTTPException(409, f"Zielfirma existiert bereits: {company}")
+        raise HTTPException(409, tx("Zielfirma existiert bereits: {company}", company=company))
     session.commit()
     session.refresh(tc)
     return tc
@@ -3471,7 +3499,7 @@ def update_target_company(tc_id: int, payload: dict, session: Session = Depends(
     from app import normalize as N
     tc = session.get(TargetCompany, tc_id)
     if not tc:
-        raise HTTPException(404, "Zielfirma nicht gefunden")
+        raise HTTPException(404, tx("Zielfirma nicht gefunden"))
     editable = _TC_EDITABLE | {"karriere_url", "last_career_check"}
     for k, v in payload.items():
         if k in editable:
@@ -3482,7 +3510,7 @@ def update_target_company(tc_id: int, payload: dict, session: Session = Depends(
         if neu != tc.dedup_key:
             other = session.exec(select(TargetCompany).where(TargetCompany.dedup_key == neu)).first()
             if other and other.id != tc.id:
-                raise HTTPException(409, f"Zielfirma existiert bereits: {tc.company}")
+                raise HTTPException(409, tx("Zielfirma existiert bereits: {company}", company=tc.company))
             neuer_dedup_key = neu
     from datetime import datetime
     tc.updated_at = datetime.utcnow()
@@ -3498,7 +3526,7 @@ def update_target_company(tc_id: int, payload: dict, session: Session = Depends(
     if not flush_or_duplicate(session, _dedup_key_setzen):
         # P2-3 (Phase 67F): Schwesterstelle zum Check oben — schließt die Race zwischen dem
         # `other =`-Check und dem Commit (dieselbe 409-Meldung, nicht 500).
-        raise HTTPException(409, f"Zielfirma existiert bereits: {tc.company}")
+        raise HTTPException(409, tx("Zielfirma existiert bereits: {company}", company=tc.company))
     session.commit()
     session.refresh(tc)
     return tc
@@ -3512,7 +3540,7 @@ def delete_target_company(tc_id: int, session: Session = Depends(get_session)):
     from datetime import datetime
     tc = session.get(TargetCompany, tc_id)
     if not tc or tc.deleted_at:
-        raise HTTPException(404, "Zielfirma nicht gefunden")
+        raise HTTPException(404, tx("Zielfirma nicht gefunden"))
     tc.deleted_at = datetime.utcnow().isoformat()
     tc.updated_at = datetime.utcnow()
     session.add(tc)
@@ -3526,7 +3554,7 @@ def restore_target_company(tc_id: int, session: Session = Depends(get_session)):
     from datetime import datetime
     tc = session.get(TargetCompany, tc_id)
     if not tc or not tc.deleted_at:
-        raise HTTPException(404, "Zielfirma nicht im Papierkorb")
+        raise HTTPException(404, tx("Zielfirma nicht im Papierkorb"))
     tc.deleted_at = None
     tc.updated_at = datetime.utcnow()
     session.add(tc)
@@ -3576,7 +3604,7 @@ def create_headhunter(payload: dict, session: Session = Depends(get_session)):
 
     firma = (payload.get("firma") or "").strip()
     if not firma:
-        raise HTTPException(422, "Firma ist Pflicht")
+        raise HTTPException(422, tx("Firma ist Pflicht"))
     ansprechpartner = payload.get("ansprechpartner") or None
     key = N.slug_parts(firma, ansprechpartner)
     fields = {k: (payload.get(k) or None) for k in _HH_EDITABLE}
@@ -3584,7 +3612,7 @@ def create_headhunter(payload: dict, session: Session = Depends(get_session)):
     existing = session.exec(select(Headhunter).where(Headhunter.dedup_key == key)).first()
     if existing:
         if existing.deleted_at is None:
-            raise HTTPException(409, f"Headhunter existiert bereits: {firma}"
+            raise HTTPException(409, tx("Headhunter existiert bereits: {firma}", firma=firma)
                                  + (f" ({ansprechpartner})" if ansprechpartner else ""))
         for k, v in fields.items():
             setattr(existing, k, v)
@@ -3598,7 +3626,7 @@ def create_headhunter(payload: dict, session: Session = Depends(get_session)):
     if not flush_or_duplicate(session, lambda: session.add(hh)):
         # P2-3 (Phase 67F): echte Race (zwei fast gleichzeitige Anfragen legen denselben
         # Headhunter an) — dieselbe Antwort wie der reguläre Dublettencheck oben, nicht 500.
-        raise HTTPException(409, f"Headhunter existiert bereits: {firma}"
+        raise HTTPException(409, tx("Headhunter existiert bereits: {firma}", firma=firma)
                              + (f" ({ansprechpartner})" if ansprechpartner else ""))
     session.commit()
     session.refresh(hh)
@@ -3613,7 +3641,7 @@ def update_headhunter(hh_id: int, payload: dict, session: Session = Depends(get_
     from app import normalize as N
     hh = session.get(Headhunter, hh_id)
     if not hh:
-        raise HTTPException(404, "Headhunter nicht gefunden")
+        raise HTTPException(404, tx("Headhunter nicht gefunden"))
     editable = _HH_EDITABLE | {"firma", "karriere_url", "last_career_check"}
     for k, v in payload.items():
         if k in editable:
@@ -3625,7 +3653,7 @@ def update_headhunter(hh_id: int, payload: dict, session: Session = Depends(get_
         if neu != hh.dedup_key:
             other = session.exec(select(Headhunter).where(Headhunter.dedup_key == neu)).first()
             if other and other.id != hh.id:
-                raise HTTPException(409, f"Headhunter existiert bereits: {hh.firma}"
+                raise HTTPException(409, tx("Headhunter existiert bereits: {firma}", firma=hh.firma)
                                      + (f" ({hh.ansprechpartner})" if hh.ansprechpartner else ""))
             neuer_dedup_key = neu
     from datetime import datetime
@@ -3642,7 +3670,7 @@ def update_headhunter(hh_id: int, payload: dict, session: Session = Depends(get_
     if not flush_or_duplicate(session, _dedup_key_setzen):
         # P2-3 (Phase 67F): Schwesterstelle zum Check oben — schließt die Race zwischen dem
         # `other =`-Check und dem Commit (dieselbe 409-Meldung, nicht 500).
-        raise HTTPException(409, f"Headhunter existiert bereits: {hh.firma}"
+        raise HTTPException(409, tx("Headhunter existiert bereits: {firma}", firma=hh.firma)
                              + (f" ({hh.ansprechpartner})" if hh.ansprechpartner else ""))
     session.commit()
     session.refresh(hh)
@@ -3656,7 +3684,7 @@ def delete_headhunter(hh_id: int, session: Session = Depends(get_session)):
     from datetime import datetime
     hh = session.get(Headhunter, hh_id)
     if not hh or hh.deleted_at:
-        raise HTTPException(404, "Headhunter nicht gefunden")
+        raise HTTPException(404, tx("Headhunter nicht gefunden"))
     hh.deleted_at = datetime.utcnow().isoformat()
     hh.updated_at = datetime.utcnow()
     session.add(hh)
@@ -3670,7 +3698,7 @@ def restore_headhunter(hh_id: int, session: Session = Depends(get_session)):
     from datetime import datetime
     hh = session.get(Headhunter, hh_id)
     if not hh or not hh.deleted_at:
-        raise HTTPException(404, "Headhunter nicht im Papierkorb")
+        raise HTTPException(404, tx("Headhunter nicht im Papierkorb"))
     hh.deleted_at = None
     hh.updated_at = datetime.utcnow()
     session.add(hh)
@@ -3704,7 +3732,7 @@ def create_network_contact(payload: dict, session: Session = Depends(get_session
     from datetime import datetime
     name = (payload.get("name") or "").strip()
     if not name:
-        raise HTTPException(422, "Name ist Pflicht")
+        raise HTTPException(422, tx("Name ist Pflicht"))
     key = N.slug_parts(name, payload.get("unternehmen"))
     nad = (payload.get("next_action_date") or "").strip() or _plus_werktage(10)   # Standardfrist
     fields = dict(
@@ -3717,7 +3745,7 @@ def create_network_contact(payload: dict, session: Session = Depends(get_session
     existing = session.exec(select(NetworkContact).where(NetworkContact.dedup_key == key)).first()
     if existing:
         if existing.deleted_at is None:
-            raise HTTPException(409, f"Kontakt existiert bereits: {name} ({payload.get('unternehmen') or '—'})")
+            raise HTTPException(409, tx("Kontakt existiert bereits: {name} ({wert})", name=name, wert=payload.get('unternehmen') or '—'))
         for k, v in fields.items():
             setattr(existing, k, v)
         existing.deleted_at = None
@@ -3730,7 +3758,7 @@ def create_network_contact(payload: dict, session: Session = Depends(get_session
     if not flush_or_duplicate(session, lambda: session.add(nc)):
         # P2-3 (Phase 67F): echte Race (zwei fast gleichzeitige Anfragen legen denselben
         # Kontakt an) — dieselbe Antwort wie der reguläre Dublettencheck oben, nicht 500.
-        raise HTTPException(409, f"Kontakt existiert bereits: {name} ({payload.get('unternehmen') or '—'})")
+        raise HTTPException(409, tx("Kontakt existiert bereits: {name} ({wert})", name=name, wert=payload.get('unternehmen') or '—'))
     session.commit()
     session.refresh(nc)
     return nc
@@ -3741,7 +3769,7 @@ def update_network_contact(nc_id: int, payload: dict, session: Session = Depends
     from app import normalize as N
     nc = session.get(NetworkContact, nc_id)
     if not nc:
-        raise HTTPException(404, "Netzwerk-Kontakt nicht gefunden")
+        raise HTTPException(404, tx("Netzwerk-Kontakt nicht gefunden"))
     editable = {"name", "beziehung", "unternehmen", "rolle", "letzter_kontakt",
                 "kanal", "prioritaet", "notizen", "next_action", "next_action_date"}
     for k, v in payload.items():
@@ -3754,7 +3782,7 @@ def update_network_contact(nc_id: int, payload: dict, session: Session = Depends
         if neu != nc.dedup_key:
             other = session.exec(select(NetworkContact).where(NetworkContact.dedup_key == neu)).first()
             if other and other.id != nc.id:
-                raise HTTPException(409, f"Kontakt existiert bereits: {nc.name} ({nc.unternehmen or '—'})")
+                raise HTTPException(409, tx("Kontakt existiert bereits: {name} ({unternehmen})", name=nc.name, unternehmen=nc.unternehmen or '—'))
             neuer_dedup_key = neu
     from datetime import datetime
     nc.updated_at = datetime.utcnow()
@@ -3770,7 +3798,7 @@ def update_network_contact(nc_id: int, payload: dict, session: Session = Depends
     if not flush_or_duplicate(session, _dedup_key_setzen):
         # P2-3 (Phase 67F): Schwesterstelle zum Check oben — schließt die Race zwischen dem
         # `other =`-Check und dem Commit (dieselbe 409-Meldung, nicht 500).
-        raise HTTPException(409, f"Kontakt existiert bereits: {nc.name} ({nc.unternehmen or '—'})")
+        raise HTTPException(409, tx("Kontakt existiert bereits: {name} ({unternehmen})", name=nc.name, unternehmen=nc.unternehmen or '—'))
     session.commit()
     session.refresh(nc)
     return nc
@@ -3782,7 +3810,7 @@ def delete_network_contact(nc_id: int, session: Session = Depends(get_session)):
     from datetime import datetime
     nc = session.get(NetworkContact, nc_id)
     if not nc or nc.deleted_at:
-        raise HTTPException(404, "Netzwerk-Kontakt nicht gefunden")
+        raise HTTPException(404, tx("Netzwerk-Kontakt nicht gefunden"))
     nc.deleted_at = datetime.utcnow().isoformat()
     nc.updated_at = datetime.utcnow()
     session.add(nc)
@@ -3796,7 +3824,7 @@ def restore_network_contact(nc_id: int, session: Session = Depends(get_session))
     from datetime import datetime
     nc = session.get(NetworkContact, nc_id)
     if not nc or not nc.deleted_at:
-        raise HTTPException(404, "Netzwerk-Kontakt nicht im Papierkorb")
+        raise HTTPException(404, tx("Netzwerk-Kontakt nicht im Papierkorb"))
     nc.deleted_at = None
     nc.updated_at = datetime.utcnow()
     session.add(nc)
@@ -3838,7 +3866,7 @@ def network_check(company: str, session: Session = Depends(get_session)):
     bestehende Kontakte und der Zielfirmen-Eintrag (fuzzy Namensabgleich in beide Richtungen)."""
     q = _norm_name(company)
     if len(q) < 3:
-        raise HTTPException(422, "company zu kurz (min. 3 Zeichen)")
+        raise HTTPException(422, tx("company zu kurz (min. 3 Zeichen)"))
 
     def hit(v) -> bool:
         n = _norm_name(v)
@@ -3874,8 +3902,9 @@ def create_initiativ(payload: dict, session: Session = Depends(get_session)):
     oder frei. Wiederverwendet einen noch aktiven Initiativ-Job derselben Firma statt zu doppeln."""
     name = (payload.get("company") or "").strip()
     if not name:
-        raise HTTPException(422, "company fehlt")
-    title = (payload.get("title") or "").strip() or "Head / Director Professional Services (Initiativ)"
+        raise HTTPException(422, tx("company fehlt"))
+    title = (payload.get("title") or "").strip() or tx("Head / Director Professional Services "
+                                                       "(Initiativ)")
     q = name.lower()
 
     for j in session.exec(select(Job).where(Job.portal == "Initiativ")).all():
@@ -3890,7 +3919,7 @@ def create_initiativ(payload: dict, session: Session = Depends(get_session)):
             name=name,
             industry=tc.industry if tc else None,
             region=tc.location_hq if tc else None,
-            notes="Aus Initiativ-Workflow angelegt",
+            notes=tx("Aus Initiativ-Workflow angelegt"),
         )
         # `session.add(neue_comp)` bewusst ERST im Callback — s. Docstring von flush_or_duplicate.
         if flush_or_duplicate(session, lambda: session.add(neue_comp)):
@@ -3912,9 +3941,9 @@ def create_initiativ(payload: dict, session: Session = Depends(get_session)):
         location=payload.get("location") or (tc.location_hq if tc else None),
         found_date=date.today().isoformat(),
         dedup_key=dedup_key,
-        source_note="Initiativbewerbung — kein öffentliches Stellenangebot"
+        source_note=tx("Initiativbewerbung — kein öffentliches Stellenangebot")
                     + (f" · Signal: {signal}" if signal else ""),
-        next_step="Firma prüfen → Entscheider recherchieren → Anschreiben",
+        next_step=tx("Firma prüfen → Entscheider recherchieren → Anschreiben"),
         notes=payload.get("notes"),
     )
     if not flush_or_duplicate(session, lambda: session.add(job)):
@@ -3927,7 +3956,7 @@ def create_initiativ(payload: dict, session: Session = Depends(get_session)):
         vorhanden = session.exec(select(Job).where(Job.dedup_key == dedup_key)).first()
         if vorhanden:
             return {"existing": True, "job": vorhanden}
-        raise HTTPException(409, "Initiativ-Stelle konnte wegen einer Dublette nicht angelegt werden")
+        raise HTTPException(409, tx("Initiativ-Stelle konnte wegen einer Dublette nicht angelegt werden"))
     session.commit()
     session.refresh(job)
     return {"existing": False, "job": job}
@@ -4075,7 +4104,7 @@ def create_profil_skill(payload: dict, session: Session = Depends(get_session)):
     name = (payload.get("name") or "").strip()
     bereich = (payload.get("bereich") or "").strip()
     if not name or not bereich:
-        raise HTTPException(422, "name und bereich sind Pflicht")
+        raise HTTPException(422, tx("name und bereich sind Pflicht"))
     s = ProfileSkill(name=name, bereich=bereich, note=payload.get("note"),
                      quelle=payload.get("quelle") or "manuell")
     session.add(s)
@@ -4089,7 +4118,7 @@ def create_profil_skill(payload: dict, session: Session = Depends(get_session)):
 def update_profil_skill(skill_id: int, payload: dict, session: Session = Depends(get_session)):
     s = session.get(ProfileSkill, skill_id)
     if not s:
-        raise HTTPException(404, "Skill nicht gefunden")
+        raise HTTPException(404, tx("Skill nicht gefunden"))
     editable = {"name", "bereich", "note", "sort_order"}
     for k, v in payload.items():
         if k in editable:
@@ -4105,7 +4134,7 @@ def update_profil_skill(skill_id: int, payload: dict, session: Session = Depends
 def delete_profil_skill(skill_id: int, session: Session = Depends(get_session)):
     s = session.get(ProfileSkill, skill_id)
     if not s:
-        raise HTTPException(404, "Skill nicht gefunden")
+        raise HTTPException(404, tx("Skill nicht gefunden"))
     session.delete(s)
     session.commit()
     _profil_struktur_schreiben(session)
@@ -4132,7 +4161,7 @@ def create_career_entry(payload: dict, session: Session = Depends(get_session)):
 def update_career_entry(entry_id: int, payload: dict, session: Session = Depends(get_session)):
     c = session.get(CareerEntry, entry_id)
     if not c:
-        raise HTTPException(404, "Werdegang-Eintrag nicht gefunden")
+        raise HTTPException(404, tx("Werdegang-Eintrag nicht gefunden"))
     editable = {"art", "firma", "rolle", "ort", "von", "bis", "beschreibung",
                "referenzgeber", "referenzdatum", "notiz", "sort_order"}
     for k, v in payload.items():
@@ -4149,7 +4178,7 @@ def update_career_entry(entry_id: int, payload: dict, session: Session = Depends
 def delete_career_entry(entry_id: int, session: Session = Depends(get_session)):
     c = session.get(CareerEntry, entry_id)
     if not c:
-        raise HTTPException(404, "Werdegang-Eintrag nicht gefunden")
+        raise HTTPException(404, tx("Werdegang-Eintrag nicht gefunden"))
     session.delete(c)
     session.commit()
     _profil_struktur_schreiben(session)
@@ -4169,8 +4198,7 @@ async def upload_profil_file(file: UploadFile = File(...), kind: str = Form("Son
 
     ext = (file.filename or "").rsplit(".", 1)[-1].lower() if "." in (file.filename or "") else ""
     if ext not in _FILE_EXT:
-        raise HTTPException(422, f"Dateityp '.{ext or '?'}' nicht erlaubt. "
-                                 f"Erlaubt: {', '.join(sorted(_FILE_EXT))}")
+        raise HTTPException(422, tx("Dateityp '.{ext}' nicht erlaubt. Erlaubt: {liste}", ext=ext or '?', liste=', '.join(sorted(_FILE_EXT))))
 
     stuecke, groesse = [], 0
     while True:
@@ -4179,11 +4207,11 @@ async def upload_profil_file(file: UploadFile = File(...), kind: str = Form("Son
             break
         groesse += len(block)
         if groesse > _MAX_UPLOAD:
-            raise HTTPException(413, f"Datei größer als {_MAX_UPLOAD // 1024 // 1024} MB")
+            raise HTTPException(413, tx("Datei größer als {mb} MB", mb=_MAX_UPLOAD // 1024 // 1024))
         stuecke.append(block)
     inhalt = b"".join(stuecke)
     if not inhalt:
-        raise HTTPException(422, "Datei ist leer")
+        raise HTTPException(422, tx("Datei ist leer"))
 
     if kind not in _PROFIL_FILE_KINDS:
         kind = "Sonstiges"
@@ -4210,7 +4238,7 @@ def delete_profil_file(file_id: int, session: Session = Depends(get_session)):
     exakt dasselbe Muster wie `delete_job_file`."""
     f = session.get(ProfileFile, file_id)
     if not f:
-        raise HTTPException(404, "Datei nicht gefunden")
+        raise HTTPException(404, tx("Datei nicht gefunden"))
 
     # Pfad vorab merken — verschoben wird ERST NACH dem Commit (Phase 64A Stufe 2 / P1-7;
     # Begründung s. Kommentar in delete_job).
@@ -4224,8 +4252,7 @@ def delete_profil_file(file_id: int, session: Session = Depends(get_session)):
         _in_papierkorb(pfad)
     except OSError as exc:
         dateien_fehlgeschlagen = 1
-        print(f"[papierkorb] FEHLER beim Verschieben von '{pfad}' (ProfileFile {file_id}, "
-              f"delete_profil_file): {exc}", flush=True)
+        print(tt("[papierkorb] FEHLER beim Verschieben von '{pfad}' (ProfileFile {file_id}, delete_profil_file): {fehler}", pfad=pfad, file_id=file_id, fehler=exc), flush=True)
     return {"ok": True, "dateien_fehlgeschlagen": dateien_fehlgeschlagen}
 
 
@@ -4236,10 +4263,11 @@ def delete_profil_file(file_id: int, session: Session = Depends(get_session)):
 # der sich durch diesen Upload-Weg nicht aendern darf.
 _CV_BASIS_DIR_REL = "data/cv_basis"
 _CV_SPRACH_RE = re.compile(r"^[a-z]{2}$")   # ISO-639-1, zweistellig
-# Nur diese beiden zieht das System heute von selbst heran (beirat_engine.py:493 und die
-# Skills cv-match / job-deepdive / anschreiben-erstellen / interview-vorbereiten). Alles
-# andere kann hochgeladen werden, wird aber nur manuell genutzt — die Oberflaeche sagt das.
-_CV_AUTOMATISCH = {"de", "en"}
+# Diese sechs zieht das System von selbst heran, passend zur Sprache der Anzeige
+# (beirat_engine._cv_text und die Skills cv-match / job-deepdive / anschreiben-erstellen /
+# interview-vorbereiten; Tabelle der Sprachen: pipeline/bewerbungssprache.py). Alles andere
+# kann hochgeladen werden, wird aber nur manuell genutzt — die Oberflaeche sagt das.
+_CV_AUTOMATISCH = {c.lower() for c in bewerbungssprache.CODES}
 _CV_LABELS = {"de": "Deutsch", "en": "Englisch", "fr": "Französisch", "es": "Spanisch",
               "it": "Italienisch", "nl": "Niederländisch", "pt": "Portugiesisch",
               "pl": "Polnisch", "da": "Dänisch", "sv": "Schwedisch"}
@@ -4274,7 +4302,8 @@ def _cv_struktur(quelle):
         else:
             doc = Document(str(quelle))
     except Exception:
-        return None, "Datei ist kein lesbares Word-Dokument — Stationen konnten nicht gezaehlt werden."
+        return None, tx("Datei ist kein lesbares Word-Dokument — Stationen konnten nicht gezaehlt "
+                        "werden.")
 
     absaetze = doc.paragraphs
     stationen = len(cv_export._stationsgrenzen(absaetze))
@@ -4298,13 +4327,13 @@ def _cv_struktur(quelle):
 
     warnung = None
     if stationen == 0:
-        warnung = ("Keine Stationen erkannt — der Seitenumbruch-Schutz greift bei diesem CV "
-                   "nicht. Aufbau je Station: Firma<Tab>Zeitraum, dann der Jobtitel.")
+        warnung = (tx("Keine Stationen erkannt — der Seitenumbruch-Schutz greift bei diesem CV "
+                      "nicht. Aufbau je Station: Firma<Tab>Zeitraum, dann der Jobtitel."))
     elif tab_zeilen and mit_titel * 2 < len(tab_zeilen):
-        warnung = (f"{len(tab_zeilen)} Stationen erkannt, aber nur bei {mit_titel} steht der "
-                   "Jobtitel direkt hinter der Firmenzeile. Das ist das alte v7-Muster: Der "
-                   "Workday-Parser paart den Titel dann mit der naechsten Station. "
-                   "`scripts/cv_basis_umbau_v10.py` bringt die Datei in die richtige Form.")
+        warnung = (tx("{anzahl} Stationen erkannt, aber nur bei {mit_titel} steht der Jobtitel "
+                      "direkt hinter der Firmenzeile. Das ist das alte v7-Muster: Der "
+                      "Workday-Parser paart den Titel dann mit der naechsten Station. "
+                      "`scripts/cv_basis_umbau_v10.py` bringt die Datei in die richtige Form.", anzahl=len(tab_zeilen), mit_titel=mit_titel))
     return stationen, warnung
 
 
@@ -4318,7 +4347,7 @@ def _cv_basis_dto(pfad: Path) -> dict:
     stationen, warnung = _cv_struktur(pfad)
     return {
         "sprache": sprache,
-        "label": _CV_LABELS.get(sprache, sprache.upper()),
+        "label": uebersetzt(_CV_LABELS.get(sprache, sprache.upper())),
         "automatisch": sprache in _CV_AUTOMATISCH,
         "filename": pfad.name,
         "path": f"{_CV_BASIS_DIR_REL}/{pfad.name}",
@@ -4331,9 +4360,9 @@ def _cv_basis_dto(pfad: Path) -> dict:
 
 @app.get("/api/profil/cv-basis")
 def list_cv_basis():
-    """Listet, was im Ordner liegt — reine Dateisystem-Sicht, keine Datenbank. `de`/`en` zuerst
-    (die automatisch genutzten), danach alphabetisch. Eine einzelne unlesbare Datei darf die
-    ganze Liste nicht zu Fall bringen — `_cv_struktur` faengt das ab, `stationen` wird `null`."""
+    """Listet, was im Ordner liegt — reine Dateisystem-Sicht, keine Datenbank. `de`/`en` zuerst,
+    danach alphabetisch. Eine einzelne unlesbare Datei darf die ganze Liste nicht zu Fall bringen —
+    `_cv_struktur` faengt das ab, `stationen` wird `null`."""
     ordner = _PROJECT_ROOT / _CV_BASIS_DIR_REL
     if not ordner.is_dir():
         return []
@@ -4371,11 +4400,12 @@ async def upload_cv_basis(file: UploadFile = File(...), sprache: str = Form(...)
     import os
 
     if not _CV_SPRACH_RE.match(sprache or ""):
-        raise HTTPException(422, "Sprachcode muss aus zwei Kleinbuchstaben bestehen (z. B. de, en, fr)")
+        raise HTTPException(422, tx("Sprachcode muss aus zwei Kleinbuchstaben bestehen (z. B. de, "
+                                    "en, fr)"))
 
     ext = (file.filename or "").rsplit(".", 1)[-1].lower() if "." in (file.filename or "") else ""
     if ext != "docx":
-        raise HTTPException(422, "Nur .docx wird als Basis-CV akzeptiert")
+        raise HTTPException(422, tx("Nur .docx wird als Basis-CV akzeptiert"))
 
     stuecke, groesse = [], 0
     while True:
@@ -4384,15 +4414,15 @@ async def upload_cv_basis(file: UploadFile = File(...), sprache: str = Form(...)
             break
         groesse += len(block)
         if groesse > _MAX_UPLOAD:
-            raise HTTPException(413, f"Datei größer als {_MAX_UPLOAD // 1024 // 1024} MB")
+            raise HTTPException(413, tx("Datei größer als {mb} MB", mb=_MAX_UPLOAD // 1024 // 1024))
         stuecke.append(block)
     inhalt = b"".join(stuecke)
     if not inhalt:
-        raise HTTPException(422, "Datei ist leer")
+        raise HTTPException(422, tx("Datei ist leer"))
 
     stationen, warnung = _cv_struktur(inhalt)
     if stationen is None:
-        raise HTTPException(422, "Datei ist kein lesbares Word-Dokument")
+        raise HTTPException(422, tx("Datei ist kein lesbares Word-Dokument"))
 
     ordner = _PROJECT_ROOT / _CV_BASIS_DIR_REL
     ordner.mkdir(parents=True, exist_ok=True)
@@ -4445,12 +4475,13 @@ def delete_cv_basis(sprache: str):
     und in keiner Weise mehr zu entfernen — eine Sackgasse, die man nur ueber den Finder
     verlaesst. Auch hier gilt der Papierkorb, kein hartes Loeschen."""
     if not _CV_SPRACH_RE.match(sprache or ""):
-        raise HTTPException(422, "Sprachcode muss aus zwei Kleinbuchstaben bestehen (z. B. de, en, fr)")
+        raise HTTPException(422, tx("Sprachcode muss aus zwei Kleinbuchstaben bestehen (z. B. de, "
+                                    "en, fr)"))
 
     ordner = _PROJECT_ROOT / _CV_BASIS_DIR_REL
     ziel = ordner / f"base_{sprache}.docx"
     if not ziel.exists():
-        raise HTTPException(404, "Basis-CV nicht gefunden")
+        raise HTTPException(404, tx("Basis-CV nicht gefunden"))
 
     papierkorb = _in_papierkorb(f"{_CV_BASIS_DIR_REL}/{ziel.name}")
     return {"ok": True, "papierkorb": papierkorb}
@@ -4467,7 +4498,7 @@ async def profil_import_zip(file: UploadFile = File(...), session: Session = Dep
 
     inhalt = await file.read()
     if len(inhalt) > _MAX_UPLOAD:
-        raise HTTPException(413, f"Datei größer als {_MAX_UPLOAD // 1024 // 1024} MB")
+        raise HTTPException(413, tx("Datei größer als {mb} MB", mb=_MAX_UPLOAD // 1024 // 1024))
     try:
         ergebnis = linkedin_import.importiere_zip(inhalt, session)
     except linkedin_import.LinkedinImportError as e:
@@ -4502,7 +4533,7 @@ async def profil_linkedin_einlesen(text: str = Form(""), file: Optional[UploadFi
         if file is not None:
             inhalt = await file.read()
             if len(inhalt) > _MAX_UPLOAD:
-                raise HTTPException(413, f"Datei größer als {_MAX_UPLOAD // 1024 // 1024} MB")
+                raise HTTPException(413, tx("Datei größer als {mb} MB", mb=_MAX_UPLOAD // 1024 // 1024))
             text = linkedin_text.pdf_zu_text(inhalt)
         linkedin_text.eingabe_speichern(text)
     except linkedin_text.EingabeFehler as e:
@@ -4517,7 +4548,7 @@ def profil_linkedin_eingabe():
     from pipeline import linkedin_text
     text = linkedin_text.eingabe_lesen()
     if text is None:
-        raise HTTPException(404, "Es liegt kein Profiltext vor.")
+        raise HTTPException(404, tx("Es liegt kein Profiltext vor."))
     return {"text": text}
 
 
@@ -4544,7 +4575,7 @@ async def profil_linkedin_uebernehmen(session: Session = Depends(get_session)):
     from pipeline import linkedin_text
     vorschlag = linkedin_text.vorschlag_lesen()
     if not vorschlag:
-        raise HTTPException(404, "Es liegt kein Vorschlag vor.")
+        raise HTTPException(404, tx("Es liegt kein Vorschlag vor."))
     ergebnis = linkedin_text.uebernehmen(vorschlag, session)
     return await _nach_linkedin_import(ergebnis, session)
 
@@ -4560,11 +4591,21 @@ def profil_linkedin_verwerfen():
 # Async-Endpunkte, weil die Engine im Event-Loop des Servers läuft (SSE + Hintergrund-Task).
 # Personas = .claude/agents/beirat-*.md (dieselben wie der interaktive /beirat-basis-Command).
 
+_BEIRAT_FELDER = ("id", "anzeige", "beschreibung", "perspektive", "farbe", "model", "vorsitz")
+
+
+def _beirat_dto(m: dict) -> dict:
+    """Antwortfelder eines Beiratsplatzes. Die gekürzte `beschreibung` (Tooltip) folgt der Sprache;
+    `perspektive` ist der bearbeitbare Originaltext der Persona-Datei und bleibt, wie er gespeichert ist."""
+    d = {k: m[k] for k in _BEIRAT_FELDER}
+    d["beschreibung"] = uebersetzt(d["beschreibung"])
+    return d
+
+
 @app.get("/api/beirat/mitglieder")
 def beirat_mitglieder():
     import beirat_engine as be
-    return [{k: m[k] for k in ("id", "anzeige", "beschreibung", "perspektive", "farbe", "model", "vorsitz")}
-            for m in be.lade_mitglieder()]
+    return [_beirat_dto(m) for m in be.lade_mitglieder()]
 
 
 @app.patch("/api/beirat/mitglieder/{platz_id}")
@@ -4585,7 +4626,7 @@ def beirat_mitglied_patch(platz_id: str, payload: dict):
         raise HTTPException(404, str(e))
     except be.MitgliedFehler as e:
         raise HTTPException(422, str(e))
-    return {k: m[k] for k in ("id", "anzeige", "beschreibung", "perspektive", "farbe", "model", "vorsitz")}
+    return _beirat_dto(m)
 
 
 @app.post("/api/beirat/mitglieder/{platz_id}/neu-besetzen")
@@ -4599,11 +4640,11 @@ async def beirat_mitglied_neu_besetzen(platz_id: str, payload: dict, session: Se
     name = (payload.get("name") or "").strip()
     perspektive = (payload.get("perspektive") or "").strip()
     if not name:
-        raise HTTPException(422, "name ist Pflicht")
+        raise HTTPException(422, tx("name ist Pflicht"))
     if not perspektive:
-        raise HTTPException(422, "perspektive ist Pflicht")
+        raise HTTPException(422, tx("perspektive ist Pflicht"))
     if platz_id not in {m["id"] for m in be.lade_mitglieder()}:
-        raise HTTPException(404, "Beiratsplatz nicht gefunden")
+        raise HTTPException(404, tx("Beiratsplatz nicht gefunden"))
     task_dto = await create_task(
         {"kind": "beirat-persona",
          "params": {"platz_id": platz_id, "name": name, "perspektive": perspektive}},
@@ -4655,7 +4696,7 @@ def beirat_debatte(debatte_id: str):
     import beirat_engine as be
     d = be.debatte_lesen(debatte_id)
     if not d:
-        raise HTTPException(404, "Debatte nicht gefunden")
+        raise HTTPException(404, tx("Debatte nicht gefunden"))
     return d
 
 
@@ -4673,15 +4714,15 @@ async def beirat_debatte_starten(payload: dict, session: Session = Depends(get_s
     import beirat_engine as be
     thema = (payload.get("thema") or "").strip()
     if not thema:
-        raise HTTPException(422, "Thema ist Pflicht")
+        raise HTTPException(422, tx("Thema ist Pflicht"))
     provider = payload.get("provider") or "anthropic"
     if provider not in ("anthropic", "openai"):
-        raise HTTPException(422, "provider muss anthropic oder openai sein")
+        raise HTTPException(422, tx("provider muss anthropic oder openai sein"))
     if provider == "openai" and not be.keys_status()["openai_gesetzt"]:
-        raise HTTPException(422, "Für OpenAI zuerst einen Key hinterlegen (Beirat → Schlüssel)")
+        raise HTTPException(422, tx("Für OpenAI zuerst einen Key hinterlegen (Beirat → Schlüssel)"))
     laufende = [d for d in be.DEBATTEN.values() if d.status == "läuft"]
     if laufende:
-        raise HTTPException(409, "Es läuft bereits eine Debatte — erst beenden oder stoppen")
+        raise HTTPException(409, tx("Es läuft bereits eine Debatte — erst beenden oder stoppen"))
     _guard_tagesbudget(session)  # Tagesbudget + Not-Aus (Phase 62A) — unmittelbar vor dem Start
     d = be.debatte_starten(
         thema=thema, kontext=payload.get("kontext") or "",
@@ -4713,11 +4754,12 @@ def _beirat_stellen_check_starten(job: Job, session: Session, min_beitraege: int
     import beirat_engine as be
     from pipeline.user_profile import user_first_name
     if be.laufende_stellen_check_fuer_job(job.id):
-        raise HTTPException(409, "Für diese Stelle läuft bereits ein Beirats-Check")
+        raise HTTPException(409, tx("Für diese Stelle läuft bereits ein Beirats-Check"))
     _guard_tagesbudget(session)
     company = session.get(Company, job.company_id) if job.company_id else None
     kontext, company_fit_fehlt = be.sammle_stellen_kontext(job, company)
-    thema = f"Stellen-Check: Soll sich {user_first_name()} auf „{job.title}“ bei {job.company_name or 'der Firma'} bewerben? (Job {job.id})"
+    thema = tx("Stellen-Check: Soll sich {name} auf „{titel}“ bei {firma} bewerben? (Job {job_id})",
+              name=user_first_name(), titel=job.title, firma=job.company_name or tx("der Firma"), job_id=job.id)
     d = be.debatte_starten(
         thema=thema, kontext=kontext, min_beitraege=min_beitraege,
         teilnehmer_ids=None, provider="anthropic", openai_model="gpt-4o",
@@ -4735,7 +4777,7 @@ async def beirat_stellen_check(payload: dict, session: Session = Depends(get_ses
     job_id = payload.get("job_id")
     job = session.get(Job, job_id) if job_id else None
     if not job or job.deleted_at:
-        raise HTTPException(404, "Stelle nicht gefunden")
+        raise HTTPException(404, tx("Stelle nicht gefunden"))
     d, company_fit_fehlt = _beirat_stellen_check_starten(
         job, session, int(payload.get("min_beitraege") or 8))
     return {"id": d.id, "min_beitraege": d.min_beitraege, "max_beitraege": d.max_beitraege,
@@ -4748,7 +4790,7 @@ def beirat_debatte_stoppen(debatte_id: str):
     import beirat_engine as be
     d = be.DEBATTEN.get(debatte_id)
     if not d:
-        raise HTTPException(404, "Debatte nicht (mehr) aktiv")
+        raise HTTPException(404, tx("Debatte nicht (mehr) aktiv"))
     d.stop_gewuenscht = True
     return {"ok": True}
 
@@ -4763,7 +4805,7 @@ async def beirat_debatte_stream(debatte_id: str):
     if not d:
         gespeichert = be.debatte_lesen(debatte_id)
         if not gespeichert:
-            raise HTTPException(404, "Debatte nicht gefunden")
+            raise HTTPException(404, tx("Debatte nicht gefunden"))
 
         async def _abgeschlossen():
             yield f"data: {json.dumps({'typ': 'archiv', 'debatte': gespeichert}, ensure_ascii=False)}\n\n"
@@ -4811,7 +4853,7 @@ def spa(full_path: str):
     `_OBERFLAECHE_KOPF` (P2-64). Modulfunktion, damit die Tests sie ohne gebautes Frontend prüfen
     können (tests/test_spa_fallback.py)."""
     if full_path.startswith("api"):
-        raise HTTPException(404, "Unbekannter API-Endpunkt")
+        raise HTTPException(404, tx("Unbekannter API-Endpunkt"))
     dist = _DIST.resolve()
     ziel = dist / full_path
     kandidat = dist                        # Ausgangswert: index.html

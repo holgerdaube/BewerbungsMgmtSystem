@@ -4,6 +4,7 @@ import {
   type ProfilFeld, type ProfilIdentitaetAntwort, type ProfilIdentitaetBody, type ProfilIdentitaetInhalt,
 } from '../api'
 import { PROFIL_GEAENDERT } from '../profil'
+import { t } from '../i18n'
 
 // P2-69: Karte „Identität und Suchstrategie“ — liest und schreibt config/profil.md über
 // GET/PUT /api/profil/identitaet (Vertrag A der Bau-Spec). Die Datei bleibt die einzige Quelle;
@@ -84,7 +85,7 @@ export type HinweisBereich = 'anschrift' | 'email' | 'allgemein'
 /** Die Hinweise des Servers sind Klartext ohne Feldbezug; zugeordnet wird nach Stichwort, damit sie
  *  unter dem betroffenen Feld stehen. Was nicht passt, steht unter den Kurzfeldern. */
 export function hinweisBereich(text: string): HinweisBereich {
-  if (/ortszeile|anschrift/i.test(text)) return 'anschrift'
+  if (/ortszeile|anschrift|address line/i.test(text)) return 'anschrift'
   if (/e-?mail/i.test(text)) return 'email'
   return 'allgemein'
 }
@@ -99,8 +100,8 @@ export function sichtbareHinweise(basis: ProfilIdentitaetAntwort, form: ProfilId
 
 /** Fußzeile der Karte: was die Karte nicht anfasst bzw. dass die Datei erst entsteht. */
 export function fusszeile(a: Pick<ProfilIdentitaetAntwort, 'vorhanden' | 'unveraendert'>): string {
-  if (!a.vorhanden) return 'Noch kein Profil angelegt. Mit dem ersten Speichern entsteht die Datei.'
-  return a.unveraendert && a.unveraendert.length > 0 ? `Unverändert bleiben: ${a.unveraendert.join(', ')}` : ''
+  if (!a.vorhanden) return t('profil:karte.fusszeile_leer')
+  return a.unveraendert && a.unveraendert.length > 0 ? t('profil:karte.fusszeile_unveraendert', { felder: a.unveraendert.join(', ') }) : ''
 }
 
 /** Klartext aus `detail` der Server-Antwort (der Server formuliert die Kundentexte selbst). Ist kein
@@ -184,7 +185,7 @@ export function ProfilIdentitaetAnsicht({
   const nameLeer = i.name.trim() === ''
   // Ein leerer Name ist erst dann ein Fehler, wenn er etwas überschreibt oder schon getippt wurde;
   // die frische, leere Karte (Datei fehlt) soll nicht gleich rot sein.
-  const nameFehler = nameLeer && (basis.vorhanden || geaendert) ? 'Der Name ist Pflicht.' : undefined
+  const nameFehler = nameLeer && (basis.vorhanden || geaendert) ? t('profil:karte.name_pflicht') : undefined
 
   const hinweise = (bereich: HinweisBereich) => sichtbareHinweise(basis, form, bereich)
 
@@ -199,28 +200,26 @@ export function ProfilIdentitaetAnsicht({
 
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      <div className="mb-2 text-sm font-semibold text-brand-navy">Identität und Suchstrategie</div>
+      <div className="mb-2 text-sm font-semibold text-brand-navy">{t('profil:karte.titel')}</div>
       <p className="mb-3 text-xs text-slate-500">
-        Name, Anschrift, Kontakt und LinkedIn bilden den Briefkopf der Anschreiben und die Dateinamen.
-        Kurzprofil, Zieltermin und Rahmenbedingungen liest die KI als Hintergrund. Titel, Ebene und Branche
-        Ihrer Zielrollen stehen unter „Einstellungen“ in den Suchplänen.
+        {t('profil:karte.hinweis')}
       </p>
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-        <Feld label="Name (Pflicht)" value={i.name} placeholder="Max Mustermann" fehler={nameFehler}
+        <Feld label={t('profil:karte.name')} value={i.name} placeholder={t('profil:karte.name_platzhalter')} fehler={nameFehler}
           onChange={(v) => setIdent('name', v)} />
-        <Feld label="Anschrift" value={i.anschrift} placeholder="Musterweg 3, 12345 Musterstadt"
+        <Feld label={t('profil:karte.anschrift')} value={i.anschrift} placeholder={t('profil:karte.anschrift_platzhalter')}
           hinweise={hinweise('anschrift')} onChange={(v) => setIdent('anschrift', v)} />
-        <Feld label="Positionierung (Kurzzeile)" value={i.positionierung} spanZwei
-          placeholder="z. B. Fachkraft für Logistik mit Schwerpunkt Disposition"
+        <Feld label={t('profil:karte.positionierung')} value={i.positionierung} spanZwei
+          placeholder={t('profil:karte.positionierung_platzhalter')}
           onChange={(v) => setIdent('positionierung', v)} />
-        <Feld label="E-Mail" value={i.email} placeholder="max.mustermann@example.com"
+        <Feld label={t('profil:karte.email')} value={i.email} placeholder={t('profil:karte.email_platzhalter')}
           hinweise={hinweise('email')} onChange={(v) => setIdent('email', v)} />
-        <Feld label="Telefon" value={i.telefon} placeholder="+49 170 1234567"
+        <Feld label={t('profil:karte.telefon')} value={i.telefon} placeholder="+49 170 1234567"
           onChange={(v) => setIdent('telefon', v)} />
-        <Feld label="LinkedIn" value={i.linkedin} placeholder="https://www.linkedin.com/in/…"
+        <Feld label="LinkedIn" value={i.linkedin} placeholder="https://www.linkedin.com/in/…" /* i18n-ok: Eigenname, URL */
           onChange={(v) => setIdent('linkedin', v)} />
-        <Feld label="Aktuell" value={i.aktuell} placeholder="z. B. Fahrer bei der Musterfirma GmbH, seit 2021"
+        <Feld label={t('profil:karte.aktuell')} value={i.aktuell} placeholder={t('profil:karte.aktuell_platzhalter')}
           onChange={(v) => setIdent('aktuell', v)} />
         {i.weitere.map((f, n) => (
           <Feld key={`weitere-${n}-${f.schluessel}`} label={f.schluessel} value={f.wert}
@@ -233,35 +232,35 @@ export function ProfilIdentitaetAnsicht({
         </div>
       )}
 
-      <TextBereich titel="Kurzprofil" rows={4} value={form.kurzprofil}
-        placeholder="Zwei bis drei Sätze zu Erfahrung und Zielen."
+      <TextBereich titel={t('profil:karte.kurzprofil')} rows={4} value={form.kurzprofil}
+        placeholder={t('profil:karte.kurzprofil_platzhalter')}
         onChange={(v) => onForm({ ...form, kurzprofil: v })} />
 
       {form.zielrolle.length > 0 && (
         <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
           {form.zielrolle.map((f, n) => (
             <Feld key={`zielrolle-${n}-${f.schluessel}`} label={f.schluessel} value={f.wert}
-              placeholder="z. B. neue Rolle bis 31.12.2026" onChange={(v) => setListe('zielrolle', n, v)} />
+              placeholder={t('profil:karte.zielrolle_platzhalter')} onChange={(v) => setListe('zielrolle', n, v)} />
           ))}
         </div>
       )}
 
-      <TextBereich titel="Harte Rahmenbedingungen" rows={4} value={form.rahmenbedingungen}
-        hinweis="Je Zeile ein Punkt, beginnend mit „- “."
-        placeholder={'- Arbeitsort höchstens 30 km von Musterstadt entfernt.\n- Vollzeit, keine Nachtschichten.'}
+      <TextBereich titel={t('profil:karte.rahmen')} rows={4} value={form.rahmenbedingungen}
+        hinweis={t('profil:karte.listenhinweis')}
+        placeholder={t('profil:karte.rahmen_platzhalter')}
         onChange={(v) => onForm({ ...form, rahmenbedingungen: v })} />
 
-      <TextBereich titel="Bekannte Skill-Gaps" rows={3} value={form.skill_gaps}
-        hinweis="Je Zeile ein Punkt, beginnend mit „- “."
-        placeholder="- Noch wenig Erfahrung in der Disposition."
+      <TextBereich titel={t('profil:karte.gaps')} rows={3} value={form.skill_gaps}
+        hinweis={t('profil:karte.listenhinweis')}
+        placeholder={t('profil:karte.gaps_platzhalter')}
         onChange={(v) => onForm({ ...form, skill_gaps: v })} />
 
       <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3">
         <button onClick={onSpeichern} disabled={saving || !geaendert || nameLeer}
           className="rounded-lg bg-brand-cyan px-3 py-1.5 text-sm font-medium text-brand-aufAktion hover:bg-brand-cyanHover disabled:cursor-not-allowed disabled:opacity-40">
-          {saving ? 'Speichern…' : 'Speichern'}
+          {saving ? t('profil:aktion.speichert') : t('profil:aktion.speichern')}
         </button>
-        {saved && <span className="text-sm text-emerald-600">✓ Gespeichert</span>}
+        {saved && <span className="text-sm text-emerald-600">{t('profil:aktion.gespeichert')}</span>}
       </div>
 
       {fehler && fehler.art !== 'stand' && (
@@ -273,7 +272,7 @@ export function ProfilIdentitaetAnsicht({
           {fehler.zusatz && <div className="mt-1">{fehler.zusatz}</div>}
           <button onClick={onNeuLaden} disabled={neuLadend}
             className="mt-1.5 rounded-lg border border-amber-300 bg-white px-3 py-1 text-xs font-medium text-amber-900 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50">
-            {neuLadend ? 'Lädt…' : 'Neu laden'}
+            {neuLadend ? t('profil:karte.neu_ladend') : t('profil:karte.neu_laden')}
           </button>
         </div>
       )}
@@ -300,7 +299,7 @@ export default function ProfilIdentitaet() {
   const erstesLaden = async () => {
     setLaedt(true); setLadeFehler(null)
     try { uebernehmen(await holen()) }
-    catch (e: any) { setLadeFehler(e instanceof ApiError ? serverText(e, `Status ${e.status}`) : 'Der Server ist nicht erreichbar.') }
+    catch (e: any) { setLadeFehler(e instanceof ApiError ? serverText(e, t('profil:karte.status_code', { status: e.status })) : t('profil:karte.fehler_nicht_erreichbar')) }
     finally { setLaedt(false) }
   }
   useEffect(() => { erstesLaden() }, [])
@@ -318,11 +317,11 @@ export default function ProfilIdentitaet() {
       setSaved(true); setTimeout(() => setSaved(false), 2000)
     } catch (e: any) {
       if (e instanceof ApiError) {
-        if (e.status === 409) setFehler({ art: 'stand', text: serverText(e, 'Die Profil-Datei wurde inzwischen geändert. Bitte laden Sie die Karte neu und tragen Sie Ihre Änderung noch einmal ein.') })
-        else if (e.status === 400) setFehler({ art: 'eingabe', text: serverText(e, 'Die Eingabe konnte nicht gespeichert werden.') })
-        else setFehler({ art: 'sonst', text: serverText(e, `Speichern fehlgeschlagen (Status ${e.status}).`) })
+        if (e.status === 409) setFehler({ art: 'stand', text: serverText(e, t('profil:karte.fehler_stand')) })
+        else if (e.status === 400) setFehler({ art: 'eingabe', text: serverText(e, t('profil:karte.fehler_eingabe')) })
+        else setFehler({ art: 'sonst', text: serverText(e, t('profil:karte.fehler_speichern_status', { status: e.status })) })
       } else {
-        setFehler({ art: 'sonst', text: 'Speichern fehlgeschlagen. Der Server ist nicht erreichbar.' })
+        setFehler({ art: 'sonst', text: t('profil:karte.fehler_speichern_server') })
       }
     } finally { setSaving(false) }
   }
@@ -335,21 +334,21 @@ export default function ProfilIdentitaet() {
       uebernehmen(await holen())
       setFehler(null); setSaved(false)
     } catch {
-      setFehler((f) => (f ? { ...f, zusatz: 'Neu laden war gerade nicht möglich. Bitte später noch einmal versuchen.' } : f))
+      setFehler((f) => (f ? { ...f, zusatz: t('profil:karte.fehler_neu_laden') } : f))
     } finally { setNeuLadend(false) }
   }
 
   if (!basis || !form) {
     return (
       <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-        <div className="mb-2 text-sm font-semibold text-brand-navy">Identität und Suchstrategie</div>
-        {laedt && <div className="text-sm text-slate-400">Lade…</div>}
+        <div className="mb-2 text-sm font-semibold text-brand-navy">{t('profil:karte.titel')}</div>
+        {laedt && <div className="text-sm text-slate-400">{t('profil:aktion.lade')}</div>}
         {!laedt && ladeFehler && (
           <div className="flex flex-wrap items-center gap-2 text-sm text-slate-500">
-            <span>Die Angaben aus der Profil-Datei konnten nicht geladen werden. {ladeFehler}</span>
+            <span>{t('profil:karte.laden_fehler', { fehler: ladeFehler })}</span>
             <button onClick={erstesLaden}
               className="rounded-lg border border-slate-300 px-3 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50">
-              Erneut versuchen
+              {t('profil:karte.erneut')}
             </button>
           </div>
         )}

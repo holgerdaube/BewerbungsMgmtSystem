@@ -17,8 +17,11 @@ EIGENE DATENBANK JE TEST (`digest_db`): Wie in `test_digest_absagen.py` — die 
 
 Kein app.*/pipeline.*-Import auf Modulebene (conftest.py-Konvention).
 """
+import contextlib
 import datetime
 import itertools
+import os
+import time
 
 import pytest
 
@@ -56,11 +59,11 @@ _ZEITZAEHLER = itertools.count(1)
 def _log(db, job, eintrag, *, art="auto", wann=None):
     """Eine JobLog-Zeile mit naivem UTC `created_at`, wie in der Produktion.
 
-    Ohne `wann` bekommt jeder Aufruf einen Zeitpunkt kurz nach dem heutigen UTC-Tagesbeginn,
+    Ohne `wann` bekommt jeder Aufruf einen Zeitpunkt kurz nach der heutigen lokalen Mitternacht,
     aufsteigend in Aufrufreihenfolge: erster Aufruf = frueher am Tag.
 
     BEWUSST NICHT `utcnow() - N Stunden`, wie die erste Fassung es tat. Der Digest filtert die
-    Eintraege auf `created_at.date() == heute`; laeuft die Suite frueh am Morgen, liegt
+    Eintraege auf den heutigen lokalen Tag; laeuft die Suite frueh am Morgen, liegt
     „6 Stunden zurueck“ auf GESTERN und faellt aus diesem Filter. Am 04.09.2026 um 05:40 UTC
     ist genau das passiert — und der Schaden war zweierlei:
       * `test_tageskette_fasst_mehrere_wechsel_zusammen` wurde rot (nur ein Wechsel uebrig),
@@ -69,12 +72,11 @@ def _log(db, job, eintrag, *, art="auto", wann=None):
         zufaellig. Ein Test, der zur falschen Tageszeit stumm nichts mehr prueft, ist schlimmer
         als einer, der rot wird.
     """
+    from app import zeit
     from app.models import JobLog
 
     if wann is None:
-        jetzt = datetime.datetime.utcnow()
-        tagesbeginn = jetzt.replace(hour=0, minute=0, second=0, microsecond=0)
-        wann = tagesbeginn + datetime.timedelta(seconds=next(_ZEITZAEHLER))
+        wann = zeit.tagesbeginn_utc() + datetime.timedelta(seconds=next(_ZEITZAEHLER))
     log = JobLog(job_id=job.id, eintrag=eintrag, art=art, created_at=wann)
     db.add(log)
     db.commit()
@@ -85,8 +87,8 @@ def _log(db, job, eintrag, *, art="auto", wann=None):
 def _stelle(db, firma_name, titel, *, status="Beworben", match_score=None, location=None,
             heute_geaendert=True):
     """Firma + Stelle anlegen. `heute_geaendert` setzt `updated_at` auf jetzt, damit der Job
-    im Abschnitt „Heute geändert" auftaucht — genau wie in der Produktion (`updated_at.date()
-    == today`, Spec §2.6)."""
+    im Abschnitt „Heute geändert" auftaucht — genau wie in der Produktion (`updated_at` faellt
+    auf den heutigen lokalen Tag, Spec §2.6)."""
     from app.models import Company, Job
 
     firma = Company(name=firma_name)
@@ -322,3 +324,67 @@ def test_endstationen_sind_grau_geparkt_dagegen_nicht():
         assert _chg_suffix(status) == "kein", status
     assert _chg_suffix("Geparkt") == "neutral"
 
+
+@contextlib.contextmanager
+def _zeitzone(name):
+    """Prozess-Zeitzone fuer die Dauer des Blocks wechseln und danach sauber zuruecksetzen.
+
+    Windows kennt `time.tzset` nicht; dort ueberspringen sich die Tests selbst. Geprueft wird die
+    Tagesgrenze dann in den Linux-Laeufen.
+    """
+    if not hasattr(time, "tzset"):
+        pytest.skip("time.tzset gibt es nur unter Unix")
+    bisher = os.environ.get("TZ")
+    os.environ["TZ"] = name
+    time.tzset()
+    try:
+        yield
+    finally:
+        if bisher is None:
+            del os.environ["TZ"]
+        else:
+            os.environ["TZ"] = bisher
+        time.tzset()
+
+
+def _geaendert_um(db, firma, wann):
+    """Stelle, deren letzte Aenderung samt Statuswechsel genau auf `wann` (naives UTC) faellt."""
+    _, job = _stelle(db, firma, "Rolle", heute_geaendert=False)
+    job.updated_at = wann
+    db.add(job)
+    db.commit()
+    _log(db, job, "Status: Prüfen → Beworben", wann=wann)
+
+
+def test_aenderung_nach_lokaler_mitternacht_zaehlt_als_heute(digest_db):
+    """Der Tag im Bericht ist der LOKALE Tag des Nutzers, gespeichert ist aber UTC.
+
+    In Berlin faellt 00:00:01 Uhr noch auf den UTC-Vortag. Vergleicht man das UTC-Datum mit dem
+    lokalen, fehlt jede Aenderung aus der ersten Stunde des Tages (im Sommer aus den ersten zwei)
+    den ganzen Tag lang in „Heute geändert“.
+    """
+    from app import zeit
+    from pipeline.digest import build_digest_html
+
+    with _zeitzone("Europe/Berlin"):
+        _geaendert_um(digest_db, "Nachtschicht AG",
+                      zeit.tagesbeginn_utc() + datetime.timedelta(seconds=1))
+        abschnitt = _abschnitt(build_digest_html())
+
+    assert "Nachtschicht AG" in abschnitt
+    assert "Prüfen → Beworben" in abschnitt
+
+
+def test_aenderung_vor_lokaler_mitternacht_zaehlt_nicht_als_heute(digest_db):
+    """Die Gegenrichtung, westlich von UTC: In New York liegt 23:59:59 Uhr von gestern schon auf
+    dem UTC-Datum von heute. Der UTC-Vergleich meldete diese Stelle faelschlich als heute geaendert.
+    """
+    from app import zeit
+    from pipeline.digest import build_digest_html
+
+    with _zeitzone("America/New_York"):
+        _geaendert_um(digest_db, "Gestern Inc",
+                      zeit.tagesbeginn_utc() - datetime.timedelta(seconds=1))
+        abschnitt = _abschnitt(build_digest_html())
+
+    assert "Gestern Inc" not in abschnitt

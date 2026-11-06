@@ -1,0 +1,73 @@
+{
+  "seite": {
+    "titel": "Bewerbungs-Beirat",
+    "einleitung": "Sieben fiktive Köpfe mit verschiedenen Fachperspektiven debattieren Ihre Frage live und gehen dabei auf die Beiträge der anderen ein. {{vorsitz}} moderiert und schließt mit einer Synthese. Ob sich eine Bewerbung auf eine bestimmte Stelle lohnt, prüfen Sie mit „Stelle prüfen (Beirat)“ in der Karte „Unterlagen erstellen“ der Stelle."
+  },
+  "vorsitz": {
+    "der": "Der Vorsitz",
+    "den": "den Vorsitz"
+  },
+  "schluessel": {
+    "titel": "🔑 Schlüssel & Motor",
+    "abo_chatgpt_ok": "ChatGPT-Abo ✓ (Codex gefunden)",
+    "abo_chatgpt_fehlt": "ChatGPT-Abo nicht gefunden",
+    "abo_claude_ok": "Claude-Abo ✓ (ohne Key nutzbar)",
+    "abo_claude_fehlt": "Claude-Abo nicht gefunden",
+    "anthropic_gesetzt": "Anthropic-Key ✓ {{maske}}",
+    "anthropic_leer": "Anthropic-Key –",
+    "openai_gesetzt": "OpenAI-Key ✓ {{maske}}",
+    "openai_leer": "OpenAI-Key –",
+    "text_chatgpt": "Ohne Schlüssel debattiert der Beirat über Ihr ChatGPT-Abo (Codex), dafür ist <b>kein Key nötig</b>. Ein OpenAI-Key schaltet OpenAI als eigenen Motor frei und wird getrennt über die OpenAI-API abgerechnet. Der Schlüssel liegt nur auf diesem Rechner, außerhalb des Programmordners. Ein leeres Feld lässt den gespeicherten Schlüssel unverändert.",
+    "text_claude": "Ohne Schlüssel debattiert der Beirat über Ihr Claude-Abo, dafür ist <b>kein Key nötig</b>. Ein hier eingetragener Anthropic-Key ersetzt das Abo, ein OpenAI-Key schaltet OpenAI als Motor frei. Die Schlüssel liegen nur auf diesem Rechner, außerhalb des Programmordners. Ein leeres Feld lässt den gespeicherten Schlüssel unverändert.",
+    "placeholder_anthropic": "Anthropic-Key",
+    "placeholder_openai": "OpenAI-Key (sk-…)",
+    "speichern": "Speichern",
+    "gespeichert": "Gespeichert. Die Schlüssel liegen nur auf diesem Rechner, außerhalb des Programmordners."
+  },
+  "formular": {
+    "titel": "Neue Debatte",
+    "thema_placeholder": "Thema / Frage an den Beirat *",
+    "kontext_placeholder": "Zusätzlicher Kontext (Stelle, Firma, CV-Stand, Vorgeschichte …)",
+    "min_beitraege": "Mindest-Beiträge",
+    "motor": "Motor",
+    "motor_chatgpt": "ChatGPT (Abo)",
+    "motor_claude": "Claude (Abo oder Key)",
+    "motor_openai": "OpenAI (Key nötig)",
+    "chatgpt_hinweis": "Mit ChatGPT erscheint jeder Beitrag erst, wenn er fertig ist, nicht Wort für Wort.",
+    "vorsitz_waehlt": "{{vorsitz}} wählt die Köpfe selbst",
+    "starten": "▶ Debatte starten",
+    "laeuft": "Debatte läuft…",
+    "stoppen": "■ Stoppen (→ Synthese)",
+    "mind_zwei": "Wählen Sie mindestens zwei Köpfe oder lassen Sie {{vorsitz}} wählen."
+  },
+  "fortschritt": "Beitrag <b>{{nr}}</b> · Minimum {{min}} · Obergrenze {{max}}",
+  "start_fehlgeschlagen": "Start fehlgeschlagen",
+  "archiv": {
+    "titel": "Frühere Debatten",
+    "beitraege_one": "{{count}} Beiträge",
+    "beitraege_other": "{{count}} Beiträge"
+  },
+  "live": {
+    "vorsitz": "Vorsitz",
+    "enthaltung": "Enthaltung",
+    "beitrag_nr": "Beitrag {{nr}}",
+    "schreibt": "schreibt…",
+    "synthese": "📋 Synthese",
+    "entsteht": "entsteht…",
+    "abstimmung_start": "Abstimmung — alle 7 Köpfe bewerten unabhängig …"
+  },
+  "check": {
+    "laeuft": "⏳ Beirat prüft…",
+    "start": "Starte…",
+    "label": "▶ Stelle prüfen (Beirat)"
+  },
+  "wert": {
+    "fertig": "fertig",
+    "fehler": "fehler",
+    "abgebrochen": "abgebrochen",
+    "läuft": "läuft",
+    "Bewerben": "Bewerben",
+    "Bedingt": "Bedingt",
+    "Nicht": "Nicht"
+  }
+}

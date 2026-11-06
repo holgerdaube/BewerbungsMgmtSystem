@@ -118,7 +118,7 @@ _OEFFENTLICHES_REPO_RE = re.compile(
 # Der Kontoname ist der aus `OEFFENTLICHES_REPO`, exakt geschrieben. Ein anderer Host, `http://`,
 # `www.`, ein Pfad oder Parameter dahinter, ein laengerer Name und dieselbe Adresse in jeder anderen
 # Datei bleiben Funde. Name, Anschrift, Mail, Telefon und Dritte laufen in beiden Dateien weiter.
-SPENDEN_PFADE: tuple[str, ...] = ("README.md", ".github/FUNDING.yml")
+SPENDEN_PFADE: tuple[str, ...] = ("README.md", "README.de.md", ".github/FUNDING.yml")
 _SPENDEN_KONTO = OEFFENTLICHES_REPO.split("/", 1)[0]
 _SPENDEN_URL_RE = re.compile(
     r"(?<![\w.\-/:])https://(?:buymeacoffee\.com|paypal\.me)/"
@@ -199,19 +199,20 @@ ERLAUBTE_ADRESSEN: frozenset[str] = frozenset(a.lower() for a in (
 # (Kundentexte i. e. S. -- Doku, Oberflaeche, Skills). Praefix mit "/" = ganzer Ordner, sonst
 # exakter Pfad.
 NAME_KUNDENTEXT_PFADE: tuple[str, ...] = (
-    ".claude/", "docs/", "assets/", "BMS_Install_MAC.md", "BMS_Install_Windows.md", "README.md",
-    "CHANGELOG.md",
+    ".claude/", "docs/", "assets/", "BMS_Install_MAC.md", "BMS_Install_Windows.md", "BMS_Install_MAC.en.md",
+    "BMS_Install_Windows.en.md", "README.md", "README.de.md", "CHANGELOG.md", "CHANGELOG.en.md",
     "frontend/index.html", "automation/agent_settings.json",
 )
 
 # Zuschreibungsliste (Leitentscheidung 4): Hier gehoert der Name des Autors hin. Gilt NUR fuer die
 # Namensregel im Umfang „oeffentlich“; alle anderen Regeln laufen in diesen Dateien weiter.
 # Ganze Dateien:
-ZUSCHREIBUNG_PFADE: tuple[str, ...] = ("NOTICE", "LICENSE", "frontend/src/rechtliches/ueber.md")
-# README: nur die Abschnitte, deren Ueberschrift eines dieser Woerter enthaelt (Autor, Lizenz,
-# Urheber), samt ihren Unterabschnitten.
-ZUSCHREIBUNG_ABSCHNITT_PFADE: tuple[str, ...] = ("README.md",)
-_ZUSCHREIBUNG_UEBERSCHRIFTEN: tuple[str, ...] = ("autor", "lizenz", "urheber")
+ZUSCHREIBUNG_PFADE: tuple[str, ...] = ("NOTICE", "LICENSE", "frontend/src/rechtliches/ueber.md",
+                                       "frontend/src/rechtliches/ueber.en.md")
+# README (englisch und deutsch, P2-92): nur die Abschnitte, deren Ueberschrift eines dieser Woerter
+# enthaelt, samt ihren Unterabschnitten.
+ZUSCHREIBUNG_ABSCHNITT_PFADE: tuple[str, ...] = ("README.md", "README.de.md")
+_ZUSCHREIBUNG_UEBERSCHRIFTEN: tuple[str, ...] = ("autor", "lizenz", "urheber", "author", "licence", "license")
 
 # PFADGEBUNDENE Ausnahme fuer fremden WORTLAUT (P2-77): `drittlizenzen_texte.txt` gibt die
 # Lizenztexte der mitinstallierten Pakete UNVERAENDERT wieder -- Wortlaut fremder Lizenzen,
@@ -273,6 +274,8 @@ _PERSONA_PFADE: tuple[str, ...] = (
     ".claude/commands/beirat-basis.md",
     "docs/BEIRAT-CHARTA.md",
     "docs/BEIRAT-CHARTA.html",
+    "docs/en/BEIRAT-CHARTA.md",
+    "docs/en/BEIRAT-CHARTA.html",
 )
 
 # Tabelle -> Spalte, exakt wie models.py sie fuehrt (Company.name, Job.company_name,

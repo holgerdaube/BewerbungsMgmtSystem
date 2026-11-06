@@ -99,6 +99,42 @@ aufteilen — das Prinzip bleibt dasselbe. Treffer aller Suchen zusammenführen 
 `gmail_message_id` — ein Kontakt kann in mehreren Listen auftauchen) und gemeinsam in Schritt 2
 klassifizieren.
 
+### 1c. Bewerbungen in anderen Sprachen (Französisch, Italienisch, Spanisch, Portugiesisch)
+
+Die Haupt-Query kennt nur deutsche und englische Wörter. Eine Mail wie „Invitation à un entretien“ von
+einer persönlichen Adresse trifft weder `subject:` noch `from:` und fällt durch. Wer in einer dieser
+Sprachen bewirbt, bekommt deshalb eine **eigene zweite Suche** mit den Wörtern der Sprachtabelle
+(`pipeline/bewerbungssprache.py`). Sie steht nicht in der Haupt-Query: Die bleibt für alle anderen
+Nutzer unverändert, und ihre gemessenen Regeln (s. u.) bleiben stehen. Die Bedingung prüft der Code,
+getestet in `pipeline/mail_suchlisten.py`:
+```sh
+cd backend && ~/.bewerbung_mgmt_venv/bin/python -m pipeline.mail_suchlisten --sprachen
+```
+Liefert die Zeile `SPRACHEN:` (Codes wie `FR IT`) und, nur wenn sie nicht leer ist, `SPRACHEN_BETREFF:`
+und `SPRACHEN_ABSENDER:`. `SPRACHEN` ist gefüllt, wenn in `data/cv_basis/` eine Fassung `base_<sprache>.docx`
+außer DE und EN liegt **oder** eine laufende Bewerbung (Beworben, Interview, Angebot) einen CV oder ein
+Anschreiben in dieser Sprache hat. **Ist `SPRACHEN` leer, Schritt 1c ganz überspringen** — der Lauf ist
+dann genau der von bisher.
+
+Sonst eine weitere Suche im selben Zeitfenster, Rahmen und Ausschlüsse wie die Haupt-Query, nur die
+Stichwörter kommen aus den beiden Zeilen:
+```sh
+cd backend && ~/.bewerbung_mgmt_venv/bin/python -m pipeline.gmail_client search --max 30 \
+  --query 'newer_than:2d -in:chats -category:promotions -category:social -from:(jobalerts-noreply@linkedin.com OR jobs-listings@linkedin.com OR newsletters-noreply@linkedin.com OR notifications-noreply@linkedin.com OR messaging-digest-noreply@linkedin.com) -subject:("new jobs similar" OR "apply now to" OR "is hiring for" OR "jobs for you") -subject:(Sendung OR Bestellung OR Rechnung OR Paket OR Lieferung OR Versandbestätigung OR invoice OR shipment) (subject:(<SPRACHEN_BETREFF von oben>) OR from:(<SPRACHEN_ABSENDER von oben>))' \
+  --suchprofil-ausschluesse
+```
+Treffer mit denen der anderen Suchen zusammenführen (Dedup über `gmail_message_id`) und in Schritt 2
+gemeinsam klassifizieren.
+
+**Bewusst nicht in der Suche, nicht „ergänzen“, ohne am echten Postfach nachzumessen:**
+- `oferta` und `vaga` im Betreff — sie treffen auch Werbung.
+- Der Absender-Teil `rh`: kurz genug, dass er bei jedem Absender mit „RH“ im Namen träfe (im IMAP-Weg als
+  Teilstring auch bei „Gerhard“). Der Code lässt Absender-Teile unter vier Zeichen weg; die Post
+  laufender Bewerbungen fangen die Domain-Suche aus Schritt 1b und die Betreff-Wörter.
+- Gemessen am Postfach ist keines dieser Wörter; sie stammen aus der Sprachprüfung (Trockentest gegen die
+  Suchwörter, Gmail wurde nicht angefasst). Taucht Rauschen auf, neu messen und die Tabelle anpassen, nicht
+  einzelne Wörter hier streichen.
+
 **Warum die Haupt-Query so aussieht — nicht „aufräumen", ohne nachzumessen:**
 - **`no-reply`/`noreply` MUSS in der `from:`-Klausel bleiben.** Die meisten echten Bewerbungsmails
   kommen von Bewerbermanagement-Systemen: `no-reply@us.greenhouse-mail.io`, `no-reply@ashbyhq.com`,

@@ -557,10 +557,33 @@ def test_name_im_readme_nur_in_den_abschnitten_zu_autor_und_lizenz(pd, muster):
     zeilen = {f.zeile for f in _funde(pd, muster, "README.md", readme, "oeffentlich") if f.regel == "Name des Nutzers"}
     assert zeilen == {2, 4, 10, 17}
 
-    # Dieselbe Ausnahme gilt nur für README.md, nicht für andere Markdown-Dateien
+    # P2-92: Die deutsche Fassung folgt derselben Regel.
+    zeilen_de = {f.zeile for f in _funde(pd, muster, "README.de.md", readme, "oeffentlich")
+                 if f.regel == "Name des Nutzers"}
+    assert zeilen_de == {2, 4, 10, 17}
+
+    # Dieselbe Ausnahme gilt nur für die READMEs, nicht für andere Markdown-Dateien
     zeilen2 = {f.zeile for f in _funde(pd, muster, "docs/README.md", readme, "oeffentlich")
                if f.regel == "Name des Nutzers"}
     assert zeilen2 == {2, 4, 6, 8, 10, 15, 17}
+
+
+@pytest.mark.parametrize("pfad", ["frontend/src/rechtliches/ueber.md", "frontend/src/rechtliches/ueber.en.md"])
+def test_ueber_seite_nennt_den_autor_in_beiden_sprachen(pd, muster, pfad):
+    """Beide Fassungen der Seite „Über dieses Programm“ nennen den Herausgeber. Fehlte die englische auf der Liste,
+    bräche der Export ins öffentliche Repo mit zwei Funden ab."""
+    assert "Name des Nutzers" not in _regeln(pd, muster, pfad, "Entwickelt von Max Mustermann.", "oeffentlich")
+
+
+@pytest.mark.parametrize("ueberschrift, erlaubt", [
+    ("## Author", True), ("## Licence and liability", True), ("## License", True), ("## Contributing", False),
+])
+def test_englische_readme_abschnitte_zu_autor_und_lizenz(pd, muster, ueberschrift, erlaubt):
+    """P2-92: Das englische README ist jetzt `README.md`, seine Überschriften sind englisch. Ohne diese Wörter
+    fiele der Name im Abschnitt „Author“ beim Export als Fund auf, sobald das README englisch ist."""
+    text = f"{ueberschrift}\nEntwickelt von Mustermann."
+    regeln = {f.regel for f in _funde(pd, muster, "README.md", text, "oeffentlich")}
+    assert ("Name des Nutzers" in regeln) is not erlaubt
 
 
 def test_name_marke_und_domain_des_herausgebers_zaehlen_nicht(pd):
@@ -691,7 +714,7 @@ FUNDING = ".github/FUNDING.yml"
 
 
 def test_spendenpfade_konstante(pd):
-    assert pd.SPENDEN_PFADE == ("README.md", FUNDING)
+    assert pd.SPENDEN_PFADE == ("README.md", "README.de.md", FUNDING)
 
 
 @pytest.mark.parametrize("umfang", UMFAENGE)

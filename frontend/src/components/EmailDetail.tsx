@@ -2,11 +2,14 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../api'
 import AgentTaskButton from './AgentTaskButton'
+import { t } from '../i18n'
+import { datumZeit } from '../i18n/format'
+import { wert } from '../i18n/werte'
 
 function fmt(iso: string | null) {
   if (!iso) return ''
   try {
-    return new Date(iso).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' })
+    return datumZeit(iso, { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' })
   } catch { return iso }
 }
 
@@ -42,17 +45,17 @@ function AssignPicker({ email, onAssigned }: { email: any; onAssigned: (hinweis:
     } finally { setBusy(false) }
   }
 
-  const anlegenHref = `/jobs/neu?company=${encodeURIComponent(email.company_name || '')}&notes=${encodeURIComponent(`Aus E-Mail „${email.subject || ''}“`)}`
+  const anlegenHref = `/jobs/neu?company=${encodeURIComponent(email.company_name || '')}&notes=${encodeURIComponent(t('inbox:zuordnen.notiz', { betreff: email.subject || '' }))}`
 
   return (
     <div className="mt-2">
       {!open ? (
         <button onClick={() => setOpen(true)} className="rounded-lg border border-brand-cyan/40 px-2.5 py-1 text-xs font-medium text-brand-cyan hover:bg-brand-cyan/5">
-          📎 Stelle zuordnen
+          {t('inbox:zuordnen.knopf')}
         </button>
       ) : (
         <div className="max-w-sm rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
-          <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="Firma oder Titel suchen…"
+          <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('inbox:zuordnen.suche')}
                  className="w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm focus:border-brand-cyan focus:outline-none" />
           {results.length > 0 && (
             <ul className="mt-2 max-h-48 divide-y divide-slate-100 overflow-y-auto">
@@ -61,15 +64,15 @@ function AssignPicker({ email, onAssigned }: { email: any; onAssigned: (hinweis:
                   <button disabled={busy} onClick={() => assign(r.id)}
                           className="w-full px-1 py-1.5 text-left text-xs hover:bg-brand-cyan/5 disabled:opacity-40">
                     <span className="font-medium text-brand-navy">{r.company_name}</span> — {r.title}
-                    <span className="ml-1 text-slate-400">({r.status}{r.match_score ? ` · ${r.match_score}/5` : ''})</span>
+                    <span className="ml-1 text-slate-400">({wert('status', r.status)}{r.match_score ? ` · ${r.match_score}/5` : ''})</span>
                   </button>
                 </li>
               ))}
             </ul>
           )}
           <div className="mt-2 flex items-center justify-between">
-            <Link to={anlegenHref} className="text-xs text-brand-cyan hover:underline">+ Stelle anlegen</Link>
-            <button onClick={() => { setOpen(false); setQ(''); setResults([]) }} className="text-xs text-slate-400 hover:text-slate-600">Abbrechen</button>
+            <Link to={anlegenHref} className="text-xs text-brand-cyan hover:underline">{t('inbox:zuordnen.anlegen')}</Link>
+            <button onClick={() => { setOpen(false); setQ(''); setResults([]) }} className="text-xs text-slate-400 hover:text-slate-600">{t('inbox:zuordnen.abbrechen')}</button>
           </div>
         </div>
       )}
@@ -95,7 +98,7 @@ export default function EmailDetail({ email, jobId, onChanged }: {
     setLoading(true)
     api<{ body: string | null; hinweis?: string }>(`/emails/${email.id}/body`)
       .then(setBody)
-      .catch((e: any) => setBody({ body: null, hinweis: e?.message || 'Volltext konnte nicht geladen werden' }))
+      .catch((e: any) => setBody({ body: null, hinweis: e?.message || t('inbox:detail.volltext_fehler') }))
       .finally(() => setLoading(false))
   }, [email.id])
 
@@ -123,7 +126,7 @@ export default function EmailDetail({ email, jobId, onChanged }: {
       await api(`/emails/${email.id}/archive`, { method: 'POST' })
       onChanged?.()
     } catch (e: any) {
-      setArchivFehler(e?.message || 'Archivieren fehlgeschlagen')
+      setArchivFehler(e?.message || t('inbox:fehler.archivieren'))
     } finally {
       setArchivBusy(false)
     }
@@ -132,20 +135,20 @@ export default function EmailDetail({ email, jobId, onChanged }: {
   return (
     <div className="bg-slate-50/70 px-4 py-4">
       {loading ? (
-        <div className="text-sm text-slate-400">Lade…</div>
+        <div className="text-sm text-slate-400">{t('inbox:lade')}</div>
       ) : body?.body ? (
         <div className="max-h-96 overflow-y-auto whitespace-pre-wrap rounded-lg border border-slate-200 bg-white p-3 text-sm text-slate-700">
           {body.body}
         </div>
       ) : (
         <div className="rounded-lg border border-dashed border-slate-200 p-3 text-sm text-slate-400">
-          {body?.hinweis || 'Kein Volltext verfügbar'}
+          {body?.hinweis || t('inbox:detail.kein_volltext')}
         </div>
       )}
 
       {email.job_id ? (
         <button onClick={loesen} disabled={loesenBusy} className="mt-2 text-xs text-slate-400 hover:text-rose-600 disabled:opacity-40">
-          🔓 Zuordnung lösen
+          {t('inbox:detail.zuordnung_loesen')}
         </button>
       ) : (
         <>
@@ -154,9 +157,9 @@ export default function EmailDetail({ email, jobId, onChanged }: {
             <div className="mt-2">
               <button onClick={archivieren} disabled={archivBusy}
                       className="rounded-lg border border-slate-300 px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40">
-                {archivBusy ? 'Wird archiviert…' : '🗄 Archivieren'}
+                {archivBusy ? t('inbox:detail.wird_archiviert') : t('inbox:detail.archivieren')}
               </button>
-              <p className="mt-1 text-xs text-slate-400">Nur in der App. Gmail bleibt unverändert.</p>
+              <p className="mt-1 text-xs text-slate-400">{t('inbox:detail.nur_app')}</p>
               {archivFehler && <p className="mt-1 text-xs text-rose-600">{archivFehler}</p>}
             </div>
           )}
@@ -169,10 +172,10 @@ export default function EmailDetail({ email, jobId, onChanged }: {
           {STATUS_VORSCHLAG[email.category] && (
             <button onClick={() => setzeStatus(STATUS_VORSCHLAG[email.category])}
                     className="mt-1.5 rounded-lg bg-amber-600 px-2 py-1 text-xs font-medium text-white hover:brightness-110">
-              Status auf „{STATUS_VORSCHLAG[email.category]}“ setzen
+              {t('inbox:detail.status_setzen', { status: wert('status', STATUS_VORSCHLAG[email.category]) })}
             </button>
           )}
-          <button onClick={() => setZuordnungHinweis(null)} className="ml-2 text-xs text-amber-700 hover:underline">nicht jetzt</button>
+          <button onClick={() => setZuordnungHinweis(null)} className="ml-2 text-xs text-amber-700 hover:underline">{t('inbox:detail.nicht_jetzt')}</button>
         </div>
       )}
 
@@ -180,14 +183,14 @@ export default function EmailDetail({ email, jobId, onChanged }: {
         <div className="mt-3 max-w-sm">
           {email.reply_draft_at && (
             <div className="mb-2 text-xs text-amber-700">
-              ⚠ Entwurf liegt in Gmail seit {fmt(email.reply_draft_at)} — vor erneutem Anlegen prüfen (Doppel-Entwurf).
+              {t('inbox:detail.entwurf_warnung', { datum: fmt(email.reply_draft_at) })}
             </div>
           )}
           <AgentTaskButton
             kind="mail-antwort"
             jobId={jobId}
             params={{ email_id: email.id }}
-            label="↩ Antwort entwerfen"
+            label={t('inbox:detail.antwort_entwerfen')}
             subtle={!email.needs_reply}
             onFinished={onChanged}
           />

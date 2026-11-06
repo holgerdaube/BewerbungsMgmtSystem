@@ -140,7 +140,12 @@ AUSSCHLUESSE: tuple[tuple[str, str], ...] = (
     # Kundenpaket nicht enthaelt (z. B. scripts/test.sh).
     ("CONTRIBUTING.md", "Entwickler-/Repo-Datei (Beitragen im oeffentlichen Repo, P2-83)"),
     ("SECURITY.md", "Entwickler-/Repo-Datei (Sicherheitsmeldungen im oeffentlichen Repo, P2-83)"),
+    # P2-92: Das Paket hat genau ein zweisprachiges README aus `_readme_kundenpaket`.
+    ("README.de.md", "Entwickler-/Repo-Datei (deutsche Fassung des Repo-READMEs, P2-92)"),
+    ("CONTRIBUTING.de.md", "Entwickler-/Repo-Datei (deutsche Fassung, P2-92)"),
+    ("SECURITY.de.md", "Entwickler-/Repo-Datei (deutsche Fassung, P2-92)"),
     ("scripts/test.sh", "Entwicklungswerkzeug"),
+    ("scripts/uebersetzung.sh", "Entwicklungswerkzeug"),
     ("scripts/docs_html.sh", "Entwicklungswerkzeug"),
     ("scripts/install_hooks.sh", "Entwicklungswerkzeug"),
     ("scripts/precommit_secret_scan.sh", "Entwicklungswerkzeug"),
@@ -175,7 +180,7 @@ DOKU_ERLAUBT: frozenset[str] = frozenset({
 # mehr im Git; die App erzeugt sie beim Start, wenn sie fehlt. Kommt sie im Stand doch vor, ersetzt
 # `ersetzen` sie als Rueckfall durch die neutrale Fassung.
 PFLICHTDATEIEN: tuple[str, ...] = (
-    "BMS_Install_MAC.md", "BMS_Install_Windows.md",
+    "BMS_Install_MAC.md", "BMS_Install_Windows.md", "BMS_Install_MAC.en.md", "BMS_Install_Windows.en.md",
     "start.command", "start_windows.bat", "stop.command", "stop_windows.bat",
     "backend/run_server.py", "backend/requirements-lock.txt",
     "frontend/package.json", "frontend/package-lock.json",
@@ -183,16 +188,17 @@ PFLICHTDATEIEN: tuple[str, ...] = (
     "docs/FUNKTIONEN.md",
     "automation/agent.env.example", "automation/agent_settings.json", "automation/pfad_waechter.py",
     "scripts/refresh_views.sh", "scripts/cover_letter_render.sh", "scripts/coach_site.sh",
-    "config/scoring_rubrik.md", "config/coach_export.yaml",
+    "config/scoring_rubrik.md", "config/coach_export.yaml", "config/glossar_de_en.md",
     # P2-51 Paket U2a Punkt 3: Update- und Versionsmechanismus. Die vier U1-Dateien entstehen in
     # einem PARALLELEN Paket -- bis dahin ist ihr Fehlen ein erwarteter Fund (s. Bau-Spec).
-    "VERSION", "CHANGELOG.md", "update.command", "update_windows.bat",
+    "VERSION", "CHANGELOG.md", "CHANGELOG.en.md", "update.command", "update_windows.bat",
     "scripts/bms_update.py", "backend/app/selbsttest.py", "backend/pipeline/changelog.py",
     # P2-66: Sicherung zurueckspielen (Werkzeug plus die beiden Doppelklick-Starter).
     "wiederherstellen.command", "wiederherstellen_windows.bat", "scripts/bms_wiederherstellen.py",
     # P2-77: Drittanbieter-Lizenzen (Uebersicht + Wortlaut), vom Generator erzeugt. Fehlt eine,
     # ist die Seite Rechtliches -> Drittanbieter-Lizenzen im Paket kaputt (die Oberflaeche bindet beide ein).
-    "frontend/src/rechtliches/drittlizenzen.md", "frontend/src/rechtliches/drittlizenzen_texte.txt",
+    "frontend/src/rechtliches/drittlizenzen.md", "frontend/src/rechtliches/drittlizenzen.en.md",
+    "frontend/src/rechtliches/drittlizenzen_texte.txt",
     # 29.10.2026: eigene Open-Source-Lizenz (Apache-2.0). Ohne LICENSE und NOTICE darf das Programm
     # nicht weitergegeben werden; lizenz.txt zeigt den Wortlaut im Reiter „Open-Source-Lizenz“.
     "LICENSE", "NOTICE", "frontend/src/rechtliches/lizenz.txt",
@@ -378,7 +384,28 @@ def _readme_kundenpaket(version: str, commit_datum: str) -> bytes:
     ueber Entwicklung, Git oder den Entwickler (Spec, Abschnitt "2. Ersetzen und ergaenzen"). Die
     Versionszeile ersetzt seit P2-51 das fruehere `VERSION.txt` (Punkt 1) -- dieselbe Angabe
     steht jetzt zusaetzlich, maschinenlesbar, im Manifest (V3, Feld "version")."""
+    hilfe = f"https://github.com/{OEFFENTLICHES_REPO}/issues"
+    # P2-92: Eine Datei mit beiden Sprachen, Englisch zuerst. Der Wegweiser wird nicht bearbeitet,
+    # zwei Dateien braechten dem Anwender nichts.
     text = (
+        "# BMS – Job Application Management System\n\n"
+        f"Version {version} ({commit_datum}). Deutsche Fassung weiter unten.\n\n"
+        "## Installation and setup\n\n"
+        "Step by step in `BMS_Install_MAC.en.md` (macOS) or `BMS_Install_Windows.en.md` "
+        "(Windows) in this folder. Claude or ChatGPT guides you through the installation with the file.\n\n"
+        "## Using BMS\n\n"
+        "`docs/en/ANLEITUNG.md` explains how to work with the running application.\n\n"
+        "## Changes\n\n"
+        "What changes for you from version to version is in `CHANGELOG.en.md`.\n\n"
+        "## Updating\n\n"
+        "You install a new version with `update.command` (Mac) or `update_windows.bat` "
+        "(Windows). The “Check for updates” button in the settings shows whether there is one.\n\n"
+        "## Licence\n\n"
+        "BMS is open source under the Apache License 2.0 (`LICENSE`, `NOTICE`).\n\n"
+        "## Help\n\n"
+        # P2-82, Leitentscheidung 10: Hilfe ueber die Issues-Seite des oeffentlichen Repos.
+        f"Questions and bugs: {hilfe}\n\n"
+        "---\n\n"
         f"# {PRODUKTNAME}\n\n"
         f"Version {version} (Stand {_tt_mm_jjjj(commit_datum)}).\n\n"
         "## Installation und Einrichtung\n\n"
@@ -395,8 +422,7 @@ def _readme_kundenpaket(version: str, commit_datum: str) -> bytes:
         "## Lizenz\n\n"
         "Das BMS ist Open Source unter der Apache License 2.0 (`LICENSE`, `NOTICE`).\n\n"
         "## Hilfe\n\n"
-        # P2-82, Leitentscheidung 10: Hilfe ueber die Issues-Seite des oeffentlichen Repos.
-        f"Fragen und Fehler: https://github.com/{OEFFENTLICHES_REPO}/issues\n"
+        f"Fragen und Fehler: {hilfe}\n"
     )
     return text.encode("utf-8")
 

@@ -135,6 +135,30 @@ def test_body_text_ohne_content_type_header_bleibt_utf8():
     assert _body_text(payload) == text
 
 
+def test_body_text_von_gmail_umkodierte_utf8_bytes_trotz_latin1_kopf():
+    """Echtfall 05.11.2026: Die Gmail-API liefert `body.data` schon als UTF-8, der Kopf des
+    Teils sagt weiter `iso-8859-1` bzw. `windows-1252`. Mit dem Kopf dekodiert entsteht
+    Mojibake („OlÃ¡“ statt „Olá“, „Ã¤“ statt „ä“). Gilt fuer plain- und HTML-Teile in jeder
+    Sprache, auch fuer deutsche Umlaute."""
+    from pipeline.gmail_client import _body_text
+
+    faelle = [
+        ("ISO-8859-1", "text/plain", "Olá João, recebemos a sua candidatura."),
+        ("windows-1252", "text/plain", "Wir möchten Sie gern zum Gespräch einladen – „bald“."),
+        ("iso-8859-1", "text/html", "<p>Nous souhaitons vous inviter à un entretien.</p>"),
+    ]
+    for charset, mime, text in faelle:
+        payload = {
+            "mimeType": mime,
+            "headers": [{"name": "Content-Type", "value": f'{mime}; charset="{charset}"'}],
+            "body": {"data": _b64(text.encode("utf-8"))},
+        }
+        result = _body_text(payload)
+        assert "Ã" not in result and "â€" not in result, f"Mojibake bei {charset}: {result!r}"
+        erwartet = text if mime == "text/plain" else "Nous souhaitons vous inviter à un entretien."
+        assert erwartet in result
+
+
 def test_charset_of_parst_verschiedene_schreibweisen():
     """Kontrakttest für den Parser selbst: mit/ohne Anführungszeichen, Groß-/Kleinschreibung,
     zusätzliche Content-Type-Attribute nach dem Charset."""

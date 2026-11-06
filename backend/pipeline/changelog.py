@@ -28,10 +28,11 @@ from datetime import date
 from typing import Optional
 
 UNVEROEFFENTLICHT = "Unveröffentlicht"
+UNRELEASED = "Unreleased"       # dieselbe Bedeutung in CHANGELOG.en.md (P2-91)
 
 _VERSION_RE = re.compile(r"^(\d+)\.(\d+)\.(\d+)$")
 _KOPF_RE = re.compile(
-    r"^## (?:(?P<offen>Unveröffentlicht)|(?P<version>\d+\.\d+\.\d+) \((?P<datum>\d{2}\.\d{2}\.\d{4})\))[ \t]*$",
+    r"^## (?:(?P<offen>Unveröffentlicht|Unreleased)|(?P<version>\d+\.\d+\.\d+) \((?P<datum>\d{2}\.\d{2}\.\d{4})\))[ \t]*$",
     re.MULTILINE,
 )
 _ZWEITE_EBENE_RE = re.compile(r"^## .*$", re.MULTILINE)
@@ -109,11 +110,12 @@ def freigeben(text: str, version: str, datum: date) -> str:
     offen = next((a for a in teile if a.version is None), None)
     if offen is None:
         raise ChangelogFehler("Im CHANGELOG fehlt der Abschnitt „## Unveröffentlicht“.")
+    offen_name = text[offen.start:offen.ende].split("\n", 1)[0].removeprefix("## ").strip()
     if not any(z.lstrip().startswith("- ") for z in offen.inhalt.splitlines()):
         raise ChangelogFehler("Der Abschnitt „Unveröffentlicht“ ist leer: Es gibt nichts freizugeben.")
     if any(a.version == version for a in teile):
         raise ChangelogFehler(f"Version {version} steht schon im CHANGELOG.")
     kopf = f"## {version} ({datum.strftime('%d.%m.%Y')})"
-    neu = f"## {UNVEROEFFENTLICHT}\n\n{kopf}\n\n{offen.inhalt}\n"
+    neu = f"## {offen_name}\n\n{kopf}\n\n{offen.inhalt}\n"
     rest = text[offen.ende:]
     return text[:offen.start] + neu + ("\n" + rest.lstrip("\n") if rest.strip() else "")

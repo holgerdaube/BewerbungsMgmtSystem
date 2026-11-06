@@ -7,6 +7,7 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import HTMLResponse
 
 from app import doku
+from app.sprache import tx
 
 router = APIRouter(prefix="/api", tags=["doku"])
 
@@ -15,7 +16,7 @@ router = APIRouter(prefix="/api", tags=["doku"])
 def liste():
     """Die Dokumente dieser Installation für die Tabs der Dokumentationsseite. Nur Kennung,
     Titel und Gruppe: Welche Datei dahinter liegt, geht den Browser nichts an."""
-    return [{"id": e["id"], "titel": e["titel"], "gruppe": e["gruppe"]} for e in doku.verfuegbar()]
+    return [{"id": e["id"], "titel": doku.titel(e), "gruppe": e["gruppe"]} for e in doku.verfuegbar()]
 
 
 @router.get("/doku/{name}")
@@ -30,10 +31,10 @@ def dokument(name: str):
     eine einzige Quelle."""
     eintrag = doku.eintrag_fuer(name)
     if eintrag is None:
-        raise HTTPException(404, "Dokument nicht gefunden")
+        raise HTTPException(404, tx("Dokument nicht gefunden"))
     try:
         seite = doku.rendern(eintrag)
     except OSError:     # Datei zwischen Prüfung und Lesen verschwunden oder nicht lesbar
-        raise HTTPException(404, "Dokument nicht gefunden")
+        raise HTTPException(404, tx("Dokument nicht gefunden"))
     from app.main import _BERICHT_KOPF
     return HTMLResponse(seite, headers=_BERICHT_KOPF)

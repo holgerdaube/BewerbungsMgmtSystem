@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useKiAnbieter } from './ui'
+import { t } from '../i18n'
 
 /** Kopiert einen Auslöser-Satz für die KI-Session (Claude oder ChatGPT) in die Zwischenablage (Claude-in-the-Loop). */
 export default function CopyTrigger({ phrase, label, done }: { phrase: string; label: string; done?: string }) {
@@ -13,7 +14,7 @@ export default function CopyTrigger({ phrase, label, done }: { phrase: string; l
   return (
     <button onClick={copy}
       className={`w-full rounded-lg px-3 py-2 text-sm font-semibold transition ${copied ? 'bg-emerald-500 text-white' : 'bg-brand-cyan text-brand-aufAktion hover:bg-brand-cyanHover'}`}>
-      {copied ? (done || `✓ kopiert — in ${name} einfügen & senden`) : label}
+      {copied ? (done || t('common:ui.copy_trigger_ok', { name })) : label}
     </button>
   )
 }

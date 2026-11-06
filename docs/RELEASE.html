@@ -228,7 +228,10 @@ veröffentlichen; <code>digest</code> und Manifest kämen dann vom selben Ort. S
 Releases nur über <code>release.yml</code>, nie von Hand hochgeladene Pakete.</p>
 <p><strong>Alte Installationen bis 1.7.0</strong> fragen weiter den früheren Paketdienst und erfahren dort nie von 2.0.0.
 Ein Brückenpaket gibt es nicht: Sie bekommen 2.0.0 einmal als ZIP-Datei im Download-Ordner (von der
-Release-Seite) und aktualisieren sich danach selbst.</p></section><section class="card"><h2>Probebau</h2><p>Um den Release-Workflow selbst zu prüfen, ohne ein echtes Release zu erzeugen (z. B. nach einer
+Release-Seite) und aktualisieren sich danach selbst.</p></section><section class="card"><h2>Kurzprüfung Mehrsprachigkeit</h2><p>Vor jeder Freigabe, zusätzlich zur Probe: <code>scripts/test.sh</code> und CI grün, <code>scripts/uebersetzung.sh --pruefen --alle</code> ohne
+Fund, <code>backend/tests/abnahme/design_vergleich.py</code> für Deutsch gegen die letzte Freigabe, dazu in einer Probe-Kopie der
+erste Start auf Englisch, der Rundgang über alle Seiten und eine Kette <code>firma-pruefen</code> bis <code>anschreiben-erstellen</code>.
+<code>veroeffentlichen.sh --pruefen</code> läuft erst auf <code>main</code>. Beschreibung und Topics des öffentlichen Repos sind englisch.</p></section><section class="card"><h2>Probebau</h2><p>Um den Release-Workflow selbst zu prüfen, ohne ein echtes Release zu erzeugen (z. B. nach einer
 Änderung an <code>kundenpaket.py</code>, <code>release.py</code> oder <code>release.yml</code>, oder einmalig vor der allerersten
 echten Freigabe): <code>workflow_dispatch</code> auf <code>release.yml</code>, mit einer optionalen <code>ref</code> (leer = der
 aktuelle Stand von <code>main</code>). Läuft dieselben zwei Jobs (<code>tests</code> + <code>paket</code>), auch im Entwicklungs-Repo,
@@ -342,7 +345,7 @@ zur Laufzeit aus:</p>
 sagt, was fehlte. Das Export-Werkzeug bricht in diesem Fall ab. Kein Fund und keine Testausgabe zeigt ein
 Muster; Funde nennen Datei, Zeile und Regel mit einem gekürzten Ausschnitt der Datei.</p>
 <p><strong>Der Name des Autors</strong> gilt als ganzes Wort überall als Fund, außer in der Zuschreibungsliste (<code>NOTICE</code>,
-<code>LICENSE</code>, <code>frontend/src/rechtliches/ueber.md</code> und die Abschnitte „Autor“ und „Lizenz“ der <code>README.md</code>).
+<code>LICENSE</code>, <code>frontend/src/rechtliches/ueber.md</code>, <code>ueber.en.md</code> und die Abschnitte zu Autor und Lizenz in <code>README.md</code> und <code>README.de.md</code>).
 „Daube.Tech“ zählt nicht als Nachname, und <code>holgerdaube/BewerbungsMgmtSystem</code> ist die einzig erlaubte Form
 des Kontonamens.</p>
 <p><strong>Bei einem Fund:</strong> nie das ZIP von Hand nachbearbeiten. Die Ursache im echten Quelltext beheben
@@ -473,4 +476,4 @@ Freigabe von Workflow-Läufen für alle externen Beitragenden. Wiki und Projects
 heutigen Daten ab; ein Name, der nirgends steht, rutscht durch. Deshalb bleibt die Durchsicht des Exports vor
 dem ersten Umschalten des Repos auf öffentlich Pflicht.</p></section>
 </div></body></html>
-<!-- docs_render quelle=RELEASE.md sha256=71ac2b6fac45c2126e63a74e70d4b5b913a50e5d3e708295cbc97938fc22a352 -->
+<!-- docs_render quelle=RELEASE.md sha256=3e589305eeadf6a4e3a72fbc77a8534819fe3b1435d7d2bd9cf94c0f38babb8e -->

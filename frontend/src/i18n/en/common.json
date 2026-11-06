@@ -1,0 +1,173 @@
+{
+  "produkt": {
+    "name": "BMS – Job Application Management System"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "suche": "Search",
+    "review": "New / Review",
+    "followups": "Follow-ups",
+    "pipeline": "Pipeline",
+    "jobs": "Jobs",
+    "inbox": "Inbox",
+    "outreach": "Outreach",
+    "netzwerk": "Network",
+    "beirat": "Advisory Board",
+    "companies": "Companies",
+    "radar": "Restructuring Radar",
+    "tasks": "Task Centre",
+    "budget": "Budget",
+    "profil": "Profile",
+    "einstellungen": "Settings",
+    "dokumentation": "Documentation",
+    "rechtliches": "Legal"
+  },
+  "layout": {
+    "version": "Version {{version}}",
+    "entwicklungsstand": "Development state: {{stand}}",
+    "engine": "Engine: skills run headless in the backend",
+    "quelle": "Source: bewerbung.sqlite"
+  },
+  "sprache": {
+    "umschalter": "Interface language",
+    "karte_titel": "Language",
+    "karte_text": "The interface and the AI reports follow this setting. Your CV and cover letter follow the language of the job posting.",
+    "fehler": "The language could not be changed."
+  },
+  "ui": {
+    "score_nicht_bewertet": "Not rated",
+    "score_titel": "Target-role fit {{score}}/5",
+    "verify_geprueft": "✓ checked",
+    "verify_quelle": "~ trusted source",
+    "dublette_titel": "Suspected text similarity {{prozent}}% — probable re-post, see Notes & history",
+    "dublette_label": "Duplicate? → Job {{jobId}}",
+    "neuausschreibung_titel": "This job was already in the tracker ({{status}}). New posting with a new link — please decide again.",
+    "neuausschreibung_label": "Re-posting → Job {{jobId}}",
+    "klickbar": "clickable",
+    "keine_stellen": "no jobs",
+    "token_tsd": "{{wert}}K",
+    "token_mio": "{{wert}}M",
+    "token_anzahl": "{{wert}} tokens",
+    "lauf_gestartet": "· Run started",
+    "turn_fertig": "· Turn finished",
+    "turn_fertig_neu": "· Turn finished ({{token}} new tokens)",
+    "lauf_fehlgeschlagen": "Run failed",
+    "fehler": "Error",
+    "subagent_gestartet": "started",
+    "websuche": "🔍 Web search: {{anfrage}}",
+    "dateien_geaendert": "Files changed",
+    "copy_initiativ": "🚀 Speculative",
+    "copy_titel": "Copies “{{phrase}}” — paste into the {{name}} session and send",
+    "copy_ok": "✓ copied",
+    "copy_trigger_ok": "✓ copied — paste into {{name}} and send"
+  },
+  "status": {
+    "Neu": "New",
+    "Prüfen": "To review",
+    "Beworben": "Applied",
+    "Interview": "Interview",
+    "Angebot": "Offer",
+    "Absage": "Rejected",
+    "Keine Rückmeldung": "No response",
+    "Kein Match": "No match",
+    "Beirat abgelehnt": "Rejected by board",
+    "Nicht verfügbar": "Not available",
+    "Geparkt": "Parked"
+  },
+  "situation": {
+    "BUILD": "BUILD",
+    "CARVE-OUT": "CARVE-OUT",
+    "POST-MERGER": "POST-MERGER",
+    "PE": "PE",
+    "SCALE-UP": "SCALE-UP",
+    "RESTRUCT": "RESTRUCT",
+    "RUN": "RUN",
+    "UNKLAR": "UNCLEAR"
+  },
+  "work_model": {
+    "Remote": "Remote",
+    "Hybrid": "Hybrid",
+    "Onsite": "On-site"
+  },
+  "seniority": {
+    "C-Level": "C-level",
+    "VP": "VP",
+    "Senior Director": "Senior Director",
+    "Director": "Director",
+    "Head": "Head",
+    "Senior Manager": "Senior Manager",
+    "Manager": "Manager",
+    "Teamlead": "Team lead",
+    "Experte": "Expert",
+    "Erfahrener Mitarbeiter": "Experienced professional",
+    "Angestellter": "Employee",
+    "Berufseinsteiger": "Entry level",
+    "Trainee": "Trainee",
+    "Auszubildender": "Apprentice",
+    "Werkstudent": "Working student",
+    "Praktikant": "Intern",
+    "Sonstige": "Other"
+  },
+  "tab": {
+    "Remote": "Remote",
+    "Deutschlandweit": "Germany-wide"
+  },
+  "verfuegbarkeit": {
+    "offen": "open",
+    "karriereseite_offen": "open on careers page",
+    "offline": "offline",
+    "unklar": "unclear"
+  },
+  "mail_kategorie": {
+    "Eingangsbestätigung": "Acknowledgement",
+    "Einladung": "Invitation",
+    "Absage": "Rejection",
+    "Rückfrage": "Query",
+    "Angebot": "Offer",
+    "Sonstige": "Other"
+  },
+  "ausloeser": {
+    "nachfass": "Follow-up draft for job {{id}}",
+    "absagegrund": "Ask for the rejection reason for job {{id}}",
+    "firma": "Check the company for job {{id}}",
+    "initiativ": "Speculative application for {{name}}",
+    "tageslauf": "Daily run"
+  },
+  "verlauf": {
+    "fest": {
+      "Notizen aktualisiert": "Notes updated",
+      "Nächster Schritt entfernt": "Next step removed"
+    },
+    "naechster_schritt": "Next step: “{{wert}}”",
+    "neuausschreibung": "RE-POSTING? Job {{id}} “{{titel}}” — {{status}}, first found {{datum}}",
+    "dublette": "DUPLICATE? Job {{id}} “{{titel}}” — text similarity {{prozent}} % (checked {{datum}})",
+    "label": {
+      "Status": "Status",
+      "Bewerbung": "Application",
+      "Fällig am": "Due date",
+      "Gehalt": "Salary",
+      "URL": "URL",
+      "Karriereseite": "Careers page",
+      "Portal geschlossen": "Portal closed",
+      "Verfügbarkeit": "Availability",
+      "Nächster Schritt": "Next step",
+      "Antwort": "Response",
+      "Kanal": "Channel",
+      "Typ": "Type",
+      "Position": "Position",
+      "Beworben am": "Applied on"
+    },
+    "ja": "Yes",
+    "nein": "No",
+    "review": "(Review)"
+  },
+  "portal": {
+    "Beispieldaten": "Sample data",
+    "Initiativ": "Speculative"
+  },
+  "listensuche": {
+    "platzhalter": "Search …",
+    "treffer": "{{treffer}} of {{gesamt}}",
+    "keine": "No matches."
+  }
+}

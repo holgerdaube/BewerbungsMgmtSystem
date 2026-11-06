@@ -84,16 +84,18 @@ def faellig(heute: Optional[datetime.date] = None, verzeichnis: Optional[Path] =
             anzahl: Optional[int] = None) -> tuple[bool, str]:
     """(fällig?, Begründung) für den Wochenlauf im Tageslauf. Die Begründung steht danach im
     Task-Center, beim Überspringen ist sie das Einzige, was der Nutzer von dem Schritt sieht."""
+    from app.sprache import datum, tx      # zur Laufzeit, wie `app.db` oben: das Modul bleibt leicht zu importieren
+
     heute = heute or datetime.date.today()
     if anzahl is None:
         anzahl = anzahl_auswertbar()
     if anzahl == 0:
-        return False, "Übersprungen: keine Absagen und keine unbeantworteten Bewerbungen auszuwerten."
+        return False, tx("Übersprungen: keine Absagen und keine unbeantworteten Bewerbungen auszuwerten.")
     bericht = neuester(verzeichnis)
     if bericht is None:
-        return True, "Noch kein Bericht vorhanden."
-    _, datum = bericht
+        return True, tx("Noch kein Bericht vorhanden.")
+    _, berichtsdatum = bericht
     wochenbeginn = heute - datetime.timedelta(days=heute.weekday())
-    if datum >= wochenbeginn:
-        return False, f"Übersprungen: Der Bericht dieser Woche liegt vor (Stand {datum:%d.%m.%Y})."
-    return True, f"Letzter Bericht vom {datum:%d.%m.%Y}."
+    if berichtsdatum >= wochenbeginn:
+        return False, tx("Übersprungen: Der Bericht dieser Woche liegt vor (Stand {datum}).", datum=datum(berichtsdatum))
+    return True, tx("Letzter Bericht vom {datum}.", datum=datum(berichtsdatum))

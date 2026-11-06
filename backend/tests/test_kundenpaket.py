@@ -476,6 +476,13 @@ def test_ersetzen_readme_und_als_rueckfall_profil_struktur_und_agent_settings():
     assert "CHANGELOG.md" in readme
     assert "update.command" in readme and "update_windows.bat" in readme
     assert "Version 1.2.3 (Stand 27.09.2026)" in readme
+    # P2-92: Englisch zuerst, beide Sprachen in einer Datei.
+    assert readme.startswith("# BMS – Job Application Management System\n")
+    assert readme.index("## Installation and setup") < readme.index("## Installation und Einrichtung")
+    for verweis in ("`BMS_Install_MAC.en.md` (macOS)", "`BMS_Install_Windows.en.md` (Windows)",
+                    "docs/en/ANLEITUNG.md", "CHANGELOG.en.md"):
+        assert verweis in readme
+    assert "Version 1.2.3 (" in readme
     # Kein Wort über den Entwickler: außer dem Repo-Namen steht kein Kontoname darin
     konto = kp.OEFFENTLICHES_REPO.split("/")[0]
     assert konto not in readme.replace(kp.OEFFENTLICHES_REPO, "").lower()

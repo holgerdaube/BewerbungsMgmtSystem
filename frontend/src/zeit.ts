@@ -45,12 +45,3 @@ export function tagVon(iso: string | null | undefined): string {
   const d = new Date(hatZone ? text : text.replace(' ', 'T') + 'Z')
   return Number.isNaN(d.getTime()) ? text.slice(0, 10) : isoTag(d)
 }
-
-/** Reines Datum (`YYYY-MM-DD`) als `TT.MM.JJJJ`, ohne `new Date()`-Umweg: `Date` deutet das
- *  ISO-Datum als UTC-Mitternacht, und `toLocaleDateString()` riskiert je nach Zeitzone eine
- *  Verschiebung um einen Tag. Leer → „–“; Unlesbares kommt unverändert zurück. */
-export function deDatum(iso: string | null | undefined): string {
-  if (!iso) return '–'
-  const [j, m, t] = iso.split('-')
-  return j && m && t ? `${t}.${m}.${j}` : iso
-}

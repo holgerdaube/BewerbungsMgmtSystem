@@ -13,6 +13,8 @@ Payload von PATCH ist bewusst ein plain dict (kein pydantic.BaseModel) -- Projek
 from fastapi import APIRouter, HTTPException
 
 from app import sicherung
+from app.sprache import tx
+from app.terminal import tt
 
 router = APIRouter(prefix="/api", tags=["sicherung"])
 
@@ -31,14 +33,14 @@ def post_sicherung():
     except sicherung.SicherungLaeuft as exc:
         raise HTTPException(409, str(exc))
     except Exception as exc:
-        raise HTTPException(500, f"Sicherung fehlgeschlagen: {exc}")
+        raise HTTPException(500, tx("Sicherung fehlgeschlagen: {grund}", grund=str(exc)))
 
     # Die Sicherung steht ab hier. Scheitert nur das Ausdünnen, darf die Antwort nicht „fehlgeschlagen"
     # lauten: der Nutzer hielte sonst eine vorhandene Sicherung für verloren.
     try:
         entfernt = sicherung.rotieren()
     except Exception as exc:       # noqa: BLE001
-        print(f"[sicherung] WARNUNG: Ausdünnen nach „Jetzt sichern“ fehlgeschlagen: {exc}", flush=True)
+        print(tt("[sicherung] WARNUNG: Ausdünnen nach „Jetzt sichern“ fehlgeschlagen: {fehler}", fehler=exc), flush=True)
         entfernt = []
     stand = sicherung.status()
     # stand["letzte"] ist garantiert die gerade eben angelegte Datei: die Aufbewahrungsregel

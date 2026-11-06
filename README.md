@@ -1,141 +1,158 @@
-# Bewerbungs-Management-System
+# BMS – Job Application Management System
 
-Das Bewerbungs-Management-System (kurz BMS, Kurzform BewerbungsMgmtSystem) ist eine lokale Web-App für
-Ihre eigene Jobsuche. Es findet und bewertet Stellen, prüft Firmen, bereitet Lebenslauf und Anschreiben
-vor und verfolgt die Antworten in Ihrem Postfach. Das BMS läuft auf Ihrem Rechner und ist kostenlos und
-Open Source (Apache License 2.0).
+**English** · [Deutsch](README.de.md)
 
-## Für wen ist das BMS?
+BMS – Job Application Management System (repository name BewerbungsMgmtSystem) is a local web app for
+your own job search. It finds and scores jobs, checks companies, prepares your CV and cover letter and
+tracks the replies in your mailbox. BMS runs on your computer and is free and open source
+(Apache License 2.0).
 
-Für Bewerbende, die ihre Jobsuche selbst steuern und dabei Hilfe von KI wollen. Die KI-Arbeit
-(Recherche, Bewertung, Textentwürfe) erledigt wahlweise Claude von Anthropic oder ChatGPT von OpenAI,
-jeweils über Ihr eigenes Konto. Dafür brauchen Sie keine eigenen API-Schlüssel, und ohne KI laufen
-Erfassen, Verwalten und Auswerten trotzdem.
+## Who is BMS for?
 
-Das BMS unterstützt ausschließlich die Seite, die sich bewirbt. Funktionen, mit denen Arbeitgeber
-Bewerbende bewerten, sortieren oder auswählen, gibt es nicht und sind nicht vorgesehen. Sie behalten die
-Entscheidung: Das BMS bewirbt sich nie selbst und verschickt keine E-Mail, es legt nur Entwürfe an, die
-Sie prüfen und selbst senden.
+For applicants who run their job search themselves and want help from AI. The AI work (research, scoring,
+draft texts) is done by either Claude from Anthropic or ChatGPT from OpenAI, each through your own account.
+You do not need your own API keys, and capturing, managing and evaluating jobs still work without AI.
 
-## Was das BMS kann
+BMS supports only the side that applies. Features that let employers score, sort or select applicants do
+not exist and are not planned. The decision stays with you: BMS never applies on its own and sends no
+email. It only creates drafts that you check and send yourself.
 
-- **Stellen finden und bewerten:** Suchläufe über Jobportale, Karriereseiten und Job-Benachrichtigungen,
-  mit einem Zielstellen-Fit von 1 bis 5 samt Beleg aus der Anzeige.
-- **Firmen prüfen:** Geschäftsmodell, Markt, Wettbewerber und der Einfluss der Rolle auf die Firma.
-- **Unterlagen vorbereiten:** Lebenslauf passend zur Stelle (Word und PDF, mit ATS-Scan) und
-  Anschreiben, ohne erfundene Angaben.
-- **Postfach auswerten:** Antworten auf Bewerbungen erkennen, Antwortzeiten messen, Antwortentwürfe
-  anlegen.
-- **Gespräche begleiten:** Briefing vor dem Gespräch, Auswertung danach, Follow-ups und Netzwerk.
-- **Überblick behalten:** Dashboard, Pipeline, Excel-Export, Kosten- und Budgetanzeige für die KI-Läufe.
+## What BMS can do
 
-Eine Übersicht nach Arbeitsschritten steht in [`docs/FUNKTIONEN.md`](docs/FUNKTIONEN.md), die Bedienung
-beschreibt [`docs/ANLEITUNG.md`](docs/ANLEITUNG.md).
+- **Find and score jobs:** Search runs across job portals, career pages and job alerts, with a target-role
+  fit from 1 to 5 and evidence from the posting.
+- **Check companies:** Business model, market, competitors and the role's influence on the company.
+- **Prepare documents:** A CV tailored to the job (Word and PDF, with an ATS scan) and a cover letter,
+  without invented details.
+- **Evaluate your mailbox:** Recognise replies to applications, measure response times, create reply
+  drafts.
+- **Support interviews:** A briefing before the interview, an evaluation afterwards, follow-ups and your
+  network.
+- **Keep the overview:** Dashboard, pipeline, Excel export, cost and budget display for the AI runs.
 
-## Voraussetzungen
+[`docs/en/FUNKTIONEN.md`](docs/en/FUNKTIONEN.md) gives an overview by work step, and
+[`docs/en/ANLEITUNG.md`](docs/en/ANLEITUNG.md) describes how to use BMS.
 
-- Ein Mac (macOS) oder ein Windows-PC mit etwa 2 GB freiem Speicher und Internetverbindung.
-- Für die KI-Funktionen ein Abo bei Claude (Pro oder Max, Anthropic) oder bei ChatGPT (Plus oder Pro,
-  OpenAI). Die Kosten zahlen Sie direkt an den Anbieter, das BMS selbst kostet nichts.
-- Optional ein E-Mail-Konto mit IMAP-Zugang (auch Gmail), damit das BMS Antworten im Postfach erkennt.
-- Optional ein LinkedIn-Datenexport, um Werdegang und Fähigkeiten zu übernehmen.
+## Languages
 
-Python, Node.js und die übrigen Programme müssen Sie nicht vorab installieren: Die Installationsanleitung
-richtet ein, was fehlt. Programmierkenntnisse brauchen Sie nicht.
+The interface, documentation and AI reports are available in German and English. You can switch in the
+sidebar or in the settings.
 
-## Welche KI?
+Your CV and cover letter follow the language of the job posting: German, English, French, Italian, Spanish
+or Portuguese. For this you upload a base CV in that language. If it is missing, BMS takes the English,
+otherwise the German version, translates nothing and says so in the run's report.
 
-Das BMS kann die KI-Funktionen mit **Claude** oder mit **ChatGPT** ausführen. Die Installation fragt gleich
-zu Beginn, welche Sie nutzen, und richtet genau diese ein. In den Einstellungen, Karte „KI“, wechseln Sie
-später.
+The job search has limits outside Germany. The preset portals are aimed at Germany. In the check, the search
+found hardly any jobs in France, Italy and Spain, and none was run for Portugal and Brazil. Use the two free
+portal rows in the settings, LinkedIn alerts and your target companies there. CVs and cover letters in French,
+Italian, Spanish and Portuguese have been tried on one real posting each, with Claude. The mailbox search
+for words in these languages has run on a real mailbox without false matches. Whether it finds a real reply
+in these languages and classifies it correctly has not yet been tried, because that mailbox held no such
+reply.
 
-- **Claude** ist der Standard und der am besten erprobte Weg. Die Inhalte der KI-Läufe gehen an Anthropic.
-- **ChatGPT** ist im BMS eine Vorschau. Die Läufe nutzen Ihre Anmeldung bei ChatGPT (Plus oder Pro) über
-  das Programm Codex CLI, einen API-Schlüssel brauchen Sie nicht. Die Inhalte der KI-Läufe gehen dann an
-  OpenAI statt an Anthropic. Die Läufe ohne Mail sind erprobt, die Mail-Läufe und der Tageslauf noch nicht. Es gibt keine Budgetgrenze je Lauf, es
-  gelten die Grenzen Ihres Abos, und viele Läufe hintereinander können ein Plus-Konto an die Grenze bringen.
-- **Gemini** gibt es nicht: Googles Regeln lassen das Gemini-Abo in Apps wie dem BMS nicht zu.
+## Requirements
+
+- A Mac (macOS) or a Windows PC with about 2 GB of free storage and an internet connection.
+- For the AI features, a subscription to Claude (Pro or Max, Anthropic) or ChatGPT (Plus or Pro, OpenAI).
+  You pay the provider directly. BMS itself costs nothing.
+- Optionally, an email account with IMAP access (Gmail works too), so that BMS can recognise replies in
+  your mailbox.
+- Optionally, a LinkedIn data export, to import your career history and skills.
+
+You do not have to install Python, Node.js or the other programs beforehand: the installation guide sets up
+whatever is missing. You do not need any programming skills.
+
+## Which AI?
+
+BMS can run its AI features with **Claude** or with **ChatGPT**. The installation asks right at the start
+which one you use and sets up exactly that one. You can switch later in the settings, on the “AI” card.
+
+- **Claude** is the default and the best-tested route. The content of the AI runs goes to Anthropic.
+- **ChatGPT** is a preview in BMS. The runs use your ChatGPT sign-in (Plus or Pro) through the Codex CLI
+  program, and you do not need an API key. The content of the AI runs then goes to OpenAI instead of
+  Anthropic. The runs without mail have been tested, the mail runs and the daily run have not. There is no
+  budget limit per run, your subscription's limits apply, and many runs in a row can take a Plus account to
+  its limit.
+- **Gemini** is not available: Google's rules do not allow the Gemini subscription in apps like BMS.
 
 ## Installation
 
-Die Installation führt eine KI im Chat mit einer Anleitungsdatei Schritt für Schritt aus Ihrer Sicht durch:
+An AI takes you through the installation step by step in a chat, using a guide file:
 
-1. Laden Sie die Anleitung für Ihr System von https://github.com/holgerdaube/BewerbungsMgmtSystem/releases/latest
-   herunter: `BMS_Install_MAC.md` für macOS oder `BMS_Install_Windows.md` für Windows. Beide liegen auch
-   im Hauptordner dieses Repositorys.
-2. Öffnen Sie Claude Desktop oder ChatGPT, starten Sie einen neuen Chat und hängen Sie die Datei an.
-3. Schreiben Sie dazu: „Führe mich mit dieser Anleitung durch die Installation des BMS.“
+1. Download the guide for your system from https://github.com/holgerdaube/BewerbungsMgmtSystem/releases/latest:
+   `BMS_Install_MAC.en.md` for macOS or `BMS_Install_Windows.en.md` for Windows. Both are also in the main
+   folder of this repository.
+2. Open Claude Desktop or ChatGPT, start a new chat and attach the file.
+3. Add this message: “Guide me through installing BMS with this file.”
 
-Der Assistent im Chat gibt Ihnen jeden Befehl zum Kopieren vor und prüft das Ergebnis mit Ihnen. Die
-Anleitung fragt zuerst, welche KI das BMS nutzen soll (Claude oder ChatGPT). Sie lädt das
-Programmpaket selbst aus dem GitHub-Release und prüft dessen Prüfsumme. Danach richtet sie mit Ihnen
-Profil, Lebenslauf, Zielrollen und Suchregion ein. Rechnen Sie mit etwa 45 Minuten für die Technik und
-ein bis zwei Stunden für die Einrichtung.
+The assistant in the chat gives you each command to copy and checks the result with you. The guide first
+asks which AI BMS should use (Claude or ChatGPT). It downloads the program package from the GitHub release
+itself and verifies its checksum. It then sets up your profile, CV, target roles and search region with you.
+Allow about 45 minutes for the technical part and one to two hours for the setup.
 
 ## Updates
 
-In den Einstellungen zeigt die Karte „Programmversion“ mit dem Knopf **Nach Updates suchen**, ob es eine
-neuere Version gibt, und nennt, was sich ändert. Der Knopf fragt nur, wenn Sie darauf klicken, und
-spielt nichts ein. Eingespielt wird bei beendetem BMS mit `update.command` (macOS) oder
-`update_windows.bat` (Windows): Das Werkzeug lädt die neue Version von GitHub, prüft sie, sichert vorher
-Ihre Daten und macht bei einem Fehler alles rückgängig. Was sich je Version ändert, steht in
-[`CHANGELOG.md`](CHANGELOG.md).
+In the settings, the “Program version” card shows with the **Check for updates** button whether there is a
+newer version and says what changes. The button only asks when you click it and installs nothing. You
+install an update while BMS is closed, with `update.command` (macOS) or `update_windows.bat` (Windows): the
+tool downloads the new version from GitHub, checks it, backs up your data first and undoes everything if
+an error occurs. What changes with each version is in [`CHANGELOG.en.md`](CHANGELOG.en.md).
 
-## Datenschutz
+## Privacy
 
-Das BMS läuft vollständig auf Ihrem Rechner: Ihre Bewerbungs-, Profil- und E-Mail-Daten bleiben in
-lokalen Dateien und einer lokalen Datenbank, und der Herausgeber betreibt keinen Server und erhält keine
-Daten. Nur wenn Sie nach Updates suchen oder ein Update laden, fragt das BMS bei GitHub an, und GitHub
-erhält dabei die IP-Adresse Ihres Rechners. Dienste, die Sie selbst anbinden (Claude oder ChatGPT, Ihr
-Postfach, optional Apify), verarbeiten Daten nach ihren eigenen Datenschutzbestimmungen; Einzelheiten
-stehen im Reiter „Datenschutz“ unter „Rechtliches“ in der App.
+BMS runs entirely on your computer: your application, profile and email data stay in local files and a local
+database, and the publisher runs no server and receives no data. BMS contacts GitHub only when you check for
+updates or download one, and GitHub then receives your computer's IP address. Services you connect yourself
+(Claude or ChatGPT, your mailbox, optionally Apify) process data under their own privacy policies. The details
+are in the “Privacy” tab under “Legal” in the app.
 
-## Hinweis zur KI
+## A note on AI
 
-Texte, Bewertungen und Entwürfe erzeugt das BMS mit KI (Claude oder ChatGPT, je nach Ihrer Wahl). Sie sind
-Vorschläge und müssen vor dem Versand geprüft werden.
+BMS creates texts, ratings and drafts with AI (Claude or ChatGPT, depending on your choice). They are
+suggestions and must be checked before you send them.
 
-## Lizenz und Haftung
+## Licence and liability
 
-Das Bewerbungs-Management-System (kurz BewerbungsMgmtSystem) ist Open Source und steht unter der
-**Apache License 2.0** (Datei `LICENSE`, Herkunftsangaben in `NOTICE`). Es darf genutzt, verändert
-und weitergegeben werden, auch umbenannt und gewerblich. Wer es weitergibt, legt `LICENSE` bei,
-übernimmt die Hinweise aus `NOTICE` und kennzeichnet geänderte Dateien. Rechte an Namen und Marken,
-insbesondere an „Daube.Tech“, gewährt die Lizenz nicht (Abschnitt 6).
+BMS – Job Application Management System (repository name BewerbungsMgmtSystem) is open source under the
+**Apache License 2.0** (file `LICENSE`, origin notices in `NOTICE`). You may use, change and pass it on,
+also under a different name and commercially. Anyone who passes it on includes `LICENSE`, keeps the notices
+from `NOTICE` and marks changed files. The licence grants no rights to names and trademarks, in particular
+to “Daube.Tech” (section 6).
 
-**Haftung nach deutschem Recht:** Das Programm wird unentgeltlich überlassen. Für eine
-unentgeltliche Überlassung gilt: Der Urheber haftet nur für Vorsatz und grobe Fahrlässigkeit
-(§ 521 BGB), für Mängel nur, wenn er sie arglistig verschwiegen hat (§§ 523, 524 BGB). Die Haftung
-nach dem Produkthaftungsgesetz bleibt unberührt. Dieser Hinweis ändert die Lizenz nicht.
+**Liability under German law:** The program is provided free of charge. The following applies to a gift: the
+author is liable only for intent and gross negligence (section 521 of the German Civil Code, BGB), and for
+defects only if they were fraudulently concealed (sections 523 and 524 BGB). Liability under the German
+Product Liability Act remains unaffected. This notice does not change the licence. This translation is for
+convenience, the German version is authoritative.
 
-## Autor
+## Author
 
-Entwickelt von Holger Daube. Impressum: https://daube.tech/impressum.html
+Developed by Holger Daube. Legal notice (Impressum): https://daube.tech/impressum.html
 
-## Mitmachen
+## Contributing
 
-- **Fehler und Wünsche:** Bitte als Issue melden: https://github.com/holgerdaube/BewerbungsMgmtSystem/issues
-- **Sicherheitslücken:** Bitte nicht als öffentliches Issue, sondern wie in [`SECURITY.md`](SECURITY.md)
-  beschrieben.
-- **Beiträge:** Pull Requests sind willkommen. Die Regeln (Lizenz, Sprache, Tests) stehen in
+- **Bugs and requests:** Please report them as an issue: https://github.com/holgerdaube/BewerbungsMgmtSystem/issues
+- **Security vulnerabilities:** Please do not open a public issue, follow [`SECURITY.md`](SECURITY.md)
+  instead.
+- **Contributions:** Pull requests are welcome. The rules (licence, language, tests) are in
   [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
-## Unterstützen
+## Support
 
-Das BMS ist kostenlos und bleibt es. Wer die Arbeit daran unterstützen möchte, kann freiwillig etwas
-geben, über den Knopf „Sponsor“ oben auf dieser Seite oder direkt:
+BMS is free and will stay free. If you would like to support the work on it, you can give something
+voluntarily, with the “Sponsor” button at the top of this page or directly:
 
 - **Buy Me a Coffee:** https://buymeacoffee.com/holgerdaube
 - **PayPal:** https://paypal.me/holgerdaube
 
-Eine Unterstützung ist ein freiwilliges Dankeschön und keine Gegenleistung für das Programm. Sie schaltet
-nichts frei und begründet keinen Anspruch auf Support, Funktionen oder Updates; die Überlassung bleibt
-unentgeltlich (siehe „Lizenz und Haftung“). Steuerlich absetzbar ist sie nicht.
+A contribution is a voluntary thank-you and not payment for the program. It unlocks nothing and gives no
+claim to support, features or updates, and the program remains free of charge (see “Licence and liability”).
+It is not tax-deductible.
 
-## Für Entwickler
+## For developers
 
-Das BMS ist ein FastAPI-Backend mit SQLite, ein React-Frontend und eine Sammlung von Claude-Skills. Wie
-Sie den Quellcode einrichten, starten und testen, steht in [`docs/INSTALLATION.md`](docs/INSTALLATION.md)
-(Entwickler-Installation unter macOS und Windows). Aufbau, Datenmodell, Skills, Betrieb und Sicherheit
-beschreibt [`docs/DOKUMENTATION.md`](docs/DOKUMENTATION.md), den Ablauf einer Freigabe
-[`docs/RELEASE.md`](docs/RELEASE.md).
+BMS consists of a FastAPI backend with SQLite, a React frontend and a collection of Claude skills.
+[`docs/en/INSTALLATION.md`](docs/en/INSTALLATION.md) explains how to set up, start and test the source code
+(developer installation on macOS and Windows). [`docs/en/DOKUMENTATION.md`](docs/en/DOKUMENTATION.md) describes
+the architecture, data model, skills, operation and security, and [`docs/en/RELEASE.md`](docs/en/RELEASE.md) the
+release process. Code comments, skills, tests and commit messages are in German.

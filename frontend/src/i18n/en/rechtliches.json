@@ -1,0 +1,18 @@
+{
+  "titel": "Legal",
+  "einleitung": "Publisher, licence of the program, privacy notes and the licences of the open-source components.",
+  "tab": {
+    "ueber": "About this program",
+    "lizenz": "Open-source licence",
+    "datenschutz": "Privacy",
+    "drittlizenzen": "Third-party licences"
+  },
+  "lizenztexte": {
+    "anzeigen": "Show licence texts",
+    "ausblenden": "Hide licence texts",
+    "laedt": "Loading …",
+    "fehler": "The licence texts could not be loaded. The full text is in the file {{datei}} in the program folder.",
+    "aria": "Licence texts of the open-source components"
+  },
+  "lizenz_aria": "Full text of the Apache License 2.0"
+}

@@ -33,6 +33,11 @@ _KONTAKT_RE = re.compile(r"\*\*Kontakt:\*\*\s*(.+)")
 _LINKEDIN_RE = re.compile(r"\*\*LinkedIn:\*\*\s*(.+)")
 
 
+def _fallback_name() -> str:
+    from app.sprache import uebersetzt    # erst hier: Dieses Modul läuft auch ohne Datenbank-Importe
+    return uebersetzt(_FALLBACK_NAME)
+
+
 def user_name() -> str:
     """Name aus `config/profil.md` (`## Identität` → `**Name:** …`), getrimmt.
 
@@ -42,12 +47,12 @@ def user_name() -> str:
     try:
         text = _PROFIL_MD.read_text(encoding="utf-8")
     except OSError:
-        return _FALLBACK_NAME
+        return _fallback_name()
     m = _NAME_RE.search(text)
     if not m:
-        return _FALLBACK_NAME
+        return _fallback_name()
     name = m.group(1).strip()
-    return name or _FALLBACK_NAME
+    return name or _fallback_name()
 
 
 def user_first_name() -> str:

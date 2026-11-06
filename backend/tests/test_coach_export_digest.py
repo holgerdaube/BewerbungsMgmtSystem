@@ -55,10 +55,10 @@ def coach_db(session, tmp_path, monkeypatch):
 
 
 def _heute_mittag() -> datetime.datetime:
-    """Heute 12:00 als naiver Zeitpunkt. Bewusst nicht `utcnow()`: Der Digest vergleicht `.date()` mit dem
-    LOKALEN Datum; zwischen 0 und 2 Uhr Ortszeit läge `utcnow()` auf gestern, die Zeile fiele still aus
-    „Heute geändert“ und der Test prüfte nichts mehr."""
-    return datetime.datetime.combine(datetime.date.today(), datetime.time(12, 0))
+    """Heute 12:00 Ortszeit als naives UTC, wie `updated_at`/`created_at` in der DB."""
+    from app import zeit
+
+    return zeit.tagesbeginn_utc() + datetime.timedelta(hours=12)
 
 
 def _stelle(db, firma, status, *, score=3, heute=False, **felder):

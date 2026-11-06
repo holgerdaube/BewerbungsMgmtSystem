@@ -51,14 +51,22 @@ import zipfile
 from datetime import datetime, timedelta
 from pathlib import Path
 
+from app.sprache import tx
+from app.terminal import tt
+
 # ── V3: Einstellungen (data/sicherung.json) ─────────────────────────────────────────────────
 _EINSTELLUNGEN_DATEI = "sicherung.json"
 _STANDARD_EINSTELLUNGEN: dict = {"aktiv": True, "taeglich": 7, "woechentlich": 4, "monatlich": 0}
 # Gültige Wertebereiche (Spec V3): bool ist kein int -- wird in _wert_gueltig() ausdrücklich
 # VOR der int-Prüfung ausgeschlossen (bool ist in Python ein int-Subtyp).
 _GRENZEN: dict = {"taeglich": (1, 60), "woechentlich": (0, 52), "monatlich": (0, 24)}
-# Für Meldungen an den Nutzer: nie den internen Schlüssel zeigen.
-_BEZEICHNUNG: dict = {"taeglich": "täglichen", "woechentlich": "wöchentlichen", "monatlich": "monatlichen"}
+
+
+def _bezeichnung(schluessel: str) -> str:
+    """Für Meldungen an den Nutzer: nie den internen Schlüssel zeigen."""
+    return {"taeglich": tx("täglichen"), "woechentlich": tx("wöchentlichen"),
+            "monatlich": tx("monatlichen")}[schluessel]
+
 
 # ── V5: Takt ─────────────────────────────────────────────────────────────────────────────────
 _ERSTE_PRUEFUNG_S = 60
@@ -129,8 +137,7 @@ def einstellungen_laden(daten_dir: Path | None = None) -> dict:
             else:
                 raise ValueError("kein JSON-Objekt")
         except (OSError, ValueError) as exc:
-            print(f"[sicherung] WARNUNG: {pfad} ist unlesbar ({type(exc).__name__}: {exc}), "
-                  f"verwende Standardwerte", flush=True)
+            print(tt("[sicherung] WARNUNG: {pfad} ist unlesbar ({art}: {fehler}), verwende Standardwerte", pfad=pfad, art=type(exc).__name__, fehler=exc), flush=True)
 
     ergebnis = dict(_STANDARD_EINSTELLUNGEN)
     for schluessel in _STANDARD_EINSTELLUNGEN:
@@ -139,8 +146,7 @@ def einstellungen_laden(daten_dir: Path | None = None) -> dict:
         if _wert_gueltig(schluessel, roh[schluessel]):
             ergebnis[schluessel] = roh[schluessel]
         else:
-            print(f"[sicherung] WARNUNG: ungültiger Wert {roh[schluessel]!r} für '{schluessel}' in "
-                  f"{pfad}, verwende {ergebnis[schluessel]!r}", flush=True)
+            print(tt("[sicherung] WARNUNG: ungültiger Wert {wert!r} für '{schluessel}' in {pfad}, verwende {ersatz!r}", wert=roh[schluessel], schluessel=schluessel, pfad=pfad, ersatz=ergebnis[schluessel]), flush=True)
     return ergebnis
 
 
@@ -154,17 +160,18 @@ def einstellungen_speichern(aenderung: dict, daten_dir: Path | None = None) -> d
 
     unbekannt = set(aenderung) - set(_STANDARD_EINSTELLUNGEN)
     if unbekannt:
-        raise ValueError(f"Unbekannte Einstellung: {', '.join(sorted(unbekannt))}.")
+        raise ValueError(tx("Unbekannte Einstellung: {namen}.", namen=", ".join(sorted(unbekannt))))
 
     ergebnis = einstellungen_laden(daten_dir)
     ergebnis.update(aenderung)
 
     if not _wert_gueltig("aktiv", ergebnis["aktiv"]):
-        raise ValueError("Die automatische Sicherung lässt sich nur ein- oder ausschalten.")
+        raise ValueError(tx("Die automatische Sicherung lässt sich nur ein- oder ausschalten."))
     for schluessel, (minimum, maximum) in _GRENZEN.items():
         if not _wert_gueltig(schluessel, ergebnis[schluessel]):
-            raise ValueError(f"Die Zahl der {_BEZEICHNUNG[schluessel]} Sicherungen muss eine ganze "
-                             f"Zahl zwischen {minimum} und {maximum} sein.")
+            raise ValueError(tx("Die Zahl der {art} Sicherungen muss eine ganze "
+                                "Zahl zwischen {minimum} und {maximum} sein.",
+                                art=_bezeichnung(schluessel), minimum=minimum, maximum=maximum))
 
     daten_dir.mkdir(parents=True, exist_ok=True)
     pfad = daten_dir / _EINSTELLUNGEN_DATEI
@@ -244,7 +251,8 @@ def _integritaet_pruefen(pfad: Path) -> None:
         conn.close()
     ergebnis = zeile[0] if zeile else None
     if ergebnis != "ok":
-        raise RuntimeError(f"Die Prüfsumme der Kopie ist nicht in Ordnung ({ergebnis or 'kein Ergebnis'}).")
+        raise RuntimeError(tx("Die Prüfsumme der Kopie ist nicht in Ordnung ({ergebnis}).",
+                              ergebnis=ergebnis or tx("kein Ergebnis")))
 
 
 def _als_zip_packen(quelle: Path, ziel_zip: Path) -> None:
@@ -281,7 +289,7 @@ def anlegen(daten_dir: Path | None = None, db_pfad: Path | None = None,
     jetzt = jetzt or datetime.now()
 
     if not _LOCK.acquire(blocking=False):
-        raise SicherungLaeuft("Es läuft bereits eine Sicherung.")
+        raise SicherungLaeuft(tx("Es läuft bereits eine Sicherung."))
     try:
         ordner = _auto_ordner(daten_dir)
         stempel = _stempel(jetzt)
@@ -304,7 +312,7 @@ def anlegen(daten_dir: Path | None = None, db_pfad: Path | None = None,
             _still_entfernen(tmp_zip)
             meldung = str(exc) or type(exc).__name__
             _fehler_merken(meldung, jetzt)
-            print(f"[sicherung] Fehler beim Anlegen: {meldung}", flush=True)
+            print(tt("[sicherung] Fehler beim Anlegen: {meldung}", meldung=meldung), flush=True)
             raise
         # Erst NACH dem try: die fertige ZIP steht bereits. Ein Fehler beim Aufräumen der Kopie
         # darf sie nicht nachträglich zum Fehlschlag machen.
@@ -314,7 +322,7 @@ def anlegen(daten_dir: Path | None = None, db_pfad: Path | None = None,
         _letzter_fehler = None
         dauer_s = time.monotonic() - start
         groesse = ziel_pfad.stat().st_size
-        print(f"[sicherung] gesichert: {ziel_pfad.name} ({groesse} Bytes, {dauer_s:.1f} s)", flush=True)
+        print(tt("[sicherung] gesichert: {name} ({groesse} Bytes, {dauer:.1f} s)", name=ziel_pfad.name, groesse=groesse, dauer=dauer_s), flush=True)
         return ziel_pfad
     finally:
         _LOCK.release()
@@ -406,10 +414,10 @@ def rotieren(daten_dir: Path | None = None, jetzt: datetime | None = None) -> li
                 (ordner / name).unlink()
                 entfernt.append(name)
             except OSError as exc:
-                print(f"[sicherung] WARNUNG: {name} konnte nicht entfernt werden: {exc}", flush=True)
+                print(tt("[sicherung] WARNUNG: {name} konnte nicht entfernt werden: {fehler}", name=name, fehler=exc), flush=True)
 
     if entfernt:
-        print(f"[sicherung] {len(entfernt)} alte Sicherung(en) entfernt", flush=True)
+        print(tt("[sicherung] {anzahl} alte Sicherung(en) entfernt", anzahl=len(entfernt)), flush=True)
     return entfernt
 
 
@@ -455,17 +463,19 @@ def _warnung_ermitteln(einstellungen: dict, neueste: tuple | None, jetzt: dateti
     Automatik älter als 3 Tage ist" -- nur die zweite Bedingung ist an `aktiv` geknüpft). Ist
     die Automatik aus UND liegt kein Fehler vor, gibt es keine Warnung."""
     if _letzter_fehler is not None:
-        return f"Die letzte Sicherung ist fehlgeschlagen: {_letzter_fehler['meldung']}"
+        return tx("Die letzte Sicherung ist fehlgeschlagen: {meldung}", meldung=_letzter_fehler["meldung"])
     if not einstellungen["aktiv"]:
         return None
     if neueste is not None:
         alter = jetzt - neueste[1]
         if alter > timedelta(hours=72):
             tage = alter.days
-            return f"Die letzte Sicherung ist {tage} {'Tag' if tage == 1 else 'Tage'} alt."
+            if tage == 1:
+                return tx("Die letzte Sicherung ist {tage} Tag alt.", tage=tage)
+            return tx("Die letzte Sicherung ist {tage} Tage alt.", tage=tage)
         return None
     if _takt_start is not None and jetzt - _takt_start > timedelta(minutes=10):
-        return "Es gibt noch keine automatische Sicherung."
+        return tx("Es gibt noch keine automatische Sicherung.")
     return None
 
 
@@ -563,10 +573,9 @@ async def _takt_schleife() -> None:
             # Nur Ereignisse ins Server-Log: „gesichert" und „fehler" meldet anlegen() selbst,
             # „aus"/„nicht_faellig" wären 48 gleiche Zeilen am Tag.
             if ergebnis == "laeuft":
-                print("[sicherung] Takt übersprungen: es läuft bereits eine Sicherung", flush=True)
+                print(tt("[sicherung] Takt übersprungen: es läuft bereits eine Sicherung"), flush=True)
         except Exception as exc:       # noqa: BLE001 -- Schleife darf nie sterben (V5)
-            print(f"[sicherung] KRITISCH: Takt-Prüfung fehlgeschlagen: {type(exc).__name__}: {exc}",
-                  flush=True)
+            print(tt("[sicherung] KRITISCH: Takt-Prüfung fehlgeschlagen: {art}: {fehler}", art=type(exc).__name__, fehler=exc), flush=True)
         await asyncio.sleep(_PRUEF_INTERVALL_S)
 
 
@@ -579,5 +588,4 @@ def starten() -> None:
         return
     _takt_start = datetime.now()
     _task = asyncio.create_task(_takt_schleife())
-    print(f"[sicherung] Takt gestartet: erste Prüfung in {_ERSTE_PRUEFUNG_S} s, danach alle "
-          f"{_PRUEF_INTERVALL_S // 60} min", flush=True)
+    print(tt("[sicherung] Takt gestartet: erste Prüfung in {erste} s, danach alle {minuten} min", erste=_ERSTE_PRUEFUNG_S, minuten=_PRUEF_INTERVALL_S // 60), flush=True)

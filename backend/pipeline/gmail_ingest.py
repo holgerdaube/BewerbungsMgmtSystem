@@ -602,13 +602,12 @@ def ingest_emails(records, run_type="email_check"):
                 category = "Absage"
                 rec = {**rec, "job_status": "Absage"}
                 spaete_absagen += 1
-                betreff = rec.get("subject") or "(kein Betreff)"
-                # Das schließende Anführungszeichen steht bewusst als eigenes Literal:
-                # im f-String stünde sonst ein ASCII-Quote als Schließer (P2-15).
-                s.add(JobLog(job_id=job.id, art="auto", eintrag=(
-                    f"Absage aus dem Mail-Volltext erkannt: „{betreff}" + "\u201c"
-                    f" — als Eingangsbestätigung eingestuft, kam aber "
-                    f"{(rec_dt - beworben_je_job[job.id]).days} Tage nach der Bewerbung")))
+                from app.sprache import tx
+                betreff = rec.get("subject") or tx("(kein Betreff)")
+                s.add(JobLog(job_id=job.id, art="auto", eintrag=tx(
+                    "Absage aus dem Mail-Volltext erkannt: „{betreff}“ — als Eingangsbestätigung "
+                    "eingestuft, kam aber {tage} Tage nach der Bewerbung",
+                    betreff=betreff, tage=(rec_dt - beworben_je_job[job.id]).days)))
 
             if not job and not ist_mehrdeutig and comp and rec.get("job_title"):
                 dk = N.dedup_key(comp.name, rec["job_title"])

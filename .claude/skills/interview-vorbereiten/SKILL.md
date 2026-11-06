@@ -30,8 +30,11 @@ Die `id` dieses Interviews ist die **Zielrunde** — sie wird in Schritt 5 regis
 ### 2. Quellen lesen (Pflichtinput)
 - **(a) Company-Fit:** die HTML unter `company.fit_analysis_path` (falls vorhanden) — Chancen, Risiken und
   Klärungsfragen herausziehen (`/api/artifact?path=<fit_analysis_path>` oder Datei direkt lesen).
-- **(b) CV:** den aktuellsten angepassten CV lesen (`cv_versions[].file_path`, .docx) — sonst `data/cv_basis/base_de.docx`
-  (bzw. `base_en.docx`, wenn das Gespräch auf Englisch läuft). Liefert die echten Belege für die Antwortskizzen.
+- **(b) CV:** den aktuellsten angepassten CV lesen (`cv_versions[].file_path`, .docx) — sonst `data/cv_basis/base_<sprache>.docx`
+  in der Sprache der Anzeige bzw. des Gesprächs (`de`, `en`, `fr`, `it`, `es`, `pt`; läuft das Gespräch auf Englisch,
+  `base_en.docx`). Fehlt bei einer französischen, italienischen, spanischen oder portugiesischen Anzeige die Fassung
+  dieser Sprache: nichts übersetzen, zuerst `base_en.docx` nehmen, falls vorhanden, sonst `base_de.docx`, und den
+  Sprachbruch im Bericht nennen. Liefert die echten Belege für die Antwortskizzen.
 - **(c) Profil:** `config/profil.md` — Kurzprofil, Kernbotschaften und **harte Grenzen** (rote Linien).
 - **(d) Bisherige Transkripte:** ALLE `transcripts[].file_path` dieses Jobs lesen. **Bei Runde ≥ 2 sind die
   unbeantworteten Punkte / offenen To-dos aus der/den Vorrunde(n) Pflichtinput** — sie gehören in einen

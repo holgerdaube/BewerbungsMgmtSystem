@@ -12,6 +12,19 @@
 # Exit 0 (Tageslauf bleibt grün, s. docs/COACH_SITE.md) — NUR --wipe läuft bedingungslos
 # (Not-Aus, auch bei abgeschalteter Funktion).
 set -euo pipefail
+# P2-95: Sprache der Meldungen. Der Runner setzt BMS_TERMINAL_SPRACHE auf die Sprache der Oberfläche, weil die Ausgabe
+# im Task-Center landet; von Hand gestartet folgt das Skript dem Betriebssystem.
+if [ -z "${BMS_TERMINAL_SPRACHE:-}" ]; then
+  _bms_lang=$({ defaults read -g AppleLanguages 2>/dev/null || true; } | sed -n '2p' | tr -d ' ",')
+  [ -n "$_bms_lang" ] || _bms_lang=$(defaults read -g AppleLocale 2>/dev/null || true)
+  [ -n "$_bms_lang" ] || _bms_lang="${LC_ALL:-${LC_MESSAGES:-${LANG:-}}}"
+  case "$_bms_lang" in
+    de*|De*|DE*) BMS_TERMINAL_SPRACHE=de ;;
+    *) BMS_TERMINAL_SPRACHE=en ;;
+  esac
+fi
+_m() { if [ "$BMS_TERMINAL_SPRACHE" = "de" ]; then print -r -- "$1"; else print -r -- "$2"; fi; }
+
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 SECRETS="$HOME/.bewerbung_mgmt_secrets"
 VENV="$HOME/.bewerbung_mgmt_venv/bin/python"
@@ -39,11 +52,11 @@ eval "$(cd "$ROOT/backend" && "$VENV" -m pipeline.coach_settings shell)"
 # manueller Terminal-Befehl, kein Tageslauf-Schritt, I4 verlangt hier kein Exit 0).
 if [ "${1:-}" = "--wipe" ]; then
   if ! command -v lftp >/dev/null 2>&1; then
-    echo "coach_deploy: lftp fehlt — installieren mit: brew install lftp" >&2
+    _m "coach_deploy: lftp fehlt — installieren mit: brew install lftp" "coach_deploy: lftp is missing, install it with: brew install lftp" >&2
     exit 1
   fi
   if [ -z "$COACH_SFTP_HOST" ] || [ -z "$COACH_SFTP_USER" ] || [ -z "$COACH_SFTP_PASS" ] || [ -z "$COACH_SFTP_DIR" ]; then
-    echo "coach_deploy: --wipe kann nicht laufen — keine SFTP-Zugangsdaten hinterlegt (Einstellungen → Coach-Site)." >&2
+    _m "coach_deploy: --wipe kann nicht laufen — keine SFTP-Zugangsdaten hinterlegt (Einstellungen → Coach-Site)." "coach_deploy: --wipe cannot run, no SFTP credentials stored (Settings → Coach site)." >&2
     exit 1
   fi
   lftp -u "$COACH_SFTP_USER","$COACH_SFTP_PASS" "sftp://$COACH_SFTP_HOST" -e "
@@ -55,7 +68,7 @@ fi
 
 # Ab hier normaler Deploy: Aktiv-Prüfung VOR dem Upload (I4) — abgeschaltet ist kein Fehler.
 if [ "$COACH_AKTIV" != "1" ]; then
-  echo "Coach-Site ist in den Einstellungen abgeschaltet — übersprungen."
+  _m "Coach-Site ist in den Einstellungen abgeschaltet — übersprungen." "The coach site is switched off in the settings, skipped."
   exit 0
 fi
 
@@ -64,29 +77,29 @@ fi
 # hier genauso wie beim Abschalten). COACH_SFTP_HOST zuerst: das ist "noch gar nicht
 # eingerichtet", die anderen sind "unvollständig eingerichtet".
 if [ -z "$COACH_SFTP_HOST" ]; then
-  echo "coach_deploy: SFTP-Zugang ist noch nicht eingerichtet — Upload übersprungen."
-  echo "Einrichten unter: Einstellungen → Coach-Site (in der App)."
+  _m "coach_deploy: SFTP-Zugang ist noch nicht eingerichtet — Upload übersprungen." "coach_deploy: SFTP access is not set up yet, upload skipped."
+  _m "Einrichten unter: Einstellungen → Coach-Site (in der App)." "Set it up under: Settings → Coach site (in the app)."
   exit 0
 fi
 if [ -z "$COACH_SFTP_USER" ]; then
-  echo "coach_deploy: SFTP-Benutzer fehlt — bitte in Einstellungen → Coach-Site ergänzen. Upload übersprungen."
+  _m "coach_deploy: SFTP-Benutzer fehlt — bitte in Einstellungen → Coach-Site ergänzen. Upload übersprungen." "coach_deploy: SFTP user is missing, please add it under Settings → Coach site. Upload skipped."
   exit 0
 fi
 if [ -z "$COACH_SFTP_PASS" ]; then
-  echo "coach_deploy: SFTP-Passwort fehlt — bitte in Einstellungen → Coach-Site ergänzen. Upload übersprungen."
+  _m "coach_deploy: SFTP-Passwort fehlt — bitte in Einstellungen → Coach-Site ergänzen. Upload übersprungen." "coach_deploy: SFTP password is missing, please add it under Settings → Coach site. Upload skipped."
   exit 0
 fi
 if [ -z "$COACH_SFTP_DIR" ]; then
-  echo "coach_deploy: SFTP-Zielverzeichnis fehlt — bitte in Einstellungen → Coach-Site ergänzen (z. B. /coach). Upload übersprungen."
+  _m "coach_deploy: SFTP-Zielverzeichnis fehlt — bitte in Einstellungen → Coach-Site ergänzen (z. B. /coach). Upload übersprungen." "coach_deploy: SFTP target folder is missing, please add it under Settings → Coach site (for example /coach). Upload skipped."
   exit 0
 fi
 if [ -z "$COACH_AUTHUSERFILE" ]; then
-  echo "coach_deploy: Serverpfad zur .htpasswd fehlt — bitte in Einstellungen → Coach-Site ergänzen (automatisch ermitteln oder manuell eintragen). Upload übersprungen."
+  _m "coach_deploy: Serverpfad zur .htpasswd fehlt — bitte in Einstellungen → Coach-Site ergänzen (automatisch ermitteln oder manuell eintragen). Upload übersprungen." "coach_deploy: server path to .htpasswd is missing, please add it under Settings → Coach site (detect automatically or enter by hand). Upload skipped."
   exit 0
 fi
 
 if ! command -v lftp >/dev/null 2>&1; then
-  echo "coach_deploy: lftp fehlt — installieren mit: brew install lftp" >&2
+  _m "coach_deploy: lftp fehlt — installieren mit: brew install lftp" "coach_deploy: lftp is missing, install it with: brew install lftp" >&2
   exit 1
 fi
 
@@ -111,8 +124,8 @@ if [ -f "$SECRETS/coach_htpasswd" ]; then
   # gesperrt (Apache-Default für .ht*, verifiziert: 403).
   chmod 644 "$EXPORT_DIR/.htpasswd"
 else
-  echo "coach_deploy: WARNUNG — $SECRETS/coach_htpasswd fehlt (Coach-Login setzen: Einstellungen → Coach-Site, oder scripts/coach_passwort.sh <user>)." >&2
-  echo "Ohne .htpasswd verweigert der Server JEDEN Zugriff (500) — Upload abgebrochen." >&2
+  _m "coach_deploy: WARNUNG — $SECRETS/coach_htpasswd fehlt (Coach-Login setzen: Einstellungen → Coach-Site, oder scripts/coach_passwort.sh <user>)." "coach_deploy: WARNING: $SECRETS/coach_htpasswd is missing (set the coach login: Settings → Coach site, or scripts/coach_passwort.sh <user>)." >&2
+  _m "Ohne .htpasswd verweigert der Server JEDEN Zugriff (500) — Upload abgebrochen." "Without .htpasswd the server refuses EVERY request (500), upload stopped." >&2
   exit 1
 fi
 
@@ -128,4 +141,4 @@ lftp -u "$COACH_SFTP_USER","$COACH_SFTP_PASS" "sftp://$COACH_SFTP_HOST" -e "
   set sftp:auto-confirm yes;
   mirror -R --delete $MODE_FLAGS . $COACH_SFTP_DIR;
   bye"
-echo "✓ coach_deploy ${1:-upload} abgeschlossen → ${COACH_SITE_URL:-<Zieladresse nicht gesetzt>}"
+_m "✓ coach_deploy ${1:-upload} abgeschlossen → ${COACH_SITE_URL:-<Zieladresse nicht gesetzt>}" "✓ coach_deploy ${1:-upload} complete → ${COACH_SITE_URL:-<target address not set>}"

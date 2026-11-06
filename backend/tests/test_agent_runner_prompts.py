@@ -176,3 +176,51 @@ def test_die_uebrigen_suchlaeufe_behalten_ihren_reinen_trigger():
 
     for kind, trigger in (("zielfirmen-sweep", "Zielfirmen-Sweep"), ("headhunter-suche", "Headhunter-Suche")):
         assert build_prompt(kind, None) == trigger + HEADLESS_SUFFIX
+
+
+def _sprache_setzen(monkeypatch, wert):
+    from app import sprache
+    monkeypatch.setattr(sprache, "aktuell", lambda: wert)
+
+
+def test_deutscher_prompt_bleibt_ohne_sprachhinweis(monkeypatch):
+    from app import agent_runner as ar
+    _sprache_setzen(monkeypatch, "de")
+    assert ar.build_prompt("firma-pruefen", 1).endswith(ar.HEADLESS_SUFFIX)
+
+
+def test_englischer_prompt_nennt_die_ausgabesprache(monkeypatch):
+    from app import agent_runner as ar
+    _sprache_setzen(monkeypatch, "en")
+    prompt = ar.build_prompt("firma-pruefen", 1)
+    assert prompt.endswith(ar.SPRACH_HINWEIS_EN)
+    assert "config/glossar_de_en.md" in prompt
+
+
+def test_chatgpt_erbt_den_sprachhinweis(monkeypatch):
+    from app import agent_runner as ar, ki_anbieter
+    _sprache_setzen(monkeypatch, "en")
+    prompt = ar.build_prompt("firma-pruefen", 1)
+    assert ar.SPRACH_HINWEIS_EN in ki_anbieter.codex_prompt(prompt, "firma-pruefen", ar.PROMPTS["firma-pruefen"])
+
+
+def test_persona_datei_bleibt_ausgenommen(monkeypatch):
+    from app import agent_runner as ar
+    _sprache_setzen(monkeypatch, "en")
+    prompt = ar.build_prompt("beirat-persona", None, {"platz_id": "x", "name": "y", "perspektive": "z"})
+    assert ar.SPRACH_HINWEIS_EN not in prompt
+
+
+def test_glossar_liegt_im_kundenpaket():
+    from pipeline import kundenpaket
+    assert "config/glossar_de_en.md" in kundenpaket.PFLICHTDATEIEN
+
+
+def test_meldungen_zu_task_arten_folgen_der_sprache(monkeypatch):
+    """Die Meldung erreicht die Oberfläche als `detail`. Auf Englisch darf sie nicht deutsch bleiben."""
+    from app import sprache
+    from app.agent_runner import PromptError, build_prompt
+
+    monkeypatch.setattr(sprache, "aktuell", lambda: "en")
+    with pytest.raises(PromptError, match="Unknown task type 'gibt-es-nicht'. Allowed: "):
+        build_prompt("gibt-es-nicht", None)

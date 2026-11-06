@@ -51,6 +51,7 @@ import httpx
 from app.db import engine, init_db
 from app.models import Job
 from app.naming import dated_filename
+from pipeline import bewerbungssprache
 from pipeline import gmail_client   # _entkleiden wiederverwenden (kein Duplikat)
 
 from sqlmodel import Session, select
@@ -85,6 +86,15 @@ LOGIN_MARKERS = (
     "sign in", "anmelden, um", "jetzt anmelden", "log in to continue", "melde dich an",
     "create your account", "sign up to see",
 )
+
+# P2-93: dieselben Marker für Französisch, Italienisch, Spanisch, Portugiesisch aus der Sprachtabelle
+# (`bewerbungssprache`). Die DE-/EN-Listen oben bleiben unverändert und stehen vorn, ein bisheriger
+# Treffer behält also seinen Beleg. Beide Listen sind enger gefasst als der bloße Landessatz: Ein
+# Besetzt-Marker schlägt im Seitentext alles (auch den Titel), darum kein Marker, der auf offenen
+# Anzeigen vorkommt („le plus disponible“, „sesión ha caducado“). Die Login-Marker greifen ohnehin nur
+# ohne Titel und Firma (`check_url`, b) und stehen auch auf offenen Seiten (Anmelde-Hinweis im Kopf).
+_BESETZT_ALLE = BESETZT_TEXT_MARKERS + bewerbungssprache.alle_marker("geschlossen")
+_LOGIN_ALLE = LOGIN_MARKERS + bewerbungssprache.alle_marker("login")
 
 _STOP = {"of", "and", "the", "for", "to", "in", "at", "on", "der", "die", "das", "und",
          "für", "fuer", "im", "mit", "von", "de", "en", "us", "job", "jobs", "career", "careers"}
@@ -349,7 +359,7 @@ def check_url(url: str, company: str, title: str, return_text: bool = False,
     ratio, present = _title_ratio(low, title)
     has_company = any(t in low for t in _company_tokens(company))
     # a) Besetzt-Marker
-    for m in BESETZT_TEXT_MARKERS:
+    for m in _BESETZT_ALLE:
         if m in low:
             out2 = {**out, "befund": "ABGELAUFEN", "beleg": f"Seitentext: '{m}' — {_snippet(text, [m])}"[:200]}
             # P2-76: „Geschlossen" heißt nicht „Text weg" — zeigt die Seite Titel und Firma der Stelle
@@ -358,8 +368,8 @@ def check_url(url: str, company: str, title: str, return_text: bool = False,
                 out2["anzeigentext"] = _anzeigen_kern(r.text[:300000], text)[:20000]
             return out2
     # b) Login-Wall: Sign-in-Dominanz, kein Stellentext
-    if any(m in low for m in LOGIN_MARKERS) and ratio < 0.3 and not has_company:
-        return {**out, "befund": "LOGIN_WALL", "beleg": f"Sign-in-Seite, Titel/Firma fehlen — {_snippet(text, LOGIN_MARKERS)}"[:200]}
+    if any(m in low for m in _LOGIN_ALLE) and ratio < 0.3 and not has_company:
+        return {**out, "befund": "LOGIN_WALL", "beleg": f"Sign-in-Seite, Titel/Firma fehlen — {_snippet(text, _LOGIN_ALLE)}"[:200]}
     # c) Titel ≥ 60 % + Firma im Text
     if ratio >= 0.6 and has_company:
         out2 = {**out, "befund": "OK", "beleg": f"Titel {ratio:.0%} + Firma im Text — {_snippet(text, present)}"[:200]}

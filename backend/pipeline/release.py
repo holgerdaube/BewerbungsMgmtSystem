@@ -42,6 +42,7 @@ from pathlib import Path
 
 from pipeline import changelog
 from pipeline import kundenpaket
+from pipeline import uebersetzung
 from pipeline.kundenpaket import PROJECT_ROOT
 from pipeline.personendaten import OEFFENTLICHES_REPO
 
@@ -194,6 +195,26 @@ def _pruefe_und_baue_changelog(neue_version: str, heute: date, projekt_root: Pat
     return neuer_text, abschnitt_text
 
 
+def _pruefe_und_baue_changelog_en(neue_version: str, heute: date, projekt_root: Path) -> str:
+    """P2-91: Dieselbe Freigabe für `CHANGELOG.en.md`. Fehlt der englische Abschnitt, bricht die Freigabe ab."""
+    text = (projekt_root / "CHANGELOG.en.md").read_text(encoding="utf-8")
+    form_fehler = changelog.pruefen(text)
+    if form_fehler:
+        raise ReleaseFehler("CHANGELOG.en.md: " + " ".join(form_fehler))
+    try:
+        return changelog.freigeben(text, neue_version, heute)
+    except changelog.ChangelogFehler as exc:
+        raise ReleaseFehler(f"CHANGELOG.en.md: {exc}") from exc
+
+
+def _pruefe_uebersetzungen(projekt_root: Path) -> None:
+    """P2-91: Zur Freigabe müssen alle englischen Fassungen aktuell sein, auch die der Technik-Doku.
+    Ausgenommen ist nur das Changelog: Dessen Quelle ändert die Freigabe selbst."""
+    funde = [f for f in uebersetzung.pruefen(projekt_root, uebersetzung.GRUPPEN) if "CHANGELOG" not in f]
+    if funde:
+        raise ReleaseFehler("Englische Fassungen veraltet (scripts/uebersetzung.sh --pruefen --alle): " + "; ".join(funde[:5]))
+
+
 def _firmen_db_pfad(projekt_root: Path) -> Path:
     """Pfad zur lokalen Datenbank fuer die Firmennamen-Regel der Paketpruefung (P2-51/U2a) --
     wie die App respektiert das BMS_DATA_DIR, sonst data/ im Projekt. Nur Path.exists() wird
@@ -238,6 +259,9 @@ def _freigabe_pruefen(ziel: str, *, ohne_ci_pruefung: bool, projekt_root: Path,
     _pruefe_tag_frei(f"v{neue_version}", projekt_root)
 
     neuer_text, abschnitt_text = _pruefe_und_baue_changelog(neue_version, heute, projekt_root)
+    _pruefe_uebersetzungen(projekt_root)
+    if (projekt_root / "CHANGELOG.en.md").is_file():
+        _pruefe_und_baue_changelog_en(neue_version, heute, projekt_root)     # bricht ab, bevor etwas geschrieben ist
     _pruefe_paket(projekt_root)
 
     return neue_version, neuer_text, abschnitt_text, hinweise
@@ -273,19 +297,31 @@ def freigeben(ziel: str, *, probe: bool = False, ohne_ci_pruefung: bool = False,
         print(f"Tag: {tag_name}")
         return 0
 
+    # Englischen Text VOR dem ersten Schreiben bauen und mit `tag_datum`, nicht `heute`: `heute` ist
+    # ausserhalb der Tests None (Absturz bei der echten Freigabe 2.2.0, 06.11.2026, nach dem
+    # Schreiben von VERSION und CHANGELOG.md).
+    neuer_text_en = None
+    if (projekt_root / "CHANGELOG.en.md").is_file():
+        neuer_text_en = _pruefe_und_baue_changelog_en(neue_version, tag_datum, projekt_root)
+
     (projekt_root / "VERSION").write_text(f"{neue_version}\n", encoding="utf-8", newline="\n")
     (projekt_root / "CHANGELOG.md").write_text(neuer_text, encoding="utf-8", newline="\n")
+    zu_committen = ["VERSION", "CHANGELOG.md"]
+    if neuer_text_en is not None:
+        (projekt_root / "CHANGELOG.en.md").write_text(neuer_text_en, encoding="utf-8", newline="\n")
+        uebersetzung.bestaetigen(projekt_root, "CHANGELOG.en.md")
+        zu_committen += ["CHANGELOG.en.md", uebersetzung.QUELLEN_DATEI]
 
     commit_nachricht = f"Release {neue_version}"
     tag_nachricht = f"BMS {neue_version}\n\n{abschnitt_text}\n"
 
     try:
-        _git(["add", "VERSION", "CHANGELOG.md"], projekt_root)
+        _git(["add", *zu_committen], projekt_root)
         _git(["commit", "-m", commit_nachricht], projekt_root)
     except ReleaseFehler as exc:
         print(f"Fehler beim Commit: {exc}")
         print("VERSION und CHANGELOG.md sind im Arbeitsbaum bereits geaendert -- von Hand "
-              "committen oder mit `git checkout -- VERSION CHANGELOG.md` zuruecksetzen.")
+              "committen oder mit `git checkout -- VERSION CHANGELOG.md CHANGELOG.en.md` zuruecksetzen.")
         return 2
 
     # Ab hier ist der Commit da -- Spec: nichts automatisch zuruecknehmen, sondern bei jedem
@@ -331,7 +367,13 @@ def notizen(version: str, *, projekt_root: Path = PROJECT_ROOT) -> int:
     if abschnitt_text is None:
         print(f"Kein CHANGELOG-Abschnitt fuer Version {version}.")
         return 1
-    print(abschnitt_text)
+    # P2-91: Englisch zuerst (Hauptsprache auf GitHub), Deutsch darunter.
+    en_pfad = projekt_root / "CHANGELOG.en.md"
+    en_text = changelog.abschnitt(en_pfad.read_text(encoding="utf-8"), version) if en_pfad.is_file() else None
+    if en_text:
+        print(f"{en_text}\n\n---\n\n{abschnitt_text}")
+    else:
+        print(abschnitt_text)
     return 0
 
 

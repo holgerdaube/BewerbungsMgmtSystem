@@ -148,6 +148,203 @@ _TEXT_PRUEFSUMME_FEHLT = "Zur neuesten Version fehlt die Prüfsumme. Sie wird ni
 _TEXT_PAKET_BESCHAEDIGT = "Das geladene Paket ist unvollständig oder beschädigt."
 
 
+# ── Terminalsprache (P2-95) ─────────────────────────────────────────────────────────────────
+# Regel: Steht das Betriebssystem auf Deutsch, bleibt jede Meldung wie sie ist; in jedem anderen
+# Fall (und bei jedem Fehler der Erkennung) kommt Englisch. Unabhaengig von der Oberflaechensprache
+# der App. Alles in dieser einen Datei, weil das Skript aus Entpack-Ordnern laeuft (keine
+# Geschwister-Module). Die deutschen Texte sind zugleich die Schluessel von `_EN`.
+_SPRACHE_ZWISCHENSPEICHER: str | None = None   # nur das Ergebnis der Systemabfrage; Tests setzen es zurueck
+
+
+def _system_sprache_roh() -> str:
+    """Sprachwert des Betriebssystems (z. B. "de-DE", "en_GB") oder "" wenn nichts zu ermitteln
+    ist. macOS: erster Eintrag von `defaults read -g AppleLanguages`, sonst `AppleLocale`. Windows:
+    `GetUserDefaultUILanguage`. Sonst (und wenn das System nichts liefert): LC_ALL, LC_MESSAGES,
+    LANG. Fehler wirft die Funktion weiter, `_terminal_sprache()` macht daraus Englisch."""
+    if sys.platform == "darwin":
+        ergebnis = subprocess.run(["defaults", "read", "-g", "AppleLanguages"],
+                                  capture_output=True, text=True, timeout=5)
+        if ergebnis.returncode == 0:
+            for zeile in ergebnis.stdout.splitlines():
+                eintrag = zeile.strip().strip(",").strip('"').strip()
+                if eintrag and eintrag not in ("(", ")"):
+                    return eintrag
+        ergebnis = subprocess.run(["defaults", "read", "-g", "AppleLocale"],
+                                  capture_output=True, text=True, timeout=5)
+        if ergebnis.returncode == 0 and ergebnis.stdout.strip():
+            return ergebnis.stdout.strip()
+    elif sys.platform == "win32":
+        import ctypes
+        kennung = ctypes.windll.kernel32.GetUserDefaultUILanguage()
+        return "de" if (kennung & 0x3FF) == 0x07 else "en"     # 0x07 = LANG_GERMAN
+    return (os.environ.get("LC_ALL", "").strip() or os.environ.get("LC_MESSAGES", "").strip()
+            or os.environ.get("LANG", "").strip())
+
+
+def _terminal_sprache() -> str:
+    """"de" oder "en". Reihenfolge: Umgebungsvariable BMS_TERMINAL_SPRACHE (de/en, wird bei jedem
+    Aufruf gelesen), dann das Betriebssystem (einmal je Prozess zwischengespeichert). Beginnt der
+    Wert mit "de", gilt Deutsch; alles andere und jeder Fehler: Englisch."""
+    global _SPRACHE_ZWISCHENSPEICHER
+    vorgabe = os.environ.get("BMS_TERMINAL_SPRACHE", "").strip().lower()
+    if vorgabe in ("de", "en"):
+        return vorgabe
+    if _SPRACHE_ZWISCHENSPEICHER is None:
+        try:
+            roh = _system_sprache_roh().strip().lower()
+            _SPRACHE_ZWISCHENSPEICHER = "de" if roh.startswith("de") else "en"
+        except Exception:
+            _SPRACHE_ZWISCHENSPEICHER = "en"
+    return _SPRACHE_ZWISCHENSPEICHER
+
+
+# Deutscher Text (mit benannten Platzhaltern) -> englischer Text. Jeder Platzhalter steht in beiden.
+_EN: dict[str, str] = {
+    # Kundentexte der Online-Suche
+    "Es besteht keine Verbindung zu GitHub.": "There is no connection to GitHub.",
+    "GitHub antwortet nicht rechtzeitig.": "GitHub did not respond in time.",
+    "Die Verbindung zu GitHub wurde unterbrochen.": "The connection to GitHub was interrupted.",
+    "Die sichere Verbindung zu GitHub ließ sich nicht prüfen.":
+        "The secure connection to GitHub could not be verified.",
+    "Die Antwort von GitHub ist ungültig.": "The response from GitHub is invalid.",
+    "Es ist noch keine Version veröffentlicht.": "No version has been released yet.",
+    "GitHub begrenzt gerade die Anfragen. Bitte versuchen Sie es in einer Stunde erneut.":
+        "GitHub is currently limiting requests. Please try again in an hour.",
+    "Zur neuesten Version fehlt die Prüfsumme. Sie wird nicht eingespielt.":
+        "The checksum for the latest version is missing. It will not be installed.",
+    "Das geladene Paket ist unvollständig oder beschädigt.":
+        "The downloaded package is incomplete or damaged.",
+    # Installation und Paket finden
+    "Der Ordner „{installation}“ wurde nicht gefunden.": "The folder “{installation}” was not found.",
+    "Dies ist eine Entwicklungsinstallation mit Git. Bitte Updates dort über Git einspielen, nicht über dieses Werkzeug.":
+        "This is a development installation with Git. Please apply updates there using Git, not with this tool.",
+    "Dieses Werkzeug muss über die mitgelieferte Python-Umgebung laufen. Bitte update.command (Mac) bzw. update_windows.bat (Windows) verwenden, nicht scripts/bms_update.py direkt.":
+        "This tool must run in the Python environment supplied with BMS. Please use update.command (Mac) or update_windows.bat (Windows), not scripts/bms_update.py directly.",
+    "Kein Update-Paket gefunden. Legen Sie die Datei „BMS_<Version>.zip“ in den Download-Ordner ({downloads}).":
+        "No update package found. Put the file “BMS_<version>.zip” in your downloads folder ({downloads}).",
+    "Mehrere Pakete gefunden, verwende die höchste Version: {name}":
+        "Several packages found, using the highest version: {name}",
+    "Die Paketdatei „{pfad}“ wurde nicht gefunden.": "The package file “{pfad}” was not found.",
+    "Das Paket lässt sich nicht in „{ordner}“ speichern ({grund}).":
+        "The package cannot be saved in “{ordner}” ({grund}).",
+    "Online-Suche übersprungen: Sie haben --offline angegeben.":
+        "Online search skipped: you specified --offline.",
+    "Suche auf GitHub nach einer neuen Version. GitHub erhält dabei die IP-Adresse dieses Rechners.":
+        "Searching GitHub for a new version. GitHub will see this computer’s IP address.",
+    "Online-Suche nicht möglich: {grund}": "Online search not possible: {grund}",
+    "Version {version} gefunden, das Paket liegt bereits geladen vor.":
+        "Version {version} found, the package has already been downloaded.",
+    "Version {version} gefunden, lade {groesse} MB …": "Version {version} found, downloading {groesse} MB …",
+    "Paket geladen und geprüft.": "Package downloaded and verified.",
+    "Laden nicht möglich: {grund}": "Download not possible: {grund}",
+    "Ihr BMS ist auf dem neuesten Stand (Version {version}).":
+        "Your BMS is up to date (version {version}).",
+    "unbekannt": "unknown",
+    "keine": "none",
+    # Paket prüfen
+    "Die Paketdatei „{pfad}“ lässt sich nicht lesen: {fehler}":
+        "The package file “{pfad}” cannot be read: {fehler}",
+    "Die Paketdatei ist beschädigt (fehlerhafter Eintrag: {eintrag}).":
+        "The package file is damaged (faulty entry: {eintrag}).",
+    "Die Paketdatei enthält kein bms_manifest.json.": "The package file does not contain a bms_manifest.json.",
+    "bms_manifest.json im Paket ist beschädigt: {fehler}": "bms_manifest.json in the package is damaged: {fehler}",
+    "Dieses Paket hat ein unbekanntes Format ({format!r}). Bitte eine neuere Fassung des Update-Werkzeugs verwenden.":
+        "This package has an unknown format ({format!r}). Please use a newer version of the update tool.",
+    "Die Paketdatei enthält einen unsicheren Pfad: {pfad}": "The package file contains an unsafe path: {pfad}",
+    "Die Paketdatei enthält einen geschützten Pfad: {pfad}": "The package file contains a protected path: {pfad}",
+    "Der Paketdatei fehlen Einträge: {liste}": "The package file is missing entries: {liste}",
+    "Die Paketdatei enthält unerwartete Einträge: {liste}":
+        "The package file contains unexpected entries: {liste}",
+    "„{pfad}“ hat im Paket eine andere Größe als im Manifest angegeben.":
+        "“{pfad}” has a different size in the package from the one given in the manifest.",
+    "„{pfad}“ stimmt nicht mit der Prüfsumme im Manifest überein (Paket möglicherweise beschädigt oder unvollständig).":
+        "“{pfad}” does not match the checksum in the manifest (the package may be damaged or incomplete).",
+    "Dieses Paket ist eine Vorschau (kein freigegebener Stand) und wird ohne --erzwingen nicht eingespielt.":
+        "This package is a preview (not a released version) and will not be installed without --erzwingen.",
+    "Die Paketversion ({neu}) ist nicht neuer als die installierte Version ({alt}). Mit --erzwingen dennoch einspielen.":
+        "The package version ({neu}) is not newer than the installed version ({alt}). Install it anyway with --erzwingen.",
+    # Plan
+    "„{pfad}“ wurde von Ihnen entfernt und bleibt entfernt (angepasste Datei).":
+        "“{pfad}” was removed by you and stays removed (customised file).",
+    "„{pfad}“ stand im installierten Manifest, ist aber ein unsicherer oder geschützter Pfad und wurde übersprungen.":
+        "“{pfad}” was listed in the installed manifest, but it is an unsafe or protected path and was skipped.",
+    "Installierte Version: {version}": "Installed version: {version}",
+    "Neue Version: {version}": "New version: {version}",
+    "Dateien: {neu} neu, {geaendert} geändert, {entfernt} entfernt.":
+        "Files: {neu} new, {geaendert} changed, {entfernt} removed.",
+    "Von Ihnen geänderte Programmdateien werden gesichert und ersetzt: {dateien}":
+        "Program files you have changed will be backed up and replaced: {dateien}",
+    "Angepasste Dateien bleiben erhalten: {dateien}": "Customised files will be kept: {dateien}",
+    "Python-Pakete": "Python packages",
+    "Oberflächen-Bausteine (npm ci)": "interface components (npm ci)",
+    "Oberfläche neu bauen": "rebuild the interface",
+    "Abhängigkeiten: {liste}": "Dependencies: {liste}",
+    # Sperre, Abhängigkeiten, Selbsttest
+    "Es läuft bereits ein Update, oder ein vorheriges wurde nicht sauber beendet. Wenn Sie sicher sind, dass kein Update läuft, löschen Sie „{lock}“ und versuchen Sie es erneut.":
+        "An update is already running, or a previous one did not finish cleanly. If you are sure no update is running, delete “{lock}” and try again.",
+    "Installation der Python-Pakete fehlgeschlagen.": "Installing the Python packages failed.",
+    "npm wurde nicht gefunden.": "npm was not found.",
+    "Installation der Oberflächen-Bausteine fehlgeschlagen.": "Installing the interface components failed.",
+    "Bauen der Oberfläche fehlgeschlagen.": "Building the interface failed.",
+    "Hinweis: Selbsttest übersprungen (backend/app/selbsttest.py ist in diesem Paket nicht enthalten).":
+        "Note: self-test skipped (backend/app/selbsttest.py is not included in this package).",
+    "Selbsttest hat das Zeitlimit überschritten.": "The self-test exceeded the time limit.",
+    "Selbsttest fehlgeschlagen:\n{ausgabe}": "Self-test failed:\n{ausgabe}",
+    # Ablauf
+    "Das BMS läuft noch. Beenden Sie es zuerst mit stop.command bzw. stop_windows.bat.":
+        "BMS is still running. Stop it first with stop.command or stop_windows.bat.",
+    "Für dieses Update muss die Oberfläche neu gebaut werden, npm wurde aber nicht gefunden. Bitte Node.js installieren und erneut versuchen.":
+        "This update requires the interface to be rebuilt, but npm was not found. Please install Node.js and try again.",
+    "Update von {alt} auf {neu} jetzt einspielen? [j/N] ":
+        "Install the update from {alt} to {neu} now? [y/N] ",
+    "Abgebrochen. Es wurde nichts verändert.": "Cancelled. Nothing was changed.",
+    "Sicherung fehlgeschlagen, es wurde nichts verändert: {fehler}":
+        "Backup failed, nothing was changed: {fehler}",
+    "Update fehlgeschlagen, alle Änderungen wurden zurückgerollt: {fehler}\nSicherung liegt unter: {ordner}\nHinweis: Python- oder Oberflächen-Bausteine können bereits auf dem neuen Stand sein.":
+        "Update failed, all changes have been rolled back: {fehler}\nBackup is located at: {ordner}\nNote: Python packages or interface components may already be at the new version.",
+    "Update auf Version {version} abgeschlossen. Starten Sie das BMS wie gewohnt.":
+        "Update to version {version} complete. Start BMS as usual.",
+    "Es gibt kein Update, das rückgängig gemacht werden kann.": "There is no update that can be undone.",
+    "Datenbank auf den Stand vor dem Update zurücksetzen? Alle Änderungen seit dem Update gehen verloren. [j/N] ":
+        "Reset the database to its state before the update? All changes made since the update will be lost. [y/N] ",
+    "Update zurückgenommen. Installierte Version jetzt: {version}.":
+        "Update undone. Installed version is now: {version}.",
+    "Die Datenbank wurde auf den Stand vor dem Update zurückgesetzt.":
+        "The database was reset to its state before the update.",
+    "Fehler: {fehler}": "Error: {fehler}",
+    "Fehlgeschlagen: {fehler}": "Failed: {fehler}",
+    # Befehlszeile
+    "Spielt eine neue BMS-Version ein, ohne Daten oder Anpassungen zu verlieren.":
+        "Installs a new BMS version without losing your data or customisations.",
+    "Pfad zu einem BMS_*.zip-Paket (sonst gewinnt die höchste Version aus dem neuesten GitHub-Release und dem Download-Ordner; mit einem Pfad findet kein Netzkontakt statt).":
+        "Path to a BMS_*.zip package (otherwise the highest version from the latest GitHub release and the downloads folder is used; with a path, no network contact takes place).",
+    "Programmordner der Installation.": "Program folder of the installation.",
+    "Nur prüfen und den Ablaufplan zeigen, nichts ändern.": "Only check and show the plan, change nothing.",
+    "Rückfrage vor dem Einspielen automatisch bestätigen.": "Confirm the question before installing automatically.",
+    "Vorschau-Pakete und gleiche/ältere Versionen dennoch einspielen.":
+        "Install preview packages and same or older versions anyway.",
+    "Nicht online nach einer neuen Version suchen.": "Do not search online for a new version.",
+    "Letztes Update rückgängig machen, statt ein neues einzuspielen.":
+        "Undo the last update instead of installing a new one.",
+    "Bei --zurueck die Datenbank ohne Rückfrage mit zurücksetzen (nur für Tests und Notfälle; --ja allein beantwortet diese Frage NICHT).":
+        "With --zurueck, also reset the database without asking (for tests and emergencies only; --ja alone does NOT answer this question).",
+    "Python- und npm-Abhängigkeiten nicht installieren (nur für Tests und Notfälle).":
+        "Do not install Python and npm dependencies (for tests and emergencies only).",
+    "Selbsttest nach dem Einspielen überspringen (nur für Tests und Notfälle).":
+        "Skip the self-test after installing (for tests and emergencies only).",
+    "Intern: markiert, dass bereits an die im Paket enthaltene Werkzeug-Fassung übergeben wurde, keine erneute Selbstaktualisierung.":
+        "Internal: marks that control has already passed to the tool version contained in the package, so no further self-update.",
+}
+
+
+def _t(deutsch: str, **werte: object) -> str:
+    """Meldung in der Terminalsprache. `deutsch` ist der deutsche Text mit benannten Platzhaltern
+    ({name}); auf Deutsch kommt er (mit den eingesetzten Werten) unveraendert heraus, sonst der
+    Eintrag in `_EN`. Ohne Werte wird nichts formatiert."""
+    text = deutsch if _terminal_sprache() == "de" else _EN.get(deutsch, deutsch)
+    return text.format(**werte) if werte else text
+
+
 class Abbruch(Exception):
     """Sauberer Abbruch VOR jeder Aenderung -- `nachricht` ist Kundentext (Sie-Form)."""
 
@@ -287,14 +484,14 @@ def _data_dir(installation: Path) -> Path:
 # ── Schritt 1: Installation pruefen ─────────────────────────────────────────────────────────
 def _installation_pruefen(installation: Path) -> None:
     if not installation.is_dir():
-        raise Abbruch(f"Der Ordner „{installation}“ wurde nicht gefunden.")
+        raise Abbruch(_t("Der Ordner „{installation}“ wurde nicht gefunden.", installation=installation))
     if (installation / ".git").exists():
-        raise Abbruch("Dies ist eine Entwicklungsinstallation mit Git. Bitte Updates dort über "
-                       "Git einspielen, nicht über dieses Werkzeug.")
+        raise Abbruch(_t("Dies ist eine Entwicklungsinstallation mit Git. Bitte Updates dort über "
+                         "Git einspielen, nicht über dieses Werkzeug."))
     if _laeuft_nicht_in_venv():
-        raise Abbruch("Dieses Werkzeug muss über die mitgelieferte Python-Umgebung laufen. Bitte "
-                       "update.command (Mac) bzw. update_windows.bat (Windows) verwenden, nicht "
-                       "scripts/bms_update.py direkt.")
+        raise Abbruch(_t("Dieses Werkzeug muss über die mitgelieferte Python-Umgebung laufen. Bitte "
+                         "update.command (Mac) bzw. update_windows.bat (Windows) verwenden, nicht "
+                         "scripts/bms_update.py direkt."))
 
 
 # ── Schritt 2: Paket finden ──────────────────────────────────────────────────────────────────
@@ -321,13 +518,14 @@ def _downloads_kandidaten() -> tuple[Path, list[tuple[tuple[int, int, int], Path
 
 
 def _kein_paket_text(downloads: Path) -> str:
-    return (f"Kein Update-Paket gefunden. Legen Sie die Datei „BMS_<Version>.zip“ in "
-            f"den Download-Ordner ({downloads}).")
+    return _t("Kein Update-Paket gefunden. Legen Sie die Datei „BMS_<Version>.zip“ in "
+              "den Download-Ordner ({downloads}).", downloads=downloads)
 
 
 def _hoechstes_aus_downloads(gueltige: list[tuple[tuple[int, int, int], Path]]) -> Path:
     if len(gueltige) > 1:
-        print(f"Mehrere Pakete gefunden, verwende die höchste Version: {gueltige[-1][1].name}")
+        print(_t("Mehrere Pakete gefunden, verwende die höchste Version: {name}",
+                 name=gueltige[-1][1].name))
     return gueltige[-1][1]
 
 
@@ -337,7 +535,7 @@ def _paket_finden(paket_arg: str | None) -> Path:
     if paket_arg:
         pfad = Path(paket_arg)
         if not pfad.is_file():
-            raise Abbruch(f"Die Paketdatei „{pfad}“ wurde nicht gefunden.")
+            raise Abbruch(_t("Die Paketdatei „{pfad}“ wurde nicht gefunden.", pfad=pfad))
         return pfad
 
     downloads, gueltige = _downloads_kandidaten()
@@ -378,10 +576,10 @@ def _statustext(code: int, *, auskunft: bool) -> str:
     (das Repository hat kein veroeffentlichtes Release), beim Laden ist es eine unbrauchbare
     Antwort."""
     if code in (403, 429):
-        return _TEXT_ANFRAGEGRENZE
+        return _t(_TEXT_ANFRAGEGRENZE)
     if code == 404 and auskunft:
-        return _TEXT_NOCH_KEINE_VERSION
-    return _TEXT_ANTWORT_UNGUELTIG
+        return _t(_TEXT_NOCH_KEINE_VERSION)
+    return _t(_TEXT_ANTWORT_UNGUELTIG)
 
 
 def _netzfehlertext(ursache: object) -> str:
@@ -389,13 +587,13 @@ def _netzfehlertext(ursache: object) -> str:
     if isinstance(ursache, urllib.error.URLError):
         ursache = ursache.reason
     if isinstance(ursache, (TimeoutError, socket.timeout)):
-        return _TEXT_ZEITUEBERSCHREITUNG
+        return _t(_TEXT_ZEITUEBERSCHREITUNG)
     if isinstance(ursache, ssl.SSLError):     # u. a. ssl.SSLCertVerificationError
-        return _TEXT_ZERTIFIKAT
+        return _t(_TEXT_ZERTIFIKAT)
     if isinstance(ursache, (ConnectionError, http.client.HTTPException)) \
             and not isinstance(ursache, ConnectionRefusedError):
-        return _TEXT_UNTERBROCHEN             # die Verbindung stand schon und riss ab
-    return _TEXT_KEINE_VERBINDUNG
+        return _t(_TEXT_UNTERBROCHEN)             # die Verbindung stand schon und riss ab
+    return _t(_TEXT_KEINE_VERBINDUNG)
 
 
 def _antwort_lesen(antwort, anzahl: int) -> bytes:
@@ -450,10 +648,10 @@ def _online_oeffnen(adresse: str, kopfzeilen: dict[str, str], zeitgrenze: float,
                 exc.close()
             if code in _UMLEITUNGS_CODES and umleitungen_max > 0:
                 if umleitungen >= umleitungen_max or not ort:
-                    raise OnlineFehler(_TEXT_ANTWORT_UNGUELTIG) from None
+                    raise OnlineFehler(_t(_TEXT_ANTWORT_UNGUELTIG)) from None
                 ziel = urllib.parse.urljoin(adresse, ort)
                 if not _ziel_erlaubt(ziel):
-                    raise OnlineFehler(_TEXT_ANTWORT_UNGUELTIG) from None
+                    raise OnlineFehler(_t(_TEXT_ANTWORT_UNGUELTIG)) from None
                 adresse = ziel
                 continue
             raise OnlineFehler(_statustext(code, auskunft=auskunft)) from None
@@ -461,9 +659,9 @@ def _online_oeffnen(adresse: str, kopfzeilen: dict[str, str], zeitgrenze: float,
             raise OnlineFehler(_netzfehlertext(exc)) from None
         if antwort.status != 200:
             antwort.close()
-            raise OnlineFehler(_TEXT_ANTWORT_UNGUELTIG)
+            raise OnlineFehler(_t(_TEXT_ANTWORT_UNGUELTIG))
         return antwort
-    raise OnlineFehler(_TEXT_ANTWORT_UNGUELTIG)    # nicht erreichbar, die Schleife endet mit return/raise
+    raise OnlineFehler(_t(_TEXT_ANTWORT_UNGUELTIG))    # nicht erreichbar, die Schleife endet mit return/raise
 
 
 def _download_url(version: str, name: str) -> str:
@@ -479,11 +677,11 @@ def _json_laden(adresse: str, zeitgrenze: float) -> object:
     with _online_oeffnen(adresse, kopf, zeitgrenze, auskunft=True) as antwort:
         roh = _antwort_lesen(antwort, _AUSKUNFT_MAX_BYTES + 1)
     if len(roh) > _AUSKUNFT_MAX_BYTES:
-        raise OnlineFehler(_TEXT_ANTWORT_UNGUELTIG)
+        raise OnlineFehler(_t(_TEXT_ANTWORT_UNGUELTIG))
     try:
         return json.loads(roh.decode("utf-8"))
     except (UnicodeDecodeError, ValueError, RecursionError):
-        raise OnlineFehler(_TEXT_ANTWORT_UNGUELTIG) from None
+        raise OnlineFehler(_t(_TEXT_ANTWORT_UNGUELTIG)) from None
 
 
 def _asset_finden(assets: object, name: str) -> dict | None:
@@ -504,21 +702,21 @@ def _pruefsumme_aus_datei(version: str, asset: dict) -> str:
     name = f"BMS_{version}.zip.sha256"
     url = asset.get("browser_download_url")
     if url != _download_url(version, name):
-        raise OnlineFehler(_TEXT_PRUEFSUMME_FEHLT)
+        raise OnlineFehler(_t(_TEXT_PRUEFSUMME_FEHLT))
     try:
         with _online_oeffnen(url, {"User-Agent": "BMS-Update"}, ZEIT_AUSKUNFT_S, auskunft=False,
                              umleitungen_max=UMLEITUNGEN_MAX) as antwort:
             roh = _antwort_lesen(antwort, _PRUEFSUMMENDATEI_MAX_BYTES + 1)
     except OnlineFehler as exc:
-        if exc.nachricht == _TEXT_ANTWORT_UNGUELTIG:        # 404, fremde Umleitung, 5xx: keine Datei
-            raise OnlineFehler(_TEXT_PRUEFSUMME_FEHLT) from None
+        if exc.nachricht == _t(_TEXT_ANTWORT_UNGUELTIG):        # 404, fremde Umleitung, 5xx: keine Datei
+            raise OnlineFehler(_t(_TEXT_PRUEFSUMME_FEHLT)) from None
         raise
     if len(roh) > _PRUEFSUMMENDATEI_MAX_BYTES:
-        raise OnlineFehler(_TEXT_PRUEFSUMME_FEHLT)
+        raise OnlineFehler(_t(_TEXT_PRUEFSUMME_FEHLT))
     woerter = roh.decode("utf-8", errors="replace").split()
     kandidat = woerter[0].lower() if woerter else ""
     if not _SHA256_RE.fullmatch(kandidat):
-        raise OnlineFehler(_TEXT_PRUEFSUMME_FEHLT)
+        raise OnlineFehler(_t(_TEXT_PRUEFSUMME_FEHLT))
     return kandidat
 
 
@@ -527,35 +725,35 @@ def _auskunft_aus_release(daten: object) -> dict:
     `groesse`, `sha256`, `seite`. Unbekannte Felder bleiben unbeachtet (GitHub ergaenzt welche).
     Wirft OnlineFehler."""
     if not isinstance(daten, dict):
-        raise OnlineFehler(_TEXT_ANTWORT_UNGUELTIG)
+        raise OnlineFehler(_t(_TEXT_ANTWORT_UNGUELTIG))
     tag = daten.get("tag_name")
     if not isinstance(tag, str):
-        raise OnlineFehler(_TEXT_ANTWORT_UNGUELTIG)
+        raise OnlineFehler(_t(_TEXT_ANTWORT_UNGUELTIG))
     version = tag[1:] if tag.startswith("v") else tag
     if not _VERSION_RE.fullmatch(version):
-        raise OnlineFehler(_TEXT_ANTWORT_UNGUELTIG)
+        raise OnlineFehler(_t(_TEXT_ANTWORT_UNGUELTIG))
 
     assets = daten.get("assets")
     paket = _asset_finden(assets, f"BMS_{version}.zip")
     if paket is None:
-        raise OnlineFehler(_TEXT_ANTWORT_UNGUELTIG)
+        raise OnlineFehler(_t(_TEXT_ANTWORT_UNGUELTIG))
     url, groesse = paket.get("browser_download_url"), paket.get("size")
     if url != _download_url(version, f"BMS_{version}.zip"):
-        raise OnlineFehler(_TEXT_ANTWORT_UNGUELTIG)
+        raise OnlineFehler(_t(_TEXT_ANTWORT_UNGUELTIG))
     if not (isinstance(groesse, int) and not isinstance(groesse, bool)
             and 1 <= groesse <= PAKET_MAX_BYTES):
-        raise OnlineFehler(_TEXT_ANTWORT_UNGUELTIG)
+        raise OnlineFehler(_t(_TEXT_ANTWORT_UNGUELTIG))
 
     digest = paket.get("digest")
     if digest is None:
         datei = _asset_finden(assets, f"BMS_{version}.zip.sha256")
         if datei is None:
-            raise OnlineFehler(_TEXT_PRUEFSUMME_FEHLT)
+            raise OnlineFehler(_t(_TEXT_PRUEFSUMME_FEHLT))
         pruefsumme = _pruefsumme_aus_datei(version, datei)
     else:
         treffer = _DIGEST_RE.fullmatch(digest) if isinstance(digest, str) else None
         if treffer is None:
-            raise OnlineFehler(_TEXT_ANTWORT_UNGUELTIG)
+            raise OnlineFehler(_t(_TEXT_ANTWORT_UNGUELTIG))
         pruefsumme = treffer.group(1)
 
     seite = daten.get("html_url")
@@ -579,18 +777,18 @@ def _auskunft_fuer_laden(auskunft: object) -> tuple[str, str, int, str]:
     wie `online_auskunft()`, weil `online_laden()` auch mit einer von aussen gebauten Auskunft
     aufgerufen werden kann. Wirft OnlineFehler."""
     if not isinstance(auskunft, dict):
-        raise OnlineFehler(_TEXT_ANTWORT_UNGUELTIG)
+        raise OnlineFehler(_t(_TEXT_ANTWORT_UNGUELTIG))
     version, url = auskunft.get("version"), auskunft.get("url")
     groesse, pruefsumme = auskunft.get("groesse"), auskunft.get("sha256")
     if not (isinstance(version, str) and _VERSION_RE.fullmatch(version)):
-        raise OnlineFehler(_TEXT_ANTWORT_UNGUELTIG)
+        raise OnlineFehler(_t(_TEXT_ANTWORT_UNGUELTIG))
     if url != _download_url(version, f"BMS_{version}.zip"):
-        raise OnlineFehler(_TEXT_ANTWORT_UNGUELTIG)
+        raise OnlineFehler(_t(_TEXT_ANTWORT_UNGUELTIG))
     if not (isinstance(groesse, int) and not isinstance(groesse, bool)
             and 1 <= groesse <= PAKET_MAX_BYTES):
-        raise OnlineFehler(_TEXT_ANTWORT_UNGUELTIG)
+        raise OnlineFehler(_t(_TEXT_ANTWORT_UNGUELTIG))
     if not (isinstance(pruefsumme, str) and _SHA256_RE.fullmatch(pruefsumme)):
-        raise OnlineFehler(_TEXT_ANTWORT_UNGUELTIG)
+        raise OnlineFehler(_t(_TEXT_ANTWORT_UNGUELTIG))
     return version, url, groesse, pruefsumme
 
 
@@ -612,7 +810,7 @@ def online_laden(auskunft: dict, ziel: Path) -> None:
                              umleitungen_max=UMLEITUNGEN_MAX) as antwort:
             angekuendigt = _laenge_lesen(antwort)
             if angekuendigt is not None and angekuendigt != groesse:
-                raise OnlineFehler(_TEXT_PAKET_BESCHAEDIGT)
+                raise OnlineFehler(_t(_TEXT_PAKET_BESCHAEDIGT))
 
             summe = hashlib.sha256()
             gelesen = 0
@@ -625,17 +823,18 @@ def online_laden(auskunft: dict, ziel: Path) -> None:
                         break
                     gelesen += len(block)
                     if gelesen > groesse:
-                        raise OnlineFehler(_TEXT_PAKET_BESCHAEDIGT)
+                        raise OnlineFehler(_t(_TEXT_PAKET_BESCHAEDIGT))
                     datei.write(block)
                     summe.update(block)
 
         if gelesen != groesse or summe.hexdigest() != pruefsumme:
-            raise OnlineFehler(_TEXT_PAKET_BESCHAEDIGT)
+            raise OnlineFehler(_t(_TEXT_PAKET_BESCHAEDIGT))
         os.replace(teil, ziel)
     except OSError as exc:
         _teil_loeschen(teil)
-        raise OnlineFehler(f"Das Paket lässt sich nicht in „{ziel.parent}“ speichern "
-                           f"({exc.strerror or exc.__class__.__name__}).") from None
+        raise OnlineFehler(_t("Das Paket lässt sich nicht in „{ordner}“ speichern ({grund}).",
+                              ordner=ziel.parent,
+                              grund=exc.strerror or exc.__class__.__name__)) from None
     except BaseException:
         _teil_loeschen(teil)
         raise
@@ -650,9 +849,9 @@ def _laenge_lesen(antwort) -> int | None:
     try:
         laenge = int(roh)
     except ValueError:
-        raise OnlineFehler(_TEXT_PAKET_BESCHAEDIGT) from None
+        raise OnlineFehler(_t(_TEXT_PAKET_BESCHAEDIGT)) from None
     if laenge < 0:
-        raise OnlineFehler(_TEXT_PAKET_BESCHAEDIGT)
+        raise OnlineFehler(_t(_TEXT_PAKET_BESCHAEDIGT))
     return laenge
 
 
@@ -669,14 +868,14 @@ def _online_suchen(offline: bool) -> tuple[dict | None, str | None]:
     wurde) und wird bei einem Abbruch an den Text angehaengt. Hinweis None und Auskunft gesetzt
     heisst: GitHub hat geantwortet. Wirft nie OnlineFehler."""
     if offline:
-        return None, "Online-Suche übersprungen: Sie haben --offline angegeben."
+        return None, _t("Online-Suche übersprungen: Sie haben --offline angegeben.")
 
-    print("Suche auf GitHub nach einer neuen Version. GitHub erhält dabei die IP-Adresse dieses "
-          "Rechners.", flush=True)
+    print(_t("Suche auf GitHub nach einer neuen Version. GitHub erhält dabei die IP-Adresse dieses "
+             "Rechners."), flush=True)
     try:
         auskunft = online_auskunft()
     except OnlineFehler as exc:
-        text = f"Online-Suche nicht möglich: {exc.nachricht}"
+        text = _t("Online-Suche nicht möglich: {grund}", grund=exc.nachricht)
         print(text)
         return None, text
     return auskunft, None
@@ -696,7 +895,8 @@ def _datei_passt(pfad: Path, groesse: int, sha256: str) -> bool:
 
 
 def _groesse_mb(groesse: int) -> str:
-    return f"{max(groesse / 1_000_000, 0.1):.1f}".replace(".", ",")
+    zahl = f"{max(groesse / 1_000_000, 0.1):.1f}"
+    return zahl.replace(".", ",") if _terminal_sprache() == "de" else zahl
 
 
 def _paket_laden(auskunft: dict, data_dir: Path) -> Path:
@@ -719,15 +919,17 @@ def _paket_laden(auskunft: dict, data_dir: Path) -> Path:
         if ziel.is_file() and not vorhanden:
             ziel.unlink()
     except OSError as exc:
-        raise OnlineFehler(f"Das Paket lässt sich nicht in „{ordner}“ speichern "
-                           f"({exc.strerror or exc.__class__.__name__}).") from None
+        raise OnlineFehler(_t("Das Paket lässt sich nicht in „{ordner}“ speichern ({grund}).",
+                              ordner=ordner,
+                              grund=exc.strerror or exc.__class__.__name__)) from None
 
     if vorhanden:
-        print(f"Version {version} gefunden, das Paket liegt bereits geladen vor.")
+        print(_t("Version {version} gefunden, das Paket liegt bereits geladen vor.", version=version))
     else:
-        print(f"Version {version} gefunden, lade {_groesse_mb(groesse)} MB …", flush=True)
+        print(_t("Version {version} gefunden, lade {groesse} MB …", version=version,
+                 groesse=_groesse_mb(groesse)), flush=True)
         online_laden(auskunft, ziel)
-    print("Paket geladen und geprüft.")
+    print(_t("Paket geladen und geprüft."))
     return ziel
 
 
@@ -759,17 +961,18 @@ def _paket_beschaffen(args: argparse.Namespace, data_dir: Path,
                 # Wie bei der Auskunft: kein Abbruch, weiter mit dem Download-Ordner. Bei einem
                 # beschaedigten Paket ist der Satz allein die Meldung (Vertrag U).
                 hinweis = exc.nachricht
-                if hinweis != _TEXT_PAKET_BESCHAEDIGT:
-                    hinweis = f"Laden nicht möglich: {hinweis}"
+                if hinweis != _t(_TEXT_PAKET_BESCHAEDIGT):
+                    hinweis = _t("Laden nicht möglich: {grund}", grund=hinweis)
                 print(hinweis)
 
     if bester is not None:
         return _hoechstes_aus_downloads(kandidaten)
 
     if auskunft is not None and hinweis is None:
-        raise Abbruch(f"Ihr BMS ist auf dem neuesten Stand (Version {installierte_version or 'unbekannt'}).",
+        raise Abbruch(_t("Ihr BMS ist auf dem neuesten Stand (Version {version}).",
+                         version=installierte_version or _t("unbekannt")),
                       exit_code=EXIT_OK)
-    raise Abbruch(_kein_paket_text(downloads) + (f" {hinweis}" if hinweis else ""))
+    raise Abbruch(_kein_paket_text(downloads) + (" " + hinweis if hinweis else ""))
 
 
 # ── Schritt 3: Selbstaktualisierung ─────────────────────────────────────────────────────────
@@ -799,7 +1002,11 @@ def _selbstaktualisierung_pruefen(paket_pfad: Path, delegiert: bool,
         # geprueft." stuende sonst HINTER dem Plan der Fassung im Paket (Befund der Verbundprobe).
         sys.stdout.flush()
         sys.stderr.flush()
-        ergebnis = subprocess.run([sys.executable, str(temp_skript), *argv_wirksam, "--delegiert"])
+        # Die Sprache geht an die Fassung im Paket mit (P2-95), auch wenn sie sie selbst anders erkennte.
+        umgebung = dict(os.environ)
+        umgebung["BMS_TERMINAL_SPRACHE"] = _terminal_sprache()
+        ergebnis = subprocess.run([sys.executable, str(temp_skript), *argv_wirksam, "--delegiert"],
+                                  env=umgebung)
     return ergebnis.returncode
 
 
@@ -808,23 +1015,26 @@ def _paket_lesen_und_pruefen(paket_pfad: Path) -> dict:
     try:
         zf = zipfile.ZipFile(paket_pfad)
     except (zipfile.BadZipFile, FileNotFoundError, OSError) as exc:
-        raise Abbruch(f"Die Paketdatei „{paket_pfad}“ lässt sich nicht lesen: {exc}") from exc
+        raise Abbruch(_t("Die Paketdatei „{pfad}“ lässt sich nicht lesen: {fehler}",
+                         pfad=paket_pfad, fehler=exc)) from exc
 
     with zf:
         kaputt = zf.testzip()
         if kaputt is not None:
-            raise Abbruch(f"Die Paketdatei ist beschädigt (fehlerhafter Eintrag: {kaputt}).")
+            raise Abbruch(_t("Die Paketdatei ist beschädigt (fehlerhafter Eintrag: {eintrag}).",
+                             eintrag=kaputt))
 
         try:
             manifest = json.loads(zf.read(MANIFEST_NAME))
         except KeyError as exc:
-            raise Abbruch("Die Paketdatei enthält kein bms_manifest.json.") from exc
+            raise Abbruch(_t("Die Paketdatei enthält kein bms_manifest.json.")) from exc
         except json.JSONDecodeError as exc:
-            raise Abbruch(f"bms_manifest.json im Paket ist beschädigt: {exc}") from exc
+            raise Abbruch(_t("bms_manifest.json im Paket ist beschädigt: {fehler}", fehler=exc)) from exc
 
         if manifest.get("format") != 1:
-            raise Abbruch(f"Dieses Paket hat ein unbekanntes Format ({manifest.get('format')!r}). "
-                           "Bitte eine neuere Fassung des Update-Werkzeugs verwenden.")
+            raise Abbruch(_t("Dieses Paket hat ein unbekanntes Format ({format!r}). "
+                             "Bitte eine neuere Fassung des Update-Werkzeugs verwenden.",
+                             format=manifest.get("format")))
 
         dateien = manifest.get("dateien", {})
         namen = {n for n in zf.namelist() if not n.endswith("/")}
@@ -835,26 +1045,28 @@ def _paket_lesen_und_pruefen(paket_pfad: Path) -> dict:
         # Pfad "a\\b.txt" fiele sonst nur als "fehlender Eintrag" auf (CI-Fund 28.09.2026).
         for pfad in sorted(set(dateien) | namen):
             if _pfad_unsicher(pfad):
-                raise Abbruch(f"Die Paketdatei enthält einen unsicheren Pfad: {pfad}")
+                raise Abbruch(_t("Die Paketdatei enthält einen unsicheren Pfad: {pfad}", pfad=pfad))
             if _pfad_geschuetzt(pfad) and pfad != MANIFEST_NAME:
-                raise Abbruch(f"Die Paketdatei enthält einen geschützten Pfad: {pfad}")
+                raise Abbruch(_t("Die Paketdatei enthält einen geschützten Pfad: {pfad}", pfad=pfad))
         if MANIFEST_NAME in dateien:
-            raise Abbruch(f"Die Paketdatei enthält einen geschützten Pfad: {MANIFEST_NAME}")
+            raise Abbruch(_t("Die Paketdatei enthält einen geschützten Pfad: {pfad}", pfad=MANIFEST_NAME))
 
         fehlend = erwartete_namen - namen
         if fehlend:
-            raise Abbruch("Der Paketdatei fehlen Einträge: " + ", ".join(sorted(fehlend)))
+            raise Abbruch(_t("Der Paketdatei fehlen Einträge: {liste}", liste=", ".join(sorted(fehlend))))
         unerwartet = namen - erwartete_namen
         if unerwartet:
-            raise Abbruch("Die Paketdatei enthält unerwartete Einträge: " + ", ".join(sorted(unerwartet)))
+            raise Abbruch(_t("Die Paketdatei enthält unerwartete Einträge: {liste}",
+                             liste=", ".join(sorted(unerwartet))))
 
         for pfad, info in dateien.items():
             inhalt = zf.read(pfad)
             if len(inhalt) != info.get("groesse"):
-                raise Abbruch(f"„{pfad}“ hat im Paket eine andere Größe als im Manifest angegeben.")
+                raise Abbruch(_t("„{pfad}“ hat im Paket eine andere Größe als im Manifest angegeben.",
+                                 pfad=pfad))
             if _sha256(inhalt) != info.get("sha256"):
-                raise Abbruch(f"„{pfad}“ stimmt nicht mit der Prüfsumme im Manifest überein "
-                               "(Paket möglicherweise beschädigt oder unvollständig).")
+                raise Abbruch(_t("„{pfad}“ stimmt nicht mit der Prüfsumme im Manifest überein "
+                                 "(Paket möglicherweise beschädigt oder unvollständig).", pfad=pfad))
 
     return manifest
 
@@ -881,15 +1093,15 @@ def _installierte_version(installation: Path) -> tuple[dict | None, str | None]:
 def _paket_gegen_installation_pruefen(manifest: dict, installierte_version: str | None,
                                        erzwingen: bool) -> None:
     if manifest.get("vorschau") and not erzwingen:
-        raise Abbruch("Dieses Paket ist eine Vorschau (kein freigegebener Stand) und wird ohne "
-                       "--erzwingen nicht eingespielt.")
+        raise Abbruch(_t("Dieses Paket ist eine Vorschau (kein freigegebener Stand) und wird ohne "
+                         "--erzwingen nicht eingespielt."))
 
     neu_tupel = _version_tupel(str(manifest.get("version", "")))
     alt_tupel = _version_tupel(installierte_version) if installierte_version else None
     if neu_tupel is not None and alt_tupel is not None and neu_tupel <= alt_tupel and not erzwingen:
-        raise Abbruch(f"Die Paketversion ({manifest.get('version')}) ist nicht neuer als die "
-                       f"installierte Version ({installierte_version}). Mit --erzwingen dennoch "
-                       "einspielen.")
+        raise Abbruch(_t("Die Paketversion ({neu}) ist nicht neuer als die "
+                         "installierte Version ({alt}). Mit --erzwingen dennoch "
+                         "einspielen.", neu=manifest.get("version"), alt=installierte_version))
 
 
 # ── Schritt 6: Plan erstellen ────────────────────────────────────────────────────────────────
@@ -965,7 +1177,8 @@ def _datei_entscheiden(installation: Path, pfad: str, alt_info: dict | None, neu
                                 inhalt=neuer_inhalt(), ausfuehrbar=ausfuehrbar_neu)
         return DateiAktion(
             pfad, "nichts", anpassbar,
-            hinweis=f"„{pfad}“ wurde von Ihnen entfernt und bleibt entfernt (angepasste Datei).")
+            hinweis=_t("„{pfad}“ wurde von Ihnen entfernt und bleibt entfernt (angepasste Datei).",
+                       pfad=pfad))
     if not anpassbar:
         return DateiAktion(pfad, "schreiben", anpassbar, bucket="geaendert", melde_lokal_geaendert=True,
                             inhalt=neuer_inhalt(), ausfuehrbar=ausfuehrbar_neu)
@@ -999,8 +1212,8 @@ def _plan_erstellen(installation: Path, altes_manifest: dict | None, neues_manif
     verworfene_alte_pfade = sorted(p for p in alte_dateien if _pfad_unsicher(p) or _pfad_geschuetzt(p))
     for pfad in verworfene_alte_pfade:
         del alte_dateien[pfad]
-    hinweise = [f"„{p}“ stand im installierten Manifest, ist aber ein unsicherer oder "
-                "geschützter Pfad und wurde übersprungen." for p in verworfene_alte_pfade]
+    hinweise = [_t("„{pfad}“ stand im installierten Manifest, ist aber ein unsicherer oder "
+                   "geschützter Pfad und wurde übersprungen.", pfad=p) for p in verworfene_alte_pfade]
 
     alle_pfade = sorted(set(alte_dateien) | set(neue_dateien))
     aktionen: list[DateiAktion] = []
@@ -1041,24 +1254,27 @@ def _plan_text(plan: Plan) -> str:
     angepasst = [a for a in plan.aktionen if a.bucket == "anpassbar_behalten"]
 
     zeilen = [
-        f"Installierte Version: {plan.installierte_version or 'unbekannt'}",
-        f"Neue Version: {plan.neue_version}",
-        f"Dateien: {len(neu)} neu, {len(geaendert)} geändert, {len(entfernt)} entfernt.",
+        _t("Installierte Version: {version}", version=plan.installierte_version or _t("unbekannt")),
+        _t("Neue Version: {version}", version=plan.neue_version),
+        _t("Dateien: {neu} neu, {geaendert} geändert, {entfernt} entfernt.",
+           neu=len(neu), geaendert=len(geaendert), entfernt=len(entfernt)),
     ]
     if lokal_geaendert:
-        zeilen.append("Von Ihnen geänderte Programmdateien werden gesichert und ersetzt: "
-                       + ", ".join(a.pfad for a in lokal_geaendert))
+        zeilen.append(_t("Von Ihnen geänderte Programmdateien werden gesichert und ersetzt: {dateien}",
+                         dateien=", ".join(a.pfad for a in lokal_geaendert)))
     if angepasst:
-        zeilen.append("Angepasste Dateien bleiben erhalten: " + ", ".join(a.pfad for a in angepasst))
+        zeilen.append(_t("Angepasste Dateien bleiben erhalten: {dateien}",
+                         dateien=", ".join(a.pfad for a in angepasst)))
 
     abhaengigkeiten = []
     if plan.pip_noetig:
-        abhaengigkeiten.append("Python-Pakete")
+        abhaengigkeiten.append(_t("Python-Pakete"))
     if plan.npm_ci_noetig:
-        abhaengigkeiten.append("Oberflächen-Bausteine (npm ci)")
+        abhaengigkeiten.append(_t("Oberflächen-Bausteine (npm ci)"))
     if plan.build_noetig:
-        abhaengigkeiten.append("Oberfläche neu bauen")
-    zeilen.append("Abhängigkeiten: " + (", ".join(abhaengigkeiten) if abhaengigkeiten else "keine"))
+        abhaengigkeiten.append(_t("Oberfläche neu bauen"))
+    zeilen.append(_t("Abhängigkeiten: {liste}",
+                     liste=", ".join(abhaengigkeiten) if abhaengigkeiten else _t("keine")))
     zeilen.extend(plan.hinweise)
     return "\n".join(zeilen)
 
@@ -1081,9 +1297,9 @@ def _sperren(data_dir: Path) -> Path:
     try:
         os.close(os.open(str(lock), os.O_CREAT | os.O_EXCL | os.O_WRONLY))
     except FileExistsError as exc:
-        raise Abbruch(f"Es läuft bereits ein Update, oder ein vorheriges wurde nicht sauber "
-                       f"beendet. Wenn Sie sicher sind, dass kein Update läuft, löschen Sie "
-                       f"„{lock}“ und versuchen Sie es erneut.") from exc
+        raise Abbruch(_t("Es läuft bereits ein Update, oder ein vorheriges wurde nicht sauber "
+                         "beendet. Wenn Sie sicher sind, dass kein Update läuft, löschen Sie "
+                         "„{lock}“ und versuchen Sie es erneut.", lock=lock)) from exc
     return lock
 
 
@@ -1231,20 +1447,20 @@ def _abhaengigkeiten_installieren(installation: Path, plan: Plan) -> None:
         _subprocess_pruefen(
             [sys.executable, "-m", "pip", "install", "--disable-pip-version-check",
              "-r", "backend/requirements-lock.txt"],
-            cwd=installation, fehlermeldung="Installation der Python-Pakete fehlgeschlagen.")
+            cwd=installation, fehlermeldung=_t("Installation der Python-Pakete fehlgeschlagen."))
 
     npm = _npm_pfad()
     if plan.npm_ci_noetig:
         if npm is None:
-            raise Fehlgeschlagen("npm wurde nicht gefunden.")
+            raise Fehlgeschlagen(_t("npm wurde nicht gefunden."))
         _subprocess_pruefen([npm, "ci"], cwd=installation / "frontend",
-                             fehlermeldung="Installation der Oberflächen-Bausteine fehlgeschlagen.")
+                             fehlermeldung=_t("Installation der Oberflächen-Bausteine fehlgeschlagen."))
 
     if plan.build_noetig:
         if npm is None:
-            raise Fehlgeschlagen("npm wurde nicht gefunden.")
+            raise Fehlgeschlagen(_t("npm wurde nicht gefunden."))
         _subprocess_pruefen([npm, "run", "build", "--", "--outDir", "dist_neu", "--emptyOutDir"],
-                             cwd=installation / "frontend", fehlermeldung="Bauen der Oberfläche fehlgeschlagen.")
+                             cwd=installation / "frontend", fehlermeldung=_t("Bauen der Oberfläche fehlgeschlagen."))
         dist = installation / "frontend" / "dist"
         dist_neu = installation / "frontend" / "dist_neu"
         if dist.is_dir():
@@ -1256,8 +1472,8 @@ def _abhaengigkeiten_installieren(installation: Path, plan: Plan) -> None:
 def _selbsttest_ausfuehren(installation: Path, data_dir: Path) -> None:
     modul_pfad = installation / "backend" / "app" / "selbsttest.py"
     if not modul_pfad.is_file():
-        print("Hinweis: Selbsttest übersprungen (backend/app/selbsttest.py ist in diesem Paket "
-              "nicht enthalten).")
+        print(_t("Hinweis: Selbsttest übersprungen (backend/app/selbsttest.py ist in diesem Paket "
+                 "nicht enthalten)."))
         return
 
     db_quelle = data_dir / "bewerbung.sqlite"
@@ -1274,16 +1490,18 @@ def _selbsttest_ausfuehren(installation: Path, data_dir: Path) -> None:
         umgebung["BMS_DATA_DIR"] = str(tmp_data)
         umgebung["BMS_LOG_DIR"] = str(tmp_log)
         umgebung["BMS_SECRETS_DIR"] = str(tmp_secrets)
+        umgebung["BMS_TERMINAL_SPRACHE"] = _terminal_sprache()
 
         try:
             ergebnis = subprocess.run([sys.executable, "-m", "app.selbsttest"],
                                        cwd=str(installation / "backend"), env=umgebung,
                                        capture_output=True, text=True, timeout=180)
         except subprocess.TimeoutExpired as exc:
-            raise Fehlgeschlagen("Selbsttest hat das Zeitlimit überschritten.") from exc
+            raise Fehlgeschlagen(_t("Selbsttest hat das Zeitlimit überschritten.")) from exc
 
     if ergebnis.returncode != 0:
-        raise Fehlgeschlagen("Selbsttest fehlgeschlagen:\n" + (ergebnis.stdout + ergebnis.stderr).strip())
+        raise Fehlgeschlagen(_t("Selbsttest fehlgeschlagen:\n{ausgabe}",
+                                ausgabe=(ergebnis.stdout + ergebnis.stderr).strip()))
 
 
 # ── Zurueckrollen (Fehler ab Schritt 10) ────────────────────────────────────────────────────
@@ -1364,7 +1582,7 @@ def _update_ausfuehren(args: argparse.Namespace, argv_wirksam: list[str]) -> int
     _paket_gegen_installation_pruefen(neues_manifest, installierte_version, args.erzwingen)
 
     if _server_laeuft():
-        raise Abbruch("Das BMS läuft noch. Beenden Sie es zuerst mit stop.command bzw. stop_windows.bat.")
+        raise Abbruch(_t("Das BMS läuft noch. Beenden Sie es zuerst mit stop.command bzw. stop_windows.bat."))
 
     plan = _plan_erstellen(installation, altes_manifest, neues_manifest, paket_pfad, installierte_version)
     print(_plan_text(plan))
@@ -1372,17 +1590,17 @@ def _update_ausfuehren(args: argparse.Namespace, argv_wirksam: list[str]) -> int
     # --ohne-abhaengigkeiten ueberspringt Schritt 11 komplett (s. unten) -- dann waere ein
     # Abbruch wegen fehlendem npm nur fuer eine Installation da, die gar nicht versucht wird.
     if plan.npm_fehlt and not args.ohne_abhaengigkeiten:
-        raise Abbruch("Für dieses Update muss die Oberfläche neu gebaut werden, npm wurde aber "
-                       "nicht gefunden. Bitte Node.js installieren und erneut versuchen.")
+        raise Abbruch(_t("Für dieses Update muss die Oberfläche neu gebaut werden, npm wurde aber "
+                         "nicht gefunden. Bitte Node.js installieren und erneut versuchen."))
 
     if args.pruefen:
         return EXIT_OK
 
     if not args.ja:
-        frage = (f"Update von {installierte_version or 'unbekannt'} auf {plan.neue_version} "
-                 "jetzt einspielen? [j/N] ")
+        frage = _t("Update von {alt} auf {neu} jetzt einspielen? [j/N] ",
+                   alt=installierte_version or _t("unbekannt"), neu=plan.neue_version)
         if not _rueckfrage(frage):
-            raise Abbruch("Abgebrochen. Es wurde nichts verändert.")
+            raise Abbruch(_t("Abgebrochen. Es wurde nichts verändert."))
 
     lock_pfad = _sperren(data_dir)
     try:
@@ -1390,7 +1608,8 @@ def _update_ausfuehren(args: argparse.Namespace, argv_wirksam: list[str]) -> int
         try:
             _sicherung_erstellen(installation, data_dir, sicherung_dir, altes_manifest, plan)
         except Exception as exc:
-            raise Abbruch(f"Sicherung fehlgeschlagen, es wurde nichts verändert: {exc}") from exc
+            raise Abbruch(_t("Sicherung fehlgeschlagen, es wurde nichts verändert: {fehler}",
+                             fehler=exc)) from exc
 
         # Vom AUFRUFER angelegt, NICHT von _dateien_schreiben() zurueckgegeben: bricht die
         # Funktion mitten in der Schleife ab (Exception statt return), bleibt diese Liste hier
@@ -1412,15 +1631,17 @@ def _update_ausfuehren(args: argparse.Namespace, argv_wirksam: list[str]) -> int
                                 ergebnis="zurueckgerollt", aktionen=plan.aktionen,
                                 zusatz_hinweise=plan.hinweise)
             raise Abbruch(
-                f"Update fehlgeschlagen, alle Änderungen wurden zurückgerollt: {exc}\n"
-                f"Sicherung liegt unter: {sicherung_dir}\n"
-                "Hinweis: Python- oder Oberflächen-Bausteine können bereits auf dem neuen Stand sein.",
+                _t("Update fehlgeschlagen, alle Änderungen wurden zurückgerollt: {fehler}\n"
+                   "Sicherung liegt unter: {ordner}\n"
+                   "Hinweis: Python- oder Oberflächen-Bausteine können bereits auf dem neuen Stand sein.",
+                   fehler=exc, ordner=sicherung_dir),
                 exit_code=EXIT_ZURUECKGEROLLT,
             ) from exc
 
         _bericht_schreiben(sicherung_dir, von=installierte_version, nach=plan.neue_version,
                             ergebnis="ok", aktionen=plan.aktionen, zusatz_hinweise=plan.hinweise)
-        print(f"Update auf Version {plan.neue_version} abgeschlossen. Starten Sie das BMS wie gewohnt.")
+        print(_t("Update auf Version {version} abgeschlossen. Starten Sie das BMS wie gewohnt.",
+                 version=plan.neue_version))
         return EXIT_OK
     finally:
         _entsperren(lock_pfad)
@@ -1456,10 +1677,10 @@ def _zurueck_ausfuehren(args: argparse.Namespace) -> int:
 
     sicherung_dir, bericht = _letztes_erfolgreiches_update_finden(data_dir)
     if sicherung_dir is None or bericht is None:
-        raise Abbruch("Es gibt kein Update, das rückgängig gemacht werden kann.")
+        raise Abbruch(_t("Es gibt kein Update, das rückgängig gemacht werden kann."))
 
     if _server_laeuft():
-        raise Abbruch("Das BMS läuft noch. Beenden Sie es zuerst mit stop.command bzw. stop_windows.bat.")
+        raise Abbruch(_t("Das BMS läuft noch. Beenden Sie es zuerst mit stop.command bzw. stop_windows.bat."))
 
     lock_pfad = _sperren(data_dir)
     try:
@@ -1493,15 +1714,15 @@ def _zurueck_ausfuehren(args: argparse.Namespace) -> int:
             _subprocess_pruefen(
                 [sys.executable, "-m", "pip", "install", "--disable-pip-version-check",
                  "-r", "backend/requirements-lock.txt"],
-                cwd=installation, fehlermeldung="Installation der Python-Pakete fehlgeschlagen.")
+                cwd=installation, fehlermeldung=_t("Installation der Python-Pakete fehlgeschlagen."))
 
         db_zurueckgesetzt = False
         # "--ja" beantwortet diese Frage BEWUSST NICHT: es bestaetigt nur "Update/Ruecknahme
         # jetzt ausfuehren", nicht "Datenbank-Aenderungen seit dem Update wegwerfen" -- zwei
         # verschiedene Risikostufen (Nachbesserung Abnahme P2-51). Nur der eigene Schalter
         # --mit-datenbank darf diese eine Frage nicht-interaktiv bejahen.
-        frage = ("Datenbank auf den Stand vor dem Update zurücksetzen? Alle Änderungen seit dem "
-                 "Update gehen verloren. [j/N] ")
+        frage = _t("Datenbank auf den Stand vor dem Update zurücksetzen? Alle Änderungen seit dem "
+                   "Update gehen verloren. [j/N] ")
         if args.mit_datenbank or _rueckfrage(frage):
             db_sicherung = sicherung_dir / "datenbank.sqlite"
             if db_sicherung.is_file():
@@ -1516,9 +1737,10 @@ def _zurueck_ausfuehren(args: argparse.Namespace) -> int:
         (sicherung_dir / "bericht.json").write_text(
             json.dumps(bericht, ensure_ascii=False, indent=1, sort_keys=True) + "\n", encoding="utf-8")
 
-        print(f"Update zurückgenommen. Installierte Version jetzt: {bericht.get('von') or 'unbekannt'}.")
+        print(_t("Update zurückgenommen. Installierte Version jetzt: {version}.",
+                 version=bericht.get("von") or _t("unbekannt")))
         if db_zurueckgesetzt:
-            print("Die Datenbank wurde auf den Stand vor dem Update zurückgesetzt.")
+            print(_t("Die Datenbank wurde auf den Stand vor dem Update zurückgesetzt."))
         return EXIT_OK
     finally:
         _entsperren(lock_pfad)
@@ -1527,32 +1749,32 @@ def _zurueck_ausfuehren(args: argparse.Namespace) -> int:
 # ── Argumente & Einstieg ─────────────────────────────────────────────────────────────────────
 def _parser() -> _Parser:
     p = _Parser(prog="bms_update.py",
-                description="Spielt eine neue BMS-Version ein, ohne Daten oder Anpassungen zu verlieren.")
+                description=_t("Spielt eine neue BMS-Version ein, ohne Daten oder Anpassungen zu verlieren."))
     p.add_argument("paket", nargs="?", default=None,
-                    help="Pfad zu einem BMS_*.zip-Paket (sonst gewinnt die höchste Version aus dem "
-                         "neuesten GitHub-Release und dem Download-Ordner; mit einem Pfad "
-                         "findet kein Netzkontakt statt).")
-    p.add_argument("--installation", required=True, help="Programmordner der Installation.")
+                    help=_t("Pfad zu einem BMS_*.zip-Paket (sonst gewinnt die höchste Version aus dem "
+                            "neuesten GitHub-Release und dem Download-Ordner; mit einem Pfad "
+                            "findet kein Netzkontakt statt)."))
+    p.add_argument("--installation", required=True, help=_t("Programmordner der Installation."))
     p.add_argument("--pruefen", action="store_true",
-                    help="Nur prüfen und den Ablaufplan zeigen, nichts ändern.")
+                    help=_t("Nur prüfen und den Ablaufplan zeigen, nichts ändern."))
     p.add_argument("--ja", action="store_true",
-                    help="Rückfrage vor dem Einspielen automatisch bestätigen.")
+                    help=_t("Rückfrage vor dem Einspielen automatisch bestätigen."))
     p.add_argument("--erzwingen", action="store_true",
-                    help="Vorschau-Pakete und gleiche/ältere Versionen dennoch einspielen.")
+                    help=_t("Vorschau-Pakete und gleiche/ältere Versionen dennoch einspielen."))
     p.add_argument("--offline", action="store_true",
-                    help="Nicht online nach einer neuen Version suchen.")
+                    help=_t("Nicht online nach einer neuen Version suchen."))
     p.add_argument("--zurueck", action="store_true",
-                    help="Letztes Update rückgängig machen, statt ein neues einzuspielen.")
+                    help=_t("Letztes Update rückgängig machen, statt ein neues einzuspielen."))
     p.add_argument("--mit-datenbank", action="store_true",
-                    help="Bei --zurueck die Datenbank ohne Rückfrage mit zurücksetzen (nur für "
-                         "Tests und Notfälle; --ja allein beantwortet diese Frage NICHT).")
+                    help=_t("Bei --zurueck die Datenbank ohne Rückfrage mit zurücksetzen (nur für "
+                            "Tests und Notfälle; --ja allein beantwortet diese Frage NICHT)."))
     p.add_argument("--ohne-abhaengigkeiten", action="store_true",
-                    help="Python- und npm-Abhängigkeiten nicht installieren (nur für Tests und Notfälle).")
+                    help=_t("Python- und npm-Abhängigkeiten nicht installieren (nur für Tests und Notfälle)."))
     p.add_argument("--ohne-selbsttest", action="store_true",
-                    help="Selbsttest nach dem Einspielen überspringen (nur für Tests und Notfälle).")
+                    help=_t("Selbsttest nach dem Einspielen überspringen (nur für Tests und Notfälle)."))
     p.add_argument("--delegiert", action="store_true",
-                    help="Intern: markiert, dass bereits an die im Paket enthaltene Werkzeug-Fassung "
-                         "übergeben wurde, keine erneute Selbstaktualisierung.")
+                    help=_t("Intern: markiert, dass bereits an die im Paket enthaltene Werkzeug-Fassung "
+                            "übergeben wurde, keine erneute Selbstaktualisierung."))
     return p
 
 
@@ -1563,7 +1785,7 @@ def main(argv: list[str] | None = None) -> int:
     try:
         args = parser.parse_args(argv_wirksam)
     except _ArgparseFehler as exc:
-        print(f"Fehler: {exc}")
+        print(_t("Fehler: {fehler}", fehler=exc))
         return EXIT_AUFRUF_FALSCH
 
     try:
@@ -1577,7 +1799,7 @@ def main(argv: list[str] | None = None) -> int:
         # Nur auf dem --zurueck-Pfad erreichbar (der normale Update-Pfad faengt Fehlgeschlagen
         # bereits selbst ab und rollt zurueck, s. _update_ausfuehren) -- Dateien sind dort schon
         # wiederhergestellt, ein weiteres Zurueckrollen gibt es nicht.
-        print(f"Fehlgeschlagen: {exc.nachricht}")
+        print(_t("Fehlgeschlagen: {fehler}", fehler=exc.nachricht))
         return EXIT_ABGEBROCHEN
 
 

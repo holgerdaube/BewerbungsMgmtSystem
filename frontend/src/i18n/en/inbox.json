@@ -1,0 +1,57 @@
+{
+  "titel": "Inbox",
+  "kopf_one": "{{count}} application-related email · Ø response time {{antwortzeit}} · {{offen}} to reply to · click a row for the full text & reply",
+  "kopf_other": "{{count}} application-related emails · Ø response time {{antwortzeit}} · {{offen}} to reply to · click a row for the full text & reply",
+  "lade": "Loading…",
+  "stunden": "{{wert}} h",
+  "ohne_stelle": "⚠ No job",
+  "filter_aktiv": "Filter active — click to clear",
+  "filter_hinweis": "Emails not linked to a job — click to filter",
+  "alle_kategorien": "All categories",
+  "nur_zu_beantworten": "only “needs reply”",
+  "nur_ohne_stelle": "only without a job",
+  "spalte": {
+    "kategorie": "Category",
+    "betreff": "Subject",
+    "firma_stelle": "Company / job",
+    "von": "From",
+    "empfangen": "Received",
+    "antwortzeit": "Response time"
+  },
+  "keine_mails": "No emails. The Gmail check (email-check) fills this view.",
+  "badge_reply": "Reply",
+  "badge_entwurf": "Draft",
+  "entwurf_seit": "Draft since {{datum}}",
+  "archivieren": "Archive",
+  "fehler": {
+    "archivieren": "Could not archive",
+    "zurueckholen": "Could not restore"
+  },
+  "archiv": {
+    "titel": "🗄 Archive ({{anzahl}})",
+    "hinweis": "Hidden emails without a job. They stay unchanged in Gmail.",
+    "kein_betreff": "(no subject)",
+    "archiviert": "archived {{datum}}",
+    "zurueckholen": "↩ Restore",
+    "wird_zurueckgeholt": "Restoring…"
+  },
+  "detail": {
+    "volltext_fehler": "Could not load the full text",
+    "kein_volltext": "No full text available",
+    "zuordnung_loesen": "🔓 Unassign",
+    "wird_archiviert": "Archiving…",
+    "archivieren": "🗄 Archive",
+    "nur_app": "App only. Gmail stays unchanged.",
+    "status_setzen": "Set status to “{{status}}”",
+    "nicht_jetzt": "not now",
+    "entwurf_warnung": "⚠ A draft has been in Gmail since {{datum}} — check before creating another (duplicate draft).",
+    "antwort_entwerfen": "↩ Draft reply"
+  },
+  "zuordnen": {
+    "knopf": "📎 Assign to job",
+    "suche": "Search company or title…",
+    "anlegen": "+ Add job",
+    "abbrechen": "Cancel",
+    "notiz": "From email “{{betreff}}”"
+  }
+}

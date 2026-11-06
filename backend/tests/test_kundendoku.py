@@ -46,7 +46,9 @@ def _kundentexte() -> list[str]:
     Änderungsprotokoll für „Version“)."""
     from pipeline import kundenpaket as kp
     return (sorted(f"docs/{name}.md" for name in kp.DOKU_ERLAUBT)
-            + ["BMS_Install_MAC.md", "BMS_Install_Windows.md", "CHANGELOG.md"])
+            + [f"docs/en/{name}.md" for name in sorted(kp.DOKU_ERLAUBT)]
+            + ["BMS_Install_MAC.md", "BMS_Install_Windows.md", "CHANGELOG.md",
+               "BMS_Install_MAC.en.md", "BMS_Install_Windows.en.md", "CHANGELOG.en.md"])
 
 
 def _interne_muster() -> list[re.Pattern]:

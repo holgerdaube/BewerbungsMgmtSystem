@@ -28,6 +28,8 @@ import pytest
 
 _TMP_DATA_DIR = tempfile.mkdtemp(prefix="bms_pytest_data_")
 os.environ["BMS_DATA_DIR"] = _TMP_DATA_DIR
+# P2-95: Die Tests prüfen die deutschen Terminal-Meldungen, unabhängig von der Sprache des Rechners oder CI-Runners.
+os.environ["BMS_TERMINAL_SPRACHE"] = "de"
 atexit.register(shutil.rmtree, _TMP_DATA_DIR, True)
 
 # Phase 63B (P1-3): agent_runner.LOG_DIR liegt seit dieser Phase außerhalb von data/ (eigener
@@ -101,6 +103,15 @@ def _suchprofile_nie_echt(monkeypatch, tmp_path_factory):
     ziel = tmp_path_factory.mktemp("suchprofil") / "suchprofile_test.yaml"     # eigener Ordner: Tests zählen teils tmp_path
     ziel.write_text(suchprofil.MARKER + "\n", encoding="utf-8")
     monkeypatch.setattr(suchprofil, "SUCHPROFILE_PATH", ziel)
+
+
+@pytest.fixture(autouse=True)
+def _profil_struktur_nie_echt(monkeypatch, tmp_path_factory):
+    """Jeder schreibende Profil-Endpunkt schreibt `config/profil_struktur.md` neu, und dieser Pfad hängt NICHT an
+    `BMS_DATA_DIR`: Ohne Umleitung ersetzt ein Test die echte Datei durch die Daten der Test-DB, und die Läufe lesen
+    danach Testdaten als Profil. Tests, die den Pfad selbst setzen, überschreiben diese Umleitung."""
+    from app import main
+    monkeypatch.setattr(main, "_PROFIL_STRUKTUR_PATH", tmp_path_factory.mktemp("profil_struktur") / "profil_struktur.md")
 
 
 @pytest.fixture(scope="session", autouse=True)

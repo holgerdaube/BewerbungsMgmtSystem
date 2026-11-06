@@ -16,6 +16,7 @@ from sqlmodel import Session, select
 from app.db import engine
 from app.models import Outreach
 from app.naming import tracker_filename
+from app.sprache import aktuell, tx
 
 ROOT = Path(__file__).resolve().parent.parent.parent
 TEMPLATE = ROOT / "data" / "templates" / "outreach_tracker_vorlage.xlsx"
@@ -30,8 +31,27 @@ LETTERS = "ABCDEFGHIJKLMN"
 _EPOCH = datetime.date(1899, 12, 30)  # Excel-1900-Datumssystem
 
 
-_HEADERS = ["Datum", "Kontakt", "Unternehmen", "Typ", "Kanal", "Template", "Antwort", "Antwort-Datum",
-            "Tage seit Kontakt", "Nächster Schritt", "Next-Action-Datum", "Status", "Notizen", "Position"]
+def _kopfnamen() -> list:
+    """Spaltenköpfe A..N in der Sprache, die beim Export gilt (nie beim Import festgehalten)."""
+    return [tx("Datum"), tx("Kontakt"), tx("Unternehmen"), tx("Typ"), tx("Kanal"), tx("Template"), tx("Antwort"),
+            tx("Antwort-Datum"), tx("Tage seit Kontakt"), tx("Nächster Schritt"), tx("Next-Action-Datum"), tx("Status"),
+            tx("Notizen"), tx("Position")]
+
+
+def _kopfzeile(header_xml: str) -> str:
+    """Die Kopfzeile der Vorlage. Deutsch bleibt Byte für Byte die der Vorlage; Englisch ersetzt nur die Texte der
+    Spalten A..N (Style und Reihenfolge bleiben), alles andere im Blatt bleibt, wie es ist."""
+    if aktuell() == "de":
+        return header_xml
+    namen = _kopfnamen()
+
+    def ersetze(m):
+        text = _xml_escape(namen[LETTERS.index(m.group(1))])
+        return f'<c r="{m.group(1)}1"{m.group(2) or ""} t="inlineStr"><is><t>{text}</t></is></c>'
+
+    return re.sub(r'<c r="([A-N])1"( s="\d+")? t="s"><v>\d+</v></c>', ersetze, header_xml)
+
+
 # Obergrenze je Spalte (Langtext-Spalten brechen um, daher gedeckelt)
 _CAP = [12, 24, 24, 18, 18, 16, 10, 13, 11, 46, 14, 20, 56, 40]
 
@@ -43,12 +63,13 @@ def _xml_escape(t):
 def _col_widths(entries):
     """Optimale Spaltenbreite je Spalte aus dem Inhalt (Header wrappt → zählt max. 12), gedeckelt."""
     widths = []
+    namen = _kopfnamen()
     for c, field in enumerate(COLS):
         if field == "_formel":
             maxlen = 4
         else:
             maxlen = max([len(str(getattr(e, field))) for e in entries if getattr(e, field, None) not in (None, "")] + [0])
-        base = max(maxlen, min(len(_HEADERS[c]), 12))
+        base = max(maxlen, min(len(namen[c]), 12))
         widths.append(round(min(max(base + 2, 8), _CAP[c]), 2))
     return widths
 
@@ -109,7 +130,7 @@ def build(path=None) -> Path:
     # Datenzeilen dieselbe Schriftart und -größe haben.
     styles["N"] = styles.get("B") or "17"
     header = re.search(r'<row r="1".*?</row>', sheet_xml, re.S)
-    header_xml = header.group(0) if header else ''
+    header_xml = _kopfzeile(header.group(0)) if header else ''
 
     with Session(engine) as s:
         entries = s.exec(select(Outreach).order_by(Outreach.id)).all()

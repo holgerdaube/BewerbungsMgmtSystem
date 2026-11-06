@@ -1,6 +1,6 @@
 ---
 name: anschreiben-erstellen
-description: Erzeugt für eine Stelle aus dem Bewerbungs-Management-System ein wahrheitstreues, firmenspezifisches Anschreiben (DE/EN) mit Direktansprache — konkrete Ansprechperson statt "Sehr geehrte Damen und Herren", Scope-Zahlen statt Titel (Empirie-Regel), Top-3-Mehrwerte für genau diese Firma aus CV × Company-Fit. Speichert als .docx unter outputs/anschreiben/ und registriert es an der Bewerbung (Job-Detail → Bewerbung → Anschreiben). Nutze diesen Skill bei "Anschreiben für Job <id>", "Anschreiben erstellen", "Cover Letter für Job <id>", "Direktansprache für Job <id>", "schreib das Anschreiben".
+description: Erzeugt für eine Stelle aus dem Bewerbungs-Management-System ein wahrheitstreues, firmenspezifisches Anschreiben (DE, EN, FR, IT, ES oder PT) mit Direktansprache — konkrete Ansprechperson statt "Sehr geehrte Damen und Herren", Scope-Zahlen statt Titel (Empirie-Regel), Top-3-Mehrwerte für genau diese Firma aus CV × Company-Fit. Speichert als .docx unter outputs/anschreiben/ und registriert es an der Bewerbung (Job-Detail → Bewerbung → Anschreiben). Nutze diesen Skill bei "Anschreiben für Job <id>", "Anschreiben erstellen", "Cover Letter für Job <id>", "Direktansprache für Job <id>", "schreib das Anschreiben".
 ---
 
 # Anschreiben erstellen (Direktansprache)
@@ -22,7 +22,7 @@ Liefert `job` (Titel, URL, Sprache der Anzeige ableitbar), `company` (inkl. `fit
 ### 2. Quellen lesen
 - **Company-Fit** (`fit_analysis_path`): Hook-Material — Situation, erklärte Lücke/Chancen, News. Fehlt er:
   `firma-pruefen` empfehlen, aber nicht blockieren (dann Stellenanzeige + kurze Web-Recherche).
-- **CV**: aktuellster tailored CV (`cv_versions[].file_path`), sonst `data/cv_basis/base_de.docx`/`base_en.docx` — die Belege.
+- **CV**: aktuellster tailored CV (`cv_versions[].file_path`), sonst die Basis-CV-Fassung `data/cv_basis/base_<sprache>.docx` (`de`, `en`, `fr`, `it`, `es`, `pt`) in der Sprache der Anzeige — die Belege. Fehlt bei einer französischen, italienischen, spanischen oder portugiesischen Anzeige die Fassung dieser Sprache: nichts übersetzen, zuerst `base_en.docx` nehmen, falls vorhanden, sonst `base_de.docx`, und den Sprachbruch im Bericht nennen.
 - **`config/profil.md`**: Kernpositionierung, harte Grenzen und, falls vorhanden, den **Empirie-Abschnitt**
   (Scope-Zahlen führen, die CV oder Profil belegen, etwa Umsatz, Backlog, Teamgröße, Zielerreichung).
 - Zusätzlich **`config/profil_struktur.md`** heranziehen, falls vorhanden (strukturierte Kandidaten-Substanz —
@@ -40,6 +40,8 @@ Liefert `job` (Titel, URL, Sprache der Anzeige ableitbar), `company` (inkl. `fit
 - Keine bekannt? **NIE „Sehr geehrte Damen und Herren"** — stattdessen Team-Anrede
   („Liebes \<Firma>-Team" / „Dear \<Firma> Talent Team") und im Bericht empfehlen, vor dem Versand den
   Fachentscheider zu recherchieren (künftig eigener Baustein, Welle 2).
+- Diese Team-Anrede gilt für Deutsch und Englisch. Auf Französisch, Italienisch, Spanisch und Portugiesisch
+  gilt stattdessen die Tabelle in Schritt 4, keine Team-Anrede und keine eigene Abwandlung.
 
 ### 4. Anschreiben schreiben (≤ 1 Seite, 250–350 Wörter)
 
@@ -52,7 +54,8 @@ die klang, als erzeuge ihn der Renderer. Zwei Läufe am selben Tag gingen deshal
 aus; bei einem fehlte der Kopf komplett, und die Betreffzeile wurde stattdessen als
 Absendername in 16 pt fett gesetzt.
 
-Sprache = Sprache der Ausschreibung. Aufbau:
+Sprache = Sprache der Ausschreibung (Deutsch, Englisch, Französisch, Italienisch, Spanisch oder Portugiesisch; bei
+gemischten Anzeigen die dominante Sprache des Fließtexts, nie die Sprache der Oberfläche). Aufbau:
 1. **Betreff** mit exakter Rollenbezeichnung.
 2. **Hook** (2–3 Sätze): firmenspezifischer Bezug aus Company-Fit/News — warum diese Firma, warum jetzt.
    Kein generisches „mit großem Interesse habe ich gelesen".
@@ -60,6 +63,22 @@ Sprache = Sprache der Ausschreibung. Aufbau:
    einen Titel-Gap zur Zielebene im Screening.
 4. **Top-3-Mehrwerte für DIESE Firma** als Bullets — aus dem Schnitt CV-Stärken × Firmen-Lücke (Company-Fit).
 5. **Kultur-/Motiv-Satz** (ehrlich, kurz) + **CTA** (Gespräch anbieten).
+
+**Anrede und Schlussformel landesüblich, keine wörtliche Übertragung deutscher Muster.** Auf Deutsch und auf
+Englisch gelten die bisherigen Regeln (Schritt 3). In den anderen Sprachen:
+
+| Sprache | Anrede ohne bekannte Person | Anrede mit Name | Schlussformel |
+|---|---|---|---|
+| Französisch | `Madame, Monsieur,` | `Madame <Name>,` / `Monsieur <Name>,` | `Cordialement,` oder der ausführliche Schlusssatz (`Veuillez agréer …`) |
+| Italienisch | `Spettabile <Firma>,` | `Gentile <Name>,` | `Cordiali saluti` |
+| Spanisch | `Estimados señores:` | `Estimado/a <Name>:` | `Atentamente,` |
+| Portugiesisch | `Exmos. Senhores,` (Portugal) / `Prezados,` (Brasilien) | `Exmo./Exma. <Name>,` (Portugal) / `Prezado/a <Name>,` (Brasilien) | `Com os melhores cumprimentos,` (Portugal) / `Atenciosamente,` (Brasilien) |
+
+Die Schlussformel steht als eigener Absatz, damit der Renderer sie erkennt, und darunter als letzte Zeile der
+Name des Absenders. Die Anrede ohne bekannte Person wörtlich aus der Tabelle übernehmen. Portugiesisch folgt der Schreibweise
+der Anzeige (Portugal oder Brasilien). Die Ort-/Datumszeile setzt `cover_letter_render.py` in der Landessprache
+(nicht von Hand schreiben, wie bisher).
+
 **Wahrheitstreue:** nur Belege, die im CV stehen; bekannte Lücken (`skill_gaps_pruefen` in `config/suchprofile.yaml`) nicht überschminken;
 harte Grenzen (z. B. kein Umzug) nicht verstecken, aber nur thematisieren, wenn die Anzeige es aufwirft.
 
@@ -91,7 +110,7 @@ from pathlib import Path
 from sqlmodel import Session, select
 from app.db import engine
 from app.models import Application
-JOB_ID, LANG = <id>, "<DE|EN>"
+JOB_ID, LANG = <id>, "<DE|EN|FR|IT|ES|PT>"
 TEXT = Path("../data/tmp/anschreiben_<id>.txt").read_text(encoding="utf-8")
 with Session(engine) as s:
     app = s.exec(select(Application).where(Application.job_id == JOB_ID)).first()

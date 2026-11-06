@@ -1,99 +1,100 @@
-# Mitmachen
+# Contributing
 
-Schön, dass Sie am Bewerbungs-Management-System (BMS) mitarbeiten möchten. Diese Seite fasst die Regeln
-für Beiträge zusammen. Wenn Sie nur einen Fehler gefunden haben, genügt ein Issue:
-https://github.com/holgerdaube/BewerbungsMgmtSystem/issues. Eine **Sicherheitslücke** melden Sie bitte
-nicht dort, sondern wie in [`SECURITY.md`](SECURITY.md) beschrieben.
+**English** · [Deutsch](CONTRIBUTING.de.md)
 
-## Lizenz und Herkunftsnachweis (DCO)
+Thank you for wanting to work on BMS – Job Application Management System. This page sums up the rules for
+contributions. If you have only found a bug, an issue is enough:
+https://github.com/holgerdaube/BewerbungsMgmtSystem/issues. Please do not report a **security vulnerability**
+there, follow [`SECURITY.md`](SECURITY.md) instead.
 
-Das BMS steht unter der Apache License 2.0 (`LICENSE`). Ein Beitrag, den Sie einreichen, steht unter
-derselben Lizenz (Abschnitt 5 der Lizenz).
+## Licence and proof of origin (DCO)
 
-Zusätzlich verlangt das Projekt den **Developer Certificate of Origin** (DCO, Version 1.1,
-https://developercertificate.org). Mit ihm bestätigen Sie, dass Sie den Beitrag selbst geschrieben haben
-oder das Recht haben, ihn unter dieser Lizenz einzureichen. Das tun Sie, indem Sie jeden Commit mit
-`-s` signieren:
+BMS is under the Apache License 2.0 (`LICENSE`). A contribution you submit is under the same licence
+(section 5 of the licence).
+
+The project also requires the **Developer Certificate of Origin** (DCO, version 1.1,
+https://developercertificate.org). With it you confirm that you wrote the contribution yourself or have the
+right to submit it under this licence. You do this by signing every commit with `-s`:
 
 ```sh
 git commit -s -m "Kurze Beschreibung der Änderung"
 ```
 
-Git hängt dann die Zeile `Signed-off-by: Ihr Name <ihre@adresse>` an die Commit-Nachricht an. Name und
-Adresse stammen aus `git config user.name` und `git config user.email`. Wollen Sie Ihre private
-Mailadresse nicht veröffentlichen, verwenden Sie die noreply-Adresse Ihres GitHub-Kontos. Haben Sie das
-Signieren vergessen, hilft `git commit --amend -s` für den letzten Commit; bei mehreren Commits
-`git rebase --signoff`.
+Git then adds the line `Signed-off-by: Your Name <your@address>` to the commit message. Name and address come
+from `git config user.name` and `git config user.email`. If you do not want to publish your private email
+address, use the noreply address of your GitHub account. If you forgot to sign, `git commit --amend -s` helps
+for the last commit, and `git rebase --signoff` for several commits.
 
-## Entwicklung einrichten
+## Setting up development
 
-Wie Sie den Quellcode einrichten (Python-Umgebung, Oberfläche bauen, Start), steht unter macOS und Windows
-in [`docs/INSTALLATION.md`](docs/INSTALLATION.md). Aufbau, Datenmodell und Konventionen beschreibt
-[`docs/DOKUMENTATION.md`](docs/DOKUMENTATION.md). Lesen Sie dort vor einer größeren Änderung die
-Abschnitte „Grundprinzipien“ und „Tests & CI“.
+[`docs/en/INSTALLATION.md`](docs/en/INSTALLATION.md) explains how to set up the source code on macOS and Windows
+(Python environment, building the interface, starting). [`docs/en/DOKUMENTATION.md`](docs/en/DOKUMENTATION.md)
+describes the architecture, data model and conventions. Before a larger change, read the sections “Basic
+principles” and “Tests & CI” there.
 
-## Sprache
+## Language
 
-Das BMS ist ein deutschsprachiges Programm. Schreiben Sie deshalb Code-Kommentare, Docstrings,
-Commit-Nachrichten, Texte in der Oberfläche und Dokumentation auf Deutsch. Texte, die Anwender lesen
-(Oberfläche, `CHANGELOG.md`, Anleitungen), stehen in der Sie-Form.
+- **Interface:** Texts always exist in both languages (`frontend/src/i18n/de` and `en`, in the backend `tx()`).
+  CI checks this.
+- **User documentation:** English and German in the same commit, confirmed with
+  `scripts/uebersetzung.sh --bestaetigen <English file>`.
+- **Terminal:** Messages from the tools in `scripts/`, the start and stop scripts and the server (`tt()`) exist in both languages and follow the language of the operating system, not the interface.
+- **Source:** German is the source of the documentation. The technical documentation may lag until the next
+  release.
+- **Code:** Code comments, docstrings, commit messages and skills are in German. English issues and pull requests
+  are welcome.
+- **Form of address and spelling:** German texts in the interface and in `CHANGELOG.md` use the formal “Sie”,
+  English texts use British English.
 
-## Tests vor dem Pull Request
+## Tests before the pull request
 
-Jede Änderung am Verhalten braucht einen Test, und die ganze Suite muss grün sein, bevor Sie den Pull
-Request öffnen:
+Every change in behaviour needs a test, and the whole suite must be green before you open the pull request:
 
 ```sh
-scripts/test.sh                      # Backend-Tests (einmalig: backend/requirements-dev.txt installieren)
-cd frontend && npm run typecheck && npm run build   # wenn Sie die Oberfläche geändert haben
+scripts/test.sh                      # backend tests (once: install backend/requirements-dev.txt)
+cd frontend && npm run typecheck && npm run build   # if you changed the interface
 ```
 
-Die Tests laufen gegen eine eigene Wegwerf-Datenbank und fassen Ihre echte `data/bewerbung.sqlite` nicht
-an. Die CI wiederholt die Prüfung bei jedem Pull Request auf Linux und Windows, dazu Typprüfung, Build
-und einen Secret-Scan.
+The tests run against their own throwaway database and do not touch your real `data/bewerbung.sqlite`. CI
+repeats the check on every pull request on Linux and Windows, plus type checking, the build and a secret scan.
 
-## Keine echten Personendaten
+## No real personal data
 
-In Code, Tests, Beispielen, Dokumentation und Commit-Nachrichten stehen **keine echten Personendaten und
-keine echten Bewerbungsdaten**: keine Namen, Anschriften, Mailadressen oder Telefonnummern realer
-Personen, keine Firmennamen, Stellen oder Nummern aus Ihrer eigenen Jobsuche, keine Lebensläufe, keine
-Zugangsdaten. Nehmen Sie erfundene Werte: Max Mustermann oder Benno Bewerbaer als Person, Beispiel GmbH oder
-Firma A als Firma, Adressen unter `beispiel.de`. Prüfen Sie Ihre Änderung vor dem Einreichen mit
-`git diff` auf versehentlich mitgenommene Daten.
+Code, tests, examples, documentation and commit messages contain **no real personal data and no real application
+data**: no names, addresses, email addresses or phone numbers of real people, no company names, jobs or numbers
+from your own job search, no CVs, no credentials. Use invented values: Max Mustermann or Benno Bewerbaer as a
+person, Beispiel GmbH or Firma A as a company, addresses under `beispiel.de`. Check your change with `git diff`
+for data you picked up by accident before you submit it.
 
-## Leitplanken für neue Funktionen
+## Guardrails for new features
 
-- **Nur für die bewerbende Person.** Das BMS unterstützt ausschließlich die Seite, die sich bewirbt.
-  Funktionen, mit denen Arbeitgeber Bewerbende bewerten, sortieren oder auswählen, werden nicht
-  aufgenommen (Grundprinzip 8 in `docs/DOKUMENTATION.md`).
-- **Der Mensch entscheidet.** Das BMS bewirbt sich nicht selbst und verschickt keine E-Mails, es legt nur
-  Entwürfe an (Grundprinzip 1). Ein Sende-Codepfad hat im Projekt keinen Platz, ein Test
-  (`test_kein_sendcodepfad.py`) hält das fest.
-- **Keine erfundenen Fakten.** KI-Texte arbeiten belegt; was das System nicht weiß, markiert es, statt
-  zu raten (Grundprinzip 2).
-- **Zwei KI, ein Wortlaut.** Die KI-Läufe gehen wahlweise über Claude Code oder über die Codex CLI
-  (ChatGPT). Die Skills in `.claude/skills` sind die einzige Quelle: Das BMS spiegelt sie vor jedem Lauf
-  nach `.agents/skills` (nicht versioniert), und `AGENTS.md` übersetzt die Werkzeugnamen. Ändern Sie nie die
-  Kopie unter `.agents/skills`, und schreiben Sie Skills so, dass sie unter beiden KI laufen.
+- **Only for the person applying.** BMS supports only the side that applies. Features that let employers score,
+  sort or select applicants will not be accepted (basic principle 8 in `docs/en/DOKUMENTATION.md`).
+- **The human decides.** BMS does not apply on its own and sends no email, it only creates drafts (basic principle
+  1). A sending code path has no place in the project, and a test (`test_kein_sendcodepfad.py`) enforces this.
+- **No invented facts.** AI texts work from evidence. What the system does not know, it marks instead of guessing
+  (basic principle 2).
+- **Two AIs, one wording.** The AI runs go through either Claude Code or the Codex CLI (ChatGPT). The skills in
+  `.claude/skills` are the only source: BMS mirrors them to `.agents/skills` (not versioned) before every run, and
+  `AGENTS.md` translates the tool names. Never change the copy under `.agents/skills`, and write skills so that they
+  run under both AIs.
 
-## Dokumentation
+## Documentation
 
-Die Dokumente in `docs/` sind Markdown-Dateien (`.md`, die Quelle). Zu jeder gehört eine erzeugte
-`.html`-Datei zum Drucken und Weitergeben. Nach jeder Änderung an einer `.md` erzeugen Sie die HTML-Fassung
-neu und reichen beide Dateien gemeinsam ein:
+The documents in `docs/` are Markdown files (`.md`, the source). Each has a generated `.html` file for printing
+and passing on. After every change to an `.md`, regenerate the HTML version and submit both files together:
 
 ```sh
 scripts/docs_html.sh
 ```
 
-Ein Test (`backend/tests/test_docs_html.py`) schlägt fehl, wenn eine `.html` fehlt oder veraltet ist.
-Änderungen, die Anwender merken, tragen Sie zusätzlich in `CHANGELOG.md` unter „Unveröffentlicht“ ein,
-in ein bis zwei Sätzen und ohne interne Nummern.
+A test (`backend/tests/test_docs_html.py`) fails if an `.html` is missing or out of date. Changes that users notice
+also go into `CHANGELOG.md` and `CHANGELOG.en.md` under “Unreleased” (`Unveröffentlicht` in the German file), in one
+or two sentences and without internal numbers.
 
-## Pull Request
+## Pull request
 
-1. Legen Sie einen Fork an und arbeiten Sie auf einem eigenen Zweig.
-2. Halten Sie den Pull Request klein und zu einem Thema. Beschreiben Sie, was sich ändert und warum.
-3. Signieren Sie jeden Commit (`git commit -s`), siehe oben.
-4. Lassen Sie `scripts/test.sh` laufen und warten Sie die CI ab. Der Pull Request kann erst bei grüner CI
-   übernommen werden.
+1. Create a fork and work on your own branch.
+2. Keep the pull request small and on one topic. Describe what changes and why.
+3. Sign every commit (`git commit -s`), see above.
+4. Run `scripts/test.sh` and wait for CI. A pull request can only be merged when CI is green.
