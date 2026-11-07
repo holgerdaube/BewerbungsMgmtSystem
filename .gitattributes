@@ -26,6 +26,7 @@
 *.pdf binary
 *.docx binary
 *.xlsx binary
+*.zip binary
 *.sqlite binary
 *.ico binary
 *.woff binary

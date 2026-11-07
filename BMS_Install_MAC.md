@@ -851,6 +851,14 @@ Es ergänzt dabei nur und überschreibt nichts. Anschließend sortiert es Ihre F
 Hintergrund in Themenbereiche. Laden Sie die Datei erst hoch, wenn die Beispieldaten entfernt sind,
 denn mit ihnen übernähme das BMS nicht alles (Begründung unter „Zuerst: Beispieldaten entfernen“).
 
+Wie ein solcher Export aufgebaut ist, zeigt ein erfundenes Beispiel im Ordner `beispiele`:
+`LinkedIn_Datenexport_Beispiel_DE.zip`, auf Englisch `LinkedIn_Data_Export_Example_EN.zip`. Es
+enthält nur die Dateien, die das BMS liest: Kurzbeschreibung, Fähigkeiten, Berufsstationen und
+Ausbildung des Forstwirts Benno Bewerbaer sowie in `Connections.csv` zwei Kontakte, die Sie nach dem
+Entpacken in die Liste „Netzwerk-Kontakte“ einlesen können. Laden Sie das Beispiel nur zum
+Ausprobieren hoch: Der Import übernimmt die Angaben in Ihr Profil, und vor Ihrem eigenen Export
+müssen Sie sie auf der Profil-Seite wieder löschen.
+
 Ohne Export und ohne Wartezeit geht es unter „Profil“ mit „Profil auslesen“, wenn der KI-Zugang eingerichtet ist (Schritt 7). Öffnen Sie Ihr
 Profil bei LinkedIn im Browser, markieren Sie alles, kopieren Sie es und fügen Sie es ein. Oder laden Sie das PDF hoch, das
 LinkedIn über „Als PDF speichern“ erzeugt. Die KI strukturiert den Text, Sie prüfen das Ergebnis in einer Vorschau, und erst

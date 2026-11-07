@@ -4,6 +4,10 @@ Hier steht zu jeder Version, was sich für Sie ändert. Welche Version installie
 
 ## Unveröffentlicht
 
+## 2.2.2 (07.11.2026)
+
+- Im Ordner `beispiele` liegt jetzt ein erfundener LinkedIn-Datenexport auf Deutsch und Englisch. Er zeigt, was der Import übernimmt, bevor Ihr eigener Export da ist. Die Installationsanleitung nennt ihn im Abschnitt zum LinkedIn-Import.
+
 ## 2.2.1 (06.11.2026)
 
 - Das Programmpaket hängt an jeder Version jetzt zusätzlich unter dem festen Namen `BMS_latest.zip`, samt Prüfsumme. Der Download-Link auf bms.daube.tech zeigt damit immer auf die neueste Version. Für Installation und Update ändert sich nichts.

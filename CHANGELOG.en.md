@@ -4,6 +4,10 @@ Here you will find, for each version, what changes for you. You can see which ve
 
 ## Unreleased
 
+## 2.2.2 (07.11.2026)
+
+- The `beispiele` folder now contains a fictitious LinkedIn data export in German and English. It shows what the import takes over before your own export arrives. The installation guide mentions it in the section on the LinkedIn import.
+
 ## 2.2.1 (06.11.2026)
 
 - Each release now also carries the program package under the fixed name `BMS_latest.zip`, with its checksum. The download link on bms.daube.tech therefore always points to the newest version. Nothing changes for installing and updating.

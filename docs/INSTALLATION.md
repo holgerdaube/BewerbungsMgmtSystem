@@ -356,6 +356,10 @@ Kurzbeschreibung, Standort, Fähigkeiten, Berufsstationen, Ausbildung und Zertif
 arbeitet rein mechanisch, ergänzt nur und überschreibt nichts Vorhandenes. Im Anschluss sortiert
 ein Hintergrundlauf die importierten Fähigkeiten automatisch in Themenbereiche ein.
 
+Ein erfundenes Beispiel liegt unter `beispiele/LinkedIn_Datenexport_Beispiel_DE.zip` (englisch
+`beispiele/LinkedIn_Data_Export_Example_EN.zip`). Es zeigt den Aufbau des Exports und enthält mit
+`Connections.csv` auch zwei Kontakte für den Netzwerk-Import.
+
 Danach das Profil in der Oberfläche durchsehen und ergänzen: Positionierung schärfen,
 Berufsstationen vervollständigen, Zeugnisse und Zertifikate anhängen.
 

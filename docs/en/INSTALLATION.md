@@ -355,6 +355,10 @@ the short description, location, skills, career positions, education and certifi
 works purely mechanically, only adds and overwrites nothing that already exists. Afterwards,
 a background run automatically sorts the imported skills into topic areas.
 
+A fictitious example is in `beispiele/LinkedIn_Data_Export_Example_EN.zip` (German
+`beispiele/LinkedIn_Datenexport_Beispiel_DE.zip`). It shows the structure of the export and, with
+`Connections.csv`, also contains two contacts for the network import.
+
 Then review and supplement the profile in the interface: sharpen the positioning,
 complete the career positions, attach references and certificates.
 

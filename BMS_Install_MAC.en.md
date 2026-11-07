@@ -856,6 +856,14 @@ It only adds and overwrites nothing. Afterwards it sorts your skills in the
 background into topic areas. Only upload the file once the sample data has been removed,
 because with it BMS would not take over everything (reason under “First: remove the sample data”).
 
+A fictitious example in the `beispiele` folder shows how such an export is structured:
+`LinkedIn_Data_Export_Example_EN.zip`, in German `LinkedIn_Datenexport_Beispiel_DE.zip`. It
+contains only the files BMS reads: the short description, skills, positions and education of the
+forester Benno Bewerbaer, plus two contacts in `Connections.csv` that you can import into the
+“Network contacts” list after unzipping. Upload the example only to try things out: the import
+adds its details to your profile, and you have to delete them on the Profile page again before
+uploading your own export.
+
 Without an export and without waiting, you can use “Read profile” under “Profile” if AI access is set up (Step 7). Open your
 profile on LinkedIn in the browser, select everything, copy it and paste it in. Or upload the PDF that
 LinkedIn creates with “Save to PDF”. The AI structures the text, you check the result in a preview, and only
