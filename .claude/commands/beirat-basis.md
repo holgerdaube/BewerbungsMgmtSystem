@@ -66,6 +66,9 @@ Ist die Frage ein **Stellen-Check** („Soll ich mich auf diese Stelle bewerben?
 - Sechs Scores (0–10) je Prüfbereich der Charta (Rollenfit · CV-Ergebnisse · Unternehmen · Übertragbarkeit · Karrierewirkung · Interview-Chance)
 - Ein Votum: **Bewerben · Bedingt bewerben · Nicht bewerben**
 - 2–3 Sätze Begründung aus der eigenen Brille
+- 1–3 wörtliche CV-Zitate für CV-Ergebnisse (nur aus dem CV-Text, ohne Umschreibung)
+
+Ein Score von 7 oder mehr für CV-Ergebnisse ohne wörtliches CV-Zitat gehört als Zeile ins Risiko-Board. Der Score selbst bleibt unverändert. Hier prüft kein Code, ob das Zitat im CV steht (die Web-App prüft es maschinell).
 
 Rufe alle sieben **gleichzeitig (parallel), in einem Zug** auf. Du rechnest anschließend als Vorsitzende: gewichteter Score je Kopf (Gewichte siehe Charta), Durchschnitt über alle Köpfe, Stimmenauszählung — und wendest die Entscheidungsregel der Charta an (≥7,0 + ≥5/7 „Bewerben" → Bewerben · 6,0–6,9 oder Info-Lücken → Bedingt · <6,0 → Nicht bewerben).
 

@@ -187,9 +187,10 @@ not even with a date. The page does **not** reload automatically — after chang
 reload it briefly.
 
 ### 📋 Pipeline — Kanban board
-All active jobs as cards in columns: **New · To review · Applied · Interview · Offer · Rejected**.
-Drag a card into another column with **drag & drop** = change the status. Archived jobs
-(No match / Not available / Parked) do not appear here (counter “X archived” at the top).
+All active jobs as cards in columns: **New · To review · Parked · Applied · Interview · Offer · Rejected**.
+Drag a card into another column with **drag & drop** = change the status. This is also how you move a
+parked job back to “To review”. Archived jobs (No response / No match / Rejected by board /
+Not available) do not appear here (counter “X archived” at the top).
 
 ### 💼 Jobs & job details
 **Jobs** = table of all results with filters (status, search tab, fit, search). Click a row → **job details**:

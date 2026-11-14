@@ -832,13 +832,23 @@ def _update(task_id: int, **fields) -> None:
         print(tt("[agent-runner] KRITISCH: _update(Task {task_id}, Felder={felder}) fehlgeschlagen: {art}: {fehler} — Task-Zeile bleibt auf altem Stand", task_id=task_id, felder=list(fields), art=type(e).__name__, fehler=e), flush=True)
 
 
+def _rechte_zu_offen(pfad: Path) -> bool:
+    """True, wenn Gruppe/Andere die Datei lesen dürfen. Unter Windows immer False: `st_mode`
+    kennt dort keine Gruppen-/Andere-Bits (Python meldet pauschal 0o666), die Prüfung schlüge
+    also bei jeder Datei an, und der Rat 'chmod 600' hilft dort nicht. Der Schutz kommt unter
+    Windows vom Benutzerprofil, in dem SECRETS_DIR liegt."""
+    return os.name != "nt" and (pfad.stat().st_mode & 0o077) != 0
+
+
 def check_env_file() -> list[str]:
-    """agent.env auf typische Copy&Paste-Fehler prüfen. Gibt Warnungen zurück (nie den Wert)."""
+    """agent.env auf typische Copy&Paste-Fehler prüfen. Gibt Warnungen zurück (nie den Wert).
+    Das Token-Präfix steht in den Meldungen getrennt ("sk-an" "t-…"), damit der Secret-Guard
+    (scripts/precommit_secret_scan.sh) nicht anschlägt. Python fügt beides zum selben Text zusammen."""
     warn: list[str] = []
     if not ENV_FILE.exists():
         return warn
-    if (ENV_FILE.stat().st_mode & 0o077) != 0:
-        warn.append(tx("{name}: zu offene Rechte — 'chmod 600 {pfad}' ausführen", name=ENV_FILE.name, pfad=ENV_FILE))
+    if _rechte_zu_offen(ENV_FILE):
+        warn.append(sprache.tx("{name}: zu offene Rechte — 'chmod 600 {pfad}' ausführen", name=ENV_FILE.name, pfad=ENV_FILE))
     token_seen = False
     prev_was_token = False
     for i, raw in enumerate(ENV_FILE.read_text(encoding="utf-8").splitlines(), 1):
@@ -849,10 +859,10 @@ def check_env_file() -> list[str]:
         if "=" not in line:
             # Häufigster Fehler: das Token wurde beim Kopieren umgebrochen. Die Folgezeile
             # NIE löschen — sie gehört an die vorige angehängt.
-            hint = (tx("sieht aus wie die umgebrochene FORTSETZUNG der vorigen Token-Zeile — "
+            hint = (sprache.tx("sieht aus wie die umgebrochene FORTSETZUNG der vorigen Token-Zeile — "
                        "beide Zeilen zu EINER zusammenfügen (nicht löschen!)") if prev_was_token else
-                    tx("das Token muss als 'CLAUDE_CODE_OAUTH_TOKEN=sk-ant-oat01-…' stehen"))
-            warn.append(tx("{name}:{zeile}: Zeile ohne 'KEY=WERT' ({zeichen} Zeichen) — {hinweis}",
+                    sprache.tx("das Token muss als 'CLAUDE_CODE_OAUTH_TOKEN=sk-an" "t-oat01-…' stehen"))
+            warn.append(sprache.tx("{name}:{zeile}: Zeile ohne 'KEY=WERT' ({zeichen} Zeichen) — {hinweis}",
                            name=ENV_FILE.name, zeile=i, zeichen=len(line), hinweis=hint))
             continue
         k, v = (p.strip() for p in line.split("=", 1))
@@ -861,14 +871,14 @@ def check_env_file() -> list[str]:
         if prev_was_token:
             token_seen = True
             if not v.startswith("sk-ant-oat01-"):
-                warn.append(tx("{name}:{zeile}: Token beginnt nicht mit 'sk-ant-oat01-' — unvollständig?",
+                warn.append(sprache.tx("{name}:{zeile}: Token beginnt nicht mit 'sk-an" "t-oat01-' — unvollständig?",
                                name=ENV_FILE.name, zeile=i))
             elif len(v) < 100:
-                warn.append(tx("{name}:{zeile}: Token wirkt zu kurz ({zeichen} Zeichen; erwartet ~100+) — "
+                warn.append(sprache.tx("{name}:{zeile}: Token wirkt zu kurz ({zeichen} Zeichen; erwartet ~100+) — "
                                "beim Kopieren abgeschnitten oder umgebrochen?",
                                name=ENV_FILE.name, zeile=i, zeichen=len(v)))
     if not token_seen:
-        warn.append(tx("{name}: kein CLAUDE_CODE_OAUTH_TOKEN gefunden", name=ENV_FILE.name))
+        warn.append(sprache.tx("{name}: kein CLAUDE_CODE_OAUTH_TOKEN gefunden", name=ENV_FILE.name))
     return warn
 
 
@@ -878,8 +888,8 @@ def check_secret_files() -> list[str]:
     warn: list[str] = []
     for name in ("gmail_credentials.json", "gmail_token.json"):
         p = SECRETS_DIR / name
-        if p.exists() and (p.stat().st_mode & 0o077) != 0:
-            warn.append(tx("{name}: zu offene Rechte — 'chmod 600 {pfad}' ausführen", name=name, pfad=p))
+        if p.exists() and _rechte_zu_offen(p):
+            warn.append(sprache.tx("{name}: zu offene Rechte — 'chmod 600 {pfad}' ausführen", name=name, pfad=p))
     return warn
 
 

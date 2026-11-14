@@ -252,6 +252,40 @@ def test_register_entwurf_schreibt_die_sprache_gross(session, tmp_path, monkeypa
     assert session.get(CVVersion, ergebnis["cv_version_id"]).language == erwartet
 
 
+def test_register_entwurf_speichert_red_flags_unveraendert(session, tmp_path, monkeypatch):
+    """P2-97: `keywords_json` mit `red_flags` (cv-match Schritt 1d) kommt unverändert aus der Datenbank zurück."""
+    import json
+
+    from app.models import CVVersion
+    from pipeline import deepdive
+    from tests.test_cv_export import _docx_mit_text
+    from tests.test_p2_63_leser import _stelle
+
+    monkeypatch.setattr(deepdive, "PROJECT_ROOT", tmp_path)
+    _docx_mit_text(tmp_path / "data" / "cv_basis" / "entwuerfe" / "arbeit.docx", ["Erika Mustermann", "Text"])
+    _, job = _stelle(session, f"Muster {uuid.uuid4().hex[:6]} GmbH", "Leitung", f"sprachwahl|{uuid.uuid4().hex}")
+    keywords = {
+        "methodik": "v2", "sprache": "de",
+        "begriffe": [{"begriff": "Führung großer Teams", "kategorie": "fuehrung_scope", "abdeckbar": True,
+                      "beleg": "12 Direct Reports (Beispiel GmbH)"}],
+        "red_flags": [
+            {"titel": "Hochschulabschluss gefordert", "quelle": "anforderung", "fix": "luecke",
+             "hinweis": "Im Anschreiben über Äquivalenz adressieren"},
+            {"titel": "Keine Teamverantwortung sichtbar", "quelle": "zehn_sekunden", "fix": "umgesetzt",
+             "hinweis": "Führungsumfang steht jetzt in der Executive Summary"},
+        ],
+    }
+
+    ergebnis = deepdive.register_entwurf(job.id, {
+        "language": "de", "kind": "tailored", "file_path": "data/cv_basis/entwuerfe/arbeit.docx",
+        "keywords_json": keywords})
+
+    session.expire_all()
+    gespeichert = json.loads(session.get(CVVersion, ergebnis["cv_version_id"]).keywords_json)
+    assert gespeichert == keywords
+    assert gespeichert["red_flags"][0]["fix"] == "luecke"
+
+
 def test_register_deepdive_schreibt_die_sprache_gross(session, tmp_path, monkeypatch):
     from app.models import CVVersion
     from pipeline import cv_export, deepdive

@@ -72,6 +72,7 @@ from app.sprache import tx
 from app.naming import report_filename
 from pipeline import bewerbungssprache
 from pipeline import zustandsfarben
+from pipeline.belege import zitat_belegt
 from pipeline.htmltext import entkleiden
 from app.favicon import favicon_link
 from pipeline.bericht_stil import DRUCK_SEITENFARBE_BEHALTEN, bericht_css
@@ -254,6 +255,94 @@ def _ampel_anzeige(ampel: str) -> str:
 def _schwere_anzeige(schwere) -> str:
     anzeige = {"hoch": tx("Hoch"), "mittel": tx("Mittel"), "gering": tx("Gering")}.get(schwere)
     return anzeige if anzeige else (schwere or "").capitalize()
+
+
+# ── Belege (P2-97): Zitate aus dem CV, vom Code gegen den CV geprüft ──────────────────────────────────
+# Ein Score ohne Beleg wird NUR sichtbar gemacht (Dashboard, Risiko-Board). Der Code ändert nie einen Score
+# und nie die Entscheidungsregel. Ob ein Zitat im CV steht, entscheidet `pipeline.belege.zitat_belegt`.
+BELEG_BEREICHE = ("cv_ergebnisse", "rollenfit", "uebertragbarkeit")
+BELEGE_JE_BEREICH = 3
+_CV_MARKE = re.compile(r"(?:^|\n)CV-BASIS \(.*?\):\n")
+
+
+def _cv_abschnitt(kontext: str | None) -> str | None:
+    """Der CV-Text aus dem Stellen-Kontext (Block `CV-BASIS (…):` bis `COMPANY-FIT`, Format siehe
+    `sammle_stellen_kontext`). `None`, wenn kein CV vorlag (`CV-BASIS: NICHT VERFÜGBAR`) oder die Marke fehlt."""
+    treffer = _CV_MARKE.search(kontext or "")
+    if not treffer:
+        return None
+    rest = kontext[treffer.end():]
+    ende = rest.find("\n\nCOMPANY-FIT")
+    text = (rest if ende < 0 else rest[:ende]).strip()
+    return text or None
+
+
+def _belege_pruefen(stimme: dict, cv_text: str | None) -> dict:
+    """Säubert `stimme["belege"]` und setzt je Eintrag `geprueft` (True/False, `None` ohne CV). Fehlt `belege`
+    oder ist es keine Liste, wird der Schlüssel NICHT angelegt: Eine Stimme im alten Format zeigt im Dashboard
+    keinen leeren Belege-Abschnitt. Eine leere Liste einer neuen Antwort bleibt stehen."""
+    roh = stimme.get("belege")
+    if not isinstance(roh, list):
+        stimme.pop("belege", None)
+        return stimme
+    sauber, je_bereich = [], {}
+    for eintrag in roh:
+        if not isinstance(eintrag, dict):
+            continue
+        bereich, zitat = eintrag.get("bereich"), eintrag.get("zitat")
+        if not isinstance(bereich, str) or bereich.strip() not in BELEG_BEREICHE:
+            continue
+        if not isinstance(zitat, str) or not zitat.strip():
+            continue
+        bereich = bereich.strip()
+        if je_bereich.get(bereich, 0) >= BELEGE_JE_BEREICH:
+            continue
+        je_bereich[bereich] = je_bereich.get(bereich, 0) + 1
+        sauber.append({"bereich": bereich, "zitat": zitat.strip(),
+                       "geprueft": None if cv_text is None else zitat_belegt(zitat, cv_text)})
+    stimme["belege"] = sauber
+    return stimme
+
+
+def _belege_zaehlen(stimme: dict | None) -> tuple[int, int] | None:
+    """(geprüft gefunden, nicht gefunden) einer Stimme, `None` ohne Schlüssel `belege`. Nicht prüfbare zählen nirgends."""
+    if not stimme or "belege" not in stimme:
+        return None
+    belege = stimme["belege"]
+    return (sum(1 for b in belege if b.get("geprueft") is True),
+            sum(1 for b in belege if b.get("geprueft") is False))
+
+
+def _beleg_risiko_zeile(abstimmung: dict | None, mitglieder: dict, cv_text: str | None) -> dict | None:
+    """Risiko-Zeile für Köpfe mit CV-Ergebnissen ab 7 ohne einen geprüften Beleg in diesem Bereich. Nur wenn ein CV
+    vorlag und nur für Stimmen mit Schlüssel `belege` (neues Format). Feste Werte deutsch, wie `_risiko_board_html`
+    sie liest."""
+    if cv_text is None or not abstimmung:
+        return None
+    namen = []
+    for kopf_id, stimme in abstimmung.items():
+        if not stimme or "belege" not in stimme:
+            continue
+        wert = (stimme.get("scores") or {}).get("cv_ergebnisse")
+        if not isinstance(wert, (int, float)) or wert < 7:
+            continue
+        if any(b.get("bereich") == "cv_ergebnisse" and b.get("geprueft") is True for b in stimme["belege"]):
+            continue
+        namen.append((mitglieder.get(kopf_id) or {}).get("anzeige") or kopf_id)
+    if not namen:
+        return None
+    return {"risiko": tx("CV-Ergebnisse ohne geprüften Beleg bewertet: {koepfe}", koepfe=", ".join(namen)),
+            "schwere": "mittel", "status": "ungeklaert",
+            "naechster_schritt": tx("Beleg im CV suchen oder den Wert hinterfragen")}
+
+
+def _beleg_risiko_anhaengen(parsed, abstimmung: dict | None, mitglieder: dict, cv_text: str | None) -> None:
+    zeile = _beleg_risiko_zeile(abstimmung, mitglieder, cv_text)
+    if zeile is None or not isinstance(parsed, dict):
+        return
+    if not isinstance(parsed.get("risiko_board"), list):
+        parsed["risiko_board"] = []
+    parsed["risiko_board"].append(zeile)
 
 # ── Personas laden ────────────────────────────────────────────────────────────────────
 
@@ -1432,12 +1521,23 @@ class Debatte:
             "Plus ein Votum: \"Bewerben\" · \"Bedingt\" · \"Nicht\" (bewerben) — und 2–3 Sätze "
             "Begründung aus deiner eigenen Brille. Unsicherheit gehört in die Begründung, nicht "
             "heimlich in den Score versteckt. Erfinde keine Fakten, die nicht im Kontext stehen.\n\n"
+            "BELEGE (Charta: Belegpflicht für den CV): Für cv_ergebnisse nennst du 1–3 wörtliche Zitate aus dem "
+            "Block CV-BASIS, für rollenfit und uebertragbarkeit sind Zitate erwünscht. Zitate stammen NUR aus dem "
+            "Block CV-BASIS, nie aus der Anzeige oder dem Company-Fit. Sie stehen wörtlich so im CV, ohne "
+            "Auslassung („…“) und ohne Umschreibung; das System prüft jedes Zitat gegen den CV. Gibt der CV "
+            "nichts her, bleibt belege eine leere Liste und du nennst den Grund in der Begründung („kein Beleg im "
+            "CV“). Ist der CV nicht verfügbar, ebenfalls eine leere Liste.\n\n"
             "Antworte AUSSCHLIESSLICH mit einem JSON-Objekt, kein Markdown, kein Fließtext davor/danach:\n"
             '{"scores": {"rollenfit": 0-10, "cv_ergebnisse": 0-10, "unternehmen": 0-10, '
             '"uebertragbarkeit": 0-10, "karrierewirkung": 0-10, "interview_chance": 0-10}, '
-            '"votum": "Bewerben|Bedingt|Nicht", "begruendung": "<2-3 Sätze aus deiner Brille>"}'
+            '"votum": "Bewerben|Bedingt|Nicht", "begruendung": "<2-3 Sätze aus deiner Brille>", '
+            '"belege": [{"bereich": "cv_ergebnisse|rollenfit|uebertragbarkeit", '
+            '"zitat": "<wörtlich aus CV-BASIS, ohne Auslassung>"}]}'
         )
-        return prompt + _ausgabesprache_hinweis(json_antwort=True)
+        zitat_hinweis = ("" if sprache.aktuell() != "en" else
+                         "\n\nEXCEPTION: The values of \"zitat\" stay verbatim in the language of the CV. "
+                         "Never translate them.")
+        return prompt + _ausgabesprache_hinweis(json_antwort=True) + zitat_hinweis
 
     @staticmethod
     def _stimme_gueltig(parsed: dict | None) -> bool:
@@ -1458,6 +1558,7 @@ class Debatte:
         im Dashboard sichtbar ausgewiesen)."""
         sem = asyncio.Semaphore(3)
         alle = list(self.mitglieder.values())
+        cv_text = _cv_abschnitt(self.kontext)
 
         async def _eine_stimme(m: dict):
             async with sem:
@@ -1471,6 +1572,7 @@ class Debatte:
                         if isinstance(parsed, dict) and "votum" in parsed:
                             parsed["votum"] = _wert_normalisieren("votum", parsed["votum"])
                         if self._stimme_gueltig(parsed):
+                            _belege_pruefen(parsed, cv_text)
                             await self._ev("votum", kopf=m["id"], anzeige=m["anzeige"], farbe=m["farbe"],
                                           stimme=parsed, enthaltung=False)
                             return m["id"], parsed
@@ -1533,7 +1635,11 @@ class Debatte:
         for kopf_id, stimme in self.abstimmung.items():
             m = self.mitglieder[kopf_id]
             if stimme:
-                stimmen_detail.append(f"- {m['anzeige']} ({stimme['votum']}): {stimme['begruendung']}")
+                zeile = f"- {m['anzeige']} ({stimme['votum']}): {stimme['begruendung']}"
+                zaehlung = _belege_zaehlen(stimme)
+                if zaehlung is not None:
+                    zeile += f" [CV-Zitate: {zaehlung[0]} geprüft gefunden, {zaehlung[1]} nicht gefunden]"
+                stimmen_detail.append(zeile)
             else:
                 stimmen_detail.append(f"- {m['anzeige']}: ENTHALTUNG (Abstimmung technisch fehlgeschlagen)")
         koepfe_liste = ", ".join(f"{m['id']} = {m['anzeige']}" for m in self.mitglieder.values())
@@ -1726,6 +1832,8 @@ class Debatte:
                         parsed = self._json_extrahieren(roh)
                         _risiko_board_normalisieren(parsed)
                         if parsed:
+                            _beleg_risiko_anhaengen(parsed, self.abstimmung, self.mitglieder,
+                                                    _cv_abschnitt(self.kontext))
                             break
                         letzter_fehler = tx("nicht als JSON parsebar: {roh}", roh=roh[:200])
                     except Exception as ex:
@@ -2224,6 +2332,30 @@ def _stimmen_matrix_html(abstimmung: dict, mitglieder: dict) -> str:
     )
 
 
+def _belege_html(abstimmung: dict | None, mitglieder: dict) -> str:
+    """Abschnitt „Belege je Kopf“ (P2-97). Leer, wenn keine Stimme den Schlüssel `belege` trägt: Berichte aus der Zeit
+    davor bleiben byte-gleich. Die Zitate stehen so da, wie der Kopf sie geliefert hat, und werden nie übersetzt."""
+    if not any(s and "belege" in s for s in (abstimmung or {}).values()):
+        return ""
+    auf, zu = ("“", "”") if sprache.aktuell() == "en" else ("„", "“")
+    kennzeichen = {True: ("votum-bewerben", tx("im CV gefunden")), False: ("votum-nicht", tx("nicht im CV gefunden")),
+                   None: ("enthaltung", tx("nicht prüfbar"))}
+    koepfe = []
+    for kid in sorted(mitglieder.keys()):
+        stimme = (abstimmung or {}).get(kid)
+        if not stimme or "belege" not in stimme:
+            continue
+        zeilen = []
+        for b in stimme["belege"]:
+            klasse, text = kennzeichen[b.get("geprueft") if b.get("geprueft") in (True, False) else None]
+            zeilen.append(f'<li><b>{_esc(_bereichs_kurz_anzeige(b["bereich"]))}:</b> {auf}{_esc(b.get("zitat"))}{zu} '
+                          f'<span class="{klasse}">{_esc(text)}</span></li>')
+        inhalt = "".join(zeilen) if zeilen else f'<li class="enthaltung">{tx("(kein Zitat genannt)")}</li>'
+        stil = "" if not koepfe else ' style="margin-top:14px"'
+        koepfe.append(f'<p class="kv"{stil}>{_esc(mitglieder[kid]["anzeige"])}</p><ul class="clean">{inhalt}</ul>')
+    return (f'\n  <h2 class="sec">{tx("Belege je Kopf")}</h2>\n  <div class="card">{"".join(koepfe)}</div>\n')
+
+
 def _kern_je_kopf_html(kern_liste: list, mitglieder: dict) -> str:
     kern_map = {k.get("kopf"): k.get("kern") for k in (kern_liste or [])}
     items = []
@@ -2334,7 +2466,7 @@ def _dashboard_html(d: "Debatte", stand: datetime | None = None) -> str:
 
   <h2 class="sec">{tx("4. Abstimmungs-Matrix (alle 7 Köpfe)")}</h2>
   {_stimmen_matrix_html(d.abstimmung, d.mitglieder)}
-
+{_belege_html(d.abstimmung, d.mitglieder)}
   <h2 class="sec">{tx("5. Debatten-Verlauf")}</h2>
   <details class="volltext">
     <summary>{verlauf_titel}</summary>

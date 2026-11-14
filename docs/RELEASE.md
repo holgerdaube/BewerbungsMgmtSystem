@@ -327,7 +327,10 @@ zur Laufzeit aus:
    `BMS_SECRETS_DIR`): je Zeile ein Begriff, `#` am Zeilenanfang = Kommentar. Für frühere Anschriften und
    Namen, die nirgends sonst stehen. Der Begriff wird nach seiner Form einer Regel zugeordnet: mit `@`,
    `linkedin.` oder `://` = Private Kontaktdaten, mit Ziffer oder Straßen-Endung = Anschrift, alles
-   andere = Dritte Personen.
+   andere = Dritte Personen. Eine Zeile `!Name` nimmt einen Firmennamen aus der Datenbank von der Regel
+   „Firmennamen“ aus. Das ist für Firmen, deren Name zugleich ein gewöhnliches Wort ist und im Code als
+   solches vorkommt (etwa in einem Mail-Kopf). So bleibt die Ausnahme auf deinem Rechner und der Name
+   steht nicht in `ERLAUBTE_FIRMENNAMEN`.
 
 Fehlen Profil oder Datenbank (etwa in der CI), entfallen die persönlichen Regeln still; die allgemeinen
 (E-Mail mit Ausnahmen, Telefonformat, Bestands-IDs, absolute Benutzerpfade) laufen weiter, und die Ausgabe

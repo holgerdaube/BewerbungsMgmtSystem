@@ -50,8 +50,8 @@ ist. Der Assistent prüft das in Schritt 1. Gibt es schon eins, aktualisieren Si
 dazu gibt er in Schritt 1.
 
 Der Assistent führt Sie nun Schritt für Schritt. Zu jedem Schritt bekommen Sie genau die Befehle, die
-Sie in **PowerShell** einfügen (Start, „PowerShell“ tippen, „Windows PowerShell“ öffnen, Befehl
-einfügen, Eingabetaste). Danach fragt er, ob der Befehl durchgelaufen ist, und prüft das
+Sie in **PowerShell** einfügen (Start, „PowerShell“ tippen, „Windows PowerShell“ öffnen, nicht
+„Windows PowerShell ISE“, Befehl einfügen, Eingabetaste). Danach fragt er, ob der Befehl durchgelaufen ist, und prüft das
 Ergebnis mit Ihnen. Es geht erst weiter, wenn ein Schritt sauber war. Planen Sie etwa 45 Minuten
 ein.
 
@@ -1044,6 +1044,7 @@ der Seitenleiste. Was sich in einer Version geändert hat, lesen Sie unter „Do
 | Was Sie sehen | Was hilft |
 |---|---|
 | Der Browser zeigt eine leere Seite | Die Oberfläche wurde nicht gebaut: Schritt 6 |
+| Claude Code meldet „Input must be provided either through stdin or as a prompt argument when using --print“ | Das Fenster ist „Windows PowerShell ISE“, das keine Eingabe an Claude Code weitergibt. Windows-Taste + R drücken, `powershell` eingeben, Eingabetaste, und den Befehl dort wiederholen |
 | Ein Befehl wird nicht gefunden, obwohl das Programm installiert ist | PowerShell schließen und neu öffnen, damit Windows neu installierte Programme findet. Hilft das nicht, den Rechner neu starten |
 | „npm.ps1 kann nicht geladen werden“ (oder `codex.ps1`) | `npm.cmd` statt `npm` schreiben, wie in Schritt 6, und `codex.cmd` statt `codex` |
 | `Get-FileHash` (Schritt 4c) oder `Expand-Archive` (Schritt 4d) wird nicht erkannt, oder es erscheint eine Meldung wie „…psm1 kann nicht geladen werden“ | PowerShell wurde aus einem anderen Programm heraus gestartet (etwa aus PowerShell 7). Das Fenster schließen und „Windows PowerShell“ über das Startmenü neu öffnen |

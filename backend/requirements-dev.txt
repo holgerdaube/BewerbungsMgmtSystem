@@ -8,5 +8,7 @@
 iniconfig==2.3.0
 packaging==26.2
 pluggy==1.6.0
+# pyflakes: Wächter tests/test_keine_undefinierten_namen.py (undefinierte Namen, s. 2.2.2-Startfehler unter Windows).
+pyflakes==4.1.0
 Pygments==2.20.0
 pytest==9.1.1

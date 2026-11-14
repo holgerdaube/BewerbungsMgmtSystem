@@ -326,7 +326,10 @@ at runtime from:
    `BMS_SECRETS_DIR`): one term per line, `#` at the start of a line = comment. For former addresses and
    names that appear nowhere else. A term is assigned to a rule according to its form: with `@`,
    `linkedin.` or `://` = Private Kontaktdaten, with a digit or street ending = Anschrift, everything
-   else = Dritte Personen.
+   else = Dritte Personen. A line `!Name` exempts a company name from the database from the rule
+   „Firmennamen“. This is for companies whose name is also an ordinary word and appears as such in the
+   code (for instance in a mail header). The exception stays on your computer and the name does not
+   appear in `ERLAUBTE_FIRMENNAMEN`.
 
 If the profile or database is missing (for example in CI), the personal rules are silently dropped; the general ones
 (email with exceptions, phone format, inventory IDs, absolute user paths) continue to run, and the output

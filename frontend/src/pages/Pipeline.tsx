@@ -6,7 +6,9 @@ import { useReviewCount } from '../context/ReviewCount'
 import { t } from '../i18n'
 import { wert } from '../i18n/werte'
 
-const COLUMNS = ['Neu', 'Prüfen', 'Beworben', 'Interview', 'Angebot', 'Absage'] // i18n-ok: DB-Werte
+// „Geparkt“ steht rechts neben „Prüfen“: Geparkt wird eine Stelle vor der Bewerbung (später
+// ansehen, Dublette). Die Leserichtung bleibt damit der Ablauf; was weiter rechts steht, ist beworben.
+const COLUMNS = ['Neu', 'Prüfen', 'Geparkt', 'Beworben', 'Interview', 'Angebot', 'Absage'] // i18n-ok: DB-Werte
 // Spaltenpunkte aus der kanonischen Styleguide-Map (18.07.) — Kanban und Status-Balken
 // sprechen dieselbe Farbsprache.
 const COL_ACCENT: Record<string, string> =
@@ -44,7 +46,7 @@ export default function Pipeline() {
         <h1 className="text-2xl font-bold text-brand-navy">{t('common:nav.pipeline')}</h1>
         <p className="text-sm text-slate-500">{t('pipeline:untertitel', {
           anzahl: archived,
-          stati: ['Keine Rückmeldung', 'Kein Match', 'Beirat abgelehnt', 'Nicht verfügbar', 'Geparkt'].map((s) => wert('status', s)).join(' / '), // i18n-ok: DB-Werte
+          stati: ['Keine Rückmeldung', 'Kein Match', 'Beirat abgelehnt', 'Nicht verfügbar'].map((s) => wert('status', s)).join(' / '), // i18n-ok: DB-Werte
         })}</p>
       </div>
 

@@ -4,6 +4,15 @@ Here you will find, for each version, what changes for you. You can see which ve
 
 ## Unreleased
 
+## 2.2.3 (14.11.2026)
+
+- On Windows, the BMS starts with Claude again. In 2.2.2 the start aborted (“NameError: name 'tx' is not defined”) as soon as the key file `agent.env` existed. On the Mac this hit every start with an error in that file, such as a wrapped token. The BMS now reports such errors as a warning in the black window again. On Windows the check of file permissions is skipped, as there is no `chmod` there. If you added the line `tx = sprache.tx` by hand, you need to do nothing, the update replaces the file.
+- The Windows guide warns against “Windows PowerShell ISE”. Claude Code does not start there, you need the normal “Windows PowerShell”.
+- The pipeline has its own “Parked” column to the right of “To review”. Parked jobs are no longer hidden under “archived”, and you can drag them back to “To review” or on to “Applied”.
+- In the job check, every board member backs their rating of the CV results with one to three literal quotations from your CV. The BMS checks each quotation against the CV and shows in the report under “Evidence per board member” whether it is there. A rating of 7 or higher without verified evidence appears in the risk board. The BMS does not change the ratings themselves. Older reports stay as they are.
+- “Create CV” checks the red flags from the CV match once more after the rewrite: resolved, mitigated or open. “Resolved” counts only when a literal quotation from the finished CV backs it. The result is in the ATS report under “Red flags after the rewrite”. Drafts created before this version have no such list yet.
+- In the interview briefing, an answer outline shows “⚠️ Number missing: add it before the interview” when your CV gives no number for the result. The briefing does not estimate a number or borrow one from another position. At the end of the run it says how many numbers are missing.
+
 ## 2.2.2 (07.11.2026)
 
 - The `beispiele` folder now contains a fictitious LinkedIn data export in German and English. It shows what the import takes over before your own export arrives. The installation guide mentions it in the section on the LinkedIn import.

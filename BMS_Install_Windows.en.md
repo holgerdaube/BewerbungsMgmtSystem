@@ -51,8 +51,8 @@ checks this in Step 1. If there is already one, update it (section
 on this in Step 1.
 
 The assistant now guides you step by step. For each step you get exactly the commands that
-you paste into **PowerShell** (Start, type “PowerShell”, open “Windows PowerShell”, paste the command,
-Enter). Afterwards it asks whether the command ran and checks the result with you. It only
+you paste into **PowerShell** (Start, type “PowerShell”, open “Windows PowerShell”, not
+“Windows PowerShell ISE”, paste the command, Enter). Afterwards it asks whether the command ran and checks the result with you. It only
 moves on once a step went cleanly. Allow about 45 minutes.
 
 If you install without the assistant, run the commands of Steps 1 to 9 yourself and fill in the
@@ -1034,6 +1034,7 @@ of the sidebar. What changed in a version, you can read under “Documentation�
 | What you see | What helps |
 |---|---|
 | The browser shows an empty page | The interface was not built: Step 6 |
+| Claude Code reports “Input must be provided either through stdin or as a prompt argument when using --print” | The window is “Windows PowerShell ISE”, which passes no input to Claude Code. Press Windows key + R, type `powershell`, press Enter and repeat the command there |
 | A command is not found although the program is installed | Close PowerShell and reopen it, so that Windows finds newly installed programs. If that does not help, restart the computer |
 | “npm.ps1 cannot be loaded” (or `codex.ps1`) | Write `npm.cmd` instead of `npm`, as in Step 6, and `codex.cmd` instead of `codex` |
 | `Get-FileHash` (Step 4c) or `Expand-Archive` (Step 4d) is not recognised, or a message such as “…psm1 cannot be loaded” appears | PowerShell was started from another program (such as PowerShell 7). Close the window and reopen “Windows PowerShell” from the Start menu |

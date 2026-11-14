@@ -83,6 +83,8 @@ Eimer:
 - **abdeckbar, aber nicht eingearbeitet** — `abdeckbar: true`, im finalen Text (noch) nicht
   gefunden → Auslöser für die Feedback-Schleife, Schritt 4b direkt im Anschluss.
 
+Baustein 6 (Red Flags) gehört NICHT in diesen Schritt, er entsteht erst in Schritt 4c.
+
 **Score-Formel (deterministisch, im Report vorrechnen):**
 `ATS-Score = round(0.60 · K + 0.25 · T + 0.15 · F)`
 - **K** = abgedeckte abdeckbare Keywords ÷ alle abdeckbaren Keywords × 100 (Basis NUR
@@ -117,16 +119,17 @@ Deshalb nur die Klassen aus der Vorlage und aus den Bausteinen unten benutzen (`
 Baustein 3): **verwendete Klasse ⇒ Regel im zentralen CSS.** Fehlt eine, melden `bericht_stil einsetzen`
 und `report_check` sie.
 
-**⚠️ Verbindliches Layout — GENAU diese fünf Bausteine, in dieser Reihenfolge, NICHT durch eigene
+**⚠️ Verbindliches Layout — GENAU diese sechs Bausteine, in dieser Reihenfolge (Baustein 1 bis 5 jetzt,
+Baustein 6 „Red Flags nach der Überarbeitung“ erst in Schritt 4c), NICHT durch eigene
 Freitext-Karten ersetzen oder vereinfachen.** Grund: ohne feste Bausteine driftet das Layout von
 Lauf zu Lauf (beobachtet 22.07.2026 — ein Lauf verlor gegenüber dem Referenzlauf sowohl
 die farbigen Keyword-Chips als auch die Schwachstellen-Tabelle, weil beides nur als Freitext
 improvisiert wurde). **Referenz-Beispiel, an dem sich JEDER Lauf messen lassen muss:**
 `data/templates/referenz_atsscan_v2.html`, falls vorhanden (Design-Review 10.08.2026: vollständig
-Methodik-v2-konform, alle 5 Bausteine korrekt, 0 report_check-Befunde; ersetzt die ältere
-v1-Referenz) — bei Zweifel diese Datei zum Vergleich öffnen (Aufbau und Markup; ihren Style-Block nicht
+Methodik-v2-konform, Baustein 1 bis 5 korrekt (Baustein 6 kam mit P2-97 später dazu und fehlt dort),
+0 report_check-Befunde; ersetzt die ältere v1-Referenz) — bei Zweifel diese Datei zum Vergleich öffnen (Aufbau und Markup; ihren Style-Block nicht
 übernehmen). Fehlt sie (neue Installation), gelten
-allein die fünf Bausteine unten; dann NICHT ersatzweise den neuesten Bericht als Vorlage nehmen,
+allein die sechs Bausteine (Schritt 4 und 4c); dann NICHT ersatzweise den neuesten Bericht als Vorlage nehmen,
 sonst pflanzen sich dessen Abweichungen fort. (Historie: die frühere Referenz
 war noch Methodik v1 — zwei Chip-Gruppen, Prosa-Score-
 Herleitung — und ist damit überholt; Methodik v2 = Phase 55, real verifiziert
@@ -248,8 +251,8 @@ einsetzen, dann prüfen; fängt genau den Fall vom 23.07.2026 ab, bei dem die Ch
 cd backend && ~/.bewerbung_mgmt_venv/bin/python -m pipeline.bericht_stil einsetzen "../data/company_fit/<ATSscan-Name>.html" && ~/.bewerbung_mgmt_venv/bin/python -m pipeline.report_check "../data/company_fit/<ATSscan-Name>.html"
 ```
 Meldet einer der beiden Befehle eine Klasse ohne Regel, die Klasse durch eine aus der Vorlage
-ersetzen (kein eigenes CSS) und beide Befehle wiederholen — **erst dann** Schritt 5 (bzw. 4b, falls
-unten ausgelöst). Nie mit einem roten Check weitermachen.
+ersetzen (kein eigenes CSS) und beide Befehle wiederholen — **erst dann** Schritt 4c (bzw. 4b, falls
+unten ausgelöst; 4c folgt danach in jedem Fall). Nie mit einem roten Check weitermachen.
 
 ### 4b. Feedback-Schleife (max. 1 Iteration, Phase 55)
 Steht nach Schritt 4 mindestens ein Begriff in der `chip warn`-Gruppe (`abdeckbar: true`, aber im
@@ -277,7 +280,52 @@ zweiter Re-Scan zählt nicht mehr**:
    Datei laufen lassen.
    Die `warn`-Chip-Gruppe ist danach im Normalfall leer.
 
-Kein `warn`-Begriff nach Schritt 4 → Schritt 4b komplett überspringen, direkt zu Schritt 5.
+Kein `warn`-Begriff nach Schritt 4 → Schritt 4b komplett überspringen, direkt zu Schritt 4c.
+
+### 4c. Red-Flag-Nachprüfung (P2-97)
+Läuft NACH 4b (oder direkt nach 4, wenn 4b entfällt), damit die endgültige Fassung geprüft wird. **Nur
+prüfen, nie nachbessern:** keine Änderung am CV, keine zweite Schleife (sie würde Edits des Nutzers
+gefährden). Die Nachprüfung meldet ausschließlich den Status.
+
+1. `red_flags` aus `keywords_json` der CVVersion-Row lesen (Liste mit `titel`, `quelle`, `fix`, `hinweis`,
+   erzeugt von `cv-match` Schritt 1d). **Fehlt das Feld** (Entwurf vor P2-97): im ATS-Bericht statt
+   Baustein 6 nur eine Zeile `<p class="kv">Keine Red-Flag-Liste aus dem CV-Match vorhanden</p>`
+   (englisch „No red-flag list from the CV match available“) an derselben Stelle einfügen, an die sonst
+   Baustein 6 käme (siehe Punkt 4), danach Punkt 5 dieses Schritts und weiter zu Schritt 5.
+   Eine leere Liste `[]` heißt: keine Red Flags, Baustein 6 entfällt, weiter zu Schritt 5.
+2. Je Red Flag EINEN Status vergeben, gemessen an der FINALEN Fassung:
+   - **behoben** — die finale `.docx` entkräftet die Red Flag.
+   - **abgefedert** — gemildert, ein Restrisiko bleibt.
+   - **offen** — kein Text im CV hilft; Gespräch oder Anschreiben müssen es tragen (so bleibt z. B. eine
+     fehlende Ausbildung offen).
+3. Für **behoben** und **abgefedert** ein **wörtliches Zitat** aus der finalen `.docx` nennen und mit dem
+   Code prüfen, nie nach Augenmaß (Aufruf aus `backend/`, Pfad wie in Schritt 4):
+   ```sh
+   cd backend && ~/.bewerbung_mgmt_venv/bin/python -m pipeline.belege pruefen --datei "<finaler docx-Pfad aus Schritt 3>" --zitat "<wörtliches Zitat>"
+   ```
+   Exit 0 = gefunden. **Exit 1 oder 2 = Status wird „offen“**, Zitat nicht berichten. Ein Zitat hat je Teil
+   mindestens 12 Zeichen, eine Auslassung `…` ist erlaubt. **Nie „behoben“ oder „abgefedert“ ohne ein
+   mit Exit 0 geprüftes Zitat.** Paraphrasen zählen nicht.
+4. Baustein 6 mit diesem Markup in den gespeicherten ATS-Bericht einfügen, direkt NACH dem Baustein
+   „Schwachstellen &amp; Rewrites“ (und vor dem Dateiende des Berichts). Flache Chip-Liste, ein Chip je Red
+   Flag, `chip pos` = behoben, `chip warn` = abgefedert, `chip neg` = offen; `b` = Titel, dann der Status,
+   dann bei behoben/abgefedert das geprüfte Zitat, bei offen der `hinweis` aus `keywords_json`:
+```html
+<h2 class="sec">Red Flags nach der Überarbeitung</h2>
+<div class="comp">
+  <div class="chip pos"><b>Titel der Red Flag</b><span>Behoben · „wörtliches, geprüftes Zitat aus dem CV“</span></div>
+  <div class="chip warn"><b>Titel der Red Flag</b><span>Abgefedert · „wörtliches, geprüftes Zitat aus dem CV“</span></div>
+  <div class="chip neg"><b>Titel der Red Flag</b><span>Offen · Hinweis, z. B. im Anschreiben über Äquivalenz adressieren</span></div>
+</div>
+```
+   Bei englischer Ausgabe dasselbe Markup mit den Texten „Red flags after the rewrite“, „Resolved“,
+   „Mitigated“ und „Open“. Die Zitate bleiben in der Sprache des CV, sie werden nie übersetzt. Ein Beispiel
+   je Klasse ist nur Muster: es entstehen so viele Chips, wie `red_flags` Einträge hat, in deren Reihenfolge.
+5. Danach wie in Schritt 4: `bericht_stil einsetzen` und `report_check` gegen den geänderten Bericht
+   (derselbe Befehl, Pfad `../data/company_fit/<ATSscan-Name>.html`). Rot heißt: Klasse durch eine
+   Vorlagen-Klasse ersetzen und wiederholen. Der ATS-Score aus Schritt 4/4b ändert sich durch 4c nicht.
+
+Die Kompaktmeldung in Schritt 6 bleibt unverändert, die Red Flags stehen nur im ATS-Bericht.
 
 ### 5. Fertigstellen
 ```sh

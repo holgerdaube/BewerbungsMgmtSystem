@@ -86,6 +86,13 @@ farbiger Punkt + Text**, jetzt als Meta-Wert (nicht mehr eigener Abschnitt):
 1. **Erwartbare Fragen + Antwortskizzen** — 8–12 Fragen, rollen- und runden-spezifisch (HR-Screen anders als
    Fachgespräch/Final). Je Frage eine **STAR-Antwortskizze mit ECHTEN Belegen aus dem CV des Nutzers** — keine
    Erfindungen. Bei Runde ≥ 2 zusätzlich einen Block „Aus Runde n-1 offen" aus den Transkript-Lücken.
+   **Beleglücke sichtbar machen (P2-97 D):** Das Ergebnis (R) einer Skizze trägt eine Zahl (Prozent, Betrag,
+   Teamgröße, Zeitraum, Anzahl). Jede Zahl steht so im CV, für genau dieses Beispiel. Gibt der CV für das
+   Beispiel keine Zahl her, steht an ihrer Stelle wörtlich
+   `<b>⚠️ Zahl fehlt: vor dem Gespräch nachtragen</b>` (englisch `<b>⚠️ Number missing: add it before the
+   interview</b>`). Keine Schätzung, kein „ca.“, keine Zahl aus einer anderen Station, kein Weglassen des
+   Ergebnisses. Ein Ergebnis ohne Zahl, das auch ohne Zahl trägt (z. B. „erste Zertifizierung der Einheit“),
+   braucht keinen Marker.
 2. **Offene Fragen AN die Firma** — 6–10 Stück, priorisiert; gespeist aus Company-Fit-Risiken/-Klärungsfragen,
    Unklarheiten der Stellenanzeige und aktuellen News. Als **Checkliste** (zum Abhaken im Call).
    **Konflikte zuerst (Phase 21):** Jeder in Schritt 3b gefundene Quellen-Konflikt steht als **ERSTE**
@@ -124,6 +131,7 @@ Danach zeigt das Interview im Job-Detail den Link **„📋 Briefing öffnen"**.
 
 ### 6. Bericht an den Nutzer
 3–5 wichtigste Punkte: die kritischste erwartbare Frage, die Top-Fragen an die Firma, die Kernbotschaft.
+Gibt es Marker „Zahl fehlt“ (Abschnitt 1), ihre Anzahl nennen, damit der Nutzer die Zahlen vor dem Gespräch nachträgt.
 Plus Hinweis: Briefing hängt am Job-Detail (http://localhost:8000/jobs/<id>). Wenn in Schritt 1 ein Interview
 neu angelegt wurde, das erwähnen (Art/Runde ggf. korrigieren).
 

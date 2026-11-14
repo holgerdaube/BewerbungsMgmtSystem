@@ -189,9 +189,10 @@ nie, auch mit Datum nicht. Die Seite lädt **nicht** automatisch nach — nach �
 kurz neu laden.
 
 ### 📋 Pipeline — Kanban-Board
-Alle aktiven Stellen als Karten in Spalten: **Neu · Prüfen · Beworben · Interview · Angebot · Absage**.
-Karte per **Drag & Drop** in eine andere Spalte ziehen = Status ändern. Archivierte Stellen
-(Kein Match / Nicht verfügbar / Geparkt) erscheinen hier nicht (Zähler „X archiviert" oben).
+Alle aktiven Stellen als Karten in Spalten: **Neu · Prüfen · Geparkt · Beworben · Interview · Angebot · Absage**.
+Karte per **Drag & Drop** in eine andere Spalte ziehen = Status ändern. Geparkte Stellen holst du so
+auch wieder nach „Prüfen“ zurück. Archivierte Stellen (Keine Rückmeldung / Kein Match / Beirat abgelehnt /
+Nicht verfügbar) erscheinen hier nicht (Zähler „X archiviert" oben).
 
 ### 💼 Stellen & Job-Detail
 **Stellen** = Tabelle aller Treffer mit Filtern (Status, Such-Tab, Score, Suche). Klick auf eine Zeile → **Job-Detail**:

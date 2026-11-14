@@ -215,8 +215,20 @@ Format (wird unverändert als `keywords_json` gespeichert, Schritt 2):
    "grund": "CV-Domäne ist PS-Delivery, kein Care-Center"},
   {"begriff": "Führung großer Teams", "kategorie": "fuehrung_scope", "abdeckbar": true,
    "beleg": "12 Direct Reports (Beispiel GmbH)"}
+], "red_flags": [
+  {"titel": "Hochschulabschluss gefordert", "quelle": "anforderung", "fix": "luecke",
+   "hinweis": "Im Anschreiben über Äquivalenz adressieren"},
+  {"titel": "Zuletzt keine Teamverantwortung sichtbar", "quelle": "zehn_sekunden", "fix": "umgesetzt",
+   "hinweis": "Führungsumfang steht jetzt in der Executive Summary"}
 ]}
 ```
+**`red_flags` (P2-97):** die Red Flags dieses Matches, damit `cv-erstellen` (Schritt 4c) sie nach der
+Überarbeitung nachprüfen kann. Quellen: `quelle: "anforderung"` = Muss-Anforderung mit Erfüllung ≤ 4 aus
+1b (die Zeilen mit `tr.redflag`), `quelle: "zehn_sekunden"` = die drei Red Flags aus dem 10-Sekunden-Test
+von `cv-job-match` Schritt 1. `fix: "umgesetzt"` = im Entwurf entschärft, `fix: "luecke"` = ehrlich offen
+(Anschreiben/Gespräch). `titel` und `hinweis` sind je ein kurzer Text in der Ausgabesprache.
+Doppelte (dieselbe Schwäche aus beiden Quellen) zu einem Eintrag zusammenführen, höchstens 6. Gibt es
+keine Red Flag, steht `"red_flags": []` — das Feld nie weglassen.
 Sprache: Begriffe in Anzeigensprache (DE-Anzeige → deutsche Begriffe); bei EN-CV gegen eine
 DE-Anzeige (oder eine FR-, IT-, ES-, PT-Anzeige) gilt sinngleiche Übersetzung mit Beleg als abgedeckt.
 
@@ -274,7 +286,7 @@ cd backend && ~/.bewerbung_mgmt_venv/bin/python -m pipeline.deepdive entwurf <en
 benutzten Fassung, `kind:"tailored"`, `file_path` — **Arbeitsname
 egal**, der Ordner nicht, z. B. `data/cv_basis/entwuerfe/2026_CV_<Name>_v8_<LANG>_<slug>.docx`, wird NICHT umbenannt in diesem
 Schritt —, `match_score100`, `match_dashboard_path`, **`keywords_json`** — das komplette Dict aus
-Schritt 1d, EINE Liste für Match-Dashboard und späteren ATS-Scan). `register_entwurf()` extrahiert
+Schritt 1d inklusive `red_flags`, EINE Liste für Match-Dashboard und späteren ATS-Scan). `register_entwurf()` extrahiert
 die `.docx` selbst als Absatz-Liste (`entwurf_text`), speichert `keywords_json` unverändert als
 JSON-String an der Row und legt eine `CVVersion` mit `status=entwurf` an — die Rückgabe enthält
 `cv_version_id` und `absaetze` (Anzahl editierbarer Absätze).

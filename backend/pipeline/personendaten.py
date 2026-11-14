@@ -19,6 +19,9 @@ eine konkrete Person verrät, kommt zur Laufzeit aus lokalen Quellen (`muster_la
       einer Regel zugeordnet: mit `@`, `linkedin.` oder `://` = Private Kontaktdaten; mit Ziffer oder
       Straßen-Endung (…straße, …weg, …platz, …allee, …gasse, …ring, …ufer, …damm, …pfad) = Anschrift;
       alles andere = Dritte Personen. Begriffe unter drei Zeichen zählen nicht.
+      Eine Zeile `!Name` nimmt einen Firmennamen aus dem Bestand von der Firmennamen-Regel aus. Das
+      ist für Firmen gedacht, deren Name zugleich ein gewöhnliches Wort ist und im Code als solches
+      vorkommt. Die Ausnahme bleibt so lokal, statt den Namen in `ERLAUBTE_FIRMENNAMEN` zu verraten.
 Fehlen Profil oder Datenbank, ist `Muster.vollstaendig` falsch, und die persönlichen Regeln entfallen
 STILL (`Muster.hinweise` sagt, was fehlte). Ob das ein Abbruch ist, entscheidet der Aufrufer: die
 Paketprüfung in der CI läuft so weiter, das Export-Werkzeug bricht ab.
@@ -658,10 +661,12 @@ def muster_laden(projekt_root: Path, *, db_pfad: Path | None = None,
     extra_pfad = Path(extra) if extra is not None else pruefmuster_pfad()
     extra_begriffe = _extra_lesen(extra_pfad) if extra_pfad.is_file() else None
     if extra_begriffe is not None:
-        a, k, d = _extra_zuordnen(extra_begriffe)
+        ausnahmen = {_firmenname_kernform(b[1:]) or b[1:].strip() for b in extra_begriffe if b.startswith("!")}
+        a, k, d = _extra_zuordnen([b for b in extra_begriffe if not b.startswith("!")])
         anschrift += a
         kontakt += k
         dritte += d
+        firmen = [f for f in firmen if f not in ausnahmen]
 
     return Muster(
         anschrift=_eindeutig(anschrift, gross_klein_egal=True),

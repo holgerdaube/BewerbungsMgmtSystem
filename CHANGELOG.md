@@ -4,6 +4,15 @@ Hier steht zu jeder Version, was sich für Sie ändert. Welche Version installie
 
 ## Unveröffentlicht
 
+## 2.2.3 (14.11.2026)
+
+- Unter Windows startet das BMS mit Claude wieder. In 2.2.2 brach der Start ab („NameError: name 'tx' is not defined“), sobald die Schlüsseldatei `agent.env` vorhanden war. Auf dem Mac traf es jeden Start mit einem Fehler in dieser Datei, etwa einem umgebrochenen Token. Das BMS meldet solche Fehler jetzt wieder als Warnung im schwarzen Fenster. Unter Windows entfällt die Prüfung der Dateirechte, weil es dort keinen `chmod` gibt. Wer die Zeile `tx = sprache.tx` von Hand ergänzt hat, muss nichts tun, das Update ersetzt die Datei.
+- Die Windows-Anleitung warnt vor „Windows PowerShell ISE“. Dort startet Claude Code nicht, nötig ist die normale „Windows PowerShell“.
+- Die Pipeline hat eine eigene Spalte „Geparkt“ rechts neben „Prüfen“. Geparkte Stellen sind damit nicht mehr unter „archiviert“ versteckt, und Sie ziehen sie per Drag & Drop zurück nach „Prüfen“ oder weiter nach „Beworben“.
+- Beim Stellen-Check belegt jeder Beiratskopf seine Bewertung der CV-Ergebnisse mit ein bis drei wörtlichen Zitaten aus Ihrem Lebenslauf. Das BMS prüft jedes Zitat gegen den Lebenslauf und zeigt im Bericht unter „Belege je Kopf“, ob es dort steht. Eine Bewertung ab 7 ohne geprüften Beleg erscheint im Risiko-Board. Die Punkte selbst ändert das BMS nicht. Ältere Berichte bleiben unverändert.
+- „CV erstellen“ prüft nach der Überarbeitung die Red Flags aus dem CV-Match noch einmal: behoben, abgefedert oder offen. „Behoben“ gilt nur, wenn ein wörtliches Zitat aus dem fertigen Lebenslauf es belegt. Das Ergebnis steht im ATS-Bericht unter „Red Flags nach der Überarbeitung“. Für Entwürfe, die vor dieser Version entstanden sind, gibt es noch keine Liste.
+- Im Interview-Briefing steht bei einer Antwortskizze „⚠️ Zahl fehlt: vor dem Gespräch nachtragen“, wenn Ihr Lebenslauf für das Ergebnis keine Zahl hergibt. Das Briefing schätzt keine Zahl und nimmt keine aus einer anderen Station. Am Ende des Laufs nennt es, wie viele Zahlen fehlen.
+
 ## 2.2.2 (07.11.2026)
 
 - Im Ordner `beispiele` liegt jetzt ein erfundener LinkedIn-Datenexport auf Deutsch und Englisch. Er zeigt, was der Import übernimmt, bevor Ihr eigener Export da ist. Die Installationsanleitung nennt ihn im Abschnitt zum LinkedIn-Import.

@@ -347,7 +347,10 @@ at runtime from:</p>
    <code>BMS_SECRETS_DIR</code>): one term per line, <code>#</code> at the start of a line = comment. For former addresses and
    names that appear nowhere else. A term is assigned to a rule according to its form: with <code>@</code>,
    <code>linkedin.</code> or <code>://</code> = Private Kontaktdaten, with a digit or street ending = Anschrift, everything
-   else = Dritte Personen.</li>
+   else = Dritte Personen. A line <code>!Name</code> exempts a company name from the database from the rule
+   „Firmennamen“. This is for companies whose name is also an ordinary word and appears as such in the
+   code (for instance in a mail header). The exception stays on your computer and the name does not
+   appear in <code>ERLAUBTE_FIRMENNAMEN</code>.</li>
 </ol>
 <p>If the profile or database is missing (for example in CI), the personal rules are silently dropped; the general ones
 (email with exceptions, phone format, inventory IDs, absolute user paths) continue to run, and the output
@@ -485,4 +488,4 @@ approval of workflow runs for all external contributors. Wiki and Projects stay 
 data; a name that appears nowhere slips through. That is why reviewing the export before the first switch of the repo to
 public remains mandatory.</p></section>
 </div></body></html>
-<!-- docs_render quelle=RELEASE.md sha256=7803e79636751417c37b1af64b42a0cab1a9bd6c105dec4a32e05ebb40a700ba -->
+<!-- docs_render quelle=RELEASE.md sha256=4d110cd7af71e338c273cfa4afd3f9bcbc5953597bc8b07668dc95406babc88d -->

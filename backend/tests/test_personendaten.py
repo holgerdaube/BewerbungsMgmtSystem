@@ -935,3 +935,17 @@ def test_oeffentlicher_umfang_prueft_alle_dateien_ohne_pfadausnahme(pd, muster):
                  "frontend/src/rechtliches/ueber.md", "NOTICE"):
         f = pd.pruefen([pd.Eintrag(pfad, 0o644, b"Wohnhaft im Musterweg\n")], muster, umfang="oeffentlich")
         assert [(g.pfad, g.regel) for g in f] == [(pfad, "Anschrift")]
+
+
+def test_musterdatei_nimmt_firmennamen_mit_ausrufezeichen_aus(pd, tmp_path):
+    """`!Name` in der Musterdatei: Ein Firmenname, der zugleich ein gewöhnliches Wort ist, fällt aus der
+    Firmennamen-Regel, ohne im Code zu stehen. Rechtsform zählt nicht, andere Firmen bleiben, die Zeile
+    wird kein Muster für Dritte Personen."""
+    db = _db(tmp_path, company=["Antwort GmbH", "Nordfeld Systeme"])
+    extra = tmp_path / "pruefmuster.txt"
+    extra.write_text("# Kommentar\n!Antwort AG\n", encoding="utf-8")
+    m = pd.muster_laden(_projekt(tmp_path), db_pfad=db, extra=extra)
+    assert m.firmen == ("Nordfeld Systeme",)
+    assert m.dritte == ()
+    assert _funde(pd, m, "x.md", "Antwort-Datum\n") == []
+    assert len(_funde(pd, m, "x.md", "Nordfeld Systeme hat abgesagt.\n")) == 1

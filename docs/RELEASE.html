@@ -348,7 +348,10 @@ zur Laufzeit aus:</p>
    <code>BMS_SECRETS_DIR</code>): je Zeile ein Begriff, <code>#</code> am Zeilenanfang = Kommentar. Für frühere Anschriften und
    Namen, die nirgends sonst stehen. Der Begriff wird nach seiner Form einer Regel zugeordnet: mit <code>@</code>,
    <code>linkedin.</code> oder <code>://</code> = Private Kontaktdaten, mit Ziffer oder Straßen-Endung = Anschrift, alles
-   andere = Dritte Personen.</li>
+   andere = Dritte Personen. Eine Zeile <code>!Name</code> nimmt einen Firmennamen aus der Datenbank von der Regel
+   „Firmennamen“ aus. Das ist für Firmen, deren Name zugleich ein gewöhnliches Wort ist und im Code als
+   solches vorkommt (etwa in einem Mail-Kopf). So bleibt die Ausnahme auf deinem Rechner und der Name
+   steht nicht in <code>ERLAUBTE_FIRMENNAMEN</code>.</li>
 </ol>
 <p>Fehlen Profil oder Datenbank (etwa in der CI), entfallen die persönlichen Regeln still; die allgemeinen
 (E-Mail mit Ausnahmen, Telefonformat, Bestands-IDs, absolute Benutzerpfade) laufen weiter, und die Ausgabe
@@ -486,4 +489,4 @@ Freigabe von Workflow-Läufen für alle externen Beitragenden. Wiki und Projects
 heutigen Daten ab; ein Name, der nirgends steht, rutscht durch. Deshalb bleibt die Durchsicht des Exports vor
 dem ersten Umschalten des Repos auf öffentlich Pflicht.</p></section>
 </div></body></html>
-<!-- docs_render quelle=RELEASE.md sha256=d5b7023782f612061569b3813fde8a1cc5b1ede0b186aa169eabac5e94921fe7 -->
+<!-- docs_render quelle=RELEASE.md sha256=7bfa18811a2851da18a221ab492f4d70becbbc56ca7f765af127c447e137bd58 -->
