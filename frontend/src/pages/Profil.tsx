@@ -3,9 +3,10 @@ import { Link } from 'react-router-dom'
 import { api, apiUpload } from '../api'
 import AgentTaskButton from '../components/AgentTaskButton'
 import ProfilIdentitaet from '../components/ProfilIdentitaet'
+import { FeldHilfe } from '../components/ui'
 import { tagVon } from '../zeit'
 import { Trans } from 'react-i18next'
-import { t } from '../i18n'
+import { aktuelleSprache, t } from '../i18n'
 import { datum } from '../i18n/format'
 
 // Muster JobDetail.tsx::artifactUrl — bewusst lokal statt aus ui.tsx importiert (Phase-45-
@@ -21,6 +22,7 @@ function humanSize(bytes?: number | null): string {
 }
 
 const INPUT = 'rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm focus:border-brand-cyan focus:outline-none'
+const DATEI_INPUT = 'min-w-0 max-w-full text-xs text-slate-600 file:mr-2 file:rounded-lg file:border file:border-slate-300 file:bg-white file:px-2.5 file:py-1 file:text-xs file:font-medium file:text-slate-600 hover:file:bg-slate-50'
 const CAREER_ARTEN = ['Beruf', 'Ausbildung', 'Zertifizierung', 'Projekt', 'Sonstiges']
 const CAREER_FIELDS = ['art', 'firma', 'rolle', 'ort', 'von', 'bis', 'beschreibung',
   'referenzgeber', 'referenzdatum', 'notiz']
@@ -38,11 +40,12 @@ const TASK_CHIP_TEXT_KEYS = ['queued', 'running', 'done', 'failed', 'cancelled']
 const taskText = (status: string): string | undefined =>
   TASK_CHIP_TEXT_KEYS.includes(status) ? t(`profil:task.${status}`) : undefined
 
-/** Profil aus eingefügtem Text oder PDF: Die KI strukturiert, gespeichert wird erst nach der Vorschau. */
-function LinkedinText({ onSaved }: { onSaved: () => void }) {
-  const [text, setText] = useState('')
-  const [pdf, setPdf] = useState<File | null>(null)
+type EinleseArt = 'linkedin' | 'cv'
+
+/** Gemeinsamer Stand beider Einlese-Wege: ein Lauf und eine Vorschau, egal ob aus LinkedIn oder dem CV. */
+function useEinlesen(onSaved: () => void) {
   const [task, setTask] = useState<any>(null)
+  const [art, setArt] = useState<EinleseArt | null>(null)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
   const [vorschau, setVorschau] = useState<any>(null)
@@ -54,27 +57,26 @@ function LinkedinText({ onSaved }: { onSaved: () => void }) {
   useEffect(() => {
     if (!task || !TASK_ACTIVE.includes(task.status)) return
     const iv = setInterval(() => {
-      api<any>(`/tasks/${task.id}`).then((t) => {
-        setTask(t)
-        // Der eingefügte Text bleibt stehen, bis der Lauf durch ist: Scheitert er, geht nichts verloren.
-        if (t.status === 'done') { vorschauLaden(); setText(''); setPdf(null) }
+      api<any>(`/tasks/${task.id}`).then((stand) => {
+        setTask(stand)
+        if (stand.status === 'done') vorschauLaden()
       }).catch(() => {})
     }, 3000)
     return () => clearInterval(iv)
   }, [task?.id, task?.status])
 
-  const start = async () => {
-    setBusy(true); setErr(null); setVorschau(null); setErgebnis(null)
+  const starten = async (neueArt: EinleseArt, url: string, fd: FormData): Promise<any | null> => {
+    setBusy(true); setErr(null); setVorschau(null); setErgebnis(null); setArt(neueArt)
     try {
-      const fd = new FormData()
-      if (pdf) fd.append('file', pdf)
-      else fd.append('text', text)
       // NICHT über api(), Muster uploadZip unten.
-      const { res, body } = await apiUpload('/api/profil/linkedin-einlesen', fd)
-      if (!res.ok) throw new Error(body.detail || `${res.status} ${res.statusText}`)
+      const { res, body } = await apiUpload(url, fd)
+      if (!res.ok) throw new Error((typeof body.detail === 'string' && body.detail) || `${res.status} ${res.statusText}`)
       setTask(body.task)
-    } catch (e: any) { setErr(e?.message || t('profil:linkedin.start_fehler')) }
-    finally { setBusy(false) }
+      return body
+    } catch (e: any) {
+      setErr(e?.message || t('profil:linkedin.start_fehler'))
+      return null
+    } finally { setBusy(false) }
   }
 
   const uebernehmen = async () => {
@@ -96,30 +98,36 @@ function LinkedinText({ onSaved }: { onSaved: () => void }) {
     finally { setBusy(false) }
   }
 
-  const active = task && TASK_ACTIVE.includes(task.status)
+  const aktiv = !!task && TASK_ACTIVE.includes(task.status)
+  return { task, art, busy, err, vorschau, ergebnis, aktiv, starten, uebernehmen, verwerfen }
+}
+type Einlesen = ReturnType<typeof useEinlesen>
+
+/** Status des Laufs in der Karte, die ihn gestartet hat. */
+function LaufStatus({ einlesen, art }: { einlesen: Einlesen; art: EinleseArt }) {
+  if (einlesen.art !== art) return null
+  const { task, err, vorschau } = einlesen
   return (
-    <div className="mt-3 border-t border-slate-100 pt-3">
-      <div className="mb-1 text-xs font-medium text-slate-500">{t('profil:linkedin.text_titel')}</div>
-      <p className="mb-2 text-xs text-slate-400">
-        {t('profil:linkedin.text_hinweis')}
-      </p>
-      <textarea className={`${INPUT} w-full`} rows={4} value={text} disabled={!!pdf}
-        placeholder={t('profil:linkedin.text_platzhalter')} onChange={(e) => setText(e.target.value)} />
-      <div className="mt-2 flex flex-wrap items-center gap-2">
-        <input type="file" accept=".pdf" onChange={(e) => setPdf(e.target.files?.[0] || null)}
-          className="text-xs text-slate-600 file:mr-2 file:rounded-lg file:border file:border-slate-300 file:bg-white file:px-2.5 file:py-1 file:text-xs file:font-medium file:text-slate-600 hover:file:bg-slate-50" />
-        <button onClick={start} disabled={busy || !!active || (!pdf && !text.trim())}
-          className="whitespace-nowrap rounded-lg bg-brand-cyan px-3 py-1.5 text-sm font-medium text-brand-aufAktion hover:bg-brand-cyanHover disabled:cursor-not-allowed disabled:opacity-40">
-          {active ? t('profil:linkedin.laeuft') : busy ? t('profil:linkedin.startet') : t('profil:linkedin.auslesen')}
-        </button>
-        {task && (
+    <>
+      {task && (
+        <div className="mt-2">
           <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${TASK_CHIP[task.status]}`}>{taskText(task.status)}</span>
-        )}
-      </div>
+        </div>
+      )}
       {task?.status === 'failed' && task.error && <div className="mt-2 rounded-lg bg-rose-50 p-2 text-xs text-rose-700">{task.error}</div>}
-      {err && <div className="mt-1 text-xs text-rose-600">{err}</div>}
+      {err && !vorschau && <div className="mt-1 text-xs text-rose-600">{err}</div>}
+    </>
+  )
+}
+
+/** Vorschlag der KI in voller Breite unter beiden Karten. */
+function EinleseVorschau({ einlesen }: { einlesen: Einlesen }) {
+  const { vorschau, ergebnis, busy, err, uebernehmen, verwerfen } = einlesen
+  if (!vorschau && !ergebnis) return null
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
       {ergebnis && (
-        <div className="mt-2 text-xs text-emerald-700">
+        <div className="text-xs text-emerald-700">
           {t('profil:ergebnis.uebernommen', {
             skills: t('profil:ergebnis.skills', { count: ergebnis.skills_neu }),
             werdegang: t('profil:ergebnis.werdegang', { count: ergebnis.werdegang_neu }),
@@ -131,8 +139,8 @@ function LinkedinText({ onSaved }: { onSaved: () => void }) {
         </div>
       )}
       {vorschau && (
-        <div className="mt-3 space-y-2 rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-700">
-          <div className="font-semibold text-brand-navy">{t('profil:vorschau.titel')}</div>
+        <div className="space-y-2 text-xs text-slate-700">
+          <div className="text-sm font-semibold text-brand-navy">{t('profil:vorschau.titel')}</div>
           {vorschau.felder.map((f: any) => (
             <div key={f.label}><b>{f.label}:</b> <span className="whitespace-pre-wrap">{f.wert}</span></div>
           ))}
@@ -152,6 +160,7 @@ function LinkedinText({ onSaved }: { onSaved: () => void }) {
               ))}
             </ul>
           </div>
+          {err && <div className="text-rose-600">{err}</div>}
           <div className="flex gap-2 pt-1">
             <button onClick={uebernehmen} disabled={busy}
               className="rounded-lg bg-brand-cyan px-3 py-1.5 text-xs font-medium text-brand-aufAktion hover:bg-brand-cyanHover disabled:opacity-40">{t('profil:vorschau.alles_uebernehmen')}</button>
@@ -164,7 +173,47 @@ function LinkedinText({ onSaved }: { onSaved: () => void }) {
   )
 }
 
-function LinkedinZeile({ profile, onSaved }: { profile: any; onSaved: () => void }) {
+/** Profil aus eingefügtem Text oder PDF: Die KI strukturiert, gespeichert wird erst nach der Vorschau. */
+function LinkedinText({ einlesen }: { einlesen: Einlesen }) {
+  const [text, setText] = useState('')
+  const [pdf, setPdf] = useState<File | null>(null)
+  const [dateiFeld, setDateiFeld] = useState(0)
+
+  // Der eingefügte Text bleibt stehen, bis der Lauf durch ist: Scheitert er, geht nichts verloren.
+  const fertig = einlesen.art === 'linkedin' && einlesen.task?.status === 'done'
+  useEffect(() => {
+    if (fertig) { setText(''); setPdf(null); setDateiFeld((n) => n + 1) }
+  }, [fertig])
+
+  const start = () => {
+    const fd = new FormData()
+    if (pdf) fd.append('file', pdf)
+    else fd.append('text', text)
+    return einlesen.starten('linkedin', '/api/profil/linkedin-einlesen', fd)
+  }
+
+  return (
+    <div className="mt-3 border-t border-slate-100 pt-3">
+      <div className="mb-1 text-xs font-medium text-slate-500">{t('profil:linkedin.text_titel')}</div>
+      <p className="mb-2 text-xs text-slate-400">
+        {t('profil:linkedin.text_hinweis')}
+      </p>
+      <textarea className={`${INPUT} w-full`} rows={4} value={text} disabled={!!pdf}
+        placeholder={t('profil:linkedin.text_platzhalter')} onChange={(e) => setText(e.target.value)} />
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <input key={dateiFeld} type="file" accept=".pdf" onChange={(e) => setPdf(e.target.files?.[0] || null)}
+          className={DATEI_INPUT} />
+        <button onClick={start} disabled={einlesen.busy || einlesen.aktiv || (!pdf && !text.trim())}
+          className="whitespace-nowrap rounded-lg bg-brand-cyan px-3 py-1.5 text-sm font-medium text-brand-aufAktion hover:bg-brand-cyanHover disabled:cursor-not-allowed disabled:opacity-40">
+          {einlesen.aktiv && einlesen.art === 'linkedin' ? t('profil:linkedin.laeuft') : einlesen.busy && einlesen.art === 'linkedin' ? t('profil:linkedin.startet') : t('profil:linkedin.auslesen')}
+        </button>
+      </div>
+      <LaufStatus einlesen={einlesen} art="linkedin" />
+    </div>
+  )
+}
+
+function LinkedinZeile({ profile, onSaved, einlesen }: { profile: any; onSaved: () => void; einlesen: Einlesen }) {
   const [url, setUrl] = useState(profile.linkedin_url || '')
   const [saving, setSaving] = useState(false)
   const [zipFile, setZipFile] = useState<File | null>(null)
@@ -195,18 +244,19 @@ function LinkedinZeile({ profile, onSaved }: { profile: any; onSaved: () => void
   }
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+    <div className="min-w-0 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="mb-2 text-sm font-semibold text-brand-navy">{t('profil:linkedin.titel')}</div>
       <label className="flex flex-col text-xs text-slate-500">
         {t('profil:linkedin.profil_url')}
         <input className={`${INPUT} mt-1`} placeholder="https://www.linkedin.com/in/…" /* i18n-ok: URL */
           value={url} onChange={(e) => setUrl(e.target.value)} onBlur={() => url !== (profile.linkedin_url || '') && saveUrl()} />
       </label>
       {saving && <div className="mt-1 text-xs text-slate-400">{t('profil:linkedin.url_speichert')}</div>}
-      <LinkedinText onSaved={onSaved} />
+      <LinkedinText einlesen={einlesen} />
       <div className="mt-3 border-t border-slate-100 pt-3">
         <div className="flex flex-wrap items-center gap-2">
           <input type="file" accept=".zip" onChange={(e) => setZipFile(e.target.files?.[0] || null)}
-            className="text-xs text-slate-600 file:mr-2 file:rounded-lg file:border file:border-slate-300 file:bg-white file:px-2.5 file:py-1 file:text-xs file:font-medium file:text-slate-600 hover:file:bg-slate-50" />
+            className={DATEI_INPUT} />
           <button onClick={uploadZip} disabled={!zipFile || zipUploading}
             className="rounded-lg border border-brand-cyan/40 px-3 py-1.5 text-xs font-medium text-brand-navy hover:bg-brand-cyan/10 disabled:cursor-not-allowed disabled:opacity-50">
             {zipUploading ? t('profil:linkedin.zip_importiert') : t('profil:linkedin.zip_hochladen')}
@@ -255,7 +305,11 @@ function Positionierung({ profile, onSaved }: { profile: any; onSaved: () => voi
   }
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      <div className="mb-2 text-sm font-semibold text-brand-navy">{t('profil:positionierung.titel')}</div>
+      <div className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-brand-navy">
+        {t('profil:positionierung.titel')}
+        <FeldHilfe feld={t('profil:positionierung.titel')} text={t('profil:hilfe.lang_text')}
+          beispiel={t('profil:hilfe.lang_beispiel')} wirkung={t('profil:hilfe.lang_wirkung')} />
+      </div>
       <textarea className={`${INPUT} w-full`} rows={5}
         placeholder={t('profil:positionierung.platzhalter')}
         value={text} onChange={(e) => setText(e.target.value)} />
@@ -391,6 +445,7 @@ function CareerBlock({ item, onSaved }: { item: any; onSaved: () => void }) {
         <button onClick={save} disabled={saving || !dirty} className="rounded-lg bg-brand-cyan px-3 py-1.5 text-sm font-medium text-brand-aufAktion hover:bg-brand-cyanHover disabled:cursor-not-allowed disabled:opacity-40">{saving ? t('profil:aktion.speichert') : t('profil:aktion.speichern')}</button>
         {saved && <span className="text-sm text-emerald-600">{t('profil:aktion.gespeichert')}</span>}
         {item.quelle === 'linkedin' && <span className="text-xs text-slate-400">{t('profil:werdegang.quelle_linkedin')}</span>}
+        {item.quelle === 'cv' && <span className="text-xs text-slate-400">{t('profil:werdegang.quelle_cv')}</span>}
         <button onClick={remove} className="ml-auto rounded-lg border border-rose-200 px-3 py-1.5 text-sm font-medium text-rose-600 hover:bg-rose-50">{t('profil:werdegang.loeschen')}</button>
       </div>
     </div>
@@ -559,7 +614,7 @@ function datumDE(iso?: string | null): string {
   return tag ? datum(tag) : tag
 }
 
-function BasisCVs() {
+function BasisCVs({ stand, onChanged }: { stand: number; onChanged: () => void }) {
   const [liste, setListe] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [file, setFile] = useState<File | null>(null)
@@ -569,7 +624,7 @@ function BasisCVs() {
   const [err, setErr] = useState<string | null>(null)
 
   const load = () => api<any[]>('/profil/cv-basis').then(setListe).finally(() => setLoading(false))
-  useEffect(() => { load() }, [])
+  useEffect(() => { load() }, [stand])
 
   const effektiverCode = sprache === 'andere' ? andereCode.trim().toLowerCase() : sprache
 
@@ -592,7 +647,7 @@ function BasisCVs() {
       return
     }
     if (!res.ok) throw new Error((typeof body.detail === 'string' && body.detail) || `${res.status} ${res.statusText}`)
-    setFile(null); setAndereCode(''); setSprache('de'); load()
+    setFile(null); setAndereCode(''); setSprache('de'); onChanged()
   }
 
   const upload = async () => {
@@ -611,7 +666,7 @@ function BasisCVs() {
   const remove = async (code: string) => {
     if (!window.confirm(t('profil:basis_cv.loeschen_frage', { sprache: cvLabel(code) || code.toUpperCase() }))) return
     await api(`/profil/cv-basis/${code}`, { method: 'DELETE' })
-    load()
+    onChanged()
   }
 
   return (
@@ -676,13 +731,111 @@ function BasisCVs() {
   )
 }
 
+// ── Profil aus dem Lebenslauf: vorhandener Basis-CV oder Upload (PDF, Word) ───────────
+function CvEinlesen({ einlesen, stand, onBasisCvNeu }: { einlesen: Einlesen; stand: number; onBasisCvNeu: () => void }) {
+  const [liste, setListe] = useState<any[]>([])
+  const [auswahl, setAuswahl] = useState('')
+  const [datei, setDatei] = useState<File | null>(null)
+  const [dateiFeld, setDateiFeld] = useState(0)
+  const [sprache, setSprache] = useState(() => (CV_SPRACH_OPTIONEN.includes(aktuelleSprache()) ? aktuelleSprache() : 'de'))
+  const [gespeichert, setGespeichert] = useState<string | null>(null)
+
+  useEffect(() => { api<any[]>('/profil/cv-basis').then(setListe).catch(() => {}) }, [stand])
+
+  const fertig = einlesen.art === 'cv' && einlesen.task?.status === 'done'
+  useEffect(() => {
+    if (fertig) { setDatei(null); setDateiFeld((n) => n + 1) }
+  }, [fertig])
+
+  const name = (code: string) => cvLabel(code) || code.toUpperCase()
+  const basisSprache = liste.some((cv) => cv.sprache === auswahl) ? auswahl : liste[0]?.sprache
+  const istWord = !!datei && datei.name.toLowerCase().endsWith('.docx')
+  const istPdf = !!datei && datei.name.toLowerCase().endsWith('.pdf')
+  const gesperrt = einlesen.busy || einlesen.aktiv
+  const laeuftHier = einlesen.art === 'cv' && einlesen.aktiv
+
+  const basisAuslesen = () => {
+    setGespeichert(null)
+    const fd = new FormData()
+    fd.append('sprache', basisSprache)
+    return einlesen.starten('cv', '/api/profil/cv-einlesen', fd)
+  }
+
+  const hochladen = async () => {
+    if (!datei) return
+    setGespeichert(null)
+    const fd = new FormData()
+    fd.append('file', datei)
+    fd.append('sprache', sprache)
+    const body = await einlesen.starten('cv', '/api/profil/cv-einlesen', fd)
+    if (body?.basis_cv === 'gespeichert') { setGespeichert(sprache); onBasisCvNeu() }
+  }
+
+  return (
+    <div className="min-w-0 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="mb-2 text-sm font-semibold text-brand-navy">{t('profil:cv_einlesen.titel')}</div>
+      <p className="text-xs text-slate-400">{t('profil:cv_einlesen.hinweis')}</p>
+      {liste.length > 0 && (
+        <div className="mt-3 border-t border-slate-100 pt-3">
+          <div className="mb-2 text-xs font-medium text-slate-500">{t('profil:cv_einlesen.basis_titel')}</div>
+          <div className="flex flex-wrap items-center gap-2">
+            <select className={INPUT} value={basisSprache} onChange={(e) => setAuswahl(e.target.value)}
+              aria-label={t('profil:cv_einlesen.sprache')}>
+              {liste.map((cv) => <option key={cv.sprache} value={cv.sprache}>{name(cv.sprache)}</option>)}
+            </select>
+            <button onClick={basisAuslesen} disabled={gesperrt}
+              className="whitespace-nowrap rounded-lg bg-brand-cyan px-3 py-1.5 text-sm font-medium text-brand-aufAktion hover:bg-brand-cyanHover disabled:cursor-not-allowed disabled:opacity-40">
+              {laeuftHier ? t('profil:linkedin.laeuft') : t('profil:cv_einlesen.basis_auslesen')}
+            </button>
+          </div>
+        </div>
+      )}
+      <div className="mt-3 border-t border-slate-100 pt-3">
+        <div className="mb-1 text-xs font-medium text-slate-500">
+          {liste.length > 0 ? t('profil:cv_einlesen.upload_titel_weiterer') : t('profil:cv_einlesen.upload_titel')}
+        </div>
+        <p className="mb-2 text-xs text-slate-400">{t('profil:cv_einlesen.datei_hinweis')}</p>
+        <div className="flex flex-wrap items-center gap-2">
+          <input key={dateiFeld} type="file" accept=".pdf,.docx" onChange={(e) => setDatei(e.target.files?.[0] || null)}
+            className={DATEI_INPUT} />
+          {istWord && (
+            <select className={INPUT} value={sprache} onChange={(e) => setSprache(e.target.value)}
+              aria-label={t('profil:cv_einlesen.sprache')}>
+              {CV_SPRACH_OPTIONEN.map((c) => <option key={c} value={c}>{name(c)}</option>)}
+            </select>
+          )}
+          <button onClick={hochladen} disabled={gesperrt || !datei}
+            className={liste.length > 0
+              ? 'whitespace-nowrap rounded-lg border border-brand-cyan/40 px-3 py-1.5 text-sm font-medium text-brand-navy hover:bg-brand-cyan/10 disabled:cursor-not-allowed disabled:opacity-50'
+              : 'whitespace-nowrap rounded-lg bg-brand-cyan px-3 py-1.5 text-sm font-medium text-brand-aufAktion hover:bg-brand-cyanHover disabled:cursor-not-allowed disabled:opacity-40'}>
+            {laeuftHier ? t('profil:linkedin.laeuft') : t('profil:cv_einlesen.upload_auslesen')}
+          </button>
+        </div>
+        {istWord && (
+          <p className="mt-2 text-xs text-slate-500">
+            {liste.some((cv) => cv.sprache === sprache)
+              ? t('profil:cv_einlesen.word_vorhanden', { sprache: name(sprache) })
+              : t('profil:cv_einlesen.word_neu', { sprache: name(sprache) })}
+          </p>
+        )}
+        {istPdf && <p className="mt-2 text-xs text-slate-500">{t('profil:cv_einlesen.pdf_hinweis')}</p>}
+        {gespeichert && <div className="mt-2 text-xs text-emerald-700">{t('profil:cv_einlesen.gespeichert', { sprache: name(gespeichert) })}</div>}
+      </div>
+      <LaufStatus einlesen={einlesen} art="cv" />
+    </div>
+  )
+}
+
 // ── Seite ─────────────────────────────────────────────────────────────────────────────
 export default function Profil() {
   const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [basisStand, setBasisStand] = useState(0)
 
   const load = () => api<any>('/profil').then(setData).finally(() => setLoading(false))
   useEffect(() => { load() }, [])
+  const einlesen = useEinlesen(load)
+  const basisGeaendert = () => setBasisStand((n) => n + 1)
 
   if (loading || !data) return <div className="text-slate-400">{t('profil:aktion.lade')}</div>
 
@@ -696,12 +849,16 @@ export default function Profil() {
       </div>
       {/* P2-69: liest und schreibt config/profil.md, lädt sich selbst (eigener Endpunkt). */}
       <ProfilIdentitaet />
-      <LinkedinZeile profile={data.profile} onSaved={load} />
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <LinkedinZeile profile={data.profile} onSaved={load} einlesen={einlesen} />
+        <CvEinlesen einlesen={einlesen} stand={basisStand} onBasisCvNeu={basisGeaendert} />
+      </div>
+      <EinleseVorschau einlesen={einlesen} />
       <Positionierung profile={data.profile} onSaved={load} />
       <Skills skills={data.skills} onChanged={load} />
       <Werdegang werdegang={data.werdegang} onChanged={load} />
       <Dateien dateien={data.dateien} onChanged={load} />
-      <BasisCVs />
+      <BasisCVs stand={basisStand} onChanged={basisGeaendert} />
     </div>
   )
 }

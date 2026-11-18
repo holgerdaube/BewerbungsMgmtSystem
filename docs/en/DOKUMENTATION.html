@@ -734,8 +734,9 @@ as in the search runs. Spec: P2-76.</p>
 <h3>Profile (phase 45/47)</h3>
 <ul>
 <li><strong>profil-einlesen</strong> — “Read profile from the stored text” · structures the pasted
-  profile text or the text of the profile PDF into a proposal that the user checks before additive saving
-  (<code>pipeline/linkedin_text.py</code>). No web: LinkedIn blocks automatic retrievals (HTTP 999). The
+  profile text, the text of the profile PDF or a CV (<code>POST /api/profil/cv-einlesen</code>: base CV, PDF or Word) into a
+  proposal that the user checks before additive saving (<code>pipeline/linkedin_text.py</code>). An uploaded Word file becomes
+  the base CV if the language has none yet; entries carry the source <code>cv</code>. No web: LinkedIn blocks automatic retrievals (HTTP 999). The
   most complete route remains the data export ZIP
   (<code>pipeline/linkedin_import.py</code>, deterministic, no LLM). <em>Headless.</em></li>
 <li><strong>skills-sortieren</strong> — assigns imported skills from “LinkedIn (unsorted)” to topic areas based on context
@@ -1225,7 +1226,9 @@ pretended security boundary):</p>
 <li><strong>66A — damage radius:</strong> <code>agent_runner._child_env(kind)</code> passes on to each skill subprocess only
   the secrets from <code>agent.env</code> released for THAT kind (table <code>SECRET_KEYS_BY_KIND</code>,
   only mapping at present: <code>jobsuche-apify</code> → <code>APIFY_TOKEN</code>), instead of giving every key to
-  every subprocess as before — with a loud message in the task log if a skill needs more after all.
+  every subprocess as before — with a loud message in the task log when <code>agent.env</code> contains a key
+  that the table assigns to no kind. An assigned key (<code>APIFY_TOKEN</code>) is missing from the other
+  kinds on purpose and is withheld there silently.
   9 of 22 headless kinds additionally get <code>disallowed_tools</code> (WebSearch/WebFetch blocked where
   the skill demonstrably does not use them).</li>
 <li><strong>66B — labelling:</strong> <code>agent_runner.HEADLESS_SUFFIX</code> (appended to EVERY headless prompt) explicitly marks
@@ -2513,4 +2516,4 @@ their reasons (measurement data as reference).</p>
 "Package service and network rules", 13.10.2026, P2-71), the section "Profile file" on 11.10.2026 (P2-69), the paragraphs "Saving the posting text" and "Portal status" on 14.10.2026 (P2-75, P2-76). Since parallel build sessions are running,
 the authoritative source is always the code itself, not this file.</em></p></section>
 </div></body></html>
-<!-- docs_render quelle=DOKUMENTATION.md sha256=96a77801b77ffb642f79b759f6651c4a931dc6c8704af62506b5f5da2ddc55fb -->
+<!-- docs_render quelle=DOKUMENTATION.md sha256=ea9ce2bd746832f6e57628e876d580487acb5a81a3ee4dd8cda5dae7eac5d0b9 -->

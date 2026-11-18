@@ -4,6 +4,16 @@ Hier steht zu jeder Version, was sich für Sie ändert. Welche Version installie
 
 ## Unveröffentlicht
 
+## 2.3.0 (18.11.2026)
+
+- Das Profil lässt sich jetzt aus dem Lebenslauf füllen. Auf der Profil-Seite steht rechts neben LinkedIn ein neuer Bereich: Sie lesen einen vorhandenen Basis-CV aus oder laden eine PDF- oder Word-Datei hoch. Die KI übernimmt Headline, Standort, Positionierung, Skills und Werdegang als Vorschlag, den Sie vor dem Speichern prüfen. Eine Word-Datei wird zusätzlich Basis-CV, wenn es für die gewählte Sprache noch keinen gibt. Ein vorhandener Basis-CV bleibt unverändert.
+- In den Einstellungen sind „Jetzt sichern“ und „Nach Updates suchen“ jetzt breite Knöpfe in der Aktionsfarbe, wie „Coach-Site jetzt aktualisieren“. „Nach Updates suchen“ war bisher ein schmaler, grauer Rahmen.
+- In den Suchplänen A bis C gehen getippte Titel, Senioritäten und Branchen nicht mehr verloren. Bisher wurde ein Eintrag nur mit Enter oder „+“ übernommen; blieb er im Eingabefeld stehen, speicherte das BMS ihn nicht, und die Jobsuche meldete fehlende Zielrollen. Jetzt wird er beim Verlassen des Felds übernommen, und „Speichern“ nimmt auch Text mit, der noch im Feld steht.
+- Das Lauf-Protokoll meldet nicht mehr bei fast jedem KI-Lauf, dass der Apify-Schlüssel nicht weitergereicht wurde. Der Schlüssel geht weiterhin nur an die Apify-Jobsuche. Gemeldet wird nur noch ein Schlüssel in `agent.env`, der keinem Lauf zugeordnet ist.
+- Stellen von Workable-Karriereseiten verlinken jetzt auf die Stellenseite. Die Suchläufe hatten teils die Markdown-Fassung für KI-Werkzeuge übernommen (Adresse endet auf `.md`), und der Link zeigte im Browser nur Rohtext. Den Anzeigentext holt das BMS für seine Prüfungen weiterhin aus dieser Fassung.
+- Auf der Profil-Seite und in den Suchplänen erklärt ein Fragezeichen neben den Feldern, was hineingehört, mit Beispiel und Wirkung. Der lange Text heißt jetzt „Positionierung (ausführlich)“, damit er nicht mit der Kurzzeile verwechselt wird. In den Suchplänen steht außerdem, wie die Jobsuche Ihre Titel verwendet: Jeder Eintrag ist ein ganzer Suchbegriff, Platzhalter wie `Market*` wirken nicht. Die Stufe „VP“ steht dort jetzt ausgeschrieben als „VP (Vice President)“.
+- Der Hinweis zu einem Basis-CV mit abweichendem Aufbau ist jetzt verständlich und sagt, wie Sie die Datei in Word ordnen. Bisher nannte er interne Versionsnamen und ein Skript.
+
 ## 2.2.3 (14.11.2026)
 
 - Unter Windows startet das BMS mit Claude wieder. In 2.2.2 brach der Start ab („NameError: name 'tx' is not defined“), sobald die Schlüsseldatei `agent.env` vorhanden war. Auf dem Mac traf es jeden Start mit einem Fehler in dieser Datei, etwa einem umgebrochenen Token. Das BMS meldet solche Fehler jetzt wieder als Warnung im schwarzen Fenster. Unter Windows entfällt die Prüfung der Dateirechte, weil es dort keinen `chmod` gibt. Wer die Zeile `tx = sprache.tx` von Hand ergänzt hat, muss nichts tun, das Update ersetzt die Datei.

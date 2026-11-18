@@ -274,7 +274,11 @@ def ingest_records(records, run_type="jobsearch", portals=None, erlaube_unverifi
                 skipped += 1
                 continue
             loc = rec.get("location")
-            url = rec.get("url")
+            # Gespeichert wird die Adresse für Menschen, nicht die Maschinen-Fassung einer Anzeige
+            # (`N.anzeigen_url`). Der Anzeigentext aus `verify_jobs check` steht unter der Adresse,
+            # die der Record mitbrachte.
+            url = N.anzeigen_url(rec.get("url"))
+            anzeigentext = texte.get(rec.get("url")) or texte.get(url)
             dk = N.dedup_key(company, title, loc)
             stellen_schluessel = _stellen_schluessel(company, title)
 
@@ -340,7 +344,7 @@ def ingest_records(records, run_type="jobsearch", portals=None, erlaube_unverifi
                 # Phase 44 Stufe B: Repost-Text-Vergleich — NACH dem Vier-Augen-Gate, VOR dem
                 # Insert. Nur Records mit Anzeigentext (kein --texte/Snapshot nur Metadaten/
                 # zu kurz → D.pruefen() liefert None, still übersprungen, nie geraten).
-                kandidat = D.kandidat_text(texte.get(url)) if url and texte.get(url) else ""
+                kandidat = D.kandidat_text(anzeigentext) if url and anzeigentext else ""
                 if kandidat:
                     bester_job, bester_score = None, 0.0
                     for besteh in jobs_je_firma.get(N.firma_key(company), []):
@@ -426,7 +430,7 @@ def ingest_records(records, run_type="jobsearch", portals=None, erlaube_unverifi
                 s.add(JobLog(job_id=job.id, art="auto", eintrag=neuausschreibung_hinweis))
 
             if url:
-                if render_basis(job, texte.get(url)):
+                if render_basis(job, anzeigentext):
                     snapshots += 1
                 else:
                     snapshot_fehler += 1

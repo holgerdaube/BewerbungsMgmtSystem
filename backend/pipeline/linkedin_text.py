@@ -1,4 +1,4 @@
-"""LinkedIn-Profil aus eingefügtem Text oder PDF: zwischengespeicherte Eingabe, Prüfung des KI-Vorschlags, Vorschau.
+"""Profil aus LinkedIn-Text, PDF oder Lebenslauf: zwischengespeicherte Eingabe, Prüfung des KI-Vorschlags, Vorschau.
 
 Ablauf: Die Eingabe landet in `data/tmp/`, der Lauf `profil-einlesen` holt sie über die lokale API und schickt
 einen strukturierten Vorschlag zurück. Gespeichert wird erst, wenn der Nutzer ihn in der Vorschau übernimmt, und
@@ -13,7 +13,8 @@ import json
 from sqlmodel import Session, select
 
 from app.models import CareerEntry, Profile, ProfileSkill
-from pipeline import linkedin_import
+from app.sprache import tx
+from pipeline import belege, linkedin_import
 
 MAX_TEXT = 60_000
 _MAX_SKILLS = 200
@@ -38,6 +39,10 @@ def _eingabe_pfad():
     return _ordner() / "linkedin_eingabe.txt"
 
 
+def _quelle_pfad():
+    return _ordner() / "linkedin_eingabe_quelle.txt"
+
+
 def _vorschlag_pfad():
     return _ordner() / "linkedin_vorschlag.json"
 
@@ -53,11 +58,38 @@ def pdf_zu_text(inhalt: bytes) -> str:
     except Exception as exc:
         raise EingabeFehler("Die Datei lässt sich nicht als PDF lesen.") from exc
     if not text.strip():
-        raise EingabeFehler("Im PDF steht kein lesbarer Text. Bitte den Text von LinkedIn einfügen.")
+        raise EingabeFehler(tx("Im PDF steht kein lesbarer Text, vermutlich ist es ein Scan. "
+                               "Bitte eine andere Datei wählen oder den Text einfügen."))
     return text
 
 
-def eingabe_speichern(text: str) -> None:
+def _textfeld_zeilen(doc) -> list[str]:
+    """Zeilen aus Textfeldern, die zweispaltige CV-Vorlagen oft nutzen und python-docx nicht als Absatz liefert.
+    Word speichert jedes Textfeld doppelt (aktuelle Fassung und Ersatzdarstellung), deshalb ohne Wiederholungen."""
+    zeilen: list[str] = []
+    for absatz in doc.element.body.xpath(".//w:txbxContent//w:p"):
+        zeile = "".join(t.text or "" for t in absatz.xpath(".//w:t")).strip()
+        if zeile and zeile not in zeilen:
+            zeilen.append(zeile)
+    return zeilen
+
+
+def docx_zu_text(inhalt: bytes) -> str:
+    from docx import Document
+
+    try:
+        doc = Document(io.BytesIO(inhalt))
+        zeilen = belege._inhalt_texte(doc) + _textfeld_zeilen(doc)
+    except Exception as exc:
+        raise EingabeFehler(tx("Die Datei lässt sich nicht als Word-Dokument lesen.")) from exc
+    text = "\n".join(z for z in zeilen if z.strip())
+    if not text:
+        raise EingabeFehler(tx("Im Word-Dokument steht kein lesbarer Text."))
+    return text
+
+
+def eingabe_speichern(text: str, quelle: str = "linkedin") -> None:
+    """`quelle` (`linkedin` oder `cv`) kommt vom Endpunkt und nie von der KI: Sie steht später an den Einträgen."""
     text = (text or "").strip()
     if not text:
         raise EingabeFehler("Bitte den Profiltext einfügen oder ein PDF auswählen.")
@@ -65,6 +97,7 @@ def eingabe_speichern(text: str) -> None:
         raise EingabeFehler(f"Der Text ist zu lang (höchstens {MAX_TEXT} Zeichen).")
     _ordner().mkdir(parents=True, exist_ok=True)
     _eingabe_pfad().write_text(text, encoding="utf-8")
+    _quelle_pfad().write_text(quelle, encoding="utf-8")
     verwerfen()
 
 
@@ -113,10 +146,13 @@ def vorschlag_pruefen(roh) -> dict:
 
 def vorschlag_speichern(roh) -> dict:
     vorschlag = vorschlag_pruefen(roh)
+    pfad_quelle = _quelle_pfad()
+    vorschlag["quelle"] = pfad_quelle.read_text(encoding="utf-8") if pfad_quelle.exists() else "linkedin"
     _ordner().mkdir(parents=True, exist_ok=True)
     _vorschlag_pfad().write_text(json.dumps(vorschlag, ensure_ascii=False), encoding="utf-8")
     # Die KI hat die Eingabe verarbeitet: Den rohen Profiltext nicht länger liegen lassen als nötig.
     _eingabe_pfad().unlink(missing_ok=True)
+    pfad_quelle.unlink(missing_ok=True)
     return vorschlag
 
 
@@ -163,6 +199,7 @@ def vorschau(vorschlag: dict, session: Session) -> dict:
 
 def uebernehmen(vorschlag: dict, session: Session) -> dict:
     felder = {feld: vorschlag[feld] for feld in FELDER}
-    ergebnis = linkedin_import._additiv_schreiben(session, felder, vorschlag["skills"], vorschlag["werdegang"])
+    ergebnis = linkedin_import._additiv_schreiben(session, felder, vorschlag["skills"], vorschlag["werdegang"],
+                                                  quelle=vorschlag.get("quelle", "linkedin"))
     verwerfen()
     return ergebnis

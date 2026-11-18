@@ -6,7 +6,7 @@ Das BMS ist kostenlos und steht als Open Source unter der Apache License 2.0. Es
 
 ## Stellen finden und bewerten
 
-- **Neu / Review**: „Jobsuche (WebSearch)“ durchsucht die Portale nach Ihren Zielrollen und legt Treffer als „Neu“ an. Wonach gesucht wird, stellen Sie in den **Einstellungen** ein.
+- **Neu / Review**: „Jobsuche (WebSearch)“ durchsucht die Portale nach den Titeln Ihrer Suchpläne A bis C und legt Treffer als „Neu“ an. Die Suchpläne sind Ihre Zielrollen, Sie füllen sie in den **Einstellungen** aus.
 - Jede Stelle erhält einen Zielstellen-Fit von 1 bis 5, mit Begründung und Beleg aus der Anzeige. Treffer nehmen Sie an oder verwerfen sie.
 - Ebenfalls auf **Neu / Review** starten Sie Zielfirmen-Sweep, Headhunter-Suche und Beworben-Check (prüft, ob beworbene Stellen noch ausgeschrieben sind). Der Knopf **Tageslauf** in der Seitenleiste führt alle Läufe samt Mail-Jobsuche und E-Mail-Check nacheinander aus.
 - **Stellen** listet alle Treffer mit Filtern, **Pipeline** zeigt sie als Kanban-Tafel, **Suche** durchsucht sie im Volltext. Eigene Funde erfassen Sie mit „+ Stelle anlegen“.

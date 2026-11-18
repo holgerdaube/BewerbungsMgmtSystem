@@ -48,6 +48,7 @@ from urllib.parse import urlsplit, parse_qsl, urlencode
 
 import httpx
 
+from app import normalize as N
 from app.db import engine, init_db
 from app.models import Job
 from app.naming import dated_filename
@@ -280,6 +281,9 @@ def check_url(url: str, company: str, title: str, return_text: bool = False,
     if not url or not url.strip():
         return {"befund": "KEINE_URL", "http_status": None, "final_url": None,
                 "beleg": "Record ohne url-Feld"}
+    # Seiten, die einem Abruf nur eine leere App-Hülle liefern, über ihre Maschinen-Fassung abrufen
+    # (`N.abruf_url`, heute Workable). Alle Vergleiche unten laufen gegen diese Adresse.
+    url = N.abruf_url(url)
 
     versuche = 0
     try:

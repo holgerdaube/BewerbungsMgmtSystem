@@ -573,8 +573,9 @@ wie bei den Suchläufen. Spec: P2-76.
 ### Profil (Phase 45/47)
 
 - **profil-einlesen** — „Profil einlesen aus dem hinterlegten Text" · strukturiert den eingefügten
-  Profiltext oder den Text des Profil-PDFs zu einem Vorschlag, den der Nutzer vor dem additiven Speichern
-  prüft (`pipeline/linkedin_text.py`). Kein Web: LinkedIn sperrt automatische Abrufe (HTTP 999). Der
+  Profiltext, den Text des Profil-PDFs oder einen Lebenslauf (`POST /api/profil/cv-einlesen`: Basis-CV, PDF oder
+  Word) zu einem Vorschlag, den der Nutzer vor dem additiven Speichern prüft (`pipeline/linkedin_text.py`). Eine
+  hochgeladene Word-Datei wird Basis-CV, wenn es für die Sprache noch keinen gibt; Einträge tragen die Quelle `cv`. Kein Web: LinkedIn sperrt automatische Abrufe (HTTP 999). Der
   vollständigste Weg bleibt das Datenexport-ZIP
   (`pipeline/linkedin_import.py`, deterministisch, kein LLM). *Headless.*
 - **skills-sortieren** — ordnet importierte Skills aus „LinkedIn (unsortiert)" kontextbasiert
@@ -1028,7 +1029,9 @@ vorgetäuschten Sicherheitsgrenze):
 - **66A — Schadensradius:** `agent_runner._child_env(kind)` reicht pro Skill-Subprozess nur noch
   die für DIESE Art freigegebenen Secrets aus `agent.env` weiter (Tabelle `SECRET_KEYS_BY_KIND`,
   einzige Zuordnung aktuell: `jobsuche-apify` → `APIFY_TOKEN`), statt wie bisher jeden Schlüssel an
-  jeden Subprozess zu geben — mit lauter Meldung im Task-Log, falls ein Skill doch mehr braucht.
+  jeden Subprozess zu geben — mit lauter Meldung im Task-Log, wenn `agent.env` einen Schlüssel
+  enthält, den die Tabelle keiner Art zuordnet. Ein zugeordneter Schlüssel (`APIFY_TOKEN`) fehlt den
+  übrigen Arten mit Absicht und wird dort still zurückgehalten.
   9 von 22 headless-Arten bekommen zusätzlich `disallowed_tools` (WebSearch/WebFetch gesperrt, wo
   der Skill sie nachweislich nicht nutzt).
 - **66B — Kennzeichnung:** `agent_runner.HEADLESS_SUFFIX` (hängt an JEDEM headless-Prompt) markiert

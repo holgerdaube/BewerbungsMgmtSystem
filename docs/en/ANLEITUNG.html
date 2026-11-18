@@ -256,7 +256,7 @@ the default is Claude). The skills are the same for both.</p>
 <tr>
 <td>“<strong>Read profile from the stored text</strong>”</td>
 <td><code>profil-einlesen</code></td>
-<td>Structures the text of your LinkedIn profile, or its PDF, pasted on the Profile page. You review the suggestion before anything is saved.</td>
+<td>Structures the text or PDF of your LinkedIn profile, or your CV, from the Profile page. You review the suggestion before anything is saved.</td>
 </tr>
 <tr>
 <td>“<strong>Deep dive for job \&lt;id&gt;</strong>”</td>
@@ -627,7 +627,13 @@ draw on. From top to bottom:</p>
   what you are looking for. The card reads and writes the file <code>config/profil.md</code>.</li>
 <li><strong>Fields:</strong> Name (required), Positioning (one-liner), Address, Email, Phone, LinkedIn,
     Current, Short profile, Target date,
-    Hard constraints and Known skill gaps.</li>
+    Hard constraints and Known skill gaps. The question mark next to a field explains it with an
+    example.</li>
+<li><strong>Four similar fields, four jobs:</strong> <strong>Positioning (one-liner)</strong> says in one line who you are
+    professionally. <strong>Current</strong> names your present job with employer and start year. The <strong>Short profile</strong>
+    sums up in two to four sentences what you can do and what you are looking for. <strong>Positioning (full
+    text)</strong> further down is your long text, such as the About text from LinkedIn. The short profile and
+    the full text have the most effect; the one-liner and Current are optional.</li>
 <li><strong>What matters:</strong> Name, address, contact details and LinkedIn make up the letterhead of your
     cover letters and the file names. You write the address as <code>Straße Nr, PLZ Ort</code>, for example
     <code>Musterweg 3, 12345 Musterstadt</code>. The place line of the cover letters is built from it, and it is the
@@ -651,7 +657,13 @@ draw on. From top to bottom:</p>
   or upload the PDF that LinkedIn creates via “Save to PDF”. The AI structures it, you review the
   suggestion, and only then does BMS add to your profile. There is no retrieval via the profile address;
   LinkedIn blocks it (HTTP 999).</li>
-<li><strong>Positioning</strong> — large block of prose, freely editable.</li>
+<li><strong>Import from your CV.</strong> Next to LinkedIn, the AI reads your headline, location, positioning, skills and career
+  history from your CV. If you already have a base CV, choose the language and click <strong>“Read base CV”</strong>. Otherwise
+  upload a PDF or Word file. A Word file is also saved as the base CV for the chosen language if there is none yet.
+  An existing base CV stays unchanged, and a PDF is only read. Here too you review the suggestion, and fields you
+  have already filled in stay as they are.</li>
+<li><strong>Positioning (full text)</strong> — large block of prose, freely editable. Together with your base CV it is
+  the basis for CV match and cover letters.</li>
 <li><strong>Skills as chips</strong>, grouped by topic area. You add new skills in one line
   (enter the name + choose or create an area). <strong>Imported skills sort themselves in:</strong>
   after every ZIP import with new skills, a background run starts automatically
@@ -713,7 +725,11 @@ by hand:</p>
 <li><strong>Three plan cards A / B / C</strong> — each with a freely nameable label, an active switch and chip lists
   for <strong>Titles · Level · Industry</strong>. The job search works through the plans in the order
   <strong>A → B → C</strong>. Plan C is new (previously there were only A and B) and accordingly also appears in the
-  selection fields in the job details, under “Add a new job” and in the Excel export.</li>
+  selection fields in the job details, under “Add a new job” and in the Excel export. The plans are your
+  <strong>target roles</strong>. The job search uses each title as one complete search term on the portals: enter exactly
+  one role per entry, so “Head of Sales” and “Sales Director” separately. The BMS does not evaluate
+  wildcards such as <code>Market*</code> (truncation). Level and industry do not filter the search; they help the AI
+  rate the results. <strong>VP</strong> stands for Vice President, the level between Director and C-Level.</li>
 <li><strong>Backup</strong>: shows the last automatic backup (time, size) and their
   number, with a switch for the daily automatic backup, fields for retention (daily/
   weekly/monthly backups) and the “Back up now” button. An amber notice appears
@@ -1025,4 +1041,4 @@ BMS.</p>
   page's other offers for the posting text: Check the text in the job detail before you create documents.</li>
 </ul></section>
 </div></body></html>
-<!-- docs_render quelle=ANLEITUNG.md sha256=e39adb428fafff8b9766005f9484a675ceaf8b4c28b98d8b7eebf81aa16ed5b1 -->
+<!-- docs_render quelle=ANLEITUNG.md sha256=80af31a77c1368a86ffc3bc7547d96f3922186be2026e3cde8ea43db1c5ec414 -->

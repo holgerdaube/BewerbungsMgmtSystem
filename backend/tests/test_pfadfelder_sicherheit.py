@@ -833,9 +833,9 @@ def test_http_schicht_schreibt_verschiebt_und_loescht_nur_an_bekannten_stellen()
     erwartet = {
         "app.main": {
             ("_in_papierkorb", "shutil.move"),                   # Positivliste
-            ("upload_cv_basis", ".write_bytes"),                 # data/cv_basis/base_<xx>.docx.neu
-            ("upload_cv_basis", "os.replace"),
-            ("upload_cv_basis", ".unlink"),
+            ("_cv_basis_schreiben", ".write_bytes"),             # data/cv_basis/base_<xx>.docx.neu, <xx> geprüft
+            ("_cv_basis_schreiben", "os.replace"),
+            ("_cv_basis_schreiben", ".unlink"),
             ("upload_job_file", ".write_bytes"),                 # data/job_files/job_<id>/<bereinigt>
             ("upload_profil_file", ".write_bytes"),              # data/profil/dateien/<bereinigt>
             ("_speichere_transkript_und_report", ".write_text"),  # data/transcripts/<Konvention>.md

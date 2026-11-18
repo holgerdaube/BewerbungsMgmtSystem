@@ -6,7 +6,7 @@ The BMS is free and open source under the Apache License 2.0. It needs no licenc
 
 ## Finding and rating jobs
 
-- **New / Review**: “Job search (WebSearch)” searches the portals for your target roles and adds results as “New”. You set what is searched for in **Settings**.
+- **New / Review**: “Job search (WebSearch)” searches the portals for the titles in your search plans A to C and adds results as “New”. The search plans are your target roles, and you fill them in under **Settings**.
 - Each job gets a target-role fit from 1 to 5, with a reason and evidence from the posting. You accept results or discard them.
 - You also start Target-company sweep, Headhunter search and Applied-jobs check (checks whether the jobs you applied for are still advertised) on **New / Review**. The **Daily run** button in the sidebar runs all of them in turn, including the mail job search and the email check.
 - **Jobs** lists all results with filters, **Pipeline** shows them as a kanban board, **Search** searches them in full text. You record your own finds with “+ Add job”.

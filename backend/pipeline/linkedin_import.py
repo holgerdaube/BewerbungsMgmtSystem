@@ -98,10 +98,12 @@ def _career_key(art: str, firma: str | None, rolle: str | None, von: str | None,
            (von or "").strip().lower(), (bis or "").strip().lower())
 
 
-def _additiv_schreiben(session: Session, felder: dict, skills: list[str], eintraege: list[dict]) -> dict:
+def _additiv_schreiben(session: Session, felder: dict, skills: list[str], eintraege: list[dict],
+                       quelle: str = "linkedin") -> dict:
     """Gemeinsamer Kern von ZIP-Import und Textvorschlag: `felder` (headline, standort, positionierung) nur,
     wenn sie leer sind; `skills` und `eintraege` (art, firma, rolle, von, bis, weitere Felder von CareerEntry)
-    nur, wenn es sie noch nicht gibt. Liefert die Bericht-Zusammenfassung fürs UI-Feedback."""
+    nur, wenn es sie noch nicht gibt. `quelle` ist `linkedin` oder `cv`. Liefert die Bericht-Zusammenfassung
+    fürs UI-Feedback."""
     profile = session.get(Profile, 1)
     if not profile:
         profile = Profile(id=1)
@@ -121,8 +123,9 @@ def _additiv_schreiben(session: Session, felder: dict, skills: list[str], eintra
         if not name or name.strip().lower() in bestehende_skills:
             continue
         # Weder der Export noch der Textvorschlag liefern eine Kategorie — Sammelbereich, der Nutzer sortiert
-        # per PATCH /api/profil/skills/{id} bei Bedarf in einen passenden Bereich um.
-        session.add(ProfileSkill(name=name, bereich="LinkedIn (unsortiert)", quelle="linkedin"))
+        # per PATCH /api/profil/skills/{id} bei Bedarf in einen passenden Bereich um. Der Bereichsname gilt auch
+        # für Skills aus dem CV: Der Lauf `skills-sortieren` erkennt unsortierte Skills genau an diesem Wert.
+        session.add(ProfileSkill(name=name, bereich="LinkedIn (unsortiert)", quelle=quelle))
         bestehende_skills.add(name.strip().lower())
         skills_neu += 1
 
@@ -138,12 +141,13 @@ def _additiv_schreiben(session: Session, felder: dict, skills: list[str], eintra
             continue
         rest = {k: v or None for k, v in e.items() if k not in ("art", "firma", "rolle", "von", "bis")}
         session.add(CareerEntry(art=art, firma=firma or None, rolle=rolle or None,
-                                von=von or None, bis=bis or None, quelle="linkedin", **rest))
+                                von=von or None, bis=bis or None, quelle=quelle, **rest))
         bestehende_career.add(key)
         werdegang_neu += 1
 
     if profil_aktualisiert or skills_neu or werdegang_neu:
-        profile.linkedin_eingelesen_am = date.today().isoformat()
+        if quelle == "linkedin":
+            profile.linkedin_eingelesen_am = date.today().isoformat()
         profile.updated_at = datetime.utcnow()
         session.add(profile)
     session.commit()

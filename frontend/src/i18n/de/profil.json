@@ -17,6 +17,7 @@
     "in_papierkorb": "In den Papierkorb"
   },
   "linkedin": {
+    "titel": "Aus LinkedIn einlesen",
     "profil_url": "LinkedIn-Profil-URL",
     "url_speichert": "Speichert URL…",
     "text_titel": "Profil auslesen lassen",
@@ -63,8 +64,22 @@
     "verwerfen": "Verwerfen"
   },
   "positionierung": {
-    "titel": "Positionierung",
-    "platzhalter": "Wie stellst du dich vor? Fließtext — wird fürs Matching und die Anschreiben verwendet."
+    "titel": "Positionierung (ausführlich)",
+    "platzhalter": "Wie stellen Sie sich vor? Fließtext, wird für das Matching und die Anschreiben verwendet."
+  },
+  "hilfe": {
+    "kurzzeile_text": "Wer Sie beruflich sind, in einer Zeile. Schreiben Sie es wie eine Berufsbezeichnung, nicht als Liste von Themen.",
+    "kurzzeile_beispiel": "Fachkraft für Logistik mit Schwerpunkt Disposition",
+    "kurzzeile_wirkung": "Hintergrund für die KI. Das Feld ist optional.",
+    "aktuell_text": "Ihre heutige Stelle mit Rolle, Arbeitgeber und Startjahr. Haben Sie gerade keine Stelle, schreiben Sie das hinein.",
+    "aktuell_beispiel": "Disponent bei der Musterfirma GmbH, seit 2021",
+    "aktuell_wirkung": "Hintergrund für die KI. Das Feld ist optional.",
+    "kurzprofil_text": "Zwei bis vier Sätze: was Sie können, was Sie erreicht haben und was Sie als Nächstes suchen.",
+    "kurzprofil_beispiel": "Seit zwölf Jahren plane ich Transporte und verantworte heute die Touren von 30 Fahrzeugen. Als Nächstes möchte ich eine Disposition leiten.",
+    "kurzprofil_wirkung": "Die KI liest es als Hintergrund, wenn sie Stellen bewertet und Anschreiben schreibt.",
+    "lang_text": "Ihre ausführliche Selbstdarstellung als Fließtext, etwa der Info-Text aus LinkedIn. Hier ist Platz für Erfahrung, Stärken und Erfolge mit Zahlen.",
+    "lang_beispiel": "Disponent mit zwölf Jahren Erfahrung in Transport und Lager. Bei der Musterfirma GmbH verantworte ich 30 Fahrzeuge und habe die Leerfahrten um 15 % gesenkt.",
+    "lang_wirkung": "Grundlage für CV-Match und Anschreiben, zusammen mit Ihrem Basis-CV."
   },
   "skills": {
     "titel": "Skills",
@@ -82,6 +97,7 @@
     "loeschen_frage": "„{{name}}\" wirklich löschen?",
     "loeschen": "🗑 Löschen",
     "quelle_linkedin": "Quelle: LinkedIn",
+    "quelle_cv": "Quelle: Lebenslauf",
     "feld": {
       "firma": "Firma/Institution",
       "rolle": "Rolle/Titel",
@@ -100,6 +116,21 @@
     "titel": "Zertifikate und Zeugnisse",
     "oeffnen": "Öffnen",
     "leer": "Noch keine Dateien angehängt."
+  },
+  "cv_einlesen": {
+    "titel": "Aus dem Lebenslauf einlesen",
+    "hinweis": "Die KI liest Headline, Standort, Positionierung, Skills und Werdegang aus Ihrem CV. Sie prüfen das Ergebnis, bevor etwas gespeichert wird.",
+    "basis_titel": "Vorhandenen Basis-CV auslesen",
+    "basis_auslesen": "▶ Basis-CV auslesen",
+    "upload_titel": "CV hochladen",
+    "upload_titel_weiterer": "Oder einen anderen CV hochladen",
+    "upload_auslesen": "▶ CV auslesen",
+    "datei_hinweis": "PDF oder Word (.docx).",
+    "sprache": "Sprache des CV",
+    "word_neu": "Die Word-Datei wird zusätzlich als Basis-CV ({{sprache}}) gespeichert.",
+    "word_vorhanden": "Ihr Basis-CV ({{sprache}}) bleibt unverändert, die Datei wird nur ausgelesen.",
+    "pdf_hinweis": "Die PDF-Datei wird nur ausgelesen. Als Basis-CV braucht das BMS eine Word-Datei.",
+    "gespeichert": "✓ Als Basis-CV ({{sprache}}) gespeichert."
   },
   "basis_cv": {
     "titel": "Basis-CVs",

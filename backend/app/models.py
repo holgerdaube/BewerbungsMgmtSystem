@@ -509,7 +509,7 @@ class ProfileSkill(UtcZeit, SQLModel, table=True):
     bereich: str = Field(index=True)
     name: str
     note: Optional[str] = None                       # z. B. "schwächer, ~40-50%"
-    quelle: str = Field(default="manuell")            # manuell | linkedin
+    quelle: str = Field(default="manuell")            # manuell | linkedin | cv
     sort_order: int = Field(default=0)
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
@@ -528,7 +528,7 @@ class CareerEntry(UtcZeit, SQLModel, table=True):
     referenzgeber: Optional[str] = None
     referenzdatum: Optional[str] = None
     notiz: Optional[str] = None
-    quelle: str = Field(default="manuell")            # manuell | linkedin
+    quelle: str = Field(default="manuell")            # manuell | linkedin | cv
     sort_order: int = Field(default=0)
     created_at: datetime = Field(default_factory=datetime.utcnow)
 

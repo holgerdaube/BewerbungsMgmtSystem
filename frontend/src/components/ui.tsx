@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useSyncExternalStore } from 'react'
+import React, { useEffect, useId, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { Link } from 'react-router-dom'
 import { api, type Einstellungen, type KiAnbieter } from '../api'
 import { t } from '../i18n'
@@ -367,6 +367,68 @@ export function CopyChip({ phrase, label = t('common:ui.copy_initiativ') }: { ph
         ok ? 'border-emerald-300 bg-emerald-50 text-emerald-700' : 'border-brand-cyan/40 text-brand-navy hover:bg-brand-cyan/10'}`}>
       {ok ? t('common:ui.copy_ok') : label}
     </button>
+  )
+}
+
+/** Fragezeichen neben einer Feldbeschriftung. Die Erklärung erscheint bei Mausberührung, mit der Tastatur
+ *  und beim Antippen. Sie liegt fest im Fenster, damit sie am Rand nicht abgeschnitten wird. */
+export function FeldHilfe({ feld, text, beispiel, wirkung }: { feld: string; text: string; beispiel?: string; wirkung?: string }) {
+  const id = useId()
+  const knopf = useRef<HTMLButtonElement>(null)
+  const blase = useRef<HTMLDivElement>(null)
+  const [offen, setOffen] = useState(false)
+  const [lage, setLage] = useState<{ left: number; top: number } | null>(null)
+
+  useLayoutEffect(() => {
+    if (!offen || !knopf.current || !blase.current) { setLage(null); return }
+    const k = knopf.current.getBoundingClientRect()
+    const b = blase.current.getBoundingClientRect()
+    const rand = 8
+    const passtUnten = k.bottom + 4 + b.height <= window.innerHeight - rand
+    setLage({
+      left: Math.max(rand, Math.min(k.left, window.innerWidth - b.width - rand)),
+      top: passtUnten ? k.bottom + 4 : Math.max(rand, k.top - b.height - 4),
+    })
+  }, [offen])
+
+  useEffect(() => {
+    if (!offen) return
+    const zu = () => setOffen(false)
+    const taste = (e: KeyboardEvent) => { if (e.key === 'Escape') zu() }
+    const daneben = (e: PointerEvent) => { if (!knopf.current?.contains(e.target as Node)) zu() }
+    window.addEventListener('scroll', zu, true)
+    window.addEventListener('resize', zu)
+    document.addEventListener('keydown', taste)
+    document.addEventListener('pointerdown', daneben)
+    return () => {
+      window.removeEventListener('scroll', zu, true)
+      window.removeEventListener('resize', zu)
+      document.removeEventListener('keydown', taste)
+      document.removeEventListener('pointerdown', daneben)
+    }
+  }, [offen])
+
+  return (
+    <>
+      <button ref={knopf} type="button" aria-label={t('common:ui.hilfe_zu', { feld })} aria-expanded={offen}
+        aria-describedby={offen ? id : undefined}
+        onPointerEnter={(e) => { if (e.pointerType === 'mouse') setOffen(true) }}
+        onPointerLeave={(e) => { if (e.pointerType === 'mouse') setOffen(false) }}
+        onFocus={(e) => { if (e.currentTarget.matches(':focus-visible')) setOffen(true) }}
+        onBlur={() => setOffen(false)}
+        onClick={() => setOffen((o) => !o)}
+        className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-slate-300 text-[10px] font-semibold normal-case leading-none text-slate-500 hover:border-brand-cyan hover:text-brand-navy">
+        ?
+      </button>
+      {offen && (
+        <div ref={blase} id={id} role="tooltip" style={lage ?? { left: 0, top: 0, visibility: 'hidden' }}
+          className="pointer-events-none fixed z-50 w-80 max-w-[calc(100vw-1rem)] space-y-1.5 rounded-lg border border-slate-200 bg-white p-3 text-left text-xs font-normal normal-case leading-relaxed tracking-normal text-slate-600 shadow-lg">
+          <p>{text}</p>
+          {beispiel && <p><span className="font-semibold text-brand-navy">{t('common:ui.hilfe_beispiel')}</span> {beispiel}</p>}
+          {wirkung && <p><span className="font-semibold text-brand-navy">{t('common:ui.hilfe_wirkung')}</span> {wirkung}</p>}
+        </div>
+      )}
+    </>
   )
 }
 

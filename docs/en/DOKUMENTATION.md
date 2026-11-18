@@ -571,8 +571,9 @@ as in the search runs. Spec: P2-76.
 ### Profile (phase 45/47)
 
 - **profil-einlesen** — “Read profile from the stored text” · structures the pasted
-  profile text or the text of the profile PDF into a proposal that the user checks before additive saving
-  (`pipeline/linkedin_text.py`). No web: LinkedIn blocks automatic retrievals (HTTP 999). The
+  profile text, the text of the profile PDF or a CV (`POST /api/profil/cv-einlesen`: base CV, PDF or Word) into a
+  proposal that the user checks before additive saving (`pipeline/linkedin_text.py`). An uploaded Word file becomes
+  the base CV if the language has none yet; entries carry the source `cv`. No web: LinkedIn blocks automatic retrievals (HTTP 999). The
   most complete route remains the data export ZIP
   (`pipeline/linkedin_import.py`, deterministic, no LLM). *Headless.*
 - **skills-sortieren** — assigns imported skills from “LinkedIn (unsorted)” to topic areas based on context
@@ -1023,7 +1024,9 @@ pretended security boundary):
 - **66A — damage radius:** `agent_runner._child_env(kind)` passes on to each skill subprocess only
   the secrets from `agent.env` released for THAT kind (table `SECRET_KEYS_BY_KIND`,
   only mapping at present: `jobsuche-apify` → `APIFY_TOKEN`), instead of giving every key to
-  every subprocess as before — with a loud message in the task log if a skill needs more after all.
+  every subprocess as before — with a loud message in the task log when `agent.env` contains a key
+  that the table assigns to no kind. An assigned key (`APIFY_TOKEN`) is missing from the other
+  kinds on purpose and is withheld there silently.
   9 of 22 headless kinds additionally get `disallowed_tools` (WebSearch/WebFetch blocked where
   the skill demonstrably does not use them).
 - **66B — labelling:** `agent_runner.HEADLESS_SUFFIX` (appended to EVERY headless prompt) explicitly marks

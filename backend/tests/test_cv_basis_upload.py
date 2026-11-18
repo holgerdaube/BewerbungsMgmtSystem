@@ -312,7 +312,10 @@ def test_v7_muster_wird_beim_upload_gewarnt(cv_basis_root, client):
     assert antwort.status_code == 200, antwort.text
     warnung = antwort.json()["warnung"]
     assert warnung, "das v7-Muster muss eine Warnung ausloesen"
-    assert "v7" in warnung and "cv_basis_umbau_v10" in warnung, warnung
+    assert "3 von 3 Stationen" in warnung and "Fettschrift" in warnung, warnung
+    # Der Hinweis richtet sich an Anwender: keine internen Versionsnamen, keine Skripte.
+    for intern in ("v7", "v10", "scripts/", ".py", "Parser"):
+        assert intern not in warnung, warnung
 
 
 def test_v10_muster_wird_nicht_gewarnt(cv_basis_root, client):

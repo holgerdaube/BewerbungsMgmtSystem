@@ -117,7 +117,7 @@ Zwei gleichwertige Wege, einen Skill zu starten:
 | „**CV-Match für Job \<id\>**" | `cv-match` | **Schritt 2a (erst nach Schritt 1):** Match-Dashboard + angepasster CV-Entwurf (DE/EN), am Job-Detail bearbeitbar. |
 | „**CV erstellen für Job \<id\>**" | `cv-erstellen` | **Schritt 2b:** aus dem (ggf. editierten) Entwurf Word + PDF + ATS-Scan erzeugen. |
 | „**Anschreiben für Job \<id\>**" | `anschreiben-erstellen` | Firmenspezifisches Anschreiben (DE/EN) mit Direktansprache → `.docx` + PDF. |
-| „**Profil einlesen aus dem hinterlegten Text**" | `profil-einlesen` | Strukturiert den auf der Profil-Seite eingefügten Text oder das PDF deines LinkedIn-Profils. Du prüfst den Vorschlag, bevor etwas gespeichert wird. |
+| „**Profil einlesen aus dem hinterlegten Text**" | `profil-einlesen` | Strukturiert den Text oder das PDF deines LinkedIn-Profils oder deinen Lebenslauf von der Profil-Seite. Du prüfst den Vorschlag, bevor etwas gespeichert wird. |
 | „**Deep-Dive für Job \<id\>**" | `job-deepdive` | Beides in einem Rutsch (Firma + CV) — Standard sind aber die zwei getrennten Schritte oben. |
 
 ---
@@ -508,7 +508,13 @@ schöpfen. Von oben nach unten:
   wonach du suchst. Die Karte liest und schreibt die Datei `config/profil.md`.
   - **Felder:** Name (Pflicht), Positionierung (Kurzzeile), Anschrift, E-Mail, Telefon, LinkedIn,
     Aktuell, Kurzprofil, Zieltermin,
-    harte Rahmenbedingungen und bekannte Skill-Gaps.
+    harte Rahmenbedingungen und bekannte Skill-Gaps. Das Fragezeichen neben einem Feld erklärt es mit
+    einem Beispiel.
+  - **Vier ähnliche Felder, vier Aufgaben:** Die **Positionierung (Kurzzeile)** sagt in einer Zeile, wer du
+    beruflich bist. **Aktuell** nennt deine heutige Stelle mit Arbeitgeber und Startjahr. Das **Kurzprofil**
+    fasst in zwei bis vier Sätzen zusammen, was du kannst und was du suchst. Die **Positionierung
+    (ausführlich)** weiter unten ist dein langer Text, etwa der Info-Text aus LinkedIn. Am meisten bewirken
+    das Kurzprofil und der ausführliche Text, Kurzzeile und Aktuell sind optional.
   - **Worauf es ankommt:** Name, Anschrift, Kontakt und LinkedIn bilden den Briefkopf deiner
     Anschreiben und die Dateinamen. Die Anschrift schreibst du als `Straße Nr, PLZ Ort`, etwa
     `Musterweg 3, 12345 Musterstadt`. Daraus entsteht die Ortszeile der Anschreiben, und sie ist der
@@ -532,7 +538,13 @@ schöpfen. Von oben nach unten:
   oder lädst das PDF hoch, das LinkedIn über „Als PDF speichern" erzeugt. Die KI strukturiert ihn, du prüfst den
   Vorschlag, und erst dann ergänzt das BMS dein Profil. Einen Abruf über die Profil-Adresse gibt es nicht,
   LinkedIn sperrt ihn (HTTP 999).
-- **Positionierung** — großer Prosa-Block, frei editierbar.
+- **Aus dem Lebenslauf einlesen.** Rechts neben LinkedIn liest die KI Headline, Standort, Positionierung, Skills
+  und Werdegang aus deinem CV. Hast du schon einen Basis-CV, wählst du die Sprache und klickst auf **„Basis-CV
+  auslesen"**. Sonst lädst du eine PDF- oder Word-Datei hoch. Eine Word-Datei wird zusätzlich als Basis-CV der
+  gewählten Sprache gespeichert, wenn es dort noch keinen gibt. Ein vorhandener Basis-CV bleibt unverändert, ein
+  PDF wird nur ausgelesen. Auch hier prüfst du den Vorschlag, und schon ausgefüllte Felder bleiben, wie sie sind.
+- **Positionierung (ausführlich)** — großer Prosa-Block, frei editierbar. Zusammen mit deinem Basis-CV ist er
+  die Grundlage für CV-Match und Anschreiben.
 - **Skills als Chips**, nach Themenbereichen gruppiert. Neue Skills trägst du in einer Zeile nach
   (Name + Bereich wählen oder neu anlegen). **Importierte Skills sortieren sich selbst ein:**
   nach jedem ZIP-Import mit neuen Skills läuft automatisch ein Hintergrund-Lauf
@@ -595,7 +607,11 @@ von Hand zu editieren:
 - **Drei Plan-Karten A / B / C** — je ein frei benennbares Label, ein Aktiv-Schalter und Chip-Listen
   für **Rollentitel · Seniorität · Branche**. Die Jobsuche arbeitet die Pläne in der Reihenfolge
   **A → B → C** ab. Plan C ist neu (vorher gab es nur A und B) und taucht entsprechend auch in den
-  Auswahlfeldern im Job-Detail, unter „Neue Stelle" und im Excel-Export auf.
+  Auswahlfeldern im Job-Detail, unter „Neue Stelle" und im Excel-Export auf. Die Pläne sind deine
+  **Zielrollen**. Die Jobsuche verwendet jeden Titel als ganzen Suchbegriff in den Portalen: Trag je
+  Eintrag genau eine Rolle ein, also „Leitung Vertrieb“ und „Head of Sales“ getrennt. Platzhalter wie
+  `Market*` (Trunkierung) wertet das BMS nicht aus. Seniorität und Branche filtern die Suche nicht, sie
+  helfen der KI beim Bewerten. **VP** steht für Vice President, die Ebene zwischen Director und C-Level.
 - **Datensicherung**: zeigt die letzte automatische Sicherung (Zeitpunkt, Größe) und ihre
   Zahl, mit einem Schalter für die tägliche Automatik, Feldern für die Aufbewahrung (tägliche/
   wöchentliche/monatliche Sicherungen) und dem Knopf „Jetzt sichern". Ein amber Hinweis erscheint

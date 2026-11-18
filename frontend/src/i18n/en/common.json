@@ -35,6 +35,9 @@
     "fehler": "The language could not be changed."
   },
   "ui": {
+    "hilfe_zu": "Explanation of {{feld}}",
+    "hilfe_beispiel": "Example:",
+    "hilfe_wirkung": "Effect:",
     "score_nicht_bewertet": "Not rated",
     "score_titel": "Target-role fit {{score}}/5",
     "verify_geprueft": "✓ checked",

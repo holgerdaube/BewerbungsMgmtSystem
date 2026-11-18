@@ -20,7 +20,8 @@
   "seite": {
     "titel": "Settings",
     "beschreibung": "Basic parameters for the job search — plans A/B/C plus search area and company size. Saved to <code>config/suchprofile.yaml</code>.",
-    "reihenfolge": "Job search order: plan A → B → C"
+    "reihenfolge": "Job search order: plan A → B → C",
+    "plaene_hinweis": "Plans A to C are your target roles: the job search looks for the titles of all active plans. If no active plan has a title, it does not search."
   },
   "chips": {
     "hinzufuegen": "Add {{label}}…"
@@ -28,7 +29,16 @@
   "plan": {
     "titel": "Titles",
     "senioritaet": "Level",
-    "branche": "Industry"
+    "branche": "Industry",
+    "vp_lang": "VP (Vice President)",
+    "hilfe_titel_text": "The job search uses each entry as one complete search term on the portals. Enter exactly one role per entry, worded as it appears in job ads. The BMS does not evaluate wildcards such as “Market*” (truncation).",
+    "hilfe_titel_beispiel": "“Head of Sales” and “Sales Director” as two entries, not “Head of Sales/Sales Director”.",
+    "hilfe_titel_wirkung": "A few precise titles achieve more than a long list, because each run makes a limited number of searches. The German Federal Employment Agency finds almost only German titles.",
+    "hilfe_senioritaet_text": "The level of the jobs you are looking for. From top to bottom: C-Level (managing directors, board), VP (Vice President, runs a large business area), Senior Director, Director, Head (head of a division or department), Senior Manager, Manager, Team lead. Below these are levels without leadership, such as Expert or Entry level.",
+    "hilfe_senioritaet_wirkung": "The AI uses it to assign results to the right plan. On the portals it searches for the titles, not for the level.",
+    "hilfe_branche_text": "Industries you would like to work in.",
+    "hilfe_branche_beispiel": "Mechanical engineering, logistics",
+    "hilfe_branche_wirkung": "Background for the AI. The BMS does not exclude jobs from other industries because of it."
   },
   "funktion": {
     "jobsuche": "Job search",

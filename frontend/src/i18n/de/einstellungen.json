@@ -20,7 +20,8 @@
   "seite": {
     "titel": "Einstellungen",
     "beschreibung": "Grundsätzliche Parameter für die Jobsuche — Pläne A/B/C sowie Suchbereich und Firmengröße. Wird beim Speichern in <code>config/suchprofile.yaml</code> übernommen.",
-    "reihenfolge": "Reihenfolge der Jobsuche: Plan A → B → C"
+    "reihenfolge": "Reihenfolge der Jobsuche: Plan A → B → C",
+    "plaene_hinweis": "Die Pläne A bis C sind Ihre Zielrollen: Die Jobsuche sucht nach den Titeln aller aktiven Pläne. Steht in keinem aktiven Plan ein Titel, sucht sie nicht."
   },
   "chips": {
     "hinzufuegen": "{{label}} hinzufügen…"
@@ -28,7 +29,16 @@
   "plan": {
     "titel": "Titel",
     "senioritaet": "Seniorität",
-    "branche": "Branche"
+    "branche": "Branche",
+    "vp_lang": "VP (Vice President)",
+    "hilfe_titel_text": "Die Jobsuche verwendet jeden Eintrag als ganzen Suchbegriff in den Portalen. Tragen Sie je Eintrag genau eine Rolle ein, so wie sie in Anzeigen steht. Platzhalter wie „Market*“ (Trunkierung) wertet das BMS nicht aus.",
+    "hilfe_titel_beispiel": "„Leitung Vertrieb“ und „Head of Sales“ als zwei Einträge, nicht „Leitung Vertrieb/Sales“.",
+    "hilfe_titel_wirkung": "Wenige treffende Titel bringen mehr als eine lange Liste, weil jeder Lauf nur begrenzt viele Suchen macht. Die Arbeitsagentur findet fast nur deutsche Titel.",
+    "hilfe_senioritaet_text": "Die Ebene der Stellen, die Sie suchen. Von oben nach unten: C-Level (Geschäftsführung, Vorstand), VP (Vice President, leitet einen großen Unternehmensbereich), Senior Director, Director, Head (Bereichs- oder Abteilungsleitung), Senior Manager, Manager, Teamlead. Darunter folgen Stufen ohne Führung, etwa Experte oder Berufseinsteiger.",
+    "hilfe_senioritaet_wirkung": "Die KI ordnet Treffer damit dem passenden Plan zu. In den Portalen sucht sie nach den Titeln, nicht nach der Ebene.",
+    "hilfe_branche_text": "Branchen, in denen Sie gern arbeiten würden.",
+    "hilfe_branche_beispiel": "Maschinenbau, Logistik",
+    "hilfe_branche_wirkung": "Hintergrund für die KI. Stellen aus anderen Branchen schließt das BMS deshalb nicht aus."
   },
   "funktion": {
     "jobsuche": "Jobsuche",

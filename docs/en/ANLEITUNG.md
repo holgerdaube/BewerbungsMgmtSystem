@@ -115,7 +115,7 @@ Two equivalent ways to start a skill:
 | “**CV match for job \<id\>**” | `cv-match` | **Step 2a (only after step 1):** match dashboard + tailored CV draft (DE/EN), editable in the job details. |
 | “**Create CV for job \<id\>**” | `cv-erstellen` | **Step 2b:** creates Word + PDF + ATS scan from the (possibly edited) draft. |
 | “**Cover letter for job \<id\>**” | `anschreiben-erstellen` | Company-specific cover letter (DE/EN) with a direct address → `.docx` + PDF. |
-| “**Read profile from the stored text**” | `profil-einlesen` | Structures the text of your LinkedIn profile, or its PDF, pasted on the Profile page. You review the suggestion before anything is saved. |
+| “**Read profile from the stored text**” | `profil-einlesen` | Structures the text or PDF of your LinkedIn profile, or your CV, from the Profile page. You review the suggestion before anything is saved. |
 | “**Deep dive for job \<id\>**” | `job-deepdive` | Both in one go (company + CV) — the default, though, is the two separate steps above. |
 
 ---
@@ -504,7 +504,13 @@ draw on. From top to bottom:
   what you are looking for. The card reads and writes the file `config/profil.md`.
   - **Fields:** Name (required), Positioning (one-liner), Address, Email, Phone, LinkedIn,
     Current, Short profile, Target date,
-    Hard constraints and Known skill gaps.
+    Hard constraints and Known skill gaps. The question mark next to a field explains it with an
+    example.
+  - **Four similar fields, four jobs:** **Positioning (one-liner)** says in one line who you are
+    professionally. **Current** names your present job with employer and start year. The **Short profile**
+    sums up in two to four sentences what you can do and what you are looking for. **Positioning (full
+    text)** further down is your long text, such as the About text from LinkedIn. The short profile and
+    the full text have the most effect; the one-liner and Current are optional.
   - **What matters:** Name, address, contact details and LinkedIn make up the letterhead of your
     cover letters and the file names. You write the address as `Straße Nr, PLZ Ort`, for example
     `Musterweg 3, 12345 Musterstadt`. The place line of the cover letters is built from it, and it is the
@@ -528,7 +534,13 @@ draw on. From top to bottom:
   or upload the PDF that LinkedIn creates via “Save to PDF”. The AI structures it, you review the
   suggestion, and only then does BMS add to your profile. There is no retrieval via the profile address;
   LinkedIn blocks it (HTTP 999).
-- **Positioning** — large block of prose, freely editable.
+- **Import from your CV.** Next to LinkedIn, the AI reads your headline, location, positioning, skills and career
+  history from your CV. If you already have a base CV, choose the language and click **“Read base CV”**. Otherwise
+  upload a PDF or Word file. A Word file is also saved as the base CV for the chosen language if there is none yet.
+  An existing base CV stays unchanged, and a PDF is only read. Here too you review the suggestion, and fields you
+  have already filled in stay as they are.
+- **Positioning (full text)** — large block of prose, freely editable. Together with your base CV it is
+  the basis for CV match and cover letters.
 - **Skills as chips**, grouped by topic area. You add new skills in one line
   (enter the name + choose or create an area). **Imported skills sort themselves in:**
   after every ZIP import with new skills, a background run starts automatically
@@ -591,7 +603,11 @@ by hand:
 - **Three plan cards A / B / C** — each with a freely nameable label, an active switch and chip lists
   for **Titles · Level · Industry**. The job search works through the plans in the order
   **A → B → C**. Plan C is new (previously there were only A and B) and accordingly also appears in the
-  selection fields in the job details, under “Add a new job” and in the Excel export.
+  selection fields in the job details, under “Add a new job” and in the Excel export. The plans are your
+  **target roles**. The job search uses each title as one complete search term on the portals: enter exactly
+  one role per entry, so “Head of Sales” and “Sales Director” separately. The BMS does not evaluate
+  wildcards such as `Market*` (truncation). Level and industry do not filter the search; they help the AI
+  rate the results. **VP** stands for Vice President, the level between Director and C-Level.
 - **Backup**: shows the last automatic backup (time, size) and their
   number, with a switch for the daily automatic backup, fields for retention (daily/
   weekly/monthly backups) and the “Back up now” button. An amber notice appears

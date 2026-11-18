@@ -14,8 +14,10 @@ Fälle (Spec Stufe 66A Schritt 5):
      eng verwandte, aber bewusst andere Art `jobsuche` (ohne "-apify").
   3. `CLAUDE_CODE_OAUTH_TOKEN` ist bei JEDER Art dabei — die eine universelle Ausnahme.
   4. Eine unbekannte/künftige Art bekommt nur den Minimalsatz (Fall 3), sonst nichts.
-  5. Zurückgehaltene Schlüssel erzeugen die laute Meldung (Rückgabewert `hinweis`) — mit dem
-     Schlüssel-NAMEN, nie dem Wert; kein Zurückhalten → `hinweis is None`.
+  5. Zurückgehaltene Schlüssel, die SECRET_KEYS_BY_KIND KEINER Art zuordnet, erzeugen die laute
+     Meldung (Rückgabewert `hinweis`) — mit dem Schlüssel-NAMEN, nie dem Wert. Ein zugeordneter
+     Schlüssel (APIFY_TOKEN bei allem außer jobsuche-apify) wird still zurückgehalten (17.11.2026:
+     die Meldung kam sonst bei fast jedem Lauf und war reines Rauschen im Log).
   6. `SECRET_KEYS_BY_KIND` selbst bleibt ein Regressions-Anker: wächst die Tabelle unbedacht,
      schlägt dieser Test sichtbar an (S1 — jede Erweiterung soll eine bewusste Entscheidung sein).
 
@@ -88,9 +90,7 @@ def test_art_ohne_zusatzbedarf_bekommt_apify_token_nicht(tmp_path, monkeypatch, 
 
     assert "APIFY_TOKEN" not in env
     assert env["CLAUDE_CODE_OAUTH_TOKEN"] == FAKE_OAUTH_TOKEN
-    assert hinweis is not None
-    assert "APIFY_TOKEN" in hinweis
-    assert kind in hinweis
+    assert hinweis is None    # APIFY_TOKEN gehört jobsuche-apify: still zurückgehalten, kein Rauschen
 
 
 # ── Fall 3: OAuth-Token ist bei JEDER Art dabei ──────────────────────────────────────────────
@@ -124,8 +124,9 @@ def test_unbekannte_art_bekommt_nur_minimalsatz(tmp_path, monkeypatch):
     assert "APIFY_TOKEN" not in env
     assert "FAKE_ZUKUNFTS_SCHLUESSEL" not in env
     assert hinweis is not None
-    assert "APIFY_TOKEN" in hinweis
     assert "FAKE_ZUKUNFTS_SCHLUESSEL" in hinweis
+    assert "APIFY_TOKEN" not in hinweis    # zugeordnet (jobsuche-apify) → nicht gemeldet
+    assert "1 Schlüssel" in hinweis        # die Zahl zählt nur die gemeldeten
 
 
 # ── Fall 5: die Meldung selbst — Inhalt, Werte-Ausschluss, Abwesenheit bei Nicht-Bedarf ──────
@@ -133,15 +134,36 @@ def test_hinweis_nennt_nur_schluesselnamen_nie_werte(tmp_path, monkeypatch):
     import app.agent_runner as agent_runner
 
     env_datei = tmp_path / "agent.env"
-    _schreibe_env(env_datei, CLAUDE_CODE_OAUTH_TOKEN=FAKE_OAUTH_TOKEN, APIFY_TOKEN=FAKE_APIFY_TOKEN)
+    _schreibe_env(env_datei, CLAUDE_CODE_OAUTH_TOKEN=FAKE_OAUTH_TOKEN, APIFY_TOKEN=FAKE_APIFY_TOKEN,
+                  FAKE_ZUKUNFTS_SCHLUESSEL=FAKE_ZUKUNFTS_TOKEN)
     monkeypatch.setattr(agent_runner, "ENV_FILE", env_datei)
 
     _, hinweis = agent_runner._child_env("firma-pruefen")
 
     assert hinweis is not None
-    assert FAKE_APIFY_TOKEN not in hinweis     # der WERT darf nie im Log landen
+    assert FAKE_ZUKUNFTS_TOKEN not in hinweis  # der WERT darf nie im Log landen
+    assert FAKE_APIFY_TOKEN not in hinweis
     assert FAKE_OAUTH_TOKEN not in hinweis
-    assert "APIFY_TOKEN" in hinweis            # der NAME darf/soll
+    assert "FAKE_ZUKUNFTS_SCHLUESSEL" in hinweis   # der NAME darf/soll
+
+
+def test_unbekannter_schluessel_wird_auch_bei_jobsuche_apify_gemeldet(tmp_path, monkeypatch):
+    """Die Stille gilt nur für zugeordnete Schlüssel: Auch die Art mit Zusatzbedarf meldet einen
+    neuen, noch keiner Art zugeordneten Schlüssel — und nur diesen."""
+    import app.agent_runner as agent_runner
+
+    env_datei = tmp_path / "agent.env"
+    _schreibe_env(env_datei, CLAUDE_CODE_OAUTH_TOKEN=FAKE_OAUTH_TOKEN, APIFY_TOKEN=FAKE_APIFY_TOKEN,
+                  FAKE_ZUKUNFTS_SCHLUESSEL=FAKE_ZUKUNFTS_TOKEN)
+    monkeypatch.setattr(agent_runner, "ENV_FILE", env_datei)
+
+    env, hinweis = agent_runner._child_env("jobsuche-apify")
+
+    assert env["APIFY_TOKEN"] == FAKE_APIFY_TOKEN
+    assert "FAKE_ZUKUNFTS_SCHLUESSEL" not in env
+    assert hinweis is not None
+    assert "FAKE_ZUKUNFTS_SCHLUESSEL" in hinweis
+    assert "APIFY_TOKEN" not in hinweis
 
 
 def test_kein_hinweis_wenn_nichts_zurueckgehalten_wird(tmp_path, monkeypatch):

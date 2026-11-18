@@ -17,6 +17,7 @@
     "in_papierkorb": "Move to bin"
   },
   "linkedin": {
+    "titel": "Import from LinkedIn",
     "profil_url": "LinkedIn profile URL",
     "url_speichert": "Saving URL…",
     "text_titel": "Have your profile read",
@@ -63,8 +64,22 @@
     "verwerfen": "Discard"
   },
   "positionierung": {
-    "titel": "Positioning",
-    "platzhalter": "How do you introduce yourself? Running text — used for matching and cover letters."
+    "titel": "Positioning (full text)",
+    "platzhalter": "How do you introduce yourself? Running text, used for matching and cover letters."
+  },
+  "hilfe": {
+    "kurzzeile_text": "Who you are professionally, in one line. Write it like a job description, not as a list of topics.",
+    "kurzzeile_beispiel": "Logistics specialist with a focus on dispatching",
+    "kurzzeile_wirkung": "Background for the AI. This field is optional.",
+    "aktuell_text": "Your current job with role, employer and start year. If you are between jobs, say so here.",
+    "aktuell_beispiel": "Dispatcher at Sample Company Ltd, since 2021",
+    "aktuell_wirkung": "Background for the AI. This field is optional.",
+    "kurzprofil_text": "Two to four sentences: what you can do, what you have achieved and what you are looking for next.",
+    "kurzprofil_beispiel": "I have planned transport for twelve years and now run the routes of 30 vehicles. Next, I would like to lead a dispatch team.",
+    "kurzprofil_wirkung": "The AI reads it as background when it rates jobs and writes cover letters.",
+    "lang_text": "Your full self-description as running text, such as the About text from LinkedIn. This is the place for experience, strengths and results with figures.",
+    "lang_beispiel": "Dispatcher with twelve years of experience in transport and warehousing. At Sample Company Ltd I am responsible for 30 vehicles and cut empty runs by 15%.",
+    "lang_wirkung": "The basis for CV match and cover letters, together with your base CV."
   },
   "skills": {
     "titel": "Skills",
@@ -82,6 +97,7 @@
     "loeschen_frage": "Really delete “{{name}}”?",
     "loeschen": "🗑 Delete",
     "quelle_linkedin": "Source: LinkedIn",
+    "quelle_cv": "Source: CV",
     "feld": {
       "firma": "Company/institution",
       "rolle": "Role/title",
@@ -100,6 +116,21 @@
     "titel": "Certificates and references",
     "oeffnen": "Open",
     "leer": "No files attached yet."
+  },
+  "cv_einlesen": {
+    "titel": "Import from your CV",
+    "hinweis": "The AI reads your headline, location, positioning, skills and career history from your CV. You review the result before anything is saved.",
+    "basis_titel": "Read an existing base CV",
+    "basis_auslesen": "▶ Read base CV",
+    "upload_titel": "Upload your CV",
+    "upload_titel_weiterer": "Or upload a different CV",
+    "upload_auslesen": "▶ Read CV",
+    "datei_hinweis": "PDF or Word (.docx).",
+    "sprache": "CV language",
+    "word_neu": "The Word file is also saved as your base CV ({{sprache}}).",
+    "word_vorhanden": "Your base CV ({{sprache}}) stays unchanged, the file is only read.",
+    "pdf_hinweis": "The PDF is only read. The BMS needs a Word file for a base CV.",
+    "gespeichert": "✓ Saved as base CV ({{sprache}})."
   },
   "basis_cv": {
     "titel": "Base CVs",

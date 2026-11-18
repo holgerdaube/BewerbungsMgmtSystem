@@ -4327,13 +4327,18 @@ def _cv_struktur(quelle):
 
     warnung = None
     if stationen == 0:
-        warnung = (tx("Keine Stationen erkannt — der Seitenumbruch-Schutz greift bei diesem CV "
-                      "nicht. Aufbau je Station: Firma<Tab>Zeitraum, dann der Jobtitel."))
+        warnung = (tx("Das BMS erkennt in dieser Datei keine Berufsstationen. Der fertige Lebenslauf kann "
+                      "dann mitten in einer Station auf die nächste Seite umbrechen. Ordnen Sie jede "
+                      "Station in Word so: Firma, Tabulator und Zeitraum in einer Zeile, darunter der "
+                      "Jobtitel in Fettschrift. Laden Sie die Datei dann hier neu hoch."))
     elif tab_zeilen and mit_titel * 2 < len(tab_zeilen):
-        warnung = (tx("{anzahl} Stationen erkannt, aber nur bei {mit_titel} steht der Jobtitel "
-                      "direkt hinter der Firmenzeile. Das ist das alte v7-Muster: Der "
-                      "Workday-Parser paart den Titel dann mit der naechsten Station. "
-                      "`scripts/cv_basis_umbau_v10.py` bringt die Datei in die richtige Form.", anzahl=len(tab_zeilen), mit_titel=mit_titel))
+        warnung = (tx("Bei {ohne_titel} von {anzahl} Stationen findet das BMS keinen fett gedruckten "
+                      "Jobtitel direkt unter der Zeile mit Firma und Zeitraum. Bewerbungsportale wie "
+                      "Workday können den Titel dann der falschen Station zuordnen. Der Lebenslauf "
+                      "bleibt nutzbar. Zum Beheben ordnen Sie jede Station in Word so: Firma, Tabulator "
+                      "und Zeitraum in einer Zeile, darunter der Jobtitel in Fettschrift, danach "
+                      "Beschreibung und Aufzählung. Laden Sie die Datei dann hier neu hoch.",
+                      ohne_titel=len(tab_zeilen) - mit_titel, anzahl=len(tab_zeilen)))
     return stationen, warnung
 
 
@@ -4356,6 +4361,54 @@ def _cv_basis_dto(pfad: Path) -> dict:
         "stationen": stationen,
         "warnung": warnung,
     }
+
+
+def _datei_endung(file: UploadFile) -> str:
+    name = file.filename or ""
+    return name.rsplit(".", 1)[-1].lower() if "." in name else ""
+
+
+async def _upload_lesen(file: UploadFile) -> bytes:
+    """Liest den Upload gestueckelt mit `_MAX_UPLOAD`-Deckel; eine leere Datei ergibt 422."""
+    stuecke, groesse = [], 0
+    while True:
+        block = await file.read(1024 * 1024)
+        if not block:
+            break
+        groesse += len(block)
+        if groesse > _MAX_UPLOAD:
+            raise HTTPException(413, tx("Datei größer als {mb} MB", mb=_MAX_UPLOAD // 1024 // 1024))
+        stuecke.append(block)
+    inhalt = b"".join(stuecke)
+    if not inhalt:
+        raise HTTPException(422, tx("Datei ist leer"))
+    return inhalt
+
+
+def _cv_basis_schreiben(ziel: Path, inhalt: bytes) -> Optional[str]:
+    """Schreibt einen Basis-CV atomar und liefert den Papierkorb-Pfad einer abgeloesten Fassung.
+
+    REIHENFOLGE: erst die neue Fassung vollstaendig auf die Platte, dann die alte in den
+    Papierkorb, dann tauschen. Andersherum (Papierkorb zuerst) waere der Bestand bei einem
+    Schreibfehler — voller Datentraeger ist der realistische Fall — kurzzeitig GANZ ohne
+    Basis-CV: Die alte Datei laege im Papierkorb, die neue nirgends. Wiederherstellbar waere
+    das zwar, aber jeder Skill, der dazwischen laeuft, faende keine Datei vor."""
+    import os
+
+    neu = ziel.with_name(f"{ziel.name}.neu")
+    papierkorb_pfad = None
+    try:
+        neu.write_bytes(inhalt)
+        if ziel.exists():
+            papierkorb_pfad = _in_papierkorb(f"{_CV_BASIS_DIR_REL}/{ziel.name}")
+        # `os.replace` ist auf demselben Dateisystem atomar — es gibt keinen Moment, in dem eine
+        # halb geschriebene Datei unter dem Namen steht, den fuenf Aufrufer lesen. Genau darauf
+        # kommt es in iCloud an (Muster wie `scripts/cv_basis_umbau_v10.py`).
+        os.replace(neu, ziel)
+    finally:
+        if neu.exists():
+            neu.unlink()
+    return papierkorb_pfad
 
 
 @app.get("/api/profil/cv-basis")
@@ -4397,28 +4450,14 @@ async def upload_cv_basis(file: UploadFile = File(...), sprache: str = Form(...)
     8. Ein verwaistes PDF (`base_<sprache>.pdf`) wandert mit in den Papierkorb — es ist, wenn es
        nicht mehr zur neuen .docx passt, schlimmer als keins (die Datei, die man versehentlich
        verschickt). Kein automatisches Neu-Erzeugen: `to_pdf` braucht LibreOffice und Zeit."""
-    import os
-
     if not _CV_SPRACH_RE.match(sprache or ""):
         raise HTTPException(422, tx("Sprachcode muss aus zwei Kleinbuchstaben bestehen (z. B. de, "
                                     "en, fr)"))
 
-    ext = (file.filename or "").rsplit(".", 1)[-1].lower() if "." in (file.filename or "") else ""
-    if ext != "docx":
+    if _datei_endung(file) != "docx":
         raise HTTPException(422, tx("Nur .docx wird als Basis-CV akzeptiert"))
 
-    stuecke, groesse = [], 0
-    while True:
-        block = await file.read(1024 * 1024)
-        if not block:
-            break
-        groesse += len(block)
-        if groesse > _MAX_UPLOAD:
-            raise HTTPException(413, tx("Datei größer als {mb} MB", mb=_MAX_UPLOAD // 1024 // 1024))
-        stuecke.append(block)
-    inhalt = b"".join(stuecke)
-    if not inhalt:
-        raise HTTPException(422, tx("Datei ist leer"))
+    inhalt = await _upload_lesen(file)
 
     stationen, warnung = _cv_struktur(inhalt)
     if stationen is None:
@@ -4427,7 +4466,6 @@ async def upload_cv_basis(file: UploadFile = File(...), sprache: str = Form(...)
     ordner = _PROJECT_ROOT / _CV_BASIS_DIR_REL
     ordner.mkdir(parents=True, exist_ok=True)
     ziel = ordner / f"base_{sprache}.docx"
-    ziel_rel = f"{_CV_BASIS_DIR_REL}/{ziel.name}"
 
     if ziel.exists() and (overwrite or "").lower() != "true":
         bestehend = _cv_basis_dto(ziel)
@@ -4437,24 +4475,7 @@ async def upload_cv_basis(file: UploadFile = File(...), sprache: str = Form(...)
             "stationen": bestehend["stationen"],
         })
 
-    # REIHENFOLGE: erst die neue Fassung vollstaendig auf die Platte, dann die alte in den
-    # Papierkorb, dann tauschen. Andersherum (Papierkorb zuerst) waere der Bestand bei einem
-    # Schreibfehler — voller Datentraeger ist der realistische Fall — kurzzeitig GANZ ohne
-    # Basis-CV: Die alte Datei laege im Papierkorb, die neue nirgends. Wiederherstellbar waere
-    # das zwar, aber jeder Skill, der dazwischen laeuft, faende keine Datei vor.
-    neu = ordner / f"base_{sprache}.docx.neu"
-    papierkorb_pfad = None
-    try:
-        neu.write_bytes(inhalt)
-        if ziel.exists():
-            papierkorb_pfad = _in_papierkorb(ziel_rel)
-        # `os.replace` ist auf demselben Dateisystem atomar — es gibt keinen Moment, in dem eine
-        # halb geschriebene Datei unter dem Namen steht, den fuenf Aufrufer lesen. Genau darauf
-        # kommt es in iCloud an (Muster wie `scripts/cv_basis_umbau_v10.py`).
-        os.replace(neu, ziel)
-    finally:
-        if neu.exists():
-            neu.unlink()
+    papierkorb_pfad = _cv_basis_schreiben(ziel, inhalt)
 
     # Verwaistes PDF (§2.6): passt nach dem Upload nicht mehr zur .docx, sonst ist es die Datei,
     # die versehentlich verschickt wird.
@@ -4540,6 +4561,48 @@ async def profil_linkedin_einlesen(text: str = Form(""), file: Optional[UploadFi
         raise HTTPException(422, str(e))
     task_dto = await create_task({"kind": "profil-einlesen"}, session)
     return {"task_id": task_dto["id"], "task": task_dto}
+
+
+@app.post("/api/profil/cv-einlesen")
+async def profil_cv_einlesen(sprache: str = Form(""), file: Optional[UploadFile] = File(None),
+                             session: Session = Depends(get_session)):
+    """Profil aus dem Lebenslauf: ohne Datei aus dem Basis-CV der Sprache, sonst aus dem Upload (.pdf oder .docx).
+
+    Eine hochgeladene .docx wird zusaetzlich Basis-CV, wenn es fuer die Sprache noch keinen gibt. Ein vorhandener
+    bleibt unberuehrt: Ersetzen geht nur ueber den Basis-CV-Bereich mit seiner Rueckfrage. Ein PDF wird nie Basis-CV,
+    weil die CV-Erstellung Word braucht. Der Sprachcode landet im Dateinamen, deshalb `fullmatch`."""
+    from pipeline import linkedin_text
+
+    endung = _datei_endung(file) if file is not None else ""
+    if file is not None and endung not in ("pdf", "docx"):
+        raise HTTPException(422, tx("Bitte eine PDF- oder Word-Datei (.docx) wählen"))
+    if endung != "pdf" and not _CV_SPRACH_RE.fullmatch(sprache or ""):
+        raise HTTPException(422, tx("Sprachcode muss aus zwei Kleinbuchstaben bestehen (z. B. de, "
+                                    "en, fr)"))
+
+    ordner = _PROJECT_ROOT / _CV_BASIS_DIR_REL
+    ziel = ordner / f"base_{sprache}.docx"
+    inhalt = b""
+    try:
+        if file is None:
+            if not ziel.exists():
+                raise HTTPException(404, tx("Basis-CV nicht gefunden"))
+            text = linkedin_text.docx_zu_text(ziel.read_bytes())
+        else:
+            inhalt = await _upload_lesen(file)
+            text = linkedin_text.pdf_zu_text(inhalt) if endung == "pdf" else linkedin_text.docx_zu_text(inhalt)
+        linkedin_text.eingabe_speichern(text, quelle="cv")
+    except linkedin_text.EingabeFehler as e:
+        raise HTTPException(422, str(e))
+    task_dto = await create_task({"kind": "profil-einlesen"}, session)
+
+    basis_cv = None
+    if endung == "docx":
+        basis_cv = "vorhanden" if ziel.exists() else "gespeichert"
+        if basis_cv == "gespeichert":
+            ordner.mkdir(parents=True, exist_ok=True)
+            _cv_basis_schreiben(ziel, inhalt)
+    return {"task_id": task_dto["id"], "task": task_dto, "basis_cv": basis_cv}
 
 
 @app.get("/api/profil/linkedin-eingabe")

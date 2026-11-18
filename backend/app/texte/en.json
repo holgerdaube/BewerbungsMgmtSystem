@@ -338,7 +338,7 @@
 "Kein Übernahme-Verzeichnis {pfad} — der Lauf hat dort nichts abgelegt": "No transfer folder {pfad}. The run saved nothing there",
 "Keine Orphan-Dateien gefunden.": "No orphan files found.",
 "Keine Reaktion": "No response",
-"Keine Stationen erkannt — der Seitenumbruch-Schutz greift bei diesem CV nicht. Aufbau je Station: Firma<Tab>Zeitraum, dann der Jobtitel.": "No positions detected – page-break protection does not work for this CV. Structure per position: company<Tab>period, then the job title.",
+"Das BMS erkennt in dieser Datei keine Berufsstationen. Der fertige Lebenslauf kann dann mitten in einer Station auf die nächste Seite umbrechen. Ordnen Sie jede Station in Word so: Firma, Tabulator und Zeitraum in einer Zeile, darunter der Jobtitel in Fettschrift. Laden Sie die Datei dann hier neu hoch.": "The BMS cannot detect any career positions in this file. The finished CV may then break across pages in the middle of a position. Arrange each position in Word like this: company, tab and period on one line, with the job title in bold below it. Then upload the file here again.",
 "Keine neuen Treffer.": "No new matches.",
 "Keine offenen Aktionen.": "No open actions.",
 "Keine offenen Antworten.": "No messages awaiting a reply.",
@@ -656,7 +656,7 @@
 "{anzahl} Dateien · {mb} MB)": "{anzahl} files · {mb} MB)",
 "{anzahl} Einträge": "entries: {anzahl}",
 "{anzahl} Interviews": "{anzahl} interviews",
-"{anzahl} Stationen erkannt, aber nur bei {mit_titel} steht der Jobtitel direkt hinter der Firmenzeile. Das ist das alte v7-Muster: Der Workday-Parser paart den Titel dann mit der naechsten Station. `scripts/cv_basis_umbau_v10.py` bringt die Datei in die richtige Form.": "{anzahl} positions detected, but only {mit_titel} have the job title directly after the company line. That is the old v7 pattern: the Workday parser then pairs the title with the next position. `scripts/cv_basis_umbau_v10.py` converts the file to the right form.",
+"Bei {ohne_titel} von {anzahl} Stationen findet das BMS keinen fett gedruckten Jobtitel direkt unter der Zeile mit Firma und Zeitraum. Bewerbungsportale wie Workday können den Titel dann der falschen Station zuordnen. Der Lebenslauf bleibt nutzbar. Zum Beheben ordnen Sie jede Station in Word so: Firma, Tabulator und Zeitraum in einer Zeile, darunter der Jobtitel in Fettschrift, danach Beschreibung und Aufzählung. Laden Sie die Datei dann hier neu hoch.": "For {ohne_titel} of {anzahl} positions, the BMS finds no job title in bold directly below the line with company and period. Application portals such as Workday may then assign the title to the wrong position. You can still use the CV. To fix this, arrange each position in Word like this: company, tab and period on one line, the job title in bold below it, then the description and bullet points. Then upload the file here again.",
 "{anzahl} Stellen": "{anzahl} jobs",
 "{art} mit {kontakt}": "{art} with {kontakt}",
 "{ausschreibungen} Ausschreibungen + {netzwerk} über Netzwerk": "{ausschreibungen} job postings + {netzwerk} via network",
@@ -731,5 +731,9 @@
 "Der Lauf hat keinen neuen CV-Entwurf mit Match-Dashboard angelegt. Bitte starten Sie ihn erneut.": "The run did not create a new CV draft with a match dashboard. Please start it again.",
 "Der Lauf hat keinen fertigen Lebenslauf erzeugt. Ist noch kein Entwurf vorhanden, starten Sie zuerst den CV-Match.": "The run did not produce a finished CV. If there is no draft yet, start the CV match first.",
 "Der Lauf hat keinen neuen Firmenbericht angelegt. Bitte starten Sie ihn erneut.": "The run did not create a new company report. Please start it again.",
-"Der Lauf hat kein neues Anschreiben angelegt. Bitte starten Sie ihn erneut.": "The run did not create a new cover letter. Please start it again."
+"Der Lauf hat kein neues Anschreiben angelegt. Bitte starten Sie ihn erneut.": "The run did not create a new cover letter. Please start it again.",
+"Im PDF steht kein lesbarer Text, vermutlich ist es ein Scan. Bitte eine andere Datei wählen oder den Text einfügen.": "The PDF contains no readable text, it is probably a scan. Please choose another file or paste the text.",
+"Die Datei lässt sich nicht als Word-Dokument lesen.": "The file cannot be read as a Word document.",
+"Im Word-Dokument steht kein lesbarer Text.": "The Word document contains no readable text.",
+"Bitte eine PDF- oder Word-Datei (.docx) wählen": "Please choose a PDF or Word file (.docx)"
 }

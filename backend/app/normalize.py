@@ -253,6 +253,36 @@ def url_vergleich(url) -> Optional[str]:
     return host + teile.path.rstrip("/") + (f"?{urlencode(parameter)}" if parameter else "")
 
 
+# Maschinen-Fassung einer Stellenseite (17.11.2026). Workable stellt neben jeder Anzeige
+# (`apply.workable.com/<konto>/j/<code>`) eine Markdown-Fassung für KI-Werkzeuge bereit
+# (`/<konto>/jobs/view/<code>.md`, im Seitenkopf als `rel="alternate"` verlinkt). Die Websuche führt
+# diese Fassung, die Jobsuche übernahm sie wörtlich als Link, und im Browser stand dann rohes
+# Markdown. Umgekehrt liefert die Seite für Menschen einem Abruf nur eine leere App-Hülle mit dem
+# Titel, den Anzeigentext gibt es nur in der Markdown-Fassung (gemessen 17.11.2026). Deshalb
+# speichert das BMS die Adresse für Menschen (`anzeigen_url`) und ruft die Maschinen-Fassung ab
+# (`abruf_url`).
+_WORKABLE_MASCHINE = re.compile(
+    r"^https?://apply\.workable\.com/([^/?#]+)/jobs/view/([A-Za-z0-9]+)(?:\.md)?/?(?:[?#].*)?$", re.IGNORECASE)
+_WORKABLE_MENSCH = re.compile(
+    r"^https?://apply\.workable\.com/([^/?#]+)/j/([A-Za-z0-9]+)/?(?:[?#].*)?$", re.IGNORECASE)
+
+
+def anzeigen_url(url):
+    """Adresse einer Stellenanzeige, wie ein Mensch sie im Browser öffnet. Eine bekannte
+    Maschinen-Fassung wird auf die Seite für Menschen abgebildet, jede andere Adresse bleibt
+    unverändert (auch `None`)."""
+    treffer = _WORKABLE_MASCHINE.match(str(url or "").strip())
+    return f"https://apply.workable.com/{treffer.group(1)}/j/{treffer.group(2)}" if treffer else url
+
+
+def abruf_url(url):
+    """Adresse, unter der ein Abruf den Anzeigentext bekommt. Gegenstück zu `anzeigen_url`: die
+    Seite für Menschen wird auf ihre Maschinen-Fassung abgebildet, jede andere Adresse bleibt
+    unverändert."""
+    treffer = _WORKABLE_MENSCH.match(str(url or "").strip())
+    return f"https://apply.workable.com/{treffer.group(1)}/jobs/view/{treffer.group(2)}.md" if treffer else url
+
+
 def dedup_key(company, title, location=None) -> str:
     return f"{_slug(company)}|{_slug(title)[:60]}|{_slug(location)[:30]}"
 

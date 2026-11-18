@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useId, useState, type ReactNode } from 'react'
 import {
   api, ApiError,
   type ProfilFeld, type ProfilIdentitaetAntwort, type ProfilIdentitaetBody, type ProfilIdentitaetInhalt,
 } from '../api'
 import { PROFIL_GEAENDERT } from '../profil'
 import { t } from '../i18n'
+import { FeldHilfe } from './ui'
 
 // P2-69: Karte „Identität und Suchstrategie“ — liest und schreibt config/profil.md über
 // GET/PUT /api/profil/identitaet (Vertrag A der Bau-Spec). Die Datei bleibt die einzige Quelle;
@@ -115,8 +116,9 @@ export function serverText(e: { message?: string }, ersatz: string): string {
 /** Ein Eingabefeld mit Beschriftung darüber (Muster: Werdegang, `Lab`) und optionalen Hinweiszeilen
  *  darunter. Bewusst auf Modulebene: Würde die Komponente innerhalb von `ProfilIdentitaetAnsicht`
  *  stehen, baute React sie bei jedem Tastendruck neu und das Feld verlöre den Fokus. */
-function Feld({ label, value, onChange, placeholder, hinweise, fehler, spanZwei }: {
+function Feld({ label, hilfe, value, onChange, placeholder, hinweise, fehler, spanZwei }: {
   label: string
+  hilfe?: ReactNode
   value: string
   onChange: (v: string) => void
   placeholder?: string
@@ -124,13 +126,15 @@ function Feld({ label, value, onChange, placeholder, hinweise, fehler, spanZwei 
   fehler?: string
   spanZwei?: boolean
 }) {
+  const feldId = useId()
   return (
     <div className={spanZwei ? 'md:col-span-2' : ''}>
-      <label className="flex flex-col text-xs text-slate-500">
-        {label}
-        <input type="text" className={`${INPUT} mt-1 w-full`} placeholder={placeholder}
-          value={value} onChange={(e) => onChange(e.target.value)} />
-      </label>
+      <div className="flex items-center gap-1.5 text-xs text-slate-500">
+        <label htmlFor={feldId}>{label}</label>
+        {hilfe}
+      </div>
+      <input id={feldId} type="text" className={`${INPUT} mt-1 w-full`} placeholder={placeholder}
+        value={value} onChange={(e) => onChange(e.target.value)} />
       {fehler && <div className="mt-1 text-xs text-rose-600">{fehler}</div>}
       {hinweise && hinweise.length > 0 && (
         <div className="mt-1 space-y-1">
@@ -142,21 +146,26 @@ function Feld({ label, value, onChange, placeholder, hinweise, fehler, spanZwei 
 }
 
 /** Freitext-Bereich: Überschrift, Hinweis und Textfeld in einem Label. */
-function TextBereich({ titel, hinweis, value, onChange, rows, placeholder }: {
+function TextBereich({ titel, hilfe, hinweis, value, onChange, rows, placeholder }: {
   titel: string
+  hilfe?: ReactNode
   hinweis?: string
   value: string
   onChange: (v: string) => void
   rows: number
   placeholder?: string
 }) {
+  const feldId = useId()
   return (
-    <label className="mt-4 block border-t border-slate-100 pt-3">
-      <span className="block text-xs font-semibold text-brand-navy">{titel}</span>
+    <div className="mt-4 border-t border-slate-100 pt-3">
+      <div className="flex items-center gap-1.5">
+        <label htmlFor={feldId} className="text-xs font-semibold text-brand-navy">{titel}</label>
+        {hilfe}
+      </div>
       {hinweis && <span className="mt-0.5 block text-xs text-slate-400">{hinweis}</span>}
-      <textarea className={`${INPUT} mt-1.5 w-full resize-y`} rows={rows} placeholder={placeholder}
+      <textarea id={feldId} className={`${INPUT} mt-1.5 w-full resize-y`} rows={rows} placeholder={placeholder}
         value={value} onChange={(e) => onChange(e.target.value)} />
-    </label>
+    </div>
   )
 }
 
@@ -211,6 +220,8 @@ export function ProfilIdentitaetAnsicht({
         <Feld label={t('profil:karte.anschrift')} value={i.anschrift} placeholder={t('profil:karte.anschrift_platzhalter')}
           hinweise={hinweise('anschrift')} onChange={(v) => setIdent('anschrift', v)} />
         <Feld label={t('profil:karte.positionierung')} value={i.positionierung} spanZwei
+          hilfe={<FeldHilfe feld={t('profil:karte.positionierung')} text={t('profil:hilfe.kurzzeile_text')}
+            beispiel={t('profil:hilfe.kurzzeile_beispiel')} wirkung={t('profil:hilfe.kurzzeile_wirkung')} />}
           placeholder={t('profil:karte.positionierung_platzhalter')}
           onChange={(v) => setIdent('positionierung', v)} />
         <Feld label={t('profil:karte.email')} value={i.email} placeholder={t('profil:karte.email_platzhalter')}
@@ -220,6 +231,8 @@ export function ProfilIdentitaetAnsicht({
         <Feld label="LinkedIn" value={i.linkedin} placeholder="https://www.linkedin.com/in/…" /* i18n-ok: Eigenname, URL */
           onChange={(v) => setIdent('linkedin', v)} />
         <Feld label={t('profil:karte.aktuell')} value={i.aktuell} placeholder={t('profil:karte.aktuell_platzhalter')}
+          hilfe={<FeldHilfe feld={t('profil:karte.aktuell')} text={t('profil:hilfe.aktuell_text')}
+            beispiel={t('profil:hilfe.aktuell_beispiel')} wirkung={t('profil:hilfe.aktuell_wirkung')} />}
           onChange={(v) => setIdent('aktuell', v)} />
         {i.weitere.map((f, n) => (
           <Feld key={`weitere-${n}-${f.schluessel}`} label={f.schluessel} value={f.wert}
@@ -233,6 +246,8 @@ export function ProfilIdentitaetAnsicht({
       )}
 
       <TextBereich titel={t('profil:karte.kurzprofil')} rows={4} value={form.kurzprofil}
+        hilfe={<FeldHilfe feld={t('profil:karte.kurzprofil')} text={t('profil:hilfe.kurzprofil_text')}
+          beispiel={t('profil:hilfe.kurzprofil_beispiel')} wirkung={t('profil:hilfe.kurzprofil_wirkung')} />}
         placeholder={t('profil:karte.kurzprofil_platzhalter')}
         onChange={(v) => onForm({ ...form, kurzprofil: v })} />
 

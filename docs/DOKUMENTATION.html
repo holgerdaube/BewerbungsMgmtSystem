@@ -738,8 +738,9 @@ wie bei den Suchläufen. Spec: P2-76.</p>
 <h3>Profil (Phase 45/47)</h3>
 <ul>
 <li><strong>profil-einlesen</strong> — „Profil einlesen aus dem hinterlegten Text" · strukturiert den eingefügten
-  Profiltext oder den Text des Profil-PDFs zu einem Vorschlag, den der Nutzer vor dem additiven Speichern
-  prüft (<code>pipeline/linkedin_text.py</code>). Kein Web: LinkedIn sperrt automatische Abrufe (HTTP 999). Der
+  Profiltext, den Text des Profil-PDFs oder einen Lebenslauf (<code>POST /api/profil/cv-einlesen</code>: Basis-CV, PDF oder
+  Word) zu einem Vorschlag, den der Nutzer vor dem additiven Speichern prüft (<code>pipeline/linkedin_text.py</code>). Eine
+  hochgeladene Word-Datei wird Basis-CV, wenn es für die Sprache noch keinen gibt; Einträge tragen die Quelle <code>cv</code>. Kein Web: LinkedIn sperrt automatische Abrufe (HTTP 999). Der
   vollständigste Weg bleibt das Datenexport-ZIP
   (<code>pipeline/linkedin_import.py</code>, deterministisch, kein LLM). <em>Headless.</em></li>
 <li><strong>skills-sortieren</strong> — ordnet importierte Skills aus „LinkedIn (unsortiert)" kontextbasiert
@@ -1231,7 +1232,9 @@ vorgetäuschten Sicherheitsgrenze):</p>
 <li><strong>66A — Schadensradius:</strong> <code>agent_runner._child_env(kind)</code> reicht pro Skill-Subprozess nur noch
   die für DIESE Art freigegebenen Secrets aus <code>agent.env</code> weiter (Tabelle <code>SECRET_KEYS_BY_KIND</code>,
   einzige Zuordnung aktuell: <code>jobsuche-apify</code> → <code>APIFY_TOKEN</code>), statt wie bisher jeden Schlüssel an
-  jeden Subprozess zu geben — mit lauter Meldung im Task-Log, falls ein Skill doch mehr braucht.
+  jeden Subprozess zu geben — mit lauter Meldung im Task-Log, wenn <code>agent.env</code> einen Schlüssel
+  enthält, den die Tabelle keiner Art zuordnet. Ein zugeordneter Schlüssel (<code>APIFY_TOKEN</code>) fehlt den
+  übrigen Arten mit Absicht und wird dort still zurückgehalten.
   9 von 22 headless-Arten bekommen zusätzlich <code>disallowed_tools</code> (WebSearch/WebFetch gesperrt, wo
   der Skill sie nachweislich nicht nutzt).</li>
 <li><strong>66B — Kennzeichnung:</strong> <code>agent_runner.HEADLESS_SUFFIX</code> (hängt an JEDEM headless-Prompt) markiert
@@ -2528,4 +2531,4 @@ Begründung dokumentiert (Messdaten als Referenz).</p>
 „Paketdienst und Netzregeln“, 13.10.2026, P2-71), der Abschnitt „Profil-Datei“ am 11.10.2026 (P2-69), die Absätze „Anzeigentext sichern" und „Portal-Status" am 14.10.2026 (P2-75, P2-76). Da parallele Bau-Sessions laufen,
 ist die zentrale Quelle immer der Code selbst, nicht diese Datei.</em></p></section>
 </div></body></html>
-<!-- docs_render quelle=DOKUMENTATION.md sha256=228aeea9fad3f85a3b6ea84de40af7c744629acc85973703a856fd56c018a367 -->
+<!-- docs_render quelle=DOKUMENTATION.md sha256=2e4696dda8734cdaae1a9d260fac58a40f49e34fcf44a39d14b575a92dd21547 -->

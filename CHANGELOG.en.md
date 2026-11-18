@@ -4,6 +4,16 @@ Here you will find, for each version, what changes for you. You can see which ve
 
 ## Unreleased
 
+## 2.3.0 (18.11.2026)
+
+- You can now fill your profile from your CV. The Profile page has a new section next to LinkedIn: read an existing base CV, or upload a PDF or Word file. The AI turns your headline, location, positioning, skills and career history into a suggestion that you review before saving. A Word file also becomes your base CV if the chosen language has none yet. An existing base CV stays unchanged.
+- In Settings, “Back up now” and “Check for updates” are now full-width buttons in the action color, like “Update coach site now”. “Check for updates” used to be a narrow grey outline.
+- In search plans A to C, typed titles, seniority levels and industries are no longer lost. Until now an entry was only added with Enter or “+”; if it stayed in the input field, the BMS did not save it and the job search reported missing target roles. It is now added when you leave the field, and “Save” also includes text still in the field.
+- The run log no longer reports on almost every AI run that the Apify key was not passed on. The key still goes only to the Apify job search. Only a key in `agent.env` that is assigned to no run is reported now.
+- Jobs from Workable career sites now link to the job page. The search runs sometimes picked up the Markdown version meant for AI tools (the address ends in `.md`), and the link showed only raw text in the browser. The BMS still reads the job ad text from that version for its checks.
+- On the Profile page and in the search plans, a question mark next to the fields explains what belongs there, with an example and its effect. The long text is now called “Positioning (full text)” so that it is not confused with the one-liner. The search plans also explain how the job search uses your titles: each entry is one complete search term, and wildcards such as `Market*` have no effect. The “VP” level is now spelled out there as “VP (Vice President)”.
+- The notice about a base CV with a different structure is now easy to understand and tells you how to arrange the file in Word. It used to mention internal version names and a script.
+
 ## 2.2.3 (14.11.2026)
 
 - On Windows, the BMS starts with Claude again. In 2.2.2 the start aborted (“NameError: name 'tx' is not defined”) as soon as the key file `agent.env` existed. On the Mac this hit every start with an error in that file, such as a wrapped token. The BMS now reports such errors as a warning in the black window again. On Windows the check of file permissions is skipped, as there is no `chmod` there. If you added the line `tx = sprache.tx` by hand, you need to do nothing, the update replaces the file.

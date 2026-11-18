@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { api, type BeiratMitglied, type Einstellungen as EinstellungenT, type KiAnbieterStatus, type KiStatus, type NeuesteVersion,
   type Umkreisumbenennung, type VersionInfo, type Plan, type Portal, type SicherungStatus } from '../api'
 import AgentTaskButton from '../components/AgentTaskButton'
-import { kiAnbieterUebernehmen } from '../components/ui'
+import { FeldHilfe, kiAnbieterUebernehmen } from '../components/ui'
 import { suchTabsNeuLaden } from '../suchbereich'
 import { PROFIL_GEAENDERT } from '../profil'
 import { t } from '../i18n'
@@ -14,6 +14,9 @@ import { SpracheKarte } from '../components/SpracheUmschalter'
 import { SENIORITAETEN } from '../senioritaet'
 
 const INPUT = 'rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm focus:border-brand-cyan focus:outline-none'
+// „Jetzt sichern“ und „Nach Updates suchen“: Aktionsfarbe über die ganze Breite der Karte, im Aussehen
+// wie der große Knopf von AgentTaskButton („Coach-Site jetzt aktualisieren“ auf derselben Seite).
+const KNOPF_BREIT = 'w-full rounded-lg bg-brand-cyan px-3 py-2 text-sm font-semibold text-brand-aufAktion transition hover:bg-brand-cyanHover disabled:cursor-not-allowed disabled:opacity-50'
 
 // §18.6-Kategorienpalette (Phase 80-Nachtrag, Entscheidung 10.08.2026, Muster
 // Profil.tsx::BEREICH_FARBEN) — Cyan/Indigo/Violet statt der gedämpften Eigen-Töne;
@@ -26,19 +29,24 @@ const FUNKTIONEN: string[] = ['jobsuche', 'company-fit', 'beirat', 'cv-match', '
 
 // ── Chip-Liste: rein lokale State-Mutation (add/remove ohne eigenen API-Call) — erst der
 // Karten-„Speichern"-Button persistiert den ganzen Plan in einem PATCH. Anders als
-// Profil.tsx::Skills (dort sind Skills eigene DB-Zeilen mit sofortigem Add/Remove). ──────
-function ChipListe({ label, werte, onChange, vorschlaege, anzeige = (w) => w }: { label: string; werte: string[]; onChange: (werte: string[]) => void; anzeige?: (w: string) => string; vorschlaege?: string[] }) {
-  const [neu, setNeu] = useState('')
+// Profil.tsx::Skills (dort sind Skills eigene DB-Zeilen mit sofortigem Add/Remove).
+// Getippter Text gilt als Eingabe: Er wird beim Verlassen des Felds zum Chip, und die Karte kennt
+// ihn als `entwurf`, damit „Speichern“ ihn auch dann mitnimmt, wenn der Cursor noch im Feld steht. ──
+const mitEntwurf = (werte: string[], entwurf: string) => {
+  const t = entwurf.trim()
+  return !t || werte.includes(t) ? werte : [...werte, t]
+}
+
+function ChipListe({ label, hilfe, werte, onChange, entwurf, onEntwurf, vorschlaege, anzeige = (w) => w }: { label: string; hilfe?: ReactNode; werte: string[]; onChange: (werte: string[]) => void; entwurf: string; onEntwurf: (text: string) => void; anzeige?: (w: string) => string; vorschlaege?: string[] }) {
   const listenId = useId()
   const add = () => {
-    const t = neu.trim()
-    if (!t || werte.includes(t)) return
-    onChange([...werte, t])
-    setNeu('')
+    if (!entwurf) return
+    onChange(mitEntwurf(werte, entwurf))
+    onEntwurf('')
   }
   return (
     <div>
-      <div className="mb-1 text-xs font-medium uppercase tracking-wide text-slate-500">{label}</div>
+      <div className="mb-1 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-slate-500">{label}{hilfe}</div>
       <div className="mb-1.5 flex flex-wrap gap-1.5">
         {werte.map((w) => (
           <span key={w} className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-700">
@@ -49,15 +57,19 @@ function ChipListe({ label, werte, onChange, vorschlaege, anzeige = (w) => w }: 
         {werte.length === 0 && <span className="text-xs text-slate-400">–</span>}
       </div>
       <div className="flex gap-1.5">
-        <input className={`${INPUT} flex-1 text-xs`} placeholder={t('einstellungen:chips.hinzufuegen', { label })} value={neu} list={vorschlaege ? listenId : undefined}
-          onChange={(e) => setNeu(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); add() } }} />
+        <input className={`${INPUT} flex-1 text-xs`} placeholder={t('einstellungen:chips.hinzufuegen', { label })} value={entwurf} list={vorschlaege ? listenId : undefined}
+          onChange={(e) => onEntwurf(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); add() } }}
+          // Wechsel in ein anderes Fenster lässt den Fokus im Feld: Halb Getipptes bleibt dann Text.
+          onBlur={(e) => { if (document.activeElement !== e.currentTarget) add() }} />
         <button onClick={add} className="rounded-lg border border-slate-300 px-2.5 text-xs text-slate-600 hover:bg-slate-50">+</button>
         {vorschlaege && <datalist id={listenId}>{vorschlaege.map((v) => <option key={v} value={v} label={anzeige(v)} />)}</datalist>}
       </div>
     </div>
   )
 }
+
+const KEINE_ENTWUERFE = { titel: '', senioritaet: '', branche: '' }
 
 // ── Plan-Karte A/B/C: Label, aktiv-Schalter, drei Chip-Listen, eigener Speichern-Button ──
 function PlanKarte({ plan, onSaved }: { plan: Plan; onSaved: () => void }) {
@@ -66,16 +78,24 @@ function PlanKarte({ plan, onSaved }: { plan: Plan; onSaved: () => void }) {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [err, setErr] = useState<string | null>(null)
-  const dirty = JSON.stringify(f) !== JSON.stringify(original)
+  const [entwuerfe, setEntwuerfe] = useState(KEINE_ENTWUERFE)
+  const entwurfSetzen = (feld: keyof typeof KEINE_ENTWUERFE) => (text: string) => setEntwuerfe((e) => ({ ...e, [feld]: text }))
+  const dirty = JSON.stringify(f) !== JSON.stringify(original) || Object.values(entwuerfe).some((w) => w.trim() !== '')
   const farbe = PLAN_FARBEN[f.plan] || '#858F9C'
 
   const save = async () => {
     setSaving(true); setErr(null)
     try {
+      const stand = {
+        ...f,
+        titel: mitEntwurf(f.titel, entwuerfe.titel),
+        senioritaet: mitEntwurf(f.senioritaet, entwuerfe.senioritaet),
+        branche: mitEntwurf(f.branche, entwuerfe.branche),
+      }
       // NUR diesen einen Plan senden — das Backend upserted nach `plan`-Schlüssel (main.py),
       // die anderen beiden Pläne bleiben unangetastet.
-      await api('/einstellungen', { method: 'PATCH', body: JSON.stringify({ plaene: [f] }) })
-      setOriginal(f)
+      await api('/einstellungen', { method: 'PATCH', body: JSON.stringify({ plaene: [stand] }) })
+      setF(stand); setOriginal(stand); setEntwuerfe(KEINE_ENTWUERFE)
       setSaved(true); setTimeout(() => setSaved(false), 2000)
       onSaved()
     } catch (e: any) { setErr(e?.message || t('einstellungen:allgemein.speichern_fehlgeschlagen')) }
@@ -95,12 +115,13 @@ function PlanKarte({ plan, onSaved }: { plan: Plan; onSaved: () => void }) {
         </label>
       </div>
       <div className="space-y-3">
-        <ChipListe label={t('einstellungen:plan.titel')} werte={f.titel} onChange={(titel) => setF({ ...f, titel })} />
-        <ChipListe label={t('einstellungen:plan.senioritaet')} anzeige={(w) => wert('seniority', w)} werte={f.senioritaet} onChange={(senioritaet) => setF({ ...f, senioritaet })} vorschlaege={SENIORITAETEN} />
-        <ChipListe label={t('einstellungen:plan.branche')} werte={f.branche} onChange={(branche) => setF({ ...f, branche })} />
+        <ChipListe label={t('einstellungen:plan.titel')} hilfe={<FeldHilfe feld={t('einstellungen:plan.titel')} text={t('einstellungen:plan.hilfe_titel_text')} beispiel={t('einstellungen:plan.hilfe_titel_beispiel')} wirkung={t('einstellungen:plan.hilfe_titel_wirkung')} />} werte={f.titel} onChange={(titel) => setF({ ...f, titel })} entwurf={entwuerfe.titel} onEntwurf={entwurfSetzen('titel')} />
+        <ChipListe label={t('einstellungen:plan.senioritaet')} hilfe={<FeldHilfe feld={t('einstellungen:plan.senioritaet')} text={t('einstellungen:plan.hilfe_senioritaet_text')} wirkung={t('einstellungen:plan.hilfe_senioritaet_wirkung')} />} anzeige={(w) => (w === 'VP' ? t('einstellungen:plan.vp_lang') : wert('seniority', w))} werte={f.senioritaet} onChange={(senioritaet) => setF({ ...f, senioritaet })} entwurf={entwuerfe.senioritaet} onEntwurf={entwurfSetzen('senioritaet')} vorschlaege={SENIORITAETEN} />
+        <ChipListe label={t('einstellungen:plan.branche')} hilfe={<FeldHilfe feld={t('einstellungen:plan.branche')} text={t('einstellungen:plan.hilfe_branche_text')} beispiel={t('einstellungen:plan.hilfe_branche_beispiel')} wirkung={t('einstellungen:plan.hilfe_branche_wirkung')} />} werte={f.branche} onChange={(branche) => setF({ ...f, branche })} entwurf={entwuerfe.branche} onEntwurf={entwurfSetzen('branche')} />
       </div>
       <div className="mt-3 flex items-center gap-2 border-t border-slate-100 pt-3">
-        <button onClick={save} disabled={saving || !dirty}
+        {/* Fokus beim Klick im Feld lassen: Sonst würde der neue Chip den Knopf unter dem Mauszeiger wegschieben und der Klick ginge verloren. */}
+        <button onMouseDown={(e) => e.preventDefault()} onClick={save} disabled={saving || !dirty}
           className="rounded-lg bg-brand-cyan px-3 py-1.5 text-sm font-medium text-brand-aufAktion hover:bg-brand-cyanHover disabled:cursor-not-allowed disabled:opacity-40">
           {saving ? t('einstellungen:allgemein.speichern_laeuft') : t('einstellungen:allgemein.speichern')}
         </button>
@@ -987,7 +1008,7 @@ export default function Einstellungen() {
         <ModelleKarte key={data.ki_anbieter} modelle={data.modelle} modellOptionen={data.modell_optionen} modellStandard={data.modell_standard} onSaved={load} />
       </div>
       <div>
-        <div className="mb-2 text-xs text-slate-500">{t('einstellungen:seite.reihenfolge')}</div>
+        <div className="mb-2 text-xs text-slate-500">{t('einstellungen:seite.reihenfolge')}. {t('einstellungen:seite.plaene_hinweis')}</div>
         <div className="grid gap-4 md:grid-cols-3">
           {data.plaene.map((p) => <PlanKarte key={p.plan} plan={p} onSaved={load} />)}
         </div>
@@ -1383,13 +1404,12 @@ function SicherungKarte() {
             </div>
           </div>
 
-          <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3">
-            <button onClick={jetztSichern} disabled={sichernBusy}
-              className="rounded-lg bg-brand-cyan px-3 py-1.5 text-sm font-medium text-brand-aufAktion hover:bg-brand-cyanHover disabled:cursor-not-allowed disabled:opacity-40">
+          <div className="mt-3 space-y-1.5 border-t border-slate-100 pt-3">
+            <button onClick={jetztSichern} disabled={sichernBusy} className={KNOPF_BREIT}>
               {sichernBusy ? t('einstellungen:sicherung.sichere') : t('einstellungen:sicherung.jetzt_sichern')}
             </button>
-            {sichernErgebnis && <span className="text-sm text-emerald-600">{t('einstellungen:sicherung.gesichert', { datei: sichernErgebnis })}</span>}
-            {sichernErr && <span className="text-sm text-rose-600">{sichernErr}</span>}
+            {sichernErgebnis && <div className="text-sm text-emerald-600">{t('einstellungen:sicherung.gesichert', { datei: sichernErgebnis })}</div>}
+            {sichernErr && <div className="text-sm text-rose-600">{sichernErr}</div>}
           </div>
 
           <div className="mt-3 border-t border-slate-100 pt-3 text-xs text-slate-500">
@@ -1505,8 +1525,7 @@ function UpdateSuche() {
 
   return (
     <div className="mt-3 border-t border-slate-100 pt-3">
-      <button onClick={suchen} disabled={sucht}
-        className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40">
+      <button onClick={suchen} disabled={sucht} className={KNOPF_BREIT}>
         {sucht ? t('einstellungen:update.sucht') : t('einstellungen:update.suchen')}
       </button>
       <p className="mt-1.5 text-xs text-slate-500">

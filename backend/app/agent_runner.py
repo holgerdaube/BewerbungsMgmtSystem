@@ -289,9 +289,9 @@ PROMPTS = {
         # kein Retry: legt bei jedem Lauf eine neue ki-Row an, ein zweiter Versuch dupliziert die Antwort
     },
     "profil-einlesen": {
-        "label": "Profil einlesen (Text oder PDF)", "template": "Profil einlesen aus dem hinterlegten Text",
+        "label": "Profil einlesen (LinkedIn oder CV)", "template": "Profil einlesen aus dem hinterlegten Text",
         "needs_job": False, "headless": True, "timeout_s": 300,
-        # Strukturiert nur den vom Nutzer gelieferten Text (pipeline/linkedin_text.py), kein Web. Kein Retry:
+        # Strukturiert nur den vom Nutzer gelieferten Text oder CV (pipeline/linkedin_text.py), kein Web. Kein Retry:
         # Ein neuer Versuch ist ein neuer Klick mit neuer Eingabe.
         "disallowed_tools": ["WebSearch", "WebFetch"],
     },
@@ -922,8 +922,9 @@ def check_secret_files() -> list[str]:
 #     die Datei liegt unter einem für jeden Subprozess gleich vorhersagbaren Pfad). Keine Zeile
 #     hier möglich oder nötig.
 # Unbekannte/künftige Arten bekommen per Default NICHTS zusätzlich (sicherster Fall, S1) — wer
-# eine neue Art mit echtem Zusatzbedarf baut, trägt sie hier ein; sonst zeigt die laute Meldung
-# in _child_env() unten (S2) im Task-Log genau das an, statt rätselhaft zu scheitern.
+# eine neue Art mit echtem Zusatzbedarf baut, trägt sie hier ein. Ein neuer, hier noch keiner Art
+# zugeordneter Schlüssel in agent.env löst die laute Meldung in _child_env() unten (S2) im Task-Log
+# aus; ein schon zugeordneter (APIFY_TOKEN) bleibt bei den übrigen Arten still zurückgehalten.
 SECRET_KEYS_BY_KIND: dict[str, set[str]] = {
     "jobsuche-apify": {"APIFY_TOKEN"},
 }
@@ -939,10 +940,11 @@ def _child_env(kind: str, anbieter: Optional[str] = None) -> tuple[dict, Optiona
     Schlüssel aus ENV_FILE nur, wenn `kind` in SECRET_KEYS_BY_KIND gelistet ist — unbekannte
     Arten bekommen NICHTS zusätzlich (S1, sicherer Default).
 
-    Gibt (env, hinweis) zurück: `hinweis` ist None, wenn nichts zurückgehalten wurde, sonst ein
-    Klartext-Satz fürs Task-Log (S2) — der Aufrufer (`_run_task`) schreibt ihn dorthin, damit
-    ein künftiger Skill, der einen neuen Schlüssel braucht, nicht rätselhaft scheitert, sondern
-    die Ursache im eigenen Log steht. Werte werden NIE geloggt, nur Schlüssel-NAMEN.
+    Gibt (env, hinweis) zurück: `hinweis` ist None, wenn kein UNBEKANNTER Schlüssel zurückgehalten
+    wurde (einer, den SECRET_KEYS_BY_KIND keiner Art zuordnet), sonst ein Klartext-Satz fürs
+    Task-Log (S2) — der Aufrufer (`_run_task`) schreibt ihn dorthin, damit ein künftiger Skill,
+    der einen neuen Schlüssel braucht, nicht rätselhaft scheitert, sondern die Ursache im eigenen
+    Log steht. Werte werden NIE geloggt, nur Schlüssel-NAMEN.
 
     Unter ChatGPT (P2-86) bekommt der Lauf den Claude-Token nicht, und ein API-Schlüssel im Server-Env
     wird entfernt, damit Codex über das Abo läuft (`ki_anbieter.codex_umgebung`).
@@ -966,13 +968,18 @@ def _child_env(kind: str, anbieter: Optional[str] = None) -> tuple[dict, Optiona
                 zurueckgehalten.append(k)
     if chatgpt:
         env = ki_anbieter.codex_umgebung(env)
+    # Gemeldet werden nur Schlüssel, die die Tabelle KEINER Art zuordnet. Ein zugeordneter Schlüssel
+    # (APIFY_TOKEN gehört jobsuche-apify) fehlt allen anderen Arten mit Absicht; ihn bei jedem Lauf zu
+    # melden war reines Rauschen im Task- und Server-Log. Zurückgehalten wird er weiterhin.
+    zugeordnet = set().union(*SECRET_KEYS_BY_KIND.values())
+    unbekannt = sorted(k for k in zurueckgehalten if k not in zugeordnet)
     hinweis = None
-    if zurueckgehalten:
+    if unbekannt:
         hinweis = (
-            f"[agent-runner] Secrets: {len(zurueckgehalten)} Schlüssel aus {ENV_FILE.name} "
-            f"nicht an Art '{kind}' weitergereicht ({', '.join(sorted(zurueckgehalten))}) — "
-            f"nicht in SECRET_KEYS_BY_KIND für diese Art freigegeben (Phase 66A, Schutz gegen "
-            f"Unfälle, s. Kommentar dort). Braucht '{kind}' das doch: SECRET_KEYS_BY_KIND in "
+            f"[agent-runner] Secrets: {len(unbekannt)} Schlüssel aus {ENV_FILE.name} "
+            f"nicht an Art '{kind}' weitergereicht ({', '.join(unbekannt)}) — in "
+            f"SECRET_KEYS_BY_KIND keiner Art zugeordnet (Phase 66A, Schutz gegen Unfälle, s. "
+            f"Kommentar dort). Braucht '{kind}' das doch: SECRET_KEYS_BY_KIND in "
             f"backend/app/agent_runner.py ergänzen."
         )
     return env, hinweis
@@ -1334,7 +1341,8 @@ async def _run_task(task_id: int) -> None:
     try:
         with open(log_path, "w", encoding="utf-8") as log_file:
             # Phase 66A: nur die für `kind` freigegebenen Secrets weiterreichen (s. _child_env()-
-            # Docstring). Ein zurückgehaltener Schlüssel wird SOFORT ins Task-Log geschrieben —
+            # Docstring). Ein zurückgehaltener Schlüssel, den die Tabelle keiner Art zuordnet, wird
+            # SOFORT ins Task-Log geschrieben —
             # bevor der Subprozess überhaupt startet —, damit die Ursache eines möglichen
             # Fehlschlags (S2) an derselben Stelle steht, an der der Nutzer ohnehin zuerst nachsieht.
             # P2-86: Lokale Schritte brauchen keine KI, sonst entscheidet die Einstellung.

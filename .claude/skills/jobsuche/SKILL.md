@@ -58,8 +58,8 @@ Lies zuerst:
   frisch angelegte Datei hat sie zum Teil nicht. Das ist kein Fehler und kein Grund zum Abbruch: Was fehlt,
   entfällt (kein Nejo-Filter, kein Radar-Nachlauf; ohne `titel_deutsch` fragt die Arbeitsagentur mit den deutschen Titeln der Pläne), und der
   Bericht nennt es.
-- Haben die aktiven Pläne keinen Titel, gibt es nichts zu suchen: mit dem Hinweis enden, dass die Zielrollen
-  unter „Einstellungen“ fehlen. Keine Titel erfinden.
+- Haben die aktiven Pläne keinen Titel, gibt es nichts zu suchen: mit dem Hinweis enden, dass in den Suchplänen
+  A bis C unter „Einstellungen“ keine Titel stehen. Keine Titel erfinden.
 
 ### 2. Parallel suchen (max. 3 Subagenten — ein Bucket je Agent)
 Starte **höchstens drei** `general-purpose`-Subagenten, aufgeteilt nach den drei Such-Buckets aus

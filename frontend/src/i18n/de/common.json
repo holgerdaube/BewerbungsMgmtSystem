@@ -35,6 +35,9 @@
     "fehler": "Die Sprache konnte nicht gewechselt werden."
   },
   "ui": {
+    "hilfe_zu": "Erklärung zu {{feld}}",
+    "hilfe_beispiel": "Beispiel:",
+    "hilfe_wirkung": "Wirkung:",
     "score_nicht_bewertet": "Nicht bewertet",
     "score_titel": "Zielstellen-Fit {{score}}/5",
     "verify_geprueft": "✓ geprüft",
